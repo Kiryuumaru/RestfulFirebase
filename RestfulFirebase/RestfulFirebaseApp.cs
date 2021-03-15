@@ -8,9 +8,8 @@ namespace RestfulFirebase
 {
     public class RestfulFirebaseApp
     {
-        private readonly FirebaseConfig config;
-        private readonly FirebaseAuthProvider authProvider;
-        private FirebaseAuthLink authLink;
+        public FirebaseConfig Config { get; private set; }
+        public FirebaseAuthApp Auth { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RestfulFirebaseApp"/> class.
@@ -18,18 +17,8 @@ namespace RestfulFirebase
         /// <param name="authConfig"> The auth config. </param>
         public RestfulFirebaseApp(FirebaseConfig config)
         {
-            this.config = config;
-            authProvider = new FirebaseAuthProvider(config);
-        }
-
-        public async Task SignInWithEmailAndPasswordAsync(string email, string password, string tenantId = null)
-        {
-            authLink = await authProvider.SignInWithEmailAndPasswordAsync(email, password, tenantId);
-        }
-
-        public void Signout()
-        {
-
+            Config = config;
+            Auth = new FirebaseAuthApp(this);
         }
     }
 }

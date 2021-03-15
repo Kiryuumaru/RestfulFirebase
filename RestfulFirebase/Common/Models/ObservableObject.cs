@@ -87,7 +87,7 @@ namespace RestfulFirebase.Common.Models
             return cellModel.ParseValue<T>();
         }
 
-        public List<CellModel> GetCellModels(string group = "")
+        public IEnumerable<CellModel> GetCellModels(string group = "")
         {
             var models = new List<CellModel>(cellModels);
             return string.IsNullOrEmpty(group) ? models : models.FindAll(i => i.Group.Equals(group));

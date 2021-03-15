@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RestfulFirebase.Common;
+using RestfulFirebase;
 
 namespace RestTest
 {
@@ -72,29 +73,29 @@ namespace RestTest
 
         public static async Task Run()
         {
-
-            var authProvider = new FirebaseAuthProvider(new FirebaseConfig()
+            var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var auth = await authProvider.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            await app.Auth.UpdateProfileAsync("disp", "123123");
 
-            var firebase = new FirebaseClient(
-                "https://restfulplayground-default-rtdb.firebaseio.com/",
-                new FirebaseOptions
-                {
-                    AuthTokenAsyncFactory = () => Task.FromResult(auth.FirebaseToken),
-                    OfflineDatabaseFactory = (t, s) => new ConcurrentOfflineDatabase(t, s)
-                });
+            //var firebase = new FirebaseClient(
+            //    "https://restfulplayground-default-rtdb.firebaseio.com/",
+            //    new FirebaseOptions
+            //    {
+            //        AuthTokenAsyncFactory = () => Task.FromResult(auth.FirebaseToken),
+            //        OfflineDatabaseFactory = (t, s) => new ConcurrentOfflineDatabase(t, s)
+            //    });
 
-            await firebase.Child("ss").PostAsync("{ \"ss\" : \"ss\" }");
+            //await firebase.Child("ss").PostAsync("{ \"ss\" : \"ss\" }");
 
-            var dinos = await firebase
-                .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
-                .OnceAsync<object>();
+            //var dinos = await firebase
+            //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
+            //    .OnceAsync<object>();
 
             int x = 0;
 
