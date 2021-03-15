@@ -6,9 +6,9 @@ namespace RestfulFirebase.Database.Streaming
     using System.Linq;
     using System.Reflection;
 
-    using RestfulFirebase.Database.Http;
 
     using Newtonsoft.Json;
+    using RestfulFirebase.Extensions.Http;
 
     /// <summary>
     /// The firebase cache.

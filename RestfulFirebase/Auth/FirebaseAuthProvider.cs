@@ -8,6 +8,7 @@
     using System.Threading.Tasks;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using RestfulFirebase.Extensions;
 
     /// <summary>
     /// The auth token provider.

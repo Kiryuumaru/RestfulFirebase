@@ -8,7 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
 
-    using RestfulFirebase.Database.Extensions;
+    using RestfulFirebase.Extensions;
     using RestfulFirebase.Database.Query;
     using RestfulFirebase.Database.Streaming;
     using System.Reactive.Threading.Tasks;

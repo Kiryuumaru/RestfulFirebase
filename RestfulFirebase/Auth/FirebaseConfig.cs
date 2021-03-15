@@ -6,18 +6,27 @@
     public class FirebaseConfig
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="FirebaseConfig"/> class.
+        /// Gets or sets the api key of your Firebase app.
         /// </summary>
-        /// <param name="apiKey"> The api key of your Firebase app. </param>
-        public FirebaseConfig(string apiKey)
+        public string ApiKey
         {
-            this.ApiKey = apiKey;
+            get;
+            set;
         }
 
         /// <summary>
-        /// Gets or sets the api key of your Firebase app. 
+        /// Gets or sets the database URL of your Firebase app.
         /// </summary>
-        public string ApiKey 
+        public string DatabaseURL
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the storage bucket of your Firebase app.
+        /// </summary>
+        public string StorageBucket
         {
             get;
             set;

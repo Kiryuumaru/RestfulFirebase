@@ -1,4 +1,4 @@
-﻿namespace RestfulFirebase.Database.Extensions
+﻿namespace RestfulFirebase.Extensions
 {
     using System;
     using System.Threading.Tasks;

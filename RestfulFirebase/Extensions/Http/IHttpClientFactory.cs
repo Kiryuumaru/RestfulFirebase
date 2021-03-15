@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions.Http
 {
     public interface IHttpClientFactory
     {

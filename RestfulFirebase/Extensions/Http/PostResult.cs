@@ -1,4 +1,4 @@
-namespace RestfulFirebase.Database.Http
+namespace RestfulFirebase.Extensions.Http
 {
     /// <summary>
     /// Represents data returned after a successful POST to firebase server.

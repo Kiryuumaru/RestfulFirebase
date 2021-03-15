@@ -8,6 +8,7 @@
     using RestfulFirebase.Database.Offline;
 
     using Newtonsoft.Json;
+    using RestfulFirebase.Extensions.Http;
 
     public class FirebaseOptions
     {

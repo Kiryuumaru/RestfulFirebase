@@ -1,7 +1,7 @@
 ﻿namespace RestfulFirebase.Storage
 {
     using Newtonsoft.Json;
-
+    using RestfulFirebase.Extensions.Http;
     using System;
     using System.Collections.Generic;
     using System.IO;

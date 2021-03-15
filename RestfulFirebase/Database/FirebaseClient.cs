@@ -9,6 +9,7 @@ namespace RestfulFirebase.Database
 
     using RestfulFirebase.Database.Offline;
     using RestfulFirebase.Database.Query;
+    using RestfulFirebase.Extensions.Http;
 
     /// <summary>
     /// Firebase client which acts as an entry point to the online database.

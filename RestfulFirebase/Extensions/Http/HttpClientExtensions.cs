@@ -1,4 +1,4 @@
-namespace RestfulFirebase.Database.Http
+namespace RestfulFirebase.Extensions.Http
 {
     using System;
     using System.Collections;
@@ -9,6 +9,7 @@ namespace RestfulFirebase.Database.Http
 
     using Newtonsoft.Json;
     using System.Net;
+    using RestfulFirebase.Database;
 
     /// <summary>
     /// The http client extensions for object deserializations.
@@ -61,7 +62,7 @@ namespace RestfulFirebase.Database.Http
         public static IEnumerable<FirebaseObject<object>> GetObjectCollection(this string data, Type elementType)
         {
             var dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType);
-            IDictionary dictionary = null;
+            IDictionary dictionary;
 
             if (data.StartsWith("["))
             {

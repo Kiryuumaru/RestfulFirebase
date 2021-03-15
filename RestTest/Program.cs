@@ -73,7 +73,12 @@ namespace RestTest
         public static async Task Run()
         {
 
-            var authProvider = new FirebaseAuthProvider(new FirebaseConfig("AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o"));
+            var authProvider = new FirebaseAuthProvider(new FirebaseConfig()
+            {
+                ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
+                DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
+                StorageBucket = "restfulplayground.appspot.com"
+            });
 
             var auth = await authProvider.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
 

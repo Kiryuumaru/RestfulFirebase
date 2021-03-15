@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions.Http
 {
     internal sealed class TransientHttpClientFactory : IHttpClientFactory
     {

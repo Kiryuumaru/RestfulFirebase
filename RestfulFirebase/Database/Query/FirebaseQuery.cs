@@ -6,12 +6,12 @@ namespace RestfulFirebase.Database.Query
     using System.Reactive.Linq;
     using System.Threading.Tasks;
 
-    using RestfulFirebase.Database.Http;
     using RestfulFirebase.Database.Offline;
     using RestfulFirebase.Database.Streaming;
 
     using Newtonsoft.Json;
     using System.Net;
+    using RestfulFirebase.Extensions.Http;
 
     /// <summary>
     /// Represents a firebase query. 

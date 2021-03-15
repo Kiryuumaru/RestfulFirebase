@@ -1,6 +1,6 @@
 ﻿using System.Net.Http;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions.Http
 {
     internal sealed class SimpleHttpClientProxy : IHttpClientProxy
     {

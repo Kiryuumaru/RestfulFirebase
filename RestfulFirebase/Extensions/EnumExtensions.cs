@@ -1,4 +1,4 @@
-﻿namespace RestfulFirebase.Auth
+﻿namespace RestfulFirebase.Extensions
 {
     using System;
     using System.Linq;
