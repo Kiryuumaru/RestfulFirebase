@@ -11,7 +11,7 @@ namespace RestfulFirebase.Common.Models
     public class Decodable
     {
         public IEnumerable<byte> Bytes { get; private set; }
-        public string Data { get => Encoding.ASCII.GetString(Bytes.ToArray()); }
+        public string Data { get => Encoding.Unicode.GetString(Bytes.ToArray()); }
 
         public Decodable(string data) => Update(data);
 
@@ -19,7 +19,7 @@ namespace RestfulFirebase.Common.Models
 
         protected void Update(string data)
         {
-            Bytes = Encoding.ASCII.GetBytes(data);
+            Bytes = Encoding.Unicode.GetBytes(data);
         }
 
         protected void Update(IEnumerable<byte> bytes)
