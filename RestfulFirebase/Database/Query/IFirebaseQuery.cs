@@ -12,9 +12,9 @@
     public interface IFirebaseQuery
     {
         /// <summary>
-        /// Gets the owning client of this query.
+        /// Gets the owning database app of this query.
         /// </summary>
-        FirebaseClient Client
+        RestfulFirebaseApp App
         {
             get;
         }

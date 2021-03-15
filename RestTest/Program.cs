@@ -73,7 +73,7 @@ namespace RestTest
 
         public static async Task Run()
         {
-            var app = new RestfulFirebaseApp(new FirebaseConfig()
+            var app = new RestfulFirebase.RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",

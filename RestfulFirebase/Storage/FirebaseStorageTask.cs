@@ -19,12 +19,12 @@
 
         public FirebaseStorageTask(FirebaseStorageOptions options, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
-            this.TargetUrl = url;
-            this.uploadTask = this.UploadFile(options, url, downloadUrl, stream, cancellationToken, mimeType);
+            TargetUrl = url;
+            uploadTask = UploadFile(options, url, downloadUrl, stream, cancellationToken, mimeType);
             this.stream = stream;
-            this.Progress = new Progress<FirebaseStorageProgress>();
+            Progress = new Progress<FirebaseStorageProgress>();
 
-            Task.Factory.StartNew(this.ReportProgressLoop);
+            Task.Factory.StartNew(ReportProgressLoop);
         }
 
         public Progress<FirebaseStorageProgress> Progress
@@ -42,7 +42,7 @@
 
         public TaskAwaiter<string> GetAwaiter()
         {
-            return this.uploadTask.GetAwaiter();
+            return uploadTask.GetAwaiter();
         }
 
         private async Task<string> UploadFile(FirebaseStorageOptions options, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
@@ -89,13 +89,13 @@
 
         private async void ReportProgressLoop()
         {
-            while (!this.uploadTask.IsCompleted)
+            while (!uploadTask.IsCompleted)
             {
                 await Task.Delay(ProgressReportDelayMiliseconds);
 
                 try
                 { 
-                    this.OnReportProgress(new FirebaseStorageProgress(this.stream.Position, this.stream.Length));
+                    OnReportProgress(new FirebaseStorageProgress(stream.Position, stream.Length));
                 }
                 catch (ObjectDisposedException)
                 {
@@ -107,7 +107,7 @@
 
         private void OnReportProgress(FirebaseStorageProgress progress)
         {
-            (this.Progress as IProgress<FirebaseStorageProgress>).Report(progress);
+            (Progress as IProgress<FirebaseStorageProgress>).Report(progress);
         }
     }
 }

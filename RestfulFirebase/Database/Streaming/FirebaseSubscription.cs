@@ -24,7 +24,7 @@ namespace RestfulFirebase.Database.Streaming
         private readonly IFirebaseQuery query;
         private readonly FirebaseCache<T> cache;
         private readonly string elementRoot;
-        private readonly FirebaseClient client;
+        private readonly RestfulFirebaseApp app;
 
         private static HttpClient http;
 
@@ -56,21 +56,21 @@ namespace RestfulFirebase.Database.Streaming
             this.observer = observer;
             this.query = query;
             this.elementRoot = elementRoot;
-            this.cancel = new CancellationTokenSource();
+            cancel = new CancellationTokenSource();
             this.cache = cache;
-            this.client = query.Client;
+            app = query.App;
         }
 
         public event EventHandler<ContinueExceptionEventArgs<FirebaseException>> ExceptionThrown;
 
         public void Dispose()
         {
-            this.cancel.Cancel();
+            cancel.Cancel();
         }
 
         public IDisposable Run()
         {
-            Task.Run(() => this.ReceiveThread());
+            Task.Run(() => ReceiveThread());
 
             return this;
         }
@@ -85,25 +85,25 @@ namespace RestfulFirebase.Database.Streaming
 
                 try
                 {
-                    this.cancel.Token.ThrowIfCancellationRequested();
+                    cancel.Token.ThrowIfCancellationRequested();
 
                     // initialize network connection
-                    url = await this.query.BuildUrlAsync().ConfigureAwait(false);
+                    url = await query.BuildUrlAsync().ConfigureAwait(false);
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
                     var serverEvent = FirebaseServerEventType.KeepAlive;
 
-                    var client = this.GetHttpClient();
-                    var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, this.cancel.Token).ConfigureAwait(false);
+                    var client = GetHttpClient();
+                    var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
 
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
 
                     using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var reader = this.client.Options.SubscriptionStreamReaderFactory(stream))
+                    using (var reader = this.app.Config.SubscriptionStreamReaderFactory(stream))
                     {
                         while (true)
                         {
-                            this.cancel.Token.ThrowIfCancellationRequested();
+                            cancel.Token.ThrowIfCancellationRequested();
 
                             line = reader.ReadLine()?.Trim();
 
@@ -117,10 +117,10 @@ namespace RestfulFirebase.Database.Streaming
                             switch (tuple[0].ToLower())
                             {
                                 case "event":
-                                    serverEvent = this.ParseServerEvent(serverEvent, tuple[1]);
+                                    serverEvent = ParseServerEvent(serverEvent, tuple[1]);
                                     break;
                                 case "data":
-                                    this.ProcessServerData(url, serverEvent, tuple[1]);
+                                    ProcessServerData(url, serverEvent, tuple[1]);
                                     break;
                             }
 
@@ -140,10 +140,10 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     var args = new FirebaseException(url, string.Empty, line, statusCode, ex);
 
-                    if (!this.OnExceptionThrown(args, statusCode == HttpStatusCode.OK))
+                    if (!OnExceptionThrown(args, statusCode == HttpStatusCode.OK))
                     {
-                        this.observer.OnError(new FirebaseException(url, string.Empty, line, statusCode, ex));
-                        this.Dispose();
+                        observer.OnError(new FirebaseException(url, string.Empty, line, statusCode, ex));
+                        Dispose();
                         break;
                     }
 
@@ -155,7 +155,7 @@ namespace RestfulFirebase.Database.Streaming
         protected bool OnExceptionThrown(FirebaseException ex, bool ignore)
         {
             var args = new ContinueExceptionEventArgs<FirebaseException>(ex, ignore);
-            this.ExceptionThrown?.Invoke(this, args);
+            ExceptionThrown?.Invoke(this, args);
 
             return args.IgnoreAndContinue;
         }
@@ -195,30 +195,30 @@ namespace RestfulFirebase.Database.Streaming
                     var data = result["data"].ToString();
 
                     // If an elementRoot parameter is provided, but it's not in the cache, it was already deleted. So we can return an empty object.
-                    if(string.IsNullOrWhiteSpace(this.elementRoot) || !this.cache.Contains(this.elementRoot))
+                    if(string.IsNullOrWhiteSpace(elementRoot) || !cache.Contains(elementRoot))
                     {
                         if(path == "/" && data == string.Empty)
                         {
-                            this.observer.OnNext(FirebaseEvent<T>.Empty(FirebaseEventSource.OnlineStream));
+                            observer.OnNext(FirebaseEvent<T>.Empty(FirebaseEventSource.OnlineStream));
                             return;
                         }
                     }
 
                     var eventType = string.IsNullOrWhiteSpace(data) ? FirebaseEventType.Delete : FirebaseEventType.InsertOrUpdate;
 
-                    var items = this.cache.PushData(this.elementRoot + path, data);
+                    var items = cache.PushData(elementRoot + path, data);
 
                     foreach (var i in items.ToList())
                     {
-                        this.observer.OnNext(new FirebaseEvent<T>(i.Key, i.Object, eventType, FirebaseEventSource.OnlineStream));
+                        observer.OnNext(new FirebaseEvent<T>(i.Key, i.Object, eventType, FirebaseEventSource.OnlineStream));
                     }
 
                     break;
                 case FirebaseServerEventType.KeepAlive:
                     break;
                 case FirebaseServerEventType.Cancel:
-                    this.observer.OnError(new FirebaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
-                    this.Dispose();
+                    observer.OnError(new FirebaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
+                    Dispose();
                     break;
             }
         }

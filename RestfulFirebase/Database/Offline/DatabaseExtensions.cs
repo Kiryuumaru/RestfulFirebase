@@ -23,7 +23,7 @@
         public static RealtimeDatabase<T> AsRealtimeDatabase<T>(this ChildQuery query, string filenameModifier = "", string elementRoot = "", StreamingOptions streamingOptions = StreamingOptions.LatestOnly, InitialPullStrategy initialPullStrategy = InitialPullStrategy.MissingOnly, bool pushChanges = true)
             where T : class
         {
-            return new RealtimeDatabase<T>(query, elementRoot, query.Client.Options.OfflineDatabaseFactory, filenameModifier, streamingOptions, initialPullStrategy, pushChanges);
+            return new RealtimeDatabase<T>(query, elementRoot, query.App.Config.OfflineDatabaseFactory, filenameModifier, streamingOptions, initialPullStrategy, pushChanges);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@
             where T : class
             where TSetHandler : ISetHandler<T>, new()
         {
-            return new RealtimeDatabase<T>(query, elementRoot, query.Client.Options.OfflineDatabaseFactory, filenameModifier, streamingOptions, initialPullStrategy, pushChanges, Activator.CreateInstance<TSetHandler>());
+            return new RealtimeDatabase<T>(query, elementRoot, query.App.Config.OfflineDatabaseFactory, filenameModifier, streamingOptions, initialPullStrategy, pushChanges, Activator.CreateInstance<TSetHandler>());
         }
 
         /// <summary>

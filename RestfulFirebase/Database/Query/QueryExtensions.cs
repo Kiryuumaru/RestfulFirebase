@@ -28,7 +28,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="SilentQuery"/>. </returns>
         internal static SilentQuery Silent(this FirebaseQuery node)
         {
-            return new SilentQuery(node, node.Client);
+            return new SilentQuery(node, node.App);
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="ShallowQuery"/>. </returns>
         public static ShallowQuery Shallow(this ChildQuery node)
         {
-            return new ShallowQuery(node, node.Client);
+            return new ShallowQuery(node, node.App);
         }
 
         /// <summary>
@@ -209,17 +209,17 @@ namespace RestfulFirebase.Database.Query
 
         public static Task PutAsync<T>(this FirebaseQuery query, T obj)
         {
-            return query.PutAsync(JsonConvert.SerializeObject(obj, query.Client.Options.JsonSerializerSettings));
+            return query.PutAsync(JsonConvert.SerializeObject(obj, query.App.Config.JsonSerializerSettings));
         }
 
         public static Task PatchAsync<T>(this FirebaseQuery query, T obj)
         {
-            return query.PatchAsync(JsonConvert.SerializeObject(obj, query.Client.Options.JsonSerializerSettings));
+            return query.PatchAsync(JsonConvert.SerializeObject(obj, query.App.Config.JsonSerializerSettings));
         }
 
         public static async Task<FirebaseObject<T>> PostAsync<T>(this FirebaseQuery query, T obj, bool generateKeyOffline = true)
         {
-            var result = await query.PostAsync(JsonConvert.SerializeObject(obj, query.Client.Options.JsonSerializerSettings), generateKeyOffline).ConfigureAwait(false);
+            var result = await query.PostAsync(JsonConvert.SerializeObject(obj, query.App.Config.JsonSerializerSettings), generateKeyOffline).ConfigureAwait(false);
 
             return new FirebaseObject<T>(result.Key, obj);
         }

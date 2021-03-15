@@ -14,9 +14,9 @@ namespace RestfulFirebase.Database.Query
         /// </summary>
         /// <param name="parent"> The parent.  </param>
         /// <param name="pathFactory"> The path to the child node.  </param>
-        /// <param name="client"> The owner. </param>
-        public ChildQuery(FirebaseQuery parent, Func<string> pathFactory, FirebaseClient client)
-            : base(parent, client)
+        /// <param name="app"> The owner. </param>
+        public ChildQuery(FirebaseQuery parent, Func<string> pathFactory, RestfulFirebaseApp app)
+            : base(parent, app)
         {
             this.pathFactory = pathFactory;
         }
@@ -24,10 +24,10 @@ namespace RestfulFirebase.Database.Query
         /// <summary>
         /// Initializes a new instance of the <see cref="ChildQuery"/> class.
         /// </summary>
-        /// <param name="client"> The client. </param>
+        /// <param name="databaseApp"> The client. </param>
         /// <param name="pathFactory"> The path to the child node.  </param>
-        public ChildQuery(FirebaseClient client, Func<string> pathFactory)
-            : this(null, pathFactory, client)
+        public ChildQuery(RestfulFirebaseApp app, Func<string> pathFactory)
+            : this(null, pathFactory, app)
         {
         }
 
@@ -38,7 +38,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="string"/>. </returns>
         protected override string BuildUrlSegment(FirebaseQuery child)
         {
-            var s = this.pathFactory();
+            var s = pathFactory();
 
             if (s != string.Empty && !s.EndsWith("/"))
             {

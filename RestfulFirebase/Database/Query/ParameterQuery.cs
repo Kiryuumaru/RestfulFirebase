@@ -15,12 +15,12 @@ namespace RestfulFirebase.Database.Query
         /// </summary>
         /// <param name="parent"> The parent of this query. </param>
         /// <param name="parameterFactory"> The parameter. </param>
-        /// <param name="client"> The owning client. </param>
-        protected ParameterQuery(FirebaseQuery parent, Func<string> parameterFactory, FirebaseClient client)
-            : base(parent, client)
+        /// <param name="app"> The owner. </param>
+        protected ParameterQuery(FirebaseQuery parent, Func<string> parameterFactory, RestfulFirebaseApp app)
+            : base(parent, app)
         {
             this.parameterFactory = parameterFactory;
-            this.separator = (this.Parent is ChildQuery) ? "?" : "&";
+            separator = (Parent is ChildQuery) ? "?" : "&";
         }
 
         /// <summary>
@@ -30,7 +30,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="string"/>. </returns>
         protected override string BuildUrlSegment(FirebaseQuery child)
         {
-            return $"{this.separator}{this.parameterFactory()}={this.BuildUrlParameter(child)}";
+            return $"{separator}{parameterFactory()}={BuildUrlParameter(child)}";
         }
 
         /// <summary>

@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="AuthQuery"/>. </returns>
         internal static AuthQuery WithAuth(this FirebaseQuery node, Func<string> tokenFactory)
         {
-            return new AuthQuery(node, tokenFactory, node.Client);
+            return new AuthQuery(node, tokenFactory, node.App);
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="ChildQuery"/>. </returns>
         public static ChildQuery Child(this ChildQuery node, Func<string> pathFactory)
         {
-            return new ChildQuery(node, pathFactory, node.Client);
+            return new ChildQuery(node, pathFactory, node.App);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="OrderQuery"/>. </returns>
         public static OrderQuery OrderBy(this ChildQuery child, Func<string> propertyNameFactory)
         {
-            return new OrderQuery(child, propertyNameFactory, child.Client);
+            return new OrderQuery(child, propertyNameFactory, child.App);
         }
 
         /// <summary>
@@ -82,7 +82,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery StartAt(this ParameterQuery child, Func<string> valueFactory)
         {
-            return new FilterQuery(child, () => "startAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "startAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -93,7 +93,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EndAt(this ParameterQuery child, Func<string> valueFactory)
         {
-            return new FilterQuery(child, () => "endAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "endAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EqualTo(this ParameterQuery child, Func<string> valueFactory)
         {
-            return new FilterQuery(child, () => "equalTo", valueFactory, child.Client);
+            return new FilterQuery(child, () => "equalTo", valueFactory, child.App);
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery StartAt(this ParameterQuery child, Func<double> valueFactory)
         {
-            return new FilterQuery(child, () => "startAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "startAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -126,7 +126,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EndAt(this ParameterQuery child, Func<double> valueFactory)
         {
-            return new FilterQuery(child, () => "endAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "endAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -137,7 +137,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EqualTo(this ParameterQuery child, Func<double> valueFactory)
         {
-            return new FilterQuery(child, () => "equalTo", valueFactory, child.Client);
+            return new FilterQuery(child, () => "equalTo", valueFactory, child.App);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery StartAt(this ParameterQuery child, Func<long> valueFactory)
         {
-            return new FilterQuery(child, () => "startAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "startAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EndAt(this ParameterQuery child, Func<long> valueFactory)
         {
-            return new FilterQuery(child, () => "endAt", valueFactory, child.Client);
+            return new FilterQuery(child, () => "endAt", valueFactory, child.App);
         }
 
         /// <summary>
@@ -170,7 +170,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EqualTo(this ParameterQuery child, Func<long> valueFactory)
         {
-            return new FilterQuery(child, () => "equalTo", valueFactory, child.Client);
+            return new FilterQuery(child, () => "equalTo", valueFactory, child.App);
         }
 
         /// <summary>
@@ -181,7 +181,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery EqualTo(this ParameterQuery child, Func<bool> valueFactory)
         {
-            return new FilterQuery(child, () => "equalTo", valueFactory, child.Client);
+            return new FilterQuery(child, () => "equalTo", valueFactory, child.App);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery LimitToFirst(this ParameterQuery child, Func<int> countFactory)
         {
-            return new FilterQuery(child, () => "limitToFirst", () => countFactory(), child.Client);
+            return new FilterQuery(child, () => "limitToFirst", () => countFactory(), child.App);
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="FilterQuery"/>. </returns>
         public static FilterQuery LimitToLast(this ParameterQuery child, Func<int> countFactory)
         {
-            return new FilterQuery(child, () => "limitToLast", () => countFactory(), child.Client);
+            return new FilterQuery(child, () => "limitToLast", () => countFactory(), child.App);
         }
     }
 }

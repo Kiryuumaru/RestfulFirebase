@@ -4,9 +4,9 @@
     {
         public FirebaseStorageProgress(long position, long length)
         {
-            this.Position = position;
-            this.Length = length;
-            this.Percentage = (int)((position / (double)length) * 100);
+            Position = position;
+            Length = length;
+            Percentage = (int)((position / (double)length) * 100);
         }
 
         public long Length

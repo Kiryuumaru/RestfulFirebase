@@ -8,19 +8,19 @@
         public FirebaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData))
         {
-            this.RequestUrl = requestUrl;
-            this.RequestData = requestData;
-            this.ResponseData = responseData;
-            this.StatusCode = statusCode;
+            RequestUrl = requestUrl;
+            RequestData = requestData;
+            ResponseData = responseData;
+            StatusCode = statusCode;
         }
 
         public FirebaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode, Exception innerException)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData), innerException)
         {
-            this.RequestUrl = requestUrl;
-            this.RequestData = requestData;
-            this.ResponseData = responseData;
-            this.StatusCode = statusCode;
+            RequestUrl = requestUrl;
+            RequestData = requestData;
+            ResponseData = responseData;
+            StatusCode = statusCode;
         }
 
         /// <summary>

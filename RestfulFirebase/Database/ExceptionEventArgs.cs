@@ -15,7 +15,7 @@
         /// <param name="exception"> The exception. </param>
         public ExceptionEventArgs(T exception)
         {
-            this.Exception = exception;
+            Exception = exception;
         }
     }
 
@@ -30,7 +30,7 @@
     {
         public ContinueExceptionEventArgs(T exception, bool ignoreAndContinue) : base(exception)
         {
-            this.IgnoreAndContinue = ignoreAndContinue;
+            IgnoreAndContinue = ignoreAndContinue;
         }
 
         /// <summary>

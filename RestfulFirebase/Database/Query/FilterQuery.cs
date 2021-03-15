@@ -19,9 +19,9 @@ namespace RestfulFirebase.Database.Query
         /// <param name="parent"> The parent. </param>
         /// <param name="filterFactory"> The filter. </param>
         /// <param name="valueFactory"> The value for filter. </param>
-        /// <param name="client"> The owning client. </param>  
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<string> valueFactory, FirebaseClient client)
-            : base(parent, filterFactory, client)
+        /// <param name="app"> The owner. </param>  
+        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<string> valueFactory, RestfulFirebaseApp app)
+            : base(parent, filterFactory, app)
         {
             this.valueFactory = valueFactory;
         }
@@ -32,11 +32,11 @@ namespace RestfulFirebase.Database.Query
         /// <param name="parent"> The parent. </param>
         /// <param name="filterFactory"> The filter. </param>
         /// <param name="valueFactory"> The value for filter. </param>
-        /// <param name="client"> The owning client. </param>
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory, FirebaseClient client)
-            : base(parent, filterFactory, client)
+        /// <param name="app"> The owner. </param>
+        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory, RestfulFirebaseApp app)
+            : base(parent, filterFactory, app)
         {
-            this.doubleValueFactory = valueFactory;
+            doubleValueFactory = valueFactory;
         }
 
         /// <summary>
@@ -45,11 +45,11 @@ namespace RestfulFirebase.Database.Query
         /// <param name="parent"> The parent. </param>
         /// <param name="filterFactory"> The filter. </param>
         /// <param name="valueFactory"> The value for filter. </param>
-        /// <param name="client"> The owning client. </param>
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory, FirebaseClient client)
-            : base(parent, filterFactory, client)
+        /// <param name="client"> The owner. </param>
+        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory, RestfulFirebaseApp app)
+            : base(parent, filterFactory, app)
         {
-            this.longValueFactory = valueFactory;
+            longValueFactory = valueFactory;
         }
 
         /// <summary>
@@ -58,11 +58,11 @@ namespace RestfulFirebase.Database.Query
         /// <param name="parent"> The parent. </param>
         /// <param name="filterFactory"> The filter. </param>
         /// <param name="valueFactory"> The value for filter. </param>
-        /// <param name="client"> The owning client. </param>
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory, FirebaseClient client)
-            : base(parent, filterFactory, client)
+        /// <param name="app"> The owner. </param>
+        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory, RestfulFirebaseApp app)
+            : base(parent, filterFactory, app)
         {
-            this.boolValueFactory = valueFactory;
+            boolValueFactory = valueFactory;
         }
 
         /// <summary>
@@ -72,25 +72,25 @@ namespace RestfulFirebase.Database.Query
         /// <returns> Url parameter part of the resulting path. </returns> 
         protected override string BuildUrlParameter(FirebaseQuery child)
         {
-            if (this.valueFactory != null)
+            if (valueFactory != null)
             {
-                if(this.valueFactory() == null)
+                if(valueFactory() == null)
                 {
                     return $"null";
                 }
-                return $"\"{this.valueFactory()}\"";
+                return $"\"{valueFactory()}\"";
             }
-            else if (this.doubleValueFactory != null)
+            else if (doubleValueFactory != null)
             {
-                return this.doubleValueFactory().ToString(CultureInfo.InvariantCulture);
+                return doubleValueFactory().ToString(CultureInfo.InvariantCulture);
             }
-            else if (this.longValueFactory != null)
+            else if (longValueFactory != null)
             {
-                return this.longValueFactory().ToString();
+                return longValueFactory().ToString();
             }
-            else if (this.boolValueFactory != null)
+            else if (boolValueFactory != null)
             {
-                return $"{this.boolValueFactory().ToString().ToLower()}";
+                return $"{boolValueFactory().ToString().ToLower()}";
             }
 
             return string.Empty;

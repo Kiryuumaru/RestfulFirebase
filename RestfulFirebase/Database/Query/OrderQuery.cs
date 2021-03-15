@@ -14,9 +14,9 @@ namespace RestfulFirebase.Database.Query
         /// </summary>
         /// <param name="parent"> The query parent. </param>
         /// <param name="propertyNameFactory"> The property name. </param>
-        /// <param name="client"> The owning client. </param>
-        public OrderQuery(ChildQuery parent, Func<string> propertyNameFactory, FirebaseClient client)
-            : base(parent, () => "orderBy", client)
+        /// <param name="app"> The owner. </param>
+        public OrderQuery(ChildQuery parent, Func<string> propertyNameFactory, RestfulFirebaseApp app)
+            : base(parent, () => "orderBy", app)
         {
             this.propertyNameFactory = propertyNameFactory;
         }
@@ -28,7 +28,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="string"/>. </returns>
         protected override string BuildUrlParameter(FirebaseQuery child)
         {
-            return $"\"{this.propertyNameFactory()}\"";
+            return $"\"{propertyNameFactory()}\"";
         }
     }
 }

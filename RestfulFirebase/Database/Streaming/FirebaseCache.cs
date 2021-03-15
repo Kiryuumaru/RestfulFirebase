@@ -37,8 +37,8 @@ namespace RestfulFirebase.Database.Streaming
         /// <param name="existingItems"> The existing items. </param>
         public FirebaseCache(IDictionary<string, T> existingItems)
         {
-            this.dictionary = existingItems;
-            this.isDictionaryType = typeof(IDictionary).GetTypeInfo().IsAssignableFrom(typeof(T).GetTypeInfo());
+            dictionary = existingItems;
+            isDictionaryType = typeof(IDictionary).GetTypeInfo().IsAssignableFrom(typeof(T).GetTypeInfo());
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace RestfulFirebase.Database.Streaming
         /// <returns> Collection of top-level entities which were affected by the push. </returns>
         public IEnumerable<FirebaseObject<T>> PushData(string path, string data, bool removeEmptyEntries = true)
         {
-            object obj = this.dictionary;
+            object obj = dictionary;
             Action<object> primitiveObjSetter = null;
             Action objDeleter = null;
 
@@ -74,7 +74,7 @@ namespace RestfulFirebase.Database.Streaming
                     }
                     else
                     {
-                        dictionary[element] = this.CreateInstance(valueType);
+                        dictionary[element] = CreateInstance(valueType);
                         obj = dictionary[element];
                     }
                 }
@@ -92,7 +92,7 @@ namespace RestfulFirebase.Database.Streaming
                     obj = property.GetValue(obj);
                     if (obj == null)
                     {
-                        obj = this.CreateInstance(property.PropertyType);
+                        obj = CreateInstance(property.PropertyType);
                         property.SetValue(objParent, obj);
                     }
                 }
@@ -102,7 +102,7 @@ namespace RestfulFirebase.Database.Streaming
             if (string.IsNullOrWhiteSpace(data) || data == "null")
             {
                 var key = pathElements[0];
-                var target = this.dictionary[key];
+                var target = dictionary[key];
 
                 objDeleter();
 
@@ -111,7 +111,7 @@ namespace RestfulFirebase.Database.Streaming
             }
 
             // now insert the data
-            if (obj is IDictionary && !this.isDictionaryType)
+            if (obj is IDictionary && !isDictionaryType)
             {
                 // insert data into dictionary and return it as a collection of FirebaseObject
                 var dictionary = obj as IDictionary;
@@ -153,19 +153,19 @@ namespace RestfulFirebase.Database.Streaming
                 }
                 else
                 {
-                    JsonConvert.PopulateObject(data, obj, this.serializerSettings);
+                    JsonConvert.PopulateObject(data, obj, serializerSettings);
                 }
 
                 // Triggers an upsert if dictionary is an OfflineDatabase.
-                this.dictionary[pathElements[0]] = this.dictionary[pathElements[0]];
+                dictionary[pathElements[0]] = dictionary[pathElements[0]];
 
-                yield return new FirebaseObject<T>(pathElements[0], this.dictionary[pathElements[0]]);
+                yield return new FirebaseObject<T>(pathElements[0], dictionary[pathElements[0]]);
             }
         }
 
         public bool Contains(string key)
         {
-            return this.dictionary.Keys.Contains(key);
+            return dictionary.Keys.Contains(key);
         }
 
         private object CreateInstance(Type type)
@@ -184,12 +184,12 @@ namespace RestfulFirebase.Database.Streaming
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
 
         public IEnumerator<FirebaseObject<T>> GetEnumerator()
         {
-            return this.dictionary.Select(p => new FirebaseObject<T>(p.Key, p.Value)).GetEnumerator();
+            return dictionary.Select(p => new FirebaseObject<T>(p.Key, p.Value)).GetEnumerator();
         }
 
         #endregion

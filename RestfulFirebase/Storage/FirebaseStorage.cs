@@ -12,8 +12,8 @@
         /// <param name="options"> Optional settings. </param>
         public FirebaseStorage(string storageBucket, FirebaseStorageOptions options = null)
         {
-            this.StorageBucket = storageBucket;
-            this.Options = options ?? new FirebaseStorageOptions();
+            StorageBucket = storageBucket;
+            Options = options ?? new FirebaseStorageOptions();
         }
 
         /// <summary>

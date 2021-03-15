@@ -1,39 +1,58 @@
-﻿namespace RestfulFirebase.Database
+﻿using Newtonsoft.Json;
+using RestfulFirebase.Database.Offline;
+using RestfulFirebase.Extensions.Http;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace RestfulFirebase
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Threading.Tasks;
-
-    using RestfulFirebase.Database.Offline;
-
-    using Newtonsoft.Json;
-    using RestfulFirebase.Extensions.Http;
-
-    public class FirebaseOptions
+    /// <summary>
+    /// The auth config. 
+    /// </summary>
+    public class FirebaseConfig
     {
-        public FirebaseOptions()
+        public FirebaseConfig()
         {
-            this.OfflineDatabaseFactory = (t, s) => new Dictionary<string, OfflineEntry>();
-            this.SubscriptionStreamReaderFactory = s => new StreamReader(s);
-            this.JsonSerializerSettings = new JsonSerializerSettings();
-            this.SyncPeriod = TimeSpan.FromSeconds(10);
-            this.HttpClientFactory = new TransientHttpClientFactory();
+            OfflineDatabaseFactory = (t, s) => new Dictionary<string, OfflineEntry>();
+            SubscriptionStreamReaderFactory = s => new StreamReader(s);
+            JsonSerializerSettings = new JsonSerializerSettings();
+            SyncPeriod = TimeSpan.FromSeconds(10);
+            HttpClientFactory = new TransientHttpClientFactory();
         }
 
         /// <summary>
-        /// Gets or sets the factory for Firebase offline database. Default is in-memory dictionary.
+        /// Gets or sets the api key of your Firebase app.
         /// </summary>
-        public Func<Type, string, IDictionary<string, OfflineEntry>> OfflineDatabaseFactory
+        public string ApiKey
         {
             get;
             set;
         }
 
         /// <summary>
-        /// Gets or sets the method for retrieving auth tokens. Default is null.
+        /// Gets or sets the database URL of your Firebase app.
         /// </summary>
-        public Func<Task<string>> AuthTokenAsyncFactory
+        public string DatabaseURL
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the storage bucket of your Firebase app.
+        /// </summary>
+        public string StorageBucket
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the factory for Firebase offline database. Default is in-memory dictionary.
+        /// </summary>
+        public Func<Type, string, IDictionary<string, OfflineEntry>> OfflineDatabaseFactory
         {
             get;
             set;
@@ -78,7 +97,8 @@
         /// <summary>
         /// Specify HttpClient factory to manage <see cref="System.Net.Http.HttpClient" /> lifecycle.
         /// </summary>
-        public IHttpClientFactory HttpClientFactory {
+        public IHttpClientFactory HttpClientFactory
+        {
             get;
             set;
         }

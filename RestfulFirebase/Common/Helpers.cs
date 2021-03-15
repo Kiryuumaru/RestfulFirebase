@@ -12,9 +12,6 @@ namespace RestfulFirebase.Common
     {
         #region Serializer
 
-        private const string UIDCaseSensetiveCharset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"; // 62 kabuok
-        private const string UIDNonCaseSensetiveCharset = "0123456789abcdefghijklmnopqrstuvwxyz"; // 36 kabuok
-
         public static string[] Split(string data, params int[] lengths)
         {
             int sizes = 0;
@@ -167,6 +164,11 @@ namespace RestfulFirebase.Common
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
         }
 
+
+        private const string UIDCaseSensetiveCharset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"; // 62 kabuok
+        private const string UIDNonCaseSensetiveCharset = "0123456789abcdefghijklmnopqrstuvwxyz"; // 36 kabuok
+        private static string lastUID = "";
+
         public static string GenerateUID(int length = 10, bool isCaseSensetive = true)
         {
             string id = "";
@@ -178,6 +180,30 @@ namespace RestfulFirebase.Common
                     UIDNonCaseSensetiveCharset[random.Next(UIDNonCaseSensetiveCharset.Length)];
             }
             return id;
+        }
+
+        public static string GenerateTimeBasedUID(int additionalsLength = 10, bool isCaseSensetive = true)
+        {
+            string randAdditions(string partialId)
+            {
+                Random random = new Random();
+                string idWithAdditions = partialId;
+                for (int i = 0; i < additionalsLength; i++)
+                {
+                    idWithAdditions += isCaseSensetive ?
+                        UIDCaseSensetiveCharset[random.Next(UIDCaseSensetiveCharset.Length)] :
+                        UIDNonCaseSensetiveCharset[random.Next(UIDNonCaseSensetiveCharset.Length)];
+                }
+                return idWithAdditions;
+            }
+
+            TimeSpan t = DateTime.UtcNow - new DateTime(1970, 1, 1);
+            int secondsSinceEpoch = (int)t.TotalMilliseconds;
+            string id = secondsSinceEpoch.ToString();
+            string finalId = randAdditions(id);
+            while (lastUID.Equals(finalId)) finalId = randAdditions(id);
+            lastUID = finalId;
+            return finalId;
         }
 
         #endregion

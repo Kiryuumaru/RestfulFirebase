@@ -6,8 +6,8 @@
     {
         public FirebaseStorageException(string url, string responseData, Exception innerException) : base(GenerateExceptionMessage(url, responseData), innerException)
         {
-            this.RequestUrl = url;
-            this.ResponseData = responseData;
+            RequestUrl = url;
+            ResponseData = responseData;
         }
 
         /// <summary>

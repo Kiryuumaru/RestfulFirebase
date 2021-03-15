@@ -28,17 +28,17 @@ namespace RestfulFirebase.Database.Query
         /// Initializes a new instance of the <see cref="FirebaseQuery"/> class.
         /// </summary>
         /// <param name="parent"> The parent of this query. </param>
-        /// <param name="client"> The owning client. </param>
-        protected FirebaseQuery(FirebaseQuery parent, FirebaseClient client)
+        /// <param name="app"> The owner. </param>
+        protected FirebaseQuery(FirebaseQuery parent, RestfulFirebaseApp app)
         {
-            this.Client = client;
-            this.Parent = parent;
+            App = app;
+            Parent = parent;
         }
 
         /// <summary>
-        /// Gets the client.
+        /// Gets the app.
         /// </summary>
-        public FirebaseClient Client
+        public RestfulFirebaseApp App
         {
             get;
         }
@@ -51,18 +51,18 @@ namespace RestfulFirebase.Database.Query
         /// <returns> Collection of <see cref="FirebaseObject{T}"/> holding the entities returned by server. </returns>
         public async Task<IReadOnlyCollection<FirebaseObject<T>>> OnceAsync<T>(TimeSpan? timeout = null)
         {
-            var url = string.Empty;
+            string url;
 
             try
             {
-                url = await this.BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 throw new FirebaseException("Couldn't build the url", string.Empty, string.Empty, HttpStatusCode.OK, ex);
             }
 
-            return await this.GetClient(timeout).GetObjectCollectionAsync<T>(url, Client.Options.JsonSerializerSettings)
+            return await GetClient(timeout).GetObjectCollectionAsync<T>(url, App.Config.JsonSerializerSettings)
                 .ConfigureAwait(false);
         }
 
@@ -75,13 +75,13 @@ namespace RestfulFirebase.Database.Query
         /// <returns> Single object of type <typeparamref name="T"/>. </returns>
         public async Task<T> OnceSingleAsync<T>(TimeSpan? timeout = null)
         {
+            string url;
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
-            var url = string.Empty;
 
             try
             {
-                url = await this.BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -90,14 +90,14 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
-                var response = await this.GetClient(timeout).GetAsync(url).ConfigureAwait(false);
+                var response = await GetClient(timeout).GetAsync(url).ConfigureAwait(false);
                 statusCode = response.StatusCode;
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                return JsonConvert.DeserializeObject<T>(responseData, Client.Options.JsonSerializerSettings);
+                return JsonConvert.DeserializeObject<T>(responseData, App.Config.JsonSerializerSettings);
             }
             catch (Exception ex)
             {
@@ -128,14 +128,14 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="string"/>. </returns>
         public async Task<string> BuildUrlAsync()
         {
-            // if token factory is present on the parent then use it to generate auth token
-            if (this.Client.Options.AuthTokenAsyncFactory != null)
+            if (App.Auth.Authenticated)
             {
-                var token = await this.Client.Options.AuthTokenAsyncFactory().ConfigureAwait(false);
+                await App.Auth.GetFreshAuthAsync();
+                var token = App.Auth.FirebaseToken;
                 return this.WithAuth(token).BuildUrl(null);
             }
 
-            return this.BuildUrl(null);
+            return BuildUrl(null);
         }
 
         /// <summary>
@@ -151,15 +151,15 @@ namespace RestfulFirebase.Database.Query
             if (generateKeyOffline)
             {
                 var key = FirebaseKeyGenerator.Next();
-                await new ChildQuery(this, () => key, this.Client).PutAsync(data).ConfigureAwait(false);
+                await new ChildQuery(this, () => key, App).PutAsync(data).ConfigureAwait(false);
 
                 return new FirebaseObject<string>(key, data);
             }
             else
             {
-                var c = this.GetClient(timeout);
-                var sendData = await this.SendAsync(c, data, HttpMethod.Post).ConfigureAwait(false);
-                var result = JsonConvert.DeserializeObject<PostResult>(sendData, Client.Options.JsonSerializerSettings);
+                var c = GetClient(timeout);
+                var sendData = await SendAsync(c, data, HttpMethod.Post).ConfigureAwait(false);
+                var result = JsonConvert.DeserializeObject<PostResult>(sendData, App.Config.JsonSerializerSettings);
 
                 return new FirebaseObject<string>(result.Name, data);
             }
@@ -173,7 +173,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="Task"/>. </returns>
         public Task PatchAsync(string data, TimeSpan? timeout = null)
         {
-            var c = this.GetClient(timeout);
+            var c = GetClient(timeout);
 
             return this.Silent().SendAsync(c, data, new HttpMethod("PATCH"));
         }
@@ -186,7 +186,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="Task"/>. </returns>
         public Task PutAsync(string data, TimeSpan? timeout = null)
         {
-            var c = this.GetClient(timeout);
+            var c = GetClient(timeout);
 
             return this.Silent().SendAsync(c, data, HttpMethod.Put);
         }
@@ -198,14 +198,14 @@ namespace RestfulFirebase.Database.Query
         /// <returns> The <see cref="Task"/>. </returns>
         public async Task DeleteAsync(TimeSpan? timeout = null)
         {
-            var c = this.GetClient(timeout);
-            var url = string.Empty;
+            string url;
+            var c = GetClient(timeout);
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
 
             try
             {
-                url = await this.BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -231,7 +231,7 @@ namespace RestfulFirebase.Database.Query
         /// </summary>
         public void Dispose()
         {
-            this.client?.Dispose();
+            client?.Dispose();
         }
 
         /// <summary>
@@ -243,11 +243,11 @@ namespace RestfulFirebase.Database.Query
 
         private string BuildUrl(FirebaseQuery child)
         {
-            var url = this.BuildUrlSegment(child);
+            var url = BuildUrlSegment(child);
 
-            if (this.Parent != null)
+            if (Parent != null)
             {
-                url = this.Parent.BuildUrl(this) + url;
+                url = Parent.BuildUrl(this) + url;
             }
 
             return url;
@@ -255,12 +255,12 @@ namespace RestfulFirebase.Database.Query
 
         private HttpClient GetClient(TimeSpan? timeout = null)
         {
-            if (this.client == null)
+            if (client == null)
             {
-                this.client = Client.Options.HttpClientFactory.GetHttpClient(timeout ?? DEFAULT_HTTP_CLIENT_TIMEOUT);
+                client = App.Config.HttpClientFactory.GetHttpClient(timeout ?? DEFAULT_HTTP_CLIENT_TIMEOUT);
             }
 
-            return this.client.GetHttpClient();
+            return client.GetHttpClient();
         }
 
         private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method)
@@ -268,11 +268,11 @@ namespace RestfulFirebase.Database.Query
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
             var requestData = data;
-            var url = string.Empty;
+            string url;
 
             try
             {
-                url = await this.BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {

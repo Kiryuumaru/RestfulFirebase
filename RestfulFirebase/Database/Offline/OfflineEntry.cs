@@ -22,14 +22,14 @@
         /// <param name="isPartial"> A value indicating whether this is only a partial object. </param>
         public OfflineEntry(string key, object obj, string data, int priority, SyncOptions syncOptions, bool isPartial = false)
         {
-            this.Key = key;
-            this.Priority = priority;
-            this.Data = data;
-            this.Timestamp = DateTime.UtcNow;
-            this.SyncOptions = syncOptions;
-            this.IsPartial = isPartial;
+            Key = key;
+            Priority = priority;
+            Data = data;
+            Timestamp = DateTime.UtcNow;
+            SyncOptions = syncOptions;
+            IsPartial = isPartial;
 
-            this.dataInstance = obj;
+            dataInstance = obj;
         }
 
         /// <summary>
@@ -113,7 +113,7 @@
         /// <returns> Instance of <typeparamref name="T"/>. </returns>
         public T Deserialize<T>()
         {
-            return (T)(this.dataInstance ?? (this.dataInstance = JsonConvert.DeserializeObject<T>(this.Data)));
+            return (T)(dataInstance ?? (dataInstance = JsonConvert.DeserializeObject<T>(Data)));
         }
     }
 }

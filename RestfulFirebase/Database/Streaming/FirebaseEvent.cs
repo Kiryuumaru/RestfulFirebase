@@ -16,8 +16,8 @@ namespace RestfulFirebase.Database.Streaming
         public FirebaseEvent(string key, T obj, FirebaseEventType eventType, FirebaseEventSource eventSource)
             : base(key, obj)
         {
-            this.EventType = eventType;
-            this.EventSource = eventSource;
+            EventType = eventType;
+            EventSource = eventSource;
         }
 
         /// <summary>

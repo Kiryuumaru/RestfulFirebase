@@ -12,7 +12,7 @@
 
         private bool wasDictionaryAccess;
 
-        public IEnumerable<string> PropertyNames => this.propertyNames;
+        public IEnumerable<string> PropertyNames => propertyNames;
 
         public MemberAccessVisitor()
         {
@@ -22,16 +22,16 @@
         {
             if (expr?.NodeType == ExpressionType.MemberAccess)
             {
-                if (this.wasDictionaryAccess)
+                if (wasDictionaryAccess)
                 {
-                    this.wasDictionaryAccess = false;
+                    wasDictionaryAccess = false;
                 }
                 else
                 {
                     var memberExpr = (MemberExpression)expr;
                     var jsonAttr = memberExpr.Member.GetCustomAttribute<JsonPropertyAttribute>();
 
-                    this.propertyNames.Add(jsonAttr?.PropertyName ?? memberExpr.Member.Name);
+                    propertyNames.Add(jsonAttr?.PropertyName ?? memberExpr.Member.Name);
                 }
             }
             else if (expr?.NodeType == ExpressionType.Call)
@@ -40,8 +40,8 @@
                 if (callExpr.Method.Name == "get_Item" && callExpr.Arguments.Count == 1)
                 {
                     var e = Expression.Lambda(callExpr.Arguments[0]).Compile();
-                    this.propertyNames.Add(e.DynamicInvoke().ToString());
-                    this.wasDictionaryAccess = callExpr.Arguments[0].NodeType == ExpressionType.MemberAccess;
+                    propertyNames.Add(e.DynamicInvoke().ToString());
+                    wasDictionaryAccess = callExpr.Arguments[0].NodeType == ExpressionType.MemberAccess;
                 }
             }
 

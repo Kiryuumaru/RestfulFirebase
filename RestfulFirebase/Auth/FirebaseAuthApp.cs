@@ -11,7 +11,10 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Auth
 {
-    public class FirebaseAuthApp : FirebaseAuth
+    /// <summary>
+    /// Firebase auth App which acts as an entry point to the authentication.
+    /// </summary>
+    public class FirebaseAuthApp : FirebaseAuth, IDisposable
     {
         private const string GoogleRefreshAuth = "https://securetoken.googleapis.com/v1/token?key={0}";
         private const string GoogleCustomAuthUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={0}";
@@ -27,9 +30,16 @@ namespace RestfulFirebase.Auth
         private const string ProfileDeleteDisplayName = "DISPLAY_NAME";
         private const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
-        private readonly RestfulFirebaseApp app;
         private readonly HttpClient client;
 
+        /// <summary>
+        /// Gets the RestfulFirebaseApp
+        /// </summary>
+        public RestfulFirebaseApp App { get; }
+
+        /// <summary>
+        /// Gets true if user is authenticated
+        /// </summary>
         public bool Authenticated
         {
             get
@@ -43,9 +53,9 @@ namespace RestfulFirebase.Auth
 
         public event EventHandler<FirebaseAuthEventArgs> FirebaseAuthRefreshed;
 
-        internal FirebaseAuthApp(RestfulFirebaseApp app)
+        internal FirebaseAuthApp(RestfulFirebaseApp firebaseApp)
         {
-            this.app = app;
+            App = firebaseApp;
             client = new HttpClient();
         }
 
@@ -204,7 +214,7 @@ namespace RestfulFirebase.Auth
 
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -228,7 +238,7 @@ namespace RestfulFirebase.Auth
 
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(GoogleDeleteUserUrl, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(new Uri(string.Format(GoogleDeleteUserUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -249,7 +259,7 @@ namespace RestfulFirebase.Auth
 
             var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{FirebaseToken}\"}}";
 
-            var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+            var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
 
             response.EnsureSuccessStatusCode();
         }
@@ -328,7 +338,7 @@ namespace RestfulFirebase.Auth
 
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(GoogleCreateAuthUrl, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(new Uri(string.Format(GoogleCreateAuthUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -355,7 +365,7 @@ namespace RestfulFirebase.Auth
             var responseData = "N/A";
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(GoogleGetUser, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
@@ -384,7 +394,7 @@ namespace RestfulFirebase.Auth
 
                 try
                 {
-                    var response = await client.PostAsync(new Uri(string.Format(GoogleRefreshAuth, app.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                    var response = await client.PostAsync(new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
 
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
@@ -403,7 +413,6 @@ namespace RestfulFirebase.Auth
                 {
                     throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
                 }
-
             }
         }
 
@@ -470,7 +479,7 @@ namespace RestfulFirebase.Auth
 
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(googleUrl, app.Config.ApiKey)), new StringContent(postContent, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(new Uri(string.Format(googleUrl, App.Config.ApiKey)), new StringContent(postContent, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();

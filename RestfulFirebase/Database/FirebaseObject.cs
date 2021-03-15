@@ -8,8 +8,8 @@ namespace RestfulFirebase.Database
     {
         internal FirebaseObject(string key, T obj)
         {
-            this.Key = key;
-            this.Object = obj;
+            Key = key;
+            Object = obj;
         }
 
         /// <summary>
