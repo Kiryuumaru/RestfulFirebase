@@ -17,10 +17,16 @@
         private readonly Task<string> uploadTask;
         private readonly Stream stream;
 
-        public FirebaseStorageTask(FirebaseStorageOptions options, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        /// <summary>
+        /// Gets the RestfulFirebaseApp
+        /// </summary>
+        public RestfulFirebaseApp App { get; }
+
+        public FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
+            App = app;
             TargetUrl = url;
-            uploadTask = UploadFile(options, url, downloadUrl, stream, cancellationToken, mimeType);
+            uploadTask = UploadFile(url, downloadUrl, stream, cancellationToken, mimeType);
             this.stream = stream;
             Progress = new Progress<FirebaseStorageProgress>();
 
@@ -45,13 +51,13 @@
             return uploadTask.GetAwaiter();
         }
 
-        private async Task<string> UploadFile(FirebaseStorageOptions options, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             var responseData = "N/A";
 
             try
             {
-                using (var client = await options.CreateHttpClientAsync())
+                using (var client = await App.Config.CreateHttpClientAsync())
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url)
                     {
@@ -74,7 +80,7 @@
             }
             catch (TaskCanceledException)
             {
-                if (options.ThrowOnCancel)
+                if (App.Config.StorageThrowOnCancel)
                 {
                     throw;
                 }

@@ -32,25 +32,25 @@ namespace RestTest
 
         #region Initializers
 
-        protected TestStorable() : base(Helpers.GenerateUID())
+        public TestStorable() : base(Helpers.GenerateUID())
         {
             Created = DateTime.UtcNow;
             Modified = DateTime.UtcNow;
         }
 
-        protected TestStorable(string id) : base(id)
+        public TestStorable(string id) : base(id)
         {
             Created = DateTime.UtcNow;
             Modified = DateTime.UtcNow;
         }
 
-        protected TestStorable(string id, DateTime created, DateTime modified) : base(id)
+        public TestStorable(string id, DateTime created, DateTime modified) : base(id)
         {
             Created = created;
             Modified = modified;
         }
 
-        protected TestStorable(string id, IEnumerable<CellModel> cellModels) : base(id, cellModels)
+        public TestStorable(string id, IEnumerable<CellModel> cellModels) : base(id, cellModels)
         {
 
         }
@@ -73,7 +73,7 @@ namespace RestTest
 
         public static async Task Run()
         {
-            var app = new RestfulFirebase.RestfulFirebaseApp(new FirebaseConfig()
+            var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
@@ -82,22 +82,20 @@ namespace RestTest
 
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             await app.Auth.UpdateProfileAsync("disp", "123123");
+            await app.Database.Child("sss").Child("sss").PutAsync(new TestStorable("11"));
+            app.Database.Child("sss").AsObservable<TestStorable>().Subscribe(i =>
+            {
 
-            //var firebase = new FirebaseClient(
-            //    "https://restfulplayground-default-rtdb.firebaseio.com/",
-            //    new FirebaseOptions
-            //    {
-            //        AuthTokenAsyncFactory = () => Task.FromResult(auth.FirebaseToken),
-            //        OfflineDatabaseFactory = (t, s) => new ConcurrentOfflineDatabase(t, s)
-            //    });
-
-            //await firebase.Child("ss").PostAsync("{ \"ss\" : \"ss\" }");
+            });
+            await app.Database.Child("sss").Child("sss").PutAsync(new TestStorable("11"));
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
             //    .OnceAsync<object>();
 
             int x = 0;
+
+            await Task.Delay(100000);
 
             //foreach (var dino in dinos)
             //{

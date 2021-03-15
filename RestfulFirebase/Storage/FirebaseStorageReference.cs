@@ -12,14 +12,19 @@
     {
         private const string FirebaseStorageEndpoint = "https://firebasestorage.googleapis.com/v0/b/";
 
-        private readonly FirebaseStorage storage;
+        private readonly RestfulFirebaseApp app;
         private readonly List<string> children;
 
-        internal FirebaseStorageReference(FirebaseStorage storage, string childRoot)
+        /// <summary>
+        /// Gets the RestfulFirebaseApp
+        /// </summary>
+        public RestfulFirebaseApp App { get; }
+
+        internal FirebaseStorageReference(RestfulFirebaseApp app, string childRoot)
         {
             children = new List<string>();
 
-            this.storage = storage;
+            App = app;
             children.Add(childRoot);
         }
 
@@ -32,7 +37,7 @@
         /// <returns> <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload. </returns>
         public FirebaseStorageTask PutAsync(Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
-            return new FirebaseStorageTask(storage.Options, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
+            return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
         }
 
         /// <summary>
@@ -83,7 +88,7 @@
 
             try
             {
-                using (var http = await storage.Options.CreateHttpClientAsync().ConfigureAwait(false))
+                using (var http = await App.Config.CreateHttpClientAsync().ConfigureAwait(false))
                 {
                     var result = await http.DeleteAsync(url).ConfigureAwait(false);
 
@@ -122,7 +127,7 @@
 
             try
             {
-                using (var http = await storage.Options.CreateHttpClientAsync().ConfigureAwait(false))
+                using (var http = await App.Config.CreateHttpClientAsync().ConfigureAwait(false))
                 {
                     var result = await http.GetAsync(url);
                     resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -141,12 +146,12 @@
 
         private string GetTargetUrl()
         {
-            return $"{FirebaseStorageEndpoint}{storage.StorageBucket}/o?name={GetEscapedPath()}";
+            return $"{FirebaseStorageEndpoint}{App.Config.StorageBucket}/o?name={GetEscapedPath()}";
         }
 
         private string GetDownloadUrl()
         {
-            return $"{FirebaseStorageEndpoint}{storage.StorageBucket}/o/{GetEscapedPath()}";
+            return $"{FirebaseStorageEndpoint}{App.Config.StorageBucket}/o/{GetEscapedPath()}";
         }
 
         private string GetFullDownloadUrl()

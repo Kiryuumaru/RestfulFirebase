@@ -11,9 +11,7 @@ namespace RestfulFirebase.Database
     /// </summary>
     public class FirebaseDatabaseApp : IDisposable
     {
-        private readonly string baseUrl;
-
-        internal readonly IHttpClientProxy HttpClient;
+        internal IHttpClientProxy HttpClient { get; }
 
         /// <summary>
         /// Gets the RestfulFirebaseApp
@@ -25,11 +23,6 @@ namespace RestfulFirebase.Database
             App = app;
 
             HttpClient = App.Config.HttpClientFactory.GetHttpClient(null);
-
-            if (!baseUrl.EndsWith("/"))
-            {
-                baseUrl += "/";
-            }
         }
 
         /// <summary>
@@ -39,7 +32,7 @@ namespace RestfulFirebase.Database
         /// <returns> <see cref="ChildQuery"/>. </returns>
         public ChildQuery Child(string resourceName)
         {
-            return new ChildQuery(App, () => baseUrl + resourceName);
+            return new ChildQuery(App, () => App.Config.DatabaseURL + resourceName);
         }
 
         public void Dispose()
