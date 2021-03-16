@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using System.Reflection;
+    using RestfulFirebase.Common;
     using RestfulFirebase.Database.Query;
 
     public static class DatabaseExtensions
@@ -84,7 +85,7 @@
         public static string Post<T>(this RealtimeDatabase<T> db, T obj, bool syncOnline = true, int priority = 1)
             where T: class
         {
-            var key = FirebaseKeyGenerator.Next();
+            var key = Helpers.GenerateSafeUID();
 
             db.Set(key, obj, syncOnline ? SyncOptions.Put : SyncOptions.None, priority);
 
@@ -172,7 +173,7 @@
             where T: class
             where TSelector: IDictionary<string, TProperty>
         {
-            var nextKey = FirebaseKeyGenerator.Next();
+            var nextKey = Helpers.GenerateSafeUID();
             var expression = Expression.Lambda<Func<T, TProperty>>(Expression.Call(propertyExpression.Body, typeof(TSelector).GetRuntimeMethod("get_Item", new[] { typeof(string) }), Expression.Constant(nextKey)), propertyExpression.Parameters);
             db.Set(key, expression, value, syncOnline ? SyncOptions.Put : SyncOptions.None, priority);
         }

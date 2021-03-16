@@ -12,7 +12,7 @@
     public interface IFirebaseQuery
     {
         /// <summary>
-        /// Gets the owning database app of this query.
+        /// Gets the owning app of this query.
         /// </summary>
         RestfulFirebaseApp App
         {

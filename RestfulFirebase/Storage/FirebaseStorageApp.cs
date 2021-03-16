@@ -54,6 +54,9 @@ namespace RestfulFirebase.Storage
             return client;
         }
 
+        /// <summary>
+        /// Disposes this instance.  
+        /// </summary>
         public void Dispose()
         {
 

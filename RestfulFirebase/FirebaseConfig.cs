@@ -95,7 +95,7 @@ namespace RestfulFirebase
         }
 
         /// <summary>
-        /// Gets or sets whether <see cref="TaskCanceledException"/> should be thrown when cancelling a running <see cref="FirebaseStorageTask"/>.
+        /// Gets or sets whether <see cref="TaskCanceledException"/> should be thrown when cancelling a running <see cref="Storage.FirebaseStorageTask"/>.
         /// </summary>
         public bool StorageThrowOnCancel
         {

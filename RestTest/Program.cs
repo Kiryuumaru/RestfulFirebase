@@ -32,7 +32,7 @@ namespace RestTest
 
         #region Initializers
 
-        public TestStorable() : base(Helpers.GenerateUID())
+        public TestStorable()
         {
             Created = DateTime.UtcNow;
             Modified = DateTime.UtcNow;
@@ -50,7 +50,7 @@ namespace RestTest
             Modified = modified;
         }
 
-        public TestStorable(string id, IEnumerable<CellModel> cellModels) : base(id, cellModels)
+        public TestStorable(string id, IEnumerable<ObservableProperty> cellModels) : base(id, cellModels)
         {
 
         }
@@ -80,14 +80,31 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            await app.Auth.UpdateProfileAsync("disp", "123123");
-            await app.Database.Child("sss").Child("sss").PutAsync(new TestStorable("11"));
-            app.Database.Child("sss").AsObservable<TestStorable>().Subscribe(i =>
+            var props1 = new ObservableProperty(Decodable.CreateDerived(999.9299).Data, "keyD");
+            var props2 = new ObservableProperty(Decodable.CreateDerived("numba22").Data, "keyS");
+            var props3 = new TestStorable();
+
+            await app.Database.Child("public").Child("prop").SetPropertyAsync(props1);
+            await app.Database.Child("public").Child("prop").SetPropertyAsync(props2);
+            await app.Database.Child("public").Child("prop").SetStorableAsync(props3);
+
+            try
+            {
+                await app.Database.Child("users").Child("a").Child("prop").SetPropertyAsync(props1);
+                await app.Database.Child("users").Child("a").Child("prop").SetPropertyAsync(props2);
+                await app.Database.Child("users").Child("a").Child("prop").SetStorableAsync(props3);
+            }
+            catch(FirebaseException s)
             {
 
-            });
-            await app.Database.Child("sss").Child("sss").PutAsync(new TestStorable("11"));
+            }
+
+            await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            await app.Auth.UpdateProfileAsync("disp", "123123");
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetPropertyAsync(props1);
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetPropertyAsync(props2);
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetStorableAsync(props3);
+
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)

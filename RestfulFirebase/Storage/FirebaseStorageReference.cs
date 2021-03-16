@@ -87,7 +87,7 @@
 
             try
             {
-                using (var http = CreateHttpClientAsync(timeout))
+                using (var http = App.Storage.CreateHttpClientAsync(timeout))
                 {
                     var result = await http.DeleteAsync(url).ConfigureAwait(false);
 

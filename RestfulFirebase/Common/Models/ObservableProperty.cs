@@ -3,43 +3,45 @@ using RestfulFirebase.Common.Conversions.Additionals;
 using RestfulFirebase.Common.Conversions.Primitives;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class CellModel : Decodable
+    public class ObservableProperty : Decodable, INotifyPropertyChanged
     {
         public string Key { get; protected set; }
-        public string Group { get; protected set; }
 
-        public CellModel(string data, string key, string group = "") : base(data)
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public ObservableProperty(string data, string key) : base(data)
         {
             Key = key;
-            Group = group;
         }
 
-        public CellModel(IEnumerable<byte> bytes, string key, string group = "") : base(bytes)
+        public ObservableProperty(IEnumerable<byte> bytes, string key) : base(bytes)
         {
             Key = key;
-            Group = group;
         }
 
-        public bool Update(CellModel cellModel)
+        protected virtual void OnPropertyChanged() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Data)));
+
+        public bool Update(ObservableProperty cellModel)
         {
             if (cellModel.Key.Equals(Key))
             {
-                Group = cellModel.Group;
                 Update(cellModel.Data);
+                OnPropertyChanged();
                 return true;
             }
             return false;
         }
 
-        public static CellModel CreateDerived<T>(T value, string key)
+        public static ObservableProperty CreateDerived<T>(T value, string key)
         {
             var decodable = DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            return new CellModel(decodable.Data, key);
+            return new ObservableProperty(decodable.Data, key);
         }
     }
 }

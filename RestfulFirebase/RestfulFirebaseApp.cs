@@ -2,11 +2,6 @@
 using RestfulFirebase.Database;
 using RestfulFirebase.Storage;
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase
 {
@@ -53,6 +48,9 @@ namespace RestfulFirebase
             Storage = new FirebaseStorageApp(this);
         }
 
+        /// <summary>
+        /// Disposes this instance.  
+        /// </summary>
         public void Dispose()
         {
             Auth?.Dispose();

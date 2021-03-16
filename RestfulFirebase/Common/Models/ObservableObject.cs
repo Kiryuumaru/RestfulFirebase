@@ -10,13 +10,20 @@ namespace RestfulFirebase.Common.Models
 {
     #region EventArgs
 
+    public enum PropertyChangeType
+    {
+        Set, Delete
+    }
+
     public class PersistancePropertyChangedEventArgs : PropertyChangedEventArgs
     {
         public string Key { get; }
+        public PropertyChangeType Type { get; }
         public string KeyGroup { get; }
-        public PersistancePropertyChangedEventArgs(string key, string propertyName = "", string group = "") : base(propertyName)
+        public PersistancePropertyChangedEventArgs(string key, PropertyChangeType type, string propertyName = "", string group = "") : base(propertyName)
         {
             Key = key;
+            Type = type;
             KeyGroup = group;
         }
     }
@@ -27,7 +34,7 @@ namespace RestfulFirebase.Common.Models
     {
         #region Properties
 
-        private readonly List<CellModel> cellModels = new List<CellModel>();
+        private readonly List<(string PropertyName, string Group, ObservableProperty Model)> properties = new List<(string PropertyName, string Group, ObservableProperty Model)>();
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -36,21 +43,25 @@ namespace RestfulFirebase.Common.Models
         #region Initializers
 
         protected ObservableObject() { }
-        protected ObservableObject(IEnumerable<CellModel> cellModels)
+        protected ObservableObject(IEnumerable<ObservableProperty> properties)
         {
-            this.cellModels = new List<CellModel>(cellModels);
+            this.properties = properties.Select(i => ("", "", i)).ToList();
+        }
+        protected ObservableObject(IEnumerable<(string PropertyName, string Group, ObservableProperty Model)> properties)
+        {
+            this.properties = properties.ToList();
         }
 
         #endregion
 
         #region Methods
 
-        protected virtual void OnPropertyChanged(string key, string group = "", [CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PersistancePropertyChangedEventArgs(key, group, propertyName));
+        protected virtual void OnPropertyChanged(string key, PropertyChangeType type, [CallerMemberName] string propertyName = "", string group = "") => PropertyChanged?.Invoke(this, new PersistancePropertyChangedEventArgs(key, type, propertyName, group));
 
-        protected virtual bool SetProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", string group = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        public virtual bool SetProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", string group = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
-            CellModel existingCell = cellModels.FirstOrDefault(i => i.Key.Equals(key));
-            CellModel newCell = CellModel.CreateDerived(value, key);
+            ObservableProperty existingCell = properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
+            ObservableProperty newCell = ObservableProperty.CreateDerived(value, key);
 
             if (existingCell != null)
             {
@@ -72,25 +83,32 @@ namespace RestfulFirebase.Common.Models
             }
             else
             {
-                cellModels.Add(newCell);
+                properties.Add((propertyName, group, newCell));
             }
 
             onChanged?.Invoke();
-            OnPropertyChanged(key, propertyName, group);
+            OnPropertyChanged(key, PropertyChangeType.Set, propertyName, group);
             return true;
         }
 
-        protected virtual T GetProperty<T>(string key)
+        public virtual T GetProperty<T>(string key)
         {
-            var cellModel = cellModels.FirstOrDefault(i => i.Key.Equals(key));
-            if (cellModel == null) return default;
-            return cellModel.ParseValue<T>();
+            var (Group, PropertyName, Model) = properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            if (Model == null) return default;
+            return Model.ParseValue<T>();
         }
 
-        public IEnumerable<CellModel> GetCellModels(string group = "")
+        public virtual void DeleteProperty(string key)
         {
-            var models = new List<CellModel>(cellModels);
-            return string.IsNullOrEmpty(group) ? models : models.FindAll(i => i.Group.Equals(group));
+            var (PropertyName, Group, Model) = properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            if (Model == null) return;
+            properties.RemoveAll(i => i.Model.Key.Equals(key));
+            OnPropertyChanged(key, PropertyChangeType.Delete, PropertyName, Group);
+        }
+
+        public IEnumerable<ObservableProperty> GetRawProperties(string group = null)
+        {
+            return group == null ? properties.Select(i => i.Model) : properties.FindAll(i => i.Group?.Equals(group) ?? false).Select(i => i.Model);
         }
 
         #endregion

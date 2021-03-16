@@ -31,6 +31,9 @@ namespace RestfulFirebase.Database
             return new ChildQuery(App, () => App.Config.DatabaseURL + resourceName);
         }
 
+        /// <summary>
+        /// Disposes this instance.  
+        /// </summary>
         public void Dispose()
         {
 

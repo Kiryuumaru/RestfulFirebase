@@ -99,7 +99,7 @@ namespace RestfulFirebase.Database.Streaming
                     response.EnsureSuccessStatusCode();
 
                     using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var reader = this.app.Config.SubscriptionStreamReaderFactory(stream))
+                    using (var reader = app.Config.SubscriptionStreamReaderFactory(stream))
                     {
                         while (true)
                         {

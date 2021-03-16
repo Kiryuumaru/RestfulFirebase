@@ -18,17 +18,17 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        protected Storable()
+        public Storable()
         {
-            Id = Helpers.GenerateUID();
+            Id = Helpers.GenerateSafeUID();
         }
 
-        protected Storable(string id)
+        public Storable(string id)
         {
             Id = id;
         }
 
-        protected Storable(string id, IEnumerable<CellModel> cellModels) : base(cellModels)
+        public Storable(string id, IEnumerable<ObservableProperty> properties) : base(properties)
         {
             Id = id;
         }

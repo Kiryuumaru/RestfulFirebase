@@ -1,4 +1,4 @@
-namespace RestfulFirebase.Database.Query 
+namespace RestfulFirebase.Database.Query
 {
     using System;
     using System.Globalization;
@@ -45,7 +45,7 @@ namespace RestfulFirebase.Database.Query
         /// <param name="parent"> The parent. </param>
         /// <param name="filterFactory"> The filter. </param>
         /// <param name="valueFactory"> The value for filter. </param>
-        /// <param name="client"> The owner. </param>
+        /// <param name="app"> The owner. </param>
         public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory, RestfulFirebaseApp app)
             : base(parent, filterFactory, app)
         {

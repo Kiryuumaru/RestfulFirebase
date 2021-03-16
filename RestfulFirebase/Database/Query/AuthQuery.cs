@@ -14,7 +14,7 @@ namespace RestfulFirebase.Database.Query
         /// </summary>
         /// <param name="parent"> The parent.  </param>  
         /// <param name="tokenFactory"> The authentication token factory. </param>
-        /// <param name="databaseApp"> The owner. </param>
+        /// <param name="app"> The owner. </param>
         public AuthQuery(FirebaseQuery parent, Func<string> tokenFactory, RestfulFirebaseApp app) : base(parent, () => app.Config.AsAccessToken ? "access_token" : "auth", app)
         {
             this.tokenFactory = tokenFactory;

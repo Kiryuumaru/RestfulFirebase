@@ -383,7 +383,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets fresh authenticated auth.
         /// </summary>
-        public async Task GetFreshAuthAsync()
+        public async Task RefreshAuthAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
 
@@ -414,6 +414,44 @@ namespace RestfulFirebase.Auth
                     throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets fresh authenticated auth.
+        /// </summary>
+        public async Task<string> GetFreshTokenAsync()
+        {
+            if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
+
+            if (IsExpired())
+            {
+                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{RefreshToken}\"}}";
+                var responseData = "N/A";
+
+                try
+                {
+                    var response = await client.PostAsync(new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+
+                    var auth = new FirebaseAuth
+                    {
+                        ExpiresIn = refreshAuth.ExpiresIn,
+                        RefreshToken = refreshAuth.RefreshToken,
+                        FirebaseToken = refreshAuth.AccessToken
+                    };
+
+                    CopyPropertiesLocally(auth);
+                    OnFirebaseAuthRefreshed(this);
+                }
+                catch (Exception ex)
+                {
+                    throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
+                }
+            }
+
+            return FirebaseToken;
         }
 
         /// <summary>
