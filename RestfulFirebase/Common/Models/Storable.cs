@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public abstract class Storable : ObservableObject
+    public class Storable : ObservableObject
     {
         #region Properties
 
@@ -37,7 +37,12 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
+        public T ParseDerived<T>()
+            where T : Storable, new()
+        {
 
+            return (T)Activator.CreateInstance(typeof(T), Id, GetRawProperties());
+        }
 
         #endregion
     }

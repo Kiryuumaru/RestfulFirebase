@@ -167,15 +167,15 @@ namespace RestfulFirebase.Database.Query
 
         #region News
 
-        public Task SetPropertyAsync(ObservableProperty property, TimeSpan? timeout = null)
+        public Task SetAsync(ObservableProperty property, TimeSpan? timeout = null)
         {
             var collection = new Dictionary<string, string>() { { property.Key, property.Data } };
             var data = JsonConvert.SerializeObject(collection, App.Config.JsonSerializerSettings);
             var c = GetClient(timeout);
             return Silent().SendAsync(c, data, new HttpMethod("PATCH"));
         }
-
-        public Task SetStorableAsync(Storable storable, TimeSpan? timeout = null)
+        
+        public Task SetAsync(Storable storable, TimeSpan? timeout = null)
         {
             var query = new ChildQuery(this, () => storable.Id, App);
 
@@ -185,7 +185,7 @@ namespace RestfulFirebase.Database.Query
             return query.Silent().SendAsync(c, data, new HttpMethod("PATCH"));
         }
 
-        public async Task<Dictionary<string, string>> GetPropertyAsync(string path, TimeSpan? timeout = null)
+        public async Task<ObservableProperty> GetAsPropertyAsync(string path, TimeSpan? timeout = null)
         {
             var query = string.IsNullOrEmpty(path) ? this : new ChildQuery(this, () => path, App);
             var c = query.GetClient(timeout);
@@ -212,8 +212,8 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
-                return data;
+                var data = JsonConvert.DeserializeObject<string>(responseData, query.App.Config.JsonSerializerSettings);
+                return new ObservableProperty(data, path);
             }
             catch (Exception ex)
             {
@@ -221,7 +221,7 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task<Dictionary<string, string>> GetStorableAsync(string path, TimeSpan? timeout = null)
+        public async Task<Storable> GetAsStorableAsync(string path, TimeSpan? timeout = null)
         {
             var query = string.IsNullOrEmpty(path) ? this : new ChildQuery(this, () => path, App);
             var c = query.GetClient(timeout);
@@ -249,7 +249,7 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
-                return data;
+                return new Storable(path, data.Select(i => new ObservableProperty(i.Key, i.Value)));
             }
             catch (Exception ex)
             {

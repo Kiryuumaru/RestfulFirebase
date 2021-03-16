@@ -80,19 +80,19 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var props1 = new ObservableProperty(Decodable.CreateDerived(999.9299).Data, "keyD");
-            var props2 = new ObservableProperty(Decodable.CreateDerived("numba22").Data, "keyS");
+            var props1 = ObservableProperty.CreateDerived(999.9299, "keyD");
+            var props2 = ObservableProperty.CreateDerived("numba22", "keyS");
             var props3 = new TestStorable();
 
-            await app.Database.Child("public").Child("prop").SetPropertyAsync(props1);
-            await app.Database.Child("public").Child("prop").SetPropertyAsync(props2);
-            await app.Database.Child("public").Child("prop").SetStorableAsync(props3);
+            await app.Database.Child("public").Child("prop").SetAsync(props1);
+            await app.Database.Child("public").Child("prop").SetAsync(props2);
+            await app.Database.Child("public").Child("prop").SetAsync(props3);
 
             try
             {
-                await app.Database.Child("users").Child("a").Child("prop").SetPropertyAsync(props1);
-                await app.Database.Child("users").Child("a").Child("prop").SetPropertyAsync(props2);
-                await app.Database.Child("users").Child("a").Child("prop").SetStorableAsync(props3);
+                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props1);
+                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props2);
+                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props3);
             }
             catch(FirebaseException s)
             {
@@ -101,10 +101,13 @@ namespace RestTest
 
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             await app.Auth.UpdateProfileAsync("disp", "123123");
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetPropertyAsync(props1);
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetPropertyAsync(props2);
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetStorableAsync(props3);
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props1);
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props2);
+            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props3);
 
+            var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync(props1.Key);
+            var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync(props2.Key);
+            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync(props3.Id);
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
