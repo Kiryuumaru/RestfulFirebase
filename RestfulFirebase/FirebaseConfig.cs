@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace RestfulFirebase
 {
     /// <summary>
-    /// The auth config. 
+    /// The firebase config. 
     /// </summary>
     public class FirebaseConfig
     {
@@ -95,15 +95,6 @@ namespace RestfulFirebase
         }
 
         /// <summary>
-        /// Specify HttpClient factory to manage <see cref="System.Net.Http.HttpClient" /> lifecycle.
-        /// </summary>
-        public IHttpClientFactory HttpClientFactory
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// Gets or sets whether <see cref="TaskCanceledException"/> should be thrown when cancelling a running <see cref="FirebaseStorageTask"/>.
         /// </summary>
         public bool StorageThrowOnCancel
@@ -113,42 +104,12 @@ namespace RestfulFirebase
         }
 
         /// <summary>
-        /// Timeout of the <see cref="HttpClient"/>. Default is 100s.
+        /// Specify HttpClient factory to manage <see cref="System.Net.Http.HttpClient" /> lifecycle.
         /// </summary>
-        public TimeSpan HttpClientTimeout
+        public IHttpClientFactory HttpClientFactory
         {
             get;
             set;
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="HttpClient"/> with authentication header when <see cref="FirebaseStorageOptions.AuthTokenAsyncFactory"/> is specified.
-        /// </summary>
-        /// <param name="options">Firebase storage options.</param>
-        public async Task<HttpClient> CreateHttpClientAsync()
-        {
-            var client = new HttpClient();
-
-            if (HttpClientTimeout != default)
-            {
-                client.Timeout = HttpClientTimeout;
-            }
-
-            if (AuthTokenAsyncFactory != null)
-            {
-                var auth = await AuthTokenAsyncFactory().ConfigureAwait(false);
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", auth);
-            }
-
-            return client;
-
-
-            if (client == null)
-            {
-                client = App.Config.HttpClientFactory.GetHttpClient(timeout ?? DEFAULT_HTTP_CLIENT_TIMEOUT);
-            }
-
-            return client.GetHttpClient();
         }
     }
 }

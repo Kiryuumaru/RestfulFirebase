@@ -5,6 +5,8 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -12,7 +14,6 @@
     {
         private const string FirebaseStorageEndpoint = "https://firebasestorage.googleapis.com/v0/b/";
 
-        private readonly RestfulFirebaseApp app;
         private readonly List<string> children;
 
         /// <summary>
@@ -54,9 +55,9 @@
         /// Gets the meta data for given file.
         /// </summary>
         /// <returns></returns>
-        public async Task<FirebaseMetaData> GetMetaDataAsync()
+        public async Task<FirebaseMetaData> GetMetaDataAsync(TimeSpan? timeout = null)
         {
-            var data = await PerformFetch<FirebaseMetaData>();
+            var data = await PerformFetch<FirebaseMetaData>(timeout);
 
             return data;
         }
@@ -64,13 +65,11 @@
         /// <summary>
         /// Gets the url to download given file.
         /// </summary>
-        public async Task<string> GetDownloadUrlAsync()
+        public async Task<string> GetDownloadUrlAsync(TimeSpan? timeout = null)
         {
-            var data = await PerformFetch<Dictionary<string, object>>();
+            var data = await PerformFetch<Dictionary<string, object>>(timeout);
 
-            object downloadTokens;
-
-            if (!data.TryGetValue("downloadTokens", out downloadTokens))
+            if (!data.TryGetValue("downloadTokens", out object downloadTokens))
             {
                 throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonConvert.SerializeObject(data)}");
             }
@@ -81,14 +80,14 @@
         /// <summary>
         /// Deletes a file at target location.
         /// </summary>
-        public async Task DeleteAsync()
+        public async Task DeleteAsync(TimeSpan? timeout = null)
         {
             var url = GetDownloadUrl();
             var resultContent = "N/A";
 
             try
             {
-                using (var http = await App.Config.CreateHttpClientAsync().ConfigureAwait(false))
+                using (var http = CreateHttpClientAsync(timeout))
                 {
                     var result = await http.DeleteAsync(url).ConfigureAwait(false);
 
@@ -120,14 +119,14 @@
             return this;
         }
 
-        private async Task<T> PerformFetch<T>()
+        private async Task<T> PerformFetch<T>(TimeSpan? timeout = null)
         {
             var url = GetDownloadUrl();
             var resultContent = "N/A";
 
             try
             {
-                using (var http = await App.Config.CreateHttpClientAsync().ConfigureAwait(false))
+                using (var http = App.Storage.CreateHttpClientAsync(timeout))
                 {
                     var result = await http.GetAsync(url);
                     resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);

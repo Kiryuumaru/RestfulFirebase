@@ -11,8 +11,6 @@ namespace RestfulFirebase.Database
     /// </summary>
     public class FirebaseDatabaseApp : IDisposable
     {
-        internal IHttpClientProxy HttpClient { get; }
-
         /// <summary>
         /// Gets the RestfulFirebaseApp
         /// </summary>
@@ -21,8 +19,6 @@ namespace RestfulFirebase.Database
         internal FirebaseDatabaseApp(RestfulFirebaseApp app)
         {
             App = app;
-
-            HttpClient = App.Config.HttpClientFactory.GetHttpClient(null);
         }
 
         /// <summary>
@@ -37,7 +33,7 @@ namespace RestfulFirebase.Database
 
         public void Dispose()
         {
-            HttpClient?.Dispose();
+
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace RestfulFirebase.Storage
@@ -33,6 +35,23 @@ namespace RestfulFirebase.Storage
         public FirebaseStorageReference Child(string childRoot)
         {
             return new FirebaseStorageReference(App, childRoot);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="HttpClient"/> with authentication header when <see cref="RestfulFirebaseApp.Auth"/> is authenticated.
+        /// </summary>
+        /// <param name="timeout">Request timeout.</param>
+        /// <returns> The authenticated <see cref="HttpClient"/>. </returns>
+        public HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)
+        {
+            var client = App.Config.HttpClientFactory.GetHttpClient(timeout).GetHttpClient();
+
+            if (App.Auth.Authenticated)
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", App.Auth.FirebaseToken);
+            }
+
+            return client;
         }
 
         public void Dispose()

@@ -57,7 +57,7 @@
 
             try
             {
-                using (var client = await App.Config.CreateHttpClientAsync())
+                using (var client = App.Storage.CreateHttpClientAsync())
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url)
                     {
