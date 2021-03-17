@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class DoubleDecoder : DataTypeDecoder<double>
     {
-        public override Decodable CreateDerived(double value)
+        public override ObservablePropertyHolder.ObservableProperty CreateDerived(double value)
         {
-            return new Decodable(value.ToString());
+            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
         }
 
-        public override double ParseValue(Decodable decodable)
+        public override double ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
         {
-            if (double.TryParse(decodable.Data, out double result)) return result;
+            if (double.TryParse(decodable.Holder.Data, out double result)) return result;
             throw new Exception("Parse error");
         }
     }

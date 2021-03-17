@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class CharDecoder : DataTypeDecoder<char>
     {
-        public override Decodable CreateDerived(char value)
+        public override ObservablePropertyHolder.ObservableProperty CreateDerived(char value)
         {
-            return new Decodable(value.ToString());
+            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
         }
 
-        public override char ParseValue(Decodable decodable)
+        public override char ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
         {
-            if (char.TryParse(decodable.Data, out char result)) return result;
+            if (char.TryParse(decodable.Holder.Data, out char result)) return result;
             throw new Exception("Parse error");
         }
     }

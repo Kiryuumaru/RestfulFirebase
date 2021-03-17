@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class FloatDecoder : DataTypeDecoder<float>
     {
-        public override Decodable CreateDerived(float value)
+        public override ObservablePropertyHolder.ObservableProperty CreateDerived(float value)
         {
-            return new Decodable(value.ToString());
+            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
         }
 
-        public override float ParseValue(Decodable decodable)
+        public override float ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
         {
-            if (float.TryParse(decodable.Data, out float result)) return result;
+            if (float.TryParse(decodable.Holder.Data, out float result)) return result;
             throw new Exception("Parse error");
         }
     }

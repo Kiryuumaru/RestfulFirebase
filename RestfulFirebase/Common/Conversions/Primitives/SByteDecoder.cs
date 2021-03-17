@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class SByteDecoder : DataTypeDecoder<sbyte>
     {
-        public override Decodable CreateDerived(sbyte value)
+        public override ObservablePropertyHolder.ObservableProperty CreateDerived(sbyte value)
         {
-            return new Decodable(value.ToString());
+            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
         }
 
-        public override sbyte ParseValue(Decodable decodable)
+        public override sbyte ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
         {
-            if (sbyte.TryParse(decodable.Data, out sbyte result)) return result;
+            if (sbyte.TryParse(decodable.Holder.Data, out sbyte result)) return result;
             throw new Exception("Parse error");
         }
     }

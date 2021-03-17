@@ -13,7 +13,7 @@ using RestfulFirebase;
 
 namespace RestTest
 {
-    public class TestStorable : Storable
+    public class TestStorable : FirebaseObject
     {
         #region Properties
 
@@ -44,13 +44,13 @@ namespace RestTest
             Modified = DateTime.UtcNow;
         }
 
-        public TestStorable(string id, DateTime created, DateTime modified) : base(id)
+        public TestStorable(string key, DateTime created, DateTime modified) : base(key)
         {
             Created = created;
             Modified = modified;
         }
 
-        public TestStorable(string id, IEnumerable<ObservableProperty> cellModels) : base(id, cellModels)
+        public TestStorable(string key, IEnumerable<DistinctProperty> cellModels) : base(key, cellModels)
         {
 
         }
@@ -80,8 +80,8 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var props1 = ObservableProperty.CreateDerived(999.9299, "keyD");
-            var props2 = ObservableProperty.CreateDerived("numba22", "keyS");
+            var props1 = FirebaseProperty.Create(999.9299, "keyD");
+            var props2 = FirebaseProperty.Create("numba22", "keyS");
             var props3 = new TestStorable();
 
             await app.Database.Child("public").Child("prop").SetAsync(props1);
@@ -105,9 +105,9 @@ namespace RestTest
             await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props2);
             await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props3);
 
-            var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync(props1.Key);
-            var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync(props2.Key);
-            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync(props3.Id);
+            var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<double>(props1.Key);
+            var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<string>(props2.Key);
+            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync(props3.Key);
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)

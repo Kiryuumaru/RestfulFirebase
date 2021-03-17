@@ -1,31 +1,46 @@
+using RestfulFirebase.Common.Models;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
 namespace RestfulFirebase.Database
 {
-    /// <summary>
-    /// Holds the object of type <typeparamref name="T" /> along with its key. 
-    /// </summary>
-    /// <typeparam name="T"> Type of the underlying object. </typeparam> 
-    public class FirebaseObject<T> 
+    public class FirebaseObject : DistinctObject
     {
-        internal FirebaseObject(string key, T obj)
+        protected FirebaseObject()
         {
-            Key = key;
-            Object = obj;
+
         }
 
-        /// <summary>
-        /// Gets the key of <see cref="Object"/>.
-        /// </summary>
-        public string Key
+        protected FirebaseObject(ObservableObjectHolder holder) : base(holder)
         {
-            get;
+
         }
 
-        /// <summary>
-        /// Gets the underlying object.
-        /// </summary>
-        public T Object
+        protected FirebaseObject(string key) : base(key)
         {
-            get;
+
+        }
+
+        protected FirebaseObject(string key, IEnumerable<DistinctProperty> properties) : base(key, properties)
+        {
+
+        }
+
+        public void SetPersistableProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        {
+            SetProperty(value, key, propertyName, "persistable", onChanged, validateValue);
+        }
+
+        public IEnumerable<DistinctProperty> GetPersistableRawProperties()
+        {
+            return GetRawProperties("persistable");
+        }
+
+        public T Parse<T>()
+            where T : FirebaseObject
+        {
+            return (T)Activator.CreateInstance(typeof(T), Holder);
         }
     }
 }
