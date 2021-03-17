@@ -20,12 +20,12 @@ namespace RestTest
         public DateTime Created
         {
             get => GetProperty<DateTime>("_cr");
-            set => SetProperty(value, "_cr", nameof(Created));
+            set => SetPersistableProperty(value, "_cr", nameof(Created));
         }
         public DateTime Modified
         {
             get => GetProperty<DateTime>("_md");
-            set => SetProperty(value, "_md", nameof(Modified));
+            set => SetPersistableProperty(value, "_md", nameof(Modified));
         }
 
         #endregion
@@ -33,6 +33,12 @@ namespace RestTest
         #region Initializers
 
         public TestStorable()
+        {
+            Created = DateTime.UtcNow;
+            Modified = DateTime.UtcNow;
+        }
+
+        public TestStorable(ObservableObjectHolder holder) : base(holder)
         {
             Created = DateTime.UtcNow;
             Modified = DateTime.UtcNow;
@@ -99,6 +105,8 @@ namespace RestTest
 
             }
 
+            var ss = props3.Key;
+
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             await app.Auth.UpdateProfileAsync("disp", "123123");
             await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props1);
@@ -107,7 +115,7 @@ namespace RestTest
 
             var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<double>(props1.Key);
             var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<string>(props2.Key);
-            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync(props3.Key);
+            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync<TestStorable>(props3.Key);
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)

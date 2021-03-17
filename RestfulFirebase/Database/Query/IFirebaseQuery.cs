@@ -29,7 +29,7 @@
 
         Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
-        Task<FirebaseObject> GetAsStorableAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+        Task<T> GetAsStorableAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
 
         Task<string> BuildUrlAsync();
     }

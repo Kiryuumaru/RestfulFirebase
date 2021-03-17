@@ -15,7 +15,7 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
-            OfflineDatabaseFactory = (t, s) => new Dictionary<string, OfflineEntry>();
+            //OfflineDatabaseFactory = (t, s) => new Dictionary<string, OfflineEntry>();
             SubscriptionStreamReaderFactory = s => new StreamReader(s);
             JsonSerializerSettings = new JsonSerializerSettings();
             SyncPeriod = TimeSpan.FromSeconds(10);
@@ -52,11 +52,11 @@ namespace RestfulFirebase
         /// <summary>
         /// Gets or sets the factory for Firebase offline database. Default is in-memory dictionary.
         /// </summary>
-        public Func<Type, string, IDictionary<string, OfflineEntry>> OfflineDatabaseFactory
-        {
-            get;
-            set;
-        }
+        //public Func<Type, string, IDictionary<string, OfflineEntry>> OfflineDatabaseFactory
+        //{
+        //    get;
+        //    set;
+        //}
 
         /// <summary>
         /// Gets or sets the factory for <see cref="TextReader"/> used for reading online streams. Default is <see cref="StreamReader"/>.

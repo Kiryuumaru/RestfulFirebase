@@ -7,22 +7,22 @@ namespace RestfulFirebase.Database
 {
     public class FirebaseObject : DistinctObject
     {
-        protected FirebaseObject()
+        public FirebaseObject() : base()
         {
 
         }
 
-        protected FirebaseObject(ObservableObjectHolder holder) : base(holder)
+        public FirebaseObject(ObservableObjectHolder holder) : base(holder)
         {
 
         }
 
-        protected FirebaseObject(string key) : base(key)
+        public FirebaseObject(string key) : base(key)
         {
 
         }
 
-        protected FirebaseObject(string key, IEnumerable<DistinctProperty> properties) : base(key, properties)
+        public FirebaseObject(string key, IEnumerable<DistinctProperty> properties) : base(key, properties)
         {
 
         }

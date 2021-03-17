@@ -74,9 +74,9 @@ namespace RestfulFirebase.Database.Query
                 var query = new ChildQuery(this, () => property.Key, App);
 
                 var data = JsonConvert.SerializeObject(property.Holder.Data, App.Config.JsonSerializerSettings);
-                var c = GetClient(timeout);
+                var c = query.GetClient(timeout);
 
-                await Silent().SendAsync(c, data, HttpMethod.Put);
+                await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
             catch (Exception ex)
             {
@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => storable.Key, App);
 
-                var collection = storable.GetRawProperties().ToDictionary(i => i.Key, i => i.Holder.Data);
+                var collection = storable.GetPersistableRawProperties().ToDictionary(i => i.Key, i => i.Holder.Data);
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
@@ -186,11 +186,11 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
-                var obj = new FirebaseObject(data.Select(i => new DistinctProperty(i.Key, i.Value)), path);
+                var obj = new FirebaseObject(path, data.Select(i => new DistinctProperty(i.Key, i.Value)));
 
 
                 
-                return obj;
+                return obj.Parse<T>();
             }
             catch (Exception ex)
             {

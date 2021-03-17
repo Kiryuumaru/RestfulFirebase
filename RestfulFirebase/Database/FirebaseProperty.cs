@@ -21,7 +21,7 @@ namespace RestfulFirebase.Database
         public static FirebaseProperty<T> Create<T>(T value, string key)
         {
             var decodable = DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            return new FirebaseProperty<T>(decodable.Holder.Data, key);
+            return new FirebaseProperty<T>(key, decodable.Holder.Data);
         }
     }
 

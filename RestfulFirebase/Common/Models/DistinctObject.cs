@@ -22,7 +22,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public DistinctObject()
+        public DistinctObject() : base()
         {
             Key = Helpers.GenerateSafeUID();
         }

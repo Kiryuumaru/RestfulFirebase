@@ -41,7 +41,7 @@ namespace RestfulFirebase.Common.Models
         public static DistinctProperty CreateDerived<T>(T value, string key)
         {
             var decodable = DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            return new DistinctProperty(decodable.Holder.Data, key);
+            return new DistinctProperty(key, decodable.Holder.Data);
         }
     }
 }
