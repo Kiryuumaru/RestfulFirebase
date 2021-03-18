@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => storable.Key, App);
 
-                var collection = storable.GetPersistableRawProperties().ToDictionary(i => i.Key, i => i.Data);
+                var collection = storable.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Data);
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 

@@ -17,6 +17,12 @@ namespace RestTest
     {
         #region Properties
 
+        private string SSS
+        {
+            get => GetPersistableProperty<string>("ss");
+            set => SetPersistableProperty(value, "ss");
+        }
+
         public DateTime Created
         {
             get => GetPersistableProperty<DateTime>("_cr");
@@ -37,7 +43,8 @@ namespace RestTest
             return new TestStorable(FirebaseObject.Create())
             {
                 Created = DateTime.UtcNow,
-                Modified = DateTime.UtcNow
+                Modified = DateTime.UtcNow,
+                SSS = "ss"
             };
         }
 
@@ -97,6 +104,9 @@ namespace RestTest
             var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
             var props3 = TestStorable.Create();
+
+            var pr = props3.GetRawPersistableProperties().ToList();
+
             int x11 = 0;
 
             props3.PropertyChanged += (s, e) =>

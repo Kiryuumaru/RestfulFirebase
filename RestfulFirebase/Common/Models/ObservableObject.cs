@@ -107,7 +107,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(PropertyChangeType type, string key, string group = "", string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
+        protected virtual void OnChanged(PropertyChangeType type, string key, string group, string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
         
         protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
 
@@ -147,13 +147,13 @@ namespace RestfulFirebase.Common.Models
             return true;
         }
 
-        protected virtual T GetProperty<T>(string key, string group = "", [CallerMemberName] string propertyName = "")
+        protected virtual T GetProperty<T>(string key, string group = "", T defaultValue = default, [CallerMemberName] string propertyName = "")
         {
             var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key) && i.Group.Equals(group));
             if (Model == null)
             {
-                Properties.Add((DistinctProperty.CreateFromKeyAndValue<T>(key, default), group, propertyName));
-                return default;
+                Properties.Add((DistinctProperty.CreateFromKeyAndValue(key, defaultValue), group, propertyName));
+                return defaultValue;
             }
             return Model.ParseValue<T>();
         }

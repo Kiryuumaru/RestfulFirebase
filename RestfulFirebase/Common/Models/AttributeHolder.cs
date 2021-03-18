@@ -34,7 +34,10 @@ namespace RestfulFirebase.Common.Models
         protected AttributeHolder(AttributeHolder holder)
         {
             attributes = holder == null ? new List<Attribute>() : holder.attributes;
-            foreach (var property in GetType().GetProperties()) property.GetValue(this);
+            foreach (var property in GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                property.GetValue(this);
+            }
         }
 
         #endregion

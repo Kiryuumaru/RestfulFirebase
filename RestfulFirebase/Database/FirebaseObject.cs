@@ -33,17 +33,17 @@ namespace RestfulFirebase.Database
 
         #region Methods
 
-        public void SetPersistableProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        protected void SetPersistableProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
             SetProperty(value, key, nameof(FirebaseObject), propertyName, onChanged, validateValue);
         }
 
-        public T GetPersistableProperty<T>(string key, [CallerMemberName] string propertyName = "")
+        protected T GetPersistableProperty<T>(string key, T defaultValue = default, [CallerMemberName] string propertyName = "")
         {
-            return GetProperty<T>(key, nameof(FirebaseObject), propertyName);
+            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
 
-        public IEnumerable<DistinctProperty> GetPersistableRawProperties()
+        public IEnumerable<DistinctProperty> GetRawPersistableProperties()
         {
             return GetRawProperties(nameof(FirebaseObject));
         }
