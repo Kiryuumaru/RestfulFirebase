@@ -20,16 +20,18 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value ?? delegate { };
                     handler += value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableProperty), handler);
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value ?? delegate { };
                     handler -= value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableProperty), handler);
                 }
             }
         }
@@ -40,16 +42,18 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value ?? delegate { };
                     handler += value;
+                    SetAttribute(nameof(PropertyError), nameof(ObservableProperty), handler);
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value ?? delegate { };
                     handler -= value;
+                    SetAttribute(nameof(PropertyError), nameof(ObservableProperty), handler);
                 }
             }
         }

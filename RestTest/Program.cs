@@ -102,6 +102,13 @@ namespace RestTest
             await app.Database.Child("public").Child("prop").SetAsync(props2);
             await app.Database.Child("public").Child("prop").SetAsync(props3);
 
+            props3.PropertyChanged += (s, e) =>
+            {
+
+            };
+
+            props3.Modified = DateTime.UtcNow;
+
             //try
             //{
             //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props1);

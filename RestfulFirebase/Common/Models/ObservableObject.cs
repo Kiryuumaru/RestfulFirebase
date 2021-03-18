@@ -18,16 +18,18 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value ?? delegate { };
                     handler += value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value ?? delegate { };
                     handler -= value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
                 }
             }
         }
@@ -38,16 +40,18 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value ?? delegate { };
                     handler += value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value ?? delegate { };
                     handler -= value;
+                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
                 }
             }
         }
