@@ -23,6 +23,15 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
+        public static DistinctProperty CreateFromKey(string key)
+        {
+            var obj = new DistinctProperty(Create())
+            {
+                Key = key
+            };
+            return obj;
+        }
+
         public static DistinctProperty CreateFromKeyAndValue<T>(string key, T value)
         {
             var obj = new DistinctProperty(CreateFromValue(value))

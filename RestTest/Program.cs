@@ -19,12 +19,12 @@ namespace RestTest
 
         public DateTime Created
         {
-            get => GetProperty<DateTime>("_cr");
+            get => GetPersistableProperty<DateTime>("_cr");
             set => SetPersistableProperty(value, "_cr");
         }
         public DateTime Modified
         {
-            get => GetProperty<DateTime>("_md");
+            get => GetPersistableProperty<DateTime>("_md");
             set => SetPersistableProperty(value, "_md");
         }
 
@@ -97,7 +97,6 @@ namespace RestTest
             var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
             var props3 = TestStorable.Create();
-            Console.WriteLine(props3.Modified);
             int x11 = 0;
 
             props3.PropertyChanged += (s, e) =>
@@ -106,7 +105,7 @@ namespace RestTest
             };
 
             props3.Modified = default;
-            Console.WriteLine(props3.Modified);
+            props3.Created = default;
 
             await app.Database.Child("public").Child("prop").SetAsync(props1);
             await app.Database.Child("public").Child("prop").SetAsync(props2);

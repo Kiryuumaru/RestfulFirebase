@@ -26,6 +26,14 @@ namespace RestfulFirebase.Common.Models
             set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
         }
 
+        public IEnumerable<byte> Bytes
+        {
+            get => GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
+            private set => SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
+        }
+
+        public string Data { get => Bytes == null ? null : Encoding.Unicode.GetString(Bytes.ToArray()); }
+
         public event PropertyChangedEventHandler PropertyChanged
         {
             add
@@ -62,17 +70,14 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public IEnumerable<byte> Bytes
-        {
-            get => GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
-            private set => SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
-        }
-
-        public string Data { get => Encoding.Unicode.GetString(Bytes.ToArray()); }
-
         #endregion
 
         #region Initializers
+
+        public static ObservableProperty Create()
+        {
+            return new ObservableProperty(null);
+        }
 
         public static ObservableProperty CreateFromValue<T>(T value)
         {

@@ -24,6 +24,12 @@ namespace RestfulFirebase.Common.Models
             set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
+        private List<(DistinctProperty Model, string Group, string PropertyName)> Properties
+        {
+            get => GetAttribute(nameof(Properties), nameof(ObservableObject), new List<(DistinctProperty Model, string Group, string PropertyName)>()).Value;
+            set => SetAttribute(nameof(Properties), nameof(ObservableObject), value);
+        }
+
         public event PropertyChangedEventHandler PropertyChanged
         {
             add
@@ -60,31 +66,35 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        private List<(DistinctProperty Model, string Group, string PropertyName)> Properties
-        {
-            get => GetAttribute(nameof(Properties), nameof(ObservableObject), new List<(DistinctProperty Model, string Group, string PropertyName)>()).Value;
-            set => SetAttribute(nameof(Properties), nameof(ObservableObject), value);
-        }
-
         #endregion
 
         #region Initializers
 
         public static ObservableObject CreateFromProperties(IEnumerable<DistinctProperty> properties)
         {
-            var obj = new ObservableObject(null)
+            var obj = new ObservableObject(null);
+            foreach (var property in properties.ToList())
             {
-                Properties = properties.Select(i => (i, "", "")).ToList()
-            };
+                var existing = obj.Properties.FirstOrDefault(i => i.Model.Key.Equals(property.Key));
+                if (existing.Model == null)
+                {
+                    existing = (property, existing.Group, existing.PropertyName);
+                }
+            }
             return obj;
         }
 
         public static ObservableObject CreateFromProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
         {
-            var obj = new ObservableObject(null)
+            var obj = new ObservableObject(null);
+            foreach (var property in properties.ToList())
             {
-                Properties = properties.ToList()
-            };
+                var existing = obj.Properties.FirstOrDefault(i => i.Model.Key.Equals(property.Model.Key) && i.Group.Equals(property.Group));
+                if (existing.Model == null)
+                {
+                    existing = (property.Model, existing.Group, existing.PropertyName);
+                }
+            }
             return obj;
         }
 
@@ -111,13 +121,13 @@ namespace RestfulFirebase.Common.Models
                 if (existingCell != null)
                 {
                     //if value didn't change
-                    if (existingCell.Data.Equals(newCell.Data))
+                    if (existingCell.Data?.Equals(newCell.Data) ?? false)
                         return false;
 
                     var existingValue = existingCell.ParseValue<T>();
 
                     //if value changed but didn't validate
-                    if (validateValue != null && !validateValue(existingValue, value))
+                    if (validateValue != null && !(validateValue?.Invoke(existingValue, value) ?? false))
                         return false;
 
                     existingCell.Update(newCell);
@@ -137,10 +147,14 @@ namespace RestfulFirebase.Common.Models
             return true;
         }
 
-        protected virtual T GetProperty<T>(string key)
+        protected virtual T GetProperty<T>(string key, string group = "", [CallerMemberName] string propertyName = "")
         {
-            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
-            if (Model == null) return default;
+            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key) && i.Group.Equals(group));
+            if (Model == null)
+            {
+                Properties.Add((DistinctProperty.CreateFromKeyAndValue<T>(key, default), group, propertyName));
+                return default;
+            }
             return Model.ParseValue<T>();
         }
 

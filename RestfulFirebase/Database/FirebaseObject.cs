@@ -38,6 +38,11 @@ namespace RestfulFirebase.Database
             SetProperty(value, key, nameof(FirebaseObject), propertyName, onChanged, validateValue);
         }
 
+        public T GetPersistableProperty<T>(string key, [CallerMemberName] string propertyName = "")
+        {
+            return GetProperty<T>(key, nameof(FirebaseObject), propertyName);
+        }
+
         public IEnumerable<DistinctProperty> GetPersistableRawProperties()
         {
             return GetRawProperties(nameof(FirebaseObject));
