@@ -17,9 +17,9 @@ namespace RestTest
     {
         #region Properties
 
-        private string SSS
+        private DateTime SSS
         {
-            get => GetPersistableProperty<string>("ss");
+            get => GetPersistableProperty<DateTime>("ss");
             set => SetPersistableProperty(value, "ss");
         }
 
@@ -43,8 +43,7 @@ namespace RestTest
             return new TestStorable(FirebaseObject.Create())
             {
                 Created = DateTime.UtcNow,
-                Modified = DateTime.UtcNow,
-                SSS = "ss"
+                Modified = DateTime.UtcNow
             };
         }
 

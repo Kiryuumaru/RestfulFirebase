@@ -73,28 +73,14 @@ namespace RestfulFirebase.Common.Models
         public static ObservableObject CreateFromProperties(IEnumerable<DistinctProperty> properties)
         {
             var obj = new ObservableObject(null);
-            foreach (var property in properties.ToList())
-            {
-                var existing = obj.Properties.FirstOrDefault(i => i.Model.Key.Equals(property.Key));
-                if (existing.Model == null)
-                {
-                    existing = (property, existing.Group, existing.PropertyName);
-                }
-            }
+            obj.PatchRawProperties(properties);
             return obj;
         }
 
         public static ObservableObject CreateFromProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
         {
             var obj = new ObservableObject(null);
-            foreach (var property in properties.ToList())
-            {
-                var existing = obj.Properties.FirstOrDefault(i => i.Model.Key.Equals(property.Model.Key) && i.Group.Equals(property.Group));
-                if (existing.Model == null)
-                {
-                    existing = (property.Model, existing.Group, existing.PropertyName);
-                }
-            }
+            obj.PatchRawProperties(properties);
             return obj;
         }
 
@@ -115,13 +101,13 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                DistinctProperty existingCell = Properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
-                DistinctProperty newCell = DistinctProperty.CreateFromKeyAndValue(key, value);
+                var existingCell = Properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
+                var newCell = DistinctProperty.CreateFromKeyAndValue(key, value);
 
                 if (existingCell != null)
                 {
                     //if value didn't change
-                    if (existingCell.Data?.Equals(newCell.Data) ?? false)
+                    if (existingCell.Data?.Equals(newCell.Data) ?? newCell.Data == null)
                         return false;
 
                     var existingValue = existingCell.ParseValue<T>();
@@ -168,7 +154,70 @@ namespace RestfulFirebase.Common.Models
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
         {
-            return group == null ? Properties.Select(i => i.Model) : Properties.FindAll(i => i.Group?.Equals(group) ?? false).Select(i => i.Model);
+            return group == null ? Properties.Select(i => i.Model) : Properties.FindAll(i => i.Group.Equals(group)).Select(i => i.Model);
+        }
+
+        public void PatchRawProperties(IEnumerable<DistinctProperty> properties, string group = null)
+        {
+            var groupProperties = group == null ? Properties : Properties.FindAll(i => i.Group.Equals(group));
+            foreach (var property in properties)
+            {
+                try
+                {
+                    var (ExistingModel, ExistingGroup, ExistingPropertyName) = groupProperties.FirstOrDefault(i => i.Model.Key.Equals(property.Key));
+
+                    if (ExistingModel != null)
+                    {
+                        //if value didn't change
+                        if (ExistingModel.Data?.Equals(property.Data) ?? property.Data == null)
+                            continue;
+
+                        ExistingModel.Update(property);
+                    }
+                    else
+                    {
+                        ExistingModel = property;
+                        Properties.Add((ExistingModel, ExistingGroup, ExistingPropertyName));
+                    }
+
+                    OnChanged(PropertyChangeType.Set, ExistingModel.Key, ExistingGroup, ExistingPropertyName);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            }
+        }
+
+        public void PatchRawProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
+        {
+            foreach (var (Model, Group, PropertyName) in properties)
+            {
+                try
+                {
+                    var (ExistingModel, ExistingGroup, ExistingPropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(Model.Key) && i.Group.Equals(Group));
+
+                    if (ExistingModel != null)
+                    {
+                        //if value didn't change
+                        if (ExistingModel.Data?.Equals(Model.Data) ?? Model.Data == null)
+                            continue;
+
+                        ExistingModel.Update(Model);
+                    }
+                    else
+                    {
+                        ExistingModel = Model;
+                        Properties.Add((Model, ExistingGroup, ExistingPropertyName));
+                    }
+
+                    OnChanged(PropertyChangeType.Set, ExistingModel.Key, ExistingGroup, ExistingPropertyName);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            }
         }
 
         public T Parse<T>()
