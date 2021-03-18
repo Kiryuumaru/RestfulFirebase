@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 {
     public class DateTimeDecoder : DataTypeDecoder<DateTime>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(DateTime value)
+        public override ObservableProperty Parse(DateTime value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(Helpers.EncodeDateTime(value));
+            return ObservableProperty.CreateFromData(Helpers.EncodeDateTime(value));
         }
 
-        public override DateTime ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override DateTime Parse(ObservableProperty decodable)
         {
-            var dateTime = Helpers.DecodeDateTime(decodable.Holder.Data);
+            var dateTime = Helpers.DecodeDateTime(decodable.Data);
             if (dateTime.HasValue) return dateTime.Value;
             throw new Exception("Parse error");
         }

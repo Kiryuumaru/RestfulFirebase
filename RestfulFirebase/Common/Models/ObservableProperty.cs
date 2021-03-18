@@ -10,87 +10,141 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class PropertyExceptionEventArgs : PropertyChangedEventArgs
+    public class ObservableProperty : AttributeHolder, INotifyPropertyChanged
     {
-        public Exception Exception { get; }
-        public PropertyExceptionEventArgs(Exception exception, string propertyName = "") : base(propertyName)
-        {
-            Exception = exception;
-        }
-    }
+        #region Properties
 
-    public class ObservablePropertyHolder
-    {
-        public IEnumerable<byte> Bytes { get; private set; }
+        public event PropertyChangedEventHandler PropertyChanged
+        {
+            add
+            {
+                lock (this)
+                {
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
+                    handler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
+                    handler -= value;
+                }
+            }
+        }
+
+        public event EventHandler<ObservableExceptionEventArgs> PropertyError
+        {
+            add
+            {
+                lock (this)
+                {
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
+                    handler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
+                    handler -= value;
+                }
+            }
+        }
+
+        public IEnumerable<byte> Bytes
+        {
+            get => (IEnumerable<byte>)GetAttribute(nameof(Bytes), nameof(ObservableProperty)).Value;
+            private set => SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
+        }
+
         public string Data { get => Encoding.Unicode.GetString(Bytes.ToArray()); }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        #endregion
 
-        public event EventHandler<PropertyExceptionEventArgs> PropertyError;
+        #region Initializers
 
-        public class ObservableProperty : INotifyPropertyChanged
+        public static ObservableProperty CreateFromValue<T>(T value)
         {
-            public ObservablePropertyHolder Holder { get; } = new ObservablePropertyHolder();
+            return DataTypeDecoder.GetDecoder<T>().Parse(value);
+        }
 
-            public event PropertyChangedEventHandler PropertyChanged
+        public static ObservableProperty CreateFromData(string data)
+        {
+            var obj = new ObservableProperty(null);
+            obj.Update(data);
+            return obj;
+        }
+
+        public static ObservableProperty CreateFromBytes(IEnumerable<byte> bytes)
+        {
+            var obj = new ObservableProperty(null);
+            obj.Update(bytes);
+            return obj;
+        }
+
+        public ObservableProperty(AttributeHolder holder) : base(holder)
+        {
+
+        }
+
+        #endregion
+
+        #region Methods
+
+        protected virtual void OnChanged(string propertyName = "")
+        {
+            var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
+            handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        protected virtual void OnError(Exception exception)
+        {
+            var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
+            handler?.Invoke(this, new ObservableExceptionEventArgs(exception));
+        }
+
+        public void Update(string data)
+        {
+            try
             {
-                add => Holder.PropertyChanged += value;
-                remove => Holder.PropertyChanged -= value;
+                Bytes = Encoding.Unicode.GetBytes(data);
+                OnChanged(nameof(Bytes));
+                OnChanged(nameof(Data));
             }
-
-            public event EventHandler<PropertyExceptionEventArgs> PropertyError
+            catch (Exception ex)
             {
-                add => Holder.PropertyError += value;
-                remove => Holder.PropertyError -= value;
-            }
-
-            protected virtual void OnChanged() => Holder.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Data)));
-
-            protected virtual void OnError(Exception exception) => Holder.PropertyError?.Invoke(this, new PropertyExceptionEventArgs(exception, nameof(Data)));
-
-            public ObservableProperty(ObservablePropertyHolder holder)
-            {
-                Holder = holder;
-            }
-            public ObservableProperty(string data) => Update(data);
-
-            public ObservableProperty(IEnumerable<byte> bytes) => Update(bytes);
-
-            public void Update(string data)
-            {
-                try
-                {
-                    Holder.Bytes = Encoding.Unicode.GetBytes(data);
-                    OnChanged();
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
-
-            public void Update(IEnumerable<byte> bytes)
-            {
-                try
-                {
-                    Holder.Bytes = bytes;
-                    OnChanged();
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
-
-            public static ObservableProperty CreateDerived<T>(T value)
-            {
-                return DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            }
-
-            public T ParseValue<T>()
-            {
-                return DataTypeDecoder.GetDecoder<T>().ParseValue(this);
+                OnError(ex);
             }
         }
+
+        public void Update(IEnumerable<byte> bytes)
+        {
+            try
+            {
+                Bytes = bytes;
+                OnChanged(nameof(Bytes));
+                OnChanged(nameof(Data));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public T ParseValue<T>()
+        {
+            return DataTypeDecoder.GetDecoder<T>().Parse(this);
+        }
+
+        public T Parse<T>()
+            where T : ObservableObject
+        {
+            return (T)Activator.CreateInstance(typeof(T), this);
+        }
+
+        #endregion
     }
 }

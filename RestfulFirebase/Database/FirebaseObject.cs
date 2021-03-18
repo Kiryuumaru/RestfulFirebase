@@ -7,40 +7,42 @@ namespace RestfulFirebase.Database
 {
     public class FirebaseObject : DistinctObject
     {
-        public FirebaseObject() : base()
+        #region Initializers
+
+        public static new FirebaseObject Create()
+        {
+            return new FirebaseObject(DistinctObject.Create());
+        }
+
+        public static new FirebaseObject CreateFromKey(string key)
+        {
+            return new FirebaseObject(DistinctObject.CreateFromKey(key));
+        }
+
+        public static new FirebaseObject CreateFromKeyAndProperties(string key, IEnumerable<DistinctProperty> properties)
+        {
+            return new FirebaseObject(DistinctObject.CreateFromKeyAndProperties(key, properties));
+        }
+
+        public FirebaseObject(AttributeHolder holder) : base(holder)
         {
 
         }
 
-        public FirebaseObject(ObservableObjectHolder holder) : base(holder)
-        {
+        #endregion
 
-        }
-
-        public FirebaseObject(string key) : base(key)
-        {
-
-        }
-
-        public FirebaseObject(string key, IEnumerable<DistinctProperty> properties) : base(key, properties)
-        {
-
-        }
+        #region Methods
 
         public void SetPersistableProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
-            SetProperty(value, key, propertyName, "persistable", onChanged, validateValue);
+            SetProperty(value, key, propertyName, nameof(FirebaseObject), onChanged, validateValue);
         }
 
         public IEnumerable<DistinctProperty> GetPersistableRawProperties()
         {
-            return GetRawProperties("persistable");
+            return GetRawProperties(nameof(FirebaseObject));
         }
 
-        public T Parse<T>()
-            where T : FirebaseObject
-        {
-            return (T)Activator.CreateInstance(typeof(T), Holder);
-        }
+        #endregion
     }
 }

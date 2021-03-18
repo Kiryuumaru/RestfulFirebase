@@ -8,133 +8,170 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public enum PropertyChangeType
+    public class ObservableObject : AttributeHolder, INotifyPropertyChanged
     {
-        Set, Delete
-    }
+        #region Properties
 
-    public class ObjectChangedEventArgs : PropertyChangedEventArgs
-    {
-        public string Key { get; }
-        public PropertyChangeType Type { get; }
-        public string KeyGroup { get; }
-        public ObjectChangedEventArgs(PropertyChangeType type, string key, string propertyName = "", string group = "") : base(propertyName)
+        public event PropertyChangedEventHandler PropertyChanged
         {
-            Type = type;
-            Key = key;
-            KeyGroup = group;
-        }
-    }
-
-    public class ObjectExceptionEventArgs : EventArgs
-    {
-        public Exception Exception { get; }
-        public ObjectExceptionEventArgs(Exception exception)
-        {
-            Exception = exception;
-        }
-    }
-
-    public class ObservableObjectHolder
-    {
-        private List<(string PropertyName, string Group, DistinctProperty Model)> properties = new List<(string PropertyName, string Group, DistinctProperty Model)>();
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public event EventHandler<ObjectExceptionEventArgs> PropertyError;
-
-        public class ObservableObject : INotifyPropertyChanged
-        {
-            public ObservableObjectHolder Holder { get; } = new ObservableObjectHolder();
-
-            public event PropertyChangedEventHandler PropertyChanged
+            add
             {
-                add => Holder.PropertyChanged += value;
-                remove => Holder.PropertyChanged -= value;
-            }
-
-            public event EventHandler<ObjectExceptionEventArgs> PropertyError
-            {
-                add => Holder.PropertyError += value;
-                remove => Holder.PropertyError -= value;
-            }
-
-            public void OnChanged(PropertyChangeType type, string key, [CallerMemberName] string propertyName = "", string group = "") => Holder.PropertyChanged?.Invoke(this, new ObjectChangedEventArgs(type, key, propertyName, group));
-
-            public void OnError(Exception exception) => Holder.PropertyError?.Invoke(this, new ObjectExceptionEventArgs(exception));
-
-            public ObservableObject() { }
-
-            public ObservableObject(ObservableObjectHolder holder)
-            {
-                Holder = holder;
-            }
-
-            public ObservableObject(IEnumerable<DistinctProperty> properties)
-            {
-                Holder.properties = properties.Select(i => ("", "", i)).ToList();
-            }
-
-            public ObservableObject(IEnumerable<(string PropertyName, string Group, DistinctProperty Model)> properties)
-            {
-                Holder.properties = properties.ToList();
-            }
-
-            public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
-            {
-                return group == null ? Holder.properties.Select(i => i.Model) : Holder.properties.FindAll(i => i.Group?.Equals(group) ?? false).Select(i => i.Model);
-            }
-
-            protected virtual bool SetProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", string group = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
-            {
-                try
+                lock (this)
                 {
-                    DistinctProperty existingCell = Holder.properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
-                    DistinctProperty newCell = DistinctProperty.CreateDerived(value, key);
-
-                    if (existingCell != null)
-                    {
-                        //if value didn't change
-                        if (existingCell.Holder.Data.Equals(newCell.Holder.Data))
-                            return false;
-
-                        var existingValue = existingCell.ParseValue<T>();
-
-                        //if value changed but didn't validate
-                        if (validateValue != null && !validateValue(existingValue, value))
-                            return false;
-
-                        existingCell.Update(newCell);
-                    }
-                    else
-                    {
-                        Holder.properties.Add((propertyName, group, newCell));
-                    }
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
+                    handler += value;
                 }
-                catch (Exception ex)
+            }
+            remove
+            {
+                lock (this)
                 {
-                    OnError(ex);
+                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
+                    handler -= value;
                 }
-
-                onChanged?.Invoke();
-                OnChanged(PropertyChangeType.Set, key, propertyName, group);
-                return true;
-            }
-
-            protected virtual T GetProperty<T>(string key)
-            {
-                var (PropertyName, Group, Model) = Holder.properties.FirstOrDefault(i => i.Model.Key.Equals(key));
-                if (Model == null) return default;
-                return Model.ParseValue<T>();
-            }
-
-            protected virtual void DeleteProperty(string key)
-            {
-                var (PropertyName, Group, Model) = Holder.properties.FirstOrDefault(i => i.Model.Key.Equals(key));
-                if (Model == null) return;
-                Holder.properties.RemoveAll(i => i.Model.Key.Equals(key));
-                OnChanged(PropertyChangeType.Delete, key, PropertyName, Group);
             }
         }
+
+        public event EventHandler<ObservableExceptionEventArgs> PropertyError
+        {
+            add
+            {
+                lock (this)
+                {
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
+                    handler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
+                    handler -= value;
+                }
+            }
+        }
+
+        private List<(string PropertyName, string Group, DistinctProperty Model)> Properties
+        {
+            get
+            {
+                var properties = (List<(string PropertyName, string Group, DistinctProperty Model)>)GetAttribute(nameof(Properties), nameof(ObservableObject)).Value;
+                if (properties == null)
+                {
+                    properties = new List<(string PropertyName, string Group, DistinctProperty Model)>();
+                    SetAttribute(nameof(Properties), nameof(ObservableObject), properties);
+                }
+                return properties;
+            }
+            set => SetAttribute(nameof(Properties), nameof(ObservableObject), value);
+        }
+
+        #endregion
+
+        #region Initializers
+
+        public static ObservableObject CreateFromProperties(IEnumerable<DistinctProperty> properties)
+        {
+            var obj = new ObservableObject(null)
+            {
+                Properties = properties.Select(i => ("", "", i)).ToList()
+            };
+            return obj;
+        }
+
+        public static ObservableObject CreateFromProperties(IEnumerable<(string PropertyName, string Group, DistinctProperty Model)> properties)
+        {
+            var obj = new ObservableObject(null)
+            {
+                Properties = properties.ToList()
+            };
+            return obj;
+        }
+
+        public ObservableObject(AttributeHolder holder) : base(holder)
+        {
+
+        }
+
+        #endregion
+
+        #region Methods
+
+        protected virtual void OnChanged(PropertyChangeType type, string key, string propertyName = "", string group = "")
+        {
+            var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
+            handler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, propertyName, group));
+        }
+
+        protected virtual void OnError(Exception exception)
+        {
+            var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
+            handler?.Invoke(this, new ObservableExceptionEventArgs(exception));
+        }
+
+        protected virtual bool SetProperty<T>(T value, string key, string propertyName = "", string group = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        {
+            try
+            {
+                DistinctProperty existingCell = Properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
+                DistinctProperty newCell = DistinctProperty.CreateFromKeyAndValue(key, value);
+
+                if (existingCell != null)
+                {
+                    //if value didn't change
+                    if (existingCell.Data.Equals(newCell.Data))
+                        return false;
+
+                    var existingValue = existingCell.ParseValue<T>();
+
+                    //if value changed but didn't validate
+                    if (validateValue != null && !validateValue(existingValue, value))
+                        return false;
+
+                    existingCell.Update(newCell);
+                }
+                else
+                {
+                    Properties.Add((propertyName, group, newCell));
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+
+            onChanged?.Invoke();
+            OnChanged(PropertyChangeType.Set, key, propertyName, group);
+            return true;
+        }
+
+        protected virtual T GetProperty<T>(string key)
+        {
+            var (PropertyName, Group, Model) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            if (Model == null) return default;
+            return Model.ParseValue<T>();
+        }
+
+        protected virtual void DeleteProperty(string key)
+        {
+            var (PropertyName, Group, Model) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            if (Model == null) return;
+            Properties.RemoveAll(i => i.Model.Key.Equals(key));
+            OnChanged(PropertyChangeType.Delete, key, PropertyName, Group);
+        }
+
+        public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
+        {
+            return group == null ? Properties.Select(i => i.Model) : Properties.FindAll(i => i.Group?.Equals(group) ?? false).Select(i => i.Model);
+        }
+
+        public T Parse<T>()
+            where T : ObservableObject
+        {
+            return (T)Activator.CreateInstance(typeof(T), this);
+        }
+
+        #endregion
     }
 }

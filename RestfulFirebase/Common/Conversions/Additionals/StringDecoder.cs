@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 {
     public class StringDecoder : DataTypeDecoder<string>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(string value)
+        public override ObservableProperty Parse(string value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(value);
+            return ObservableProperty.CreateFromData(value);
         }
 
-        public override string ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override string Parse(ObservableProperty decodable)
         {
-            return decodable.Holder.Data;
+            return decodable.Data;
         }
     }
 }

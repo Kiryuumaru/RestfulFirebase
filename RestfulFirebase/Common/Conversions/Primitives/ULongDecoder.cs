@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class ULongDecoder : DataTypeDecoder<ulong>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(ulong value)
+        public override ObservableProperty Parse(ulong value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
+            return ObservableProperty.CreateFromData(value.ToString());
         }
 
-        public override ulong ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override ulong Parse(ObservableProperty decodable)
         {
-            if (ulong.TryParse(decodable.Holder.Data, out ulong result)) return result;
+            if (ulong.TryParse(decodable.Data, out ulong result)) return result;
             throw new Exception("Parse error");
         }
     }

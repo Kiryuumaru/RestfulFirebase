@@ -9,39 +9,66 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class DistinctProperty : ObservablePropertyHolder.ObservableProperty
+    public class DistinctProperty : ObservableProperty
     {
-        public string Key { get; protected set; }
+        #region Properties
 
-        public DistinctProperty(string key, ObservablePropertyHolder holder) : base(holder)
+        public string Key
         {
-            Key = key;
+            get => (string)GetAttribute(nameof(Key), nameof(DistinctProperty)).Value;
+            set => SetAttribute(nameof(Key), nameof(DistinctProperty), value);
         }
 
-        public DistinctProperty(string key, string data) : base(data)
+        #endregion
+
+        #region Initializers
+
+        public static DistinctProperty CreateFromKeyAndValue<T>(string key, T value)
         {
-            Key = key;
+            var obj = new DistinctProperty(CreateFromValue(value))
+            {
+                Key = key
+            };
+            return obj;
         }
 
-        public DistinctProperty(string key, IEnumerable<byte> bytes) : base(bytes)
+        public static DistinctProperty CreateFromKeyAndData(string key, string data)
         {
-            Key = key;
+            var obj = new DistinctProperty(CreateFromData(data))
+            {
+                Key = key
+            };
+            return obj;
         }
+
+        public static DistinctProperty CreateFromKeyAndBytes(string key, IEnumerable<byte> bytes)
+        {
+            var obj = new DistinctProperty(CreateFromBytes(bytes))
+            {
+                Key = key
+            };
+            return obj;
+        }
+
+        public DistinctProperty(AttributeHolder holder) : base(holder)
+        {
+
+        }
+
+        #endregion
+
+        #region Methods
 
         public bool Update(DistinctProperty cellModel)
         {
             if (cellModel.Key.Equals(Key))
             {
-                Update(cellModel.Holder.Data);
+                Update(cellModel.Data);
                 return true;
             }
             return false;
         }
 
-        public static DistinctProperty CreateDerived<T>(T value, string key)
-        {
-            var decodable = DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            return new DistinctProperty(key, decodable.Holder.Data);
-        }
+        #endregion
     }
 }

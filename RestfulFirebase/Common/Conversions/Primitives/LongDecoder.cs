@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class LongDecoder : DataTypeDecoder<long>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(long value)
+        public override ObservableProperty Parse(long value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
+            return ObservableProperty.CreateFromData(value.ToString());
         }
 
-        public override long ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override long Parse(ObservableProperty decodable)
         {
-            if (long.TryParse(decodable.Holder.Data, out long result)) return result;
+            if (long.TryParse(decodable.Data, out long result)) return result;
             throw new Exception("Parse error");
         }
     }

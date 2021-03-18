@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class UShortDecoder : DataTypeDecoder<ushort>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(ushort value)
+        public override ObservableProperty Parse(ushort value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
+            return ObservableProperty.CreateFromData(value.ToString());
         }
 
-        public override ushort ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override ushort Parse(ObservableProperty decodable)
         {
-            if (ushort.TryParse(decodable.Holder.Data, out ushort result)) return result;
+            if (ushort.TryParse(decodable.Data, out ushort result)) return result;
             throw new Exception("Parse error");
         }
     }

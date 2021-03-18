@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class DistinctObject : ObservableObjectHolder.ObservableObject
+    public class DistinctObject : ObservableObject
     {
         #region Properties
 
@@ -22,36 +22,43 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public DistinctObject() : base()
+        public static DistinctObject Create()
         {
-            Key = Helpers.GenerateSafeUID();
+            var obj = new DistinctObject(null)
+            {
+                Key = Helpers.GenerateSafeUID()
+            };
+            return obj;
         }
 
-        public DistinctObject(ObservableObjectHolder holder) : base(holder)
+        public static DistinctObject CreateFromKey(string key)
         {
-            Key = Helpers.GenerateSafeUID();
+            var obj = new DistinctObject(null)
+            {
+                Key = key
+            };
+            return obj;
         }
 
-        public DistinctObject(string key)
+        public static DistinctObject CreateFromKeyAndProperties(string key, IEnumerable<DistinctProperty> properties)
         {
-            Key = key;
+            var obj = new DistinctObject(CreateFromProperties(properties))
+            {
+                Key = key
+            };
+            return obj;
         }
 
-        public DistinctObject(string key, IEnumerable<DistinctProperty> properties) : base(properties)
+        public DistinctObject(AttributeHolder holder) : base(holder)
         {
-            Key = key;
+
         }
 
         #endregion
 
         #region Methods
 
-        public T ParseDerived<T>()
-            where T : DistinctObject
-        {
 
-            return (T)Activator.CreateInstance(typeof(T), Holder);
-        }
 
         #endregion
     }

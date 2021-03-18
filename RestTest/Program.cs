@@ -32,31 +32,39 @@ namespace RestTest
 
         #region Initializers
 
-        public TestStorable()
+        public static new TestStorable Create()
         {
-            Created = DateTime.UtcNow;
-            Modified = DateTime.UtcNow;
+            return new TestStorable(FirebaseObject.Create())
+            {
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow
+            };
         }
 
-        public TestStorable(ObservableObjectHolder holder) : base(holder)
+        public static TestStorable Create(string key)
         {
-            Created = DateTime.UtcNow;
-            Modified = DateTime.UtcNow;
+            return new TestStorable(CreateFromKey(key))
+            {
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow
+            };
         }
 
-        public TestStorable(string id) : base(id)
+        public static TestStorable Create(string key, DateTime created, DateTime modified)
         {
-            Created = DateTime.UtcNow;
-            Modified = DateTime.UtcNow;
+            return new TestStorable(CreateFromKey(key))
+            {
+                Created = created,
+                Modified = modified
+            };
         }
 
-        public TestStorable(string key, DateTime created, DateTime modified) : base(key)
+        public static TestStorable Create(string key, IEnumerable<DistinctProperty> properties)
         {
-            Created = created;
-            Modified = modified;
+            return new TestStorable(CreateFromKeyAndProperties(key, properties));
         }
 
-        public TestStorable(string key, IEnumerable<DistinctProperty> cellModels) : base(key, cellModels)
+        public TestStorable(AttributeHolder holder) : base(holder)
         {
 
         }
@@ -86,24 +94,24 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var props1 = FirebaseProperty.Create(999.9299, "keyD");
-            var props2 = FirebaseProperty.Create("numba22", "keyS");
-            var props3 = new TestStorable();
+            var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
+            var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
+            var props3 = TestStorable.Create();
 
             await app.Database.Child("public").Child("prop").SetAsync(props1);
             await app.Database.Child("public").Child("prop").SetAsync(props2);
             await app.Database.Child("public").Child("prop").SetAsync(props3);
 
-            try
-            {
-                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props1);
-                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props2);
-                await app.Database.Child("users").Child("a").Child("prop").SetAsync(props3);
-            }
-            catch(FirebaseException s)
-            {
+            //try
+            //{
+            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props1);
+            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props2);
+            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props3);
+            //}
+            //catch(FirebaseException s)
+            //{
 
-            }
+            //}
 
             var ss = props3.Key;
 

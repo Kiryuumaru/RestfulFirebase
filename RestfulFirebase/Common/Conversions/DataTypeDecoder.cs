@@ -54,8 +54,8 @@ namespace RestfulFirebase.Common.Conversions
         #region Properties
 
         public override Type Type { get => typeof(T); }
-        public abstract ObservablePropertyHolder.ObservableProperty CreateDerived(T value);
-        public abstract T ParseValue(ObservablePropertyHolder.ObservableProperty decodable);
+        public abstract ObservableProperty Parse(T value);
+        public abstract T Parse(ObservableProperty decodable);
 
         #endregion
     }

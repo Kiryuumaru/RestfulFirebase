@@ -73,7 +73,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => property.Key, App);
 
-                var data = JsonConvert.SerializeObject(property.Holder.Data, App.Config.JsonSerializerSettings);
+                var data = JsonConvert.SerializeObject(property.Data, App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => storable.Key, App);
 
-                var collection = storable.GetPersistableRawProperties().ToDictionary(i => i.Key, i => i.Holder.Data);
+                var collection = storable.GetPersistableRawProperties().ToDictionary(i => i.Key, i => i.Data);
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
@@ -143,7 +143,7 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<string>(responseData, query.App.Config.JsonSerializerSettings);
-                var prop = new FirebaseProperty<T>(data, path);
+                var prop = FirebaseProperty.CreateFromKeyAndData<T>(path, data);
 
 
 
@@ -186,7 +186,7 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
-                var obj = new FirebaseObject(path, data.Select(i => new DistinctProperty(i.Key, i.Value)));
+                var obj = FirebaseObject.CreateFromKeyAndProperties(path, data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value)));
 
 
                 

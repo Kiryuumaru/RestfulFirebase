@@ -7,14 +7,14 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class DecimalDecoder : DataTypeDecoder<decimal>
     {
-        public override ObservablePropertyHolder.ObservableProperty CreateDerived(decimal value)
+        public override ObservableProperty Parse(decimal value)
         {
-            return new ObservablePropertyHolder.ObservableProperty(value.ToString());
+            return ObservableProperty.CreateFromData(value.ToString());
         }
 
-        public override decimal ParseValue(ObservablePropertyHolder.ObservableProperty decodable)
+        public override decimal Parse(ObservableProperty decodable)
         {
-            if (decimal.TryParse(decodable.Holder.Data, out decimal result)) return result;
+            if (decimal.TryParse(decodable.Data, out decimal result)) return result;
             throw new Exception("Parse error");
         }
     }

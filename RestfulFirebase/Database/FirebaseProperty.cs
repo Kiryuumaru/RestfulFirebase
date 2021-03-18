@@ -8,33 +8,44 @@ namespace RestfulFirebase.Database
 {
     public abstract class FirebaseProperty : DistinctProperty
     {
-        protected FirebaseProperty(string key, ObservablePropertyHolder holder) : base(key, holder)
+        #region Initializers
+
+        public static new FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value)
+        {
+            return new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
+        }
+
+        public static FirebaseProperty<T> CreateFromKeyAndData<T>(string key, string data)
+        {
+            return new FirebaseProperty<T>(CreateFromKeyAndData(key, data));
+        }
+
+        public FirebaseProperty(AttributeHolder holder) : base(holder)
         {
 
         }
 
-        protected FirebaseProperty(string key, string data) : base(key, data)
-        {
-
-        }
-
-        public static FirebaseProperty<T> Create<T>(T value, string key)
-        {
-            var decodable = DataTypeDecoder.GetDecoder<T>().CreateDerived(value);
-            return new FirebaseProperty<T>(key, decodable.Holder.Data);
-        }
+        #endregion
     }
 
     public class FirebaseProperty<T> : FirebaseProperty
     {
-        public FirebaseProperty(string key, string data) : base(key, data)
+        #region Initializers
+
+        public FirebaseProperty(AttributeHolder holder) : base(holder)
         {
-            Key = key;
+
         }
+
+        #endregion
+
+        #region Methods
 
         public T ParseValue()
         {
-            return DataTypeDecoder.GetDecoder<T>().ParseValue(this);
+            return ParseValue<T>();
         }
+
+        #endregion
     }
 }
