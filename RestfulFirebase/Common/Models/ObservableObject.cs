@@ -12,24 +12,32 @@ namespace RestfulFirebase.Common.Models
     {
         #region Properties
 
+        private PropertyChangedEventHandler PropertyChangedHandler
+        {
+            get => GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableObject), delegate { }).Value;
+            set => SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableObject), value);
+        }
+
+        private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
+        {
+            get => GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
+            set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
+        }
+
         public event PropertyChangedEventHandler PropertyChanged
         {
             add
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value ?? delegate { };
-                    handler += value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
+                    PropertyChangedHandler += value;
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value ?? delegate { };
-                    handler -= value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
+                    PropertyChangedHandler -= value;
                 }
             }
         }
@@ -40,34 +48,21 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value ?? delegate { };
-                    handler += value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
+                    PropertyErrorHandler += value;
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value ?? delegate { };
-                    handler -= value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableObject), handler);
+                    PropertyErrorHandler -= value;
                 }
             }
         }
 
-        private List<(string PropertyName, string Group, DistinctProperty Model)> Properties
+        private List<(DistinctProperty Model, string Group, string PropertyName)> Properties
         {
-            get
-            {
-                var properties = (List<(string PropertyName, string Group, DistinctProperty Model)>)GetAttribute(nameof(Properties), nameof(ObservableObject)).Value;
-                if (properties == null)
-                {
-                    properties = new List<(string PropertyName, string Group, DistinctProperty Model)>();
-                    SetAttribute(nameof(Properties), nameof(ObservableObject), properties);
-                }
-                return properties;
-            }
+            get => GetAttribute(nameof(Properties), nameof(ObservableObject), new List<(DistinctProperty Model, string Group, string PropertyName)>()).Value;
             set => SetAttribute(nameof(Properties), nameof(ObservableObject), value);
         }
 
@@ -79,12 +74,12 @@ namespace RestfulFirebase.Common.Models
         {
             var obj = new ObservableObject(null)
             {
-                Properties = properties.Select(i => ("", "", i)).ToList()
+                Properties = properties.Select(i => (i, "", "")).ToList()
             };
             return obj;
         }
 
-        public static ObservableObject CreateFromProperties(IEnumerable<(string PropertyName, string Group, DistinctProperty Model)> properties)
+        public static ObservableObject CreateFromProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
         {
             var obj = new ObservableObject(null)
             {
@@ -102,19 +97,11 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(PropertyChangeType type, string key, string propertyName = "", string group = "")
-        {
-            var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableObject)).Value;
-            handler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, propertyName, group));
-        }
+        protected virtual void OnChanged(PropertyChangeType type, string key, string group = "", string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
+        
+        protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
 
-        protected virtual void OnError(Exception exception)
-        {
-            var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableObject)).Value;
-            handler?.Invoke(this, new ObservableExceptionEventArgs(exception));
-        }
-
-        protected virtual bool SetProperty<T>(T value, string key, string propertyName = "", string group = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        protected virtual bool SetProperty<T>(T value, string key, string group = "", [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
             try
             {
@@ -137,7 +124,7 @@ namespace RestfulFirebase.Common.Models
                 }
                 else
                 {
-                    Properties.Add((propertyName, group, newCell));
+                    Properties.Add((newCell, group, propertyName));
                 }
             }
             catch (Exception ex)
@@ -146,23 +133,23 @@ namespace RestfulFirebase.Common.Models
             }
 
             onChanged?.Invoke();
-            OnChanged(PropertyChangeType.Set, key, propertyName, group);
+            OnChanged(PropertyChangeType.Set, key, group, propertyName);
             return true;
         }
 
         protected virtual T GetProperty<T>(string key)
         {
-            var (PropertyName, Group, Model) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
             if (Model == null) return default;
             return Model.ParseValue<T>();
         }
 
         protected virtual void DeleteProperty(string key)
         {
-            var (PropertyName, Group, Model) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
+            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
             if (Model == null) return;
             Properties.RemoveAll(i => i.Model.Key.Equals(key));
-            OnChanged(PropertyChangeType.Delete, key, PropertyName, Group);
+            OnChanged(PropertyChangeType.Delete, key, Group, PropertyName);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

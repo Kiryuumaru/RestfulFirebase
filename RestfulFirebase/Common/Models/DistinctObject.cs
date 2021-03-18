@@ -15,7 +15,7 @@ namespace RestfulFirebase.Common.Models
         public string Key
         {
             get => GetProperty<string>("key");
-            private set => SetProperty(value, "key", nameof(Key));
+            private set => SetProperty(value, "key");
         }
 
         #endregion

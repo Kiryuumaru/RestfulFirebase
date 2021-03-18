@@ -20,12 +20,12 @@ namespace RestTest
         public DateTime Created
         {
             get => GetProperty<DateTime>("_cr");
-            set => SetPersistableProperty(value, "_cr", nameof(Created));
+            set => SetPersistableProperty(value, "_cr");
         }
         public DateTime Modified
         {
             get => GetProperty<DateTime>("_md");
-            set => SetPersistableProperty(value, "_md", nameof(Modified));
+            set => SetPersistableProperty(value, "_md");
         }
 
         #endregion
@@ -97,17 +97,20 @@ namespace RestTest
             var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
             var props3 = TestStorable.Create();
-
-            await app.Database.Child("public").Child("prop").SetAsync(props1);
-            await app.Database.Child("public").Child("prop").SetAsync(props2);
-            await app.Database.Child("public").Child("prop").SetAsync(props3);
+            Console.WriteLine(props3.Modified);
+            int x11 = 0;
 
             props3.PropertyChanged += (s, e) =>
             {
 
             };
 
-            props3.Modified = DateTime.UtcNow;
+            props3.Modified = default;
+            Console.WriteLine(props3.Modified);
+
+            await app.Database.Child("public").Child("prop").SetAsync(props1);
+            await app.Database.Child("public").Child("prop").SetAsync(props2);
+            await app.Database.Child("public").Child("prop").SetAsync(props3);
 
             //try
             //{

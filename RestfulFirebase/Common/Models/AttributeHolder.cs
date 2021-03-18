@@ -10,11 +10,15 @@ namespace RestfulFirebase.Common.Models
     {
         #region Helpers
 
-        private class Attribute
+        private abstract class Attribute
         {
             public string Key { get; set; }
-            public object Value { get; set; }
             public string Group { get; set; }
+        }
+
+        private class Attribute<T> : Attribute
+        {
+            public T Value { get; set; }
         }
 
         #endregion
@@ -36,30 +40,36 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected (string Key, string Group, object Value) GetAttribute(string key, string group)
+        protected (string Key, string Group, T Value) GetAttribute<T>(string key, string group, T defaultValue = default)
         {
-            var attribute = attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
-            return attribute == null ? (null, null, null) : (attribute.Key, attribute.Group, attribute.Value);
-        }
-
-        protected IEnumerable<(string Key, string Group, object Value)>  GetAttributes(string group)
-        {
-            return attributes.Where(i => i.Group.Equals(group)).Select(i => (i.Key, i.Group, i.Value));
-        }
-
-        protected void SetAttribute(string key, string group, object value)
-        {
-            var attribute = attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
+            var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
             if (attribute == null)
             {
-                attribute = new Attribute()
+                attribute = new Attribute<T>()
+                {
+                    Key = key,
+                    Group = group,
+                    Value = defaultValue
+                };
+                attributes.Add(attribute);
+            }
+            return (attribute.Key, attribute.Group, attribute.Value);
+        }
+
+        protected void SetAttribute<T>(string key, string group, T value)
+        {
+            var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
+            if (attribute == null)
+            {
+                attribute = new Attribute<T>()
                 {
                     Key = key,
                     Group = group,
                     Value = value
                 };
+                attributes.Add(attribute);
             }
-            attributes.Add(attribute);
+            attribute.Value = value;
         }
 
         protected void DeleteAttribute(string key, string group)

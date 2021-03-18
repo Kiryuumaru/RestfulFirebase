@@ -14,24 +14,32 @@ namespace RestfulFirebase.Common.Models
     {
         #region Properties
 
+        private PropertyChangedEventHandler PropertyChangedHandler
+        {
+            get => GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableProperty), delegate { }).Value;
+            set => SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableProperty), value);
+        }
+
+        private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
+        {
+            get => GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
+            set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
+        }
+
         public event PropertyChangedEventHandler PropertyChanged
         {
             add
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value ?? delegate { };
-                    handler += value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableProperty), handler);
+                    PropertyChangedHandler += value;
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value ?? delegate { };
-                    handler -= value;
-                    SetAttribute(nameof(PropertyChanged), nameof(ObservableProperty), handler);
+                    PropertyChangedHandler -= value;
                 }
             }
         }
@@ -42,25 +50,21 @@ namespace RestfulFirebase.Common.Models
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value ?? delegate { };
-                    handler += value;
-                    SetAttribute(nameof(PropertyError), nameof(ObservableProperty), handler);
+                    PropertyErrorHandler += value;
                 }
             }
             remove
             {
                 lock (this)
                 {
-                    var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value ?? delegate { };
-                    handler -= value;
-                    SetAttribute(nameof(PropertyError), nameof(ObservableProperty), handler);
+                    PropertyErrorHandler -= value;
                 }
             }
         }
 
         public IEnumerable<byte> Bytes
         {
-            get => (IEnumerable<byte>)GetAttribute(nameof(Bytes), nameof(ObservableProperty)).Value;
+            get => GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
             private set => SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
         }
 
@@ -98,17 +102,9 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(string propertyName = "")
-        {
-            var handler = (PropertyChangedEventHandler)GetAttribute(nameof(PropertyChanged), nameof(ObservableProperty)).Value;
-            handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        protected virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        protected virtual void OnError(Exception exception)
-        {
-            var handler = (EventHandler<ObservableExceptionEventArgs>)GetAttribute(nameof(PropertyError), nameof(ObservableProperty)).Value;
-            handler?.Invoke(this, new ObservableExceptionEventArgs(exception));
-        }
+        protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
 
         public void Update(string data)
         {

@@ -15,7 +15,7 @@ namespace RestfulFirebase.Common.Models
         public string Key { get; }
         public PropertyChangeType Type { get; }
         public string KeyGroup { get; }
-        public ObservableObjectChangesEventArgs(PropertyChangeType type, string key, string propertyName = "", string group = "") : base(propertyName)
+        public ObservableObjectChangesEventArgs(PropertyChangeType type, string key, string group = "", string propertyName = "") : base(propertyName)
         {
             Type = type;
             Key = key;
