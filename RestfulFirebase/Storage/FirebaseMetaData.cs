@@ -5,9 +5,6 @@ using System.Text;
 
 namespace RestfulFirebase.Storage
 {
-    /// <summary>
-    /// Full list of meta data available here: https://firebase.google.com/docs/storage/web/file-metadata
-    /// </summary>
     public class FirebaseMetaData
     {
         [JsonProperty("bucket")]

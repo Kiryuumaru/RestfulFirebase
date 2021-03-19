@@ -1,10 +1,18 @@
-﻿namespace RestfulFirebase.Database
-{
-    using System;
-    using System.Net;
+﻿using System;
+using System.Net;
 
+namespace RestfulFirebase.Database
+{
     public class FirebaseException : Exception
     {
+        public string RequestData { get; }
+
+        public string RequestUrl { get; }
+
+        public string ResponseData { get; }
+
+        public HttpStatusCode StatusCode { get; }
+
         public FirebaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData))
         {
@@ -21,38 +29,6 @@
             RequestData = requestData;
             ResponseData = responseData;
             StatusCode = statusCode;
-        }
-
-        /// <summary>
-        /// Post data passed to the authentication service.
-        /// </summary>
-        public string RequestData
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Original url of the request.
-        /// </summary>
-        public string RequestUrl
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Response from the authentication service.
-        /// </summary>
-        public string ResponseData
-        {
-            get;
-        }
-
-        /// <summary>
-        /// Status code of the response.
-        /// </summary>
-        public HttpStatusCode StatusCode
-        {
-            get;
         }
 
         private static string GenerateExceptionMessage(string requestUrl, string requestData, string responseData)

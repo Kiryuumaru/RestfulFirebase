@@ -16,9 +16,6 @@
 
         private readonly List<string> children;
 
-        /// <summary>
-        /// Gets the RestfulFirebaseApp
-        /// </summary>
         public RestfulFirebaseApp App { get; }
 
         internal FirebaseStorageReference(RestfulFirebaseApp app, string childRoot)
@@ -29,32 +26,16 @@
             children.Add(childRoot);
         }
 
-        /// <summary>
-        /// Starts uploading given stream to target location.
-        /// </summary>
-        /// <param name="stream"> Stream to upload. </param>
-        /// <param name="cancellationToken"> Cancellation token which can be used to cancel the operation. </param>
-        /// <param name="mimeType"> Optional type of data being uploaded, will be used to set HTTP Content-Type header. </param>
-        /// <returns> <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload. </returns>
         public FirebaseStorageTask PutAsync(Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
         }
 
-        /// <summary>
-        /// Starts uploading given stream to target location.
-        /// </summary>
-        /// <param name="stream"> Stream to upload. </param>
-        /// <returns> <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload. </returns>
         public FirebaseStorageTask PutAsync(Stream fileStream)
         {
             return PutAsync(fileStream, CancellationToken.None);
         }
 
-        /// <summary>
-        /// Gets the meta data for given file.
-        /// </summary>
-        /// <returns></returns>
         public async Task<FirebaseMetaData> GetMetaDataAsync(TimeSpan? timeout = null)
         {
             var data = await PerformFetch<FirebaseMetaData>(timeout);
@@ -62,9 +43,6 @@
             return data;
         }
 
-        /// <summary>
-        /// Gets the url to download given file.
-        /// </summary>
         public async Task<string> GetDownloadUrlAsync(TimeSpan? timeout = null)
         {
             var data = await PerformFetch<Dictionary<string, object>>(timeout);
@@ -77,9 +55,6 @@
             return GetFullDownloadUrl() + downloadTokens;
         }
 
-        /// <summary>
-        /// Deletes a file at target location.
-        /// </summary>
         public async Task DeleteAsync(TimeSpan? timeout = null)
         {
             var url = GetDownloadUrl();
@@ -102,17 +77,6 @@
             }
         }
 
-        /// <summary>
-        /// Constructs firebase path to the file.
-        /// </summary>
-        /// <param name="name"> Name of the entity. This can be folder or a file name or full path.</param>
-        /// <example>
-        ///     storage
-        ///         .Child("some")
-        ///         .Child("path")
-        ///         .Child("to/file.png");
-        /// </example>
-        /// <returns> <see cref="FirebaseStorageReference"/> for fluid syntax. </returns>
         public FirebaseStorageReference Child(string name)
         {
             children.Add(name);

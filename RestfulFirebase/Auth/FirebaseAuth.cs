@@ -1,11 +1,8 @@
-﻿namespace RestfulFirebase.Auth
-{
-    using Newtonsoft.Json;
-    using System;
+﻿using Newtonsoft.Json;
+using System;
 
-    /// <summary>
-    /// The firebase auth.
-    /// </summary>
+namespace RestfulFirebase.Auth
+{
     public class FirebaseAuth
     {
         public FirebaseAuth()

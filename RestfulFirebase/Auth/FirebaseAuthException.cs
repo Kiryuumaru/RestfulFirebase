@@ -1,7 +1,7 @@
-﻿namespace RestfulFirebase.Auth
-{
-    using System;
+﻿using System;
 
+namespace RestfulFirebase.Auth
+{
     public class FirebaseAuthException : Exception
     {
         public FirebaseAuthException(string requestUrl, string requestData, string responseData, Exception innerException, AuthErrorReason reason = AuthErrorReason.Undefined) 
@@ -13,35 +13,13 @@
             Reason = reason;
         }
 
-        /// <summary>
-        /// Post data passed to the authentication service.
-        /// </summary>
-        public string RequestData
-        {
-            get;
-        }
-        
-        public string RequestUrl
-        {
-            get;
-        }
+        public string RequestData { get; }
 
-        /// <summary>
-        /// Response from the authentication service.
-        /// </summary>
-        public string ResponseData
-        {
-            get;
-        }
+        public string RequestUrl { get; }
 
-        /// <summary>
-        /// indicates why a login failed. If not resolved, defaults to
-        /// <see cref="AuthErrorReason.Undefined"/>.
-        /// </summary>
-        public AuthErrorReason Reason
-        {
-            get;
-        }
+        public string ResponseData { get; }
+
+        public AuthErrorReason Reason { get; }
 
         private static string GenerateExceptionMessage(string requestUrl, string requestData, string responseData, AuthErrorReason errorReason)
         {

@@ -1,7 +1,7 @@
-﻿namespace RestfulFirebase.Storage
-{
-    using System;
+﻿using System;
 
+namespace RestfulFirebase.Storage
+{
     public class FirebaseStorageException : Exception
     {
         public FirebaseStorageException(string url, string responseData, Exception innerException) : base(GenerateExceptionMessage(url, responseData), innerException)
@@ -10,18 +10,12 @@
             ResponseData = responseData;
         }
 
-        /// <summary>
-        /// Gets the original request url.
-        /// </summary>
         public string RequestUrl
         {
             get;
             private set;
         }
 
-        /// <summary>
-        /// Gets the response data returned by the firebase service.
-        /// </summary>
         public string ResponseData
         {
             get;

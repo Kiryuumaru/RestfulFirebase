@@ -1,15 +1,15 @@
-﻿namespace RestfulFirebase.Storage
-{
-    using Newtonsoft.Json;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-    using System.Threading.Tasks;
+﻿using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
+namespace RestfulFirebase.Storage
+{
     public class FirebaseStorageTask
     {
         private const int ProgressReportDelayMiliseconds = 500;
@@ -17,9 +17,6 @@
         private readonly Task<string> uploadTask;
         private readonly Stream stream;
 
-        /// <summary>
-        /// Gets the RestfulFirebaseApp
-        /// </summary>
         public RestfulFirebaseApp App { get; }
 
         public FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)

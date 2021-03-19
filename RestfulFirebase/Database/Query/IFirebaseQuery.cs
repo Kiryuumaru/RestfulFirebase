@@ -1,23 +1,15 @@
-﻿namespace RestfulFirebase.Database.Query
+﻿
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using RestfulFirebase.Database.Streaming;
+
+namespace RestfulFirebase.Database.Query
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-
-    using RestfulFirebase.Database.Streaming;
-
-    /// <summary>
-    /// The FirebaseQuery interface.
-    /// </summary>
     public interface IFirebaseQuery
     {
-        /// <summary>
-        /// Gets the owning app of this query.
-        /// </summary>
-        RestfulFirebaseApp App
-        {
-            get;
-        }
+        RestfulFirebaseApp App { get; }
 
         Task SetAsync(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null);
 

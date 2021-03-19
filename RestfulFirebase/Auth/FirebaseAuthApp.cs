@@ -11,9 +11,6 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Auth
 {
-    /// <summary>
-    /// Firebase auth App which acts as an entry point to the authentication.
-    /// </summary>
     public class FirebaseAuthApp : FirebaseAuth, IDisposable
     {
         private const string GoogleRefreshAuth = "https://securetoken.googleapis.com/v1/token?key={0}";
@@ -32,14 +29,8 @@ namespace RestfulFirebase.Auth
 
         private readonly HttpClient client;
 
-        /// <summary>
-        /// Gets the RestfulFirebaseApp
-        /// </summary>
         public RestfulFirebaseApp App { get; }
 
-        /// <summary>
-        /// Gets true if user is authenticated
-        /// </summary>
         public bool Authenticated
         {
             get
@@ -59,13 +50,6 @@ namespace RestfulFirebase.Auth
             client = new HttpClient();
         }
 
-        /// <summary>
-        /// Creates new user with given credentials.
-        /// </summary>
-        /// <param name="email"> The email. </param>
-        /// <param name="password"> The password. </param>
-        /// <param name="displayName"> Optional display name. </param>
-        /// <param name="sendVerificationEmail"> Optional. Whether to send user a link to verfiy his email address. </param>
         public async Task CreateUserWithEmailAndPasswordAsync(string email, string password, string displayName = "", bool sendVerificationEmail = false)
         {
             var content = $"{{\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
@@ -92,10 +76,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Sign in with a custom token. You would usually create and sign such a token on your server to integrate with your existing authentiocation system.
-        /// </summary>
-        /// <param name="customToken"> The access token retrieved from login provider of your choice. </param>
         public async Task SignInWithCustomTokenAsync(string customToken)
         {
             string content = $"{{\"token\":\"{customToken}\",\"returnSecureToken\":true}}";
@@ -106,11 +86,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Using the provided access token from third party auth provider (google, facebook...), get the firebase auth with token and basic user credentials.
-        /// </summary>
-        /// <param name="authType"> The auth type. </param>
-        /// <param name="oauthAccessToken"> The access token retrieved from login provider of your choice. </param>
         public async Task SignInWithOAuthAsync(FirebaseAuthType authType, string oauthAccessToken)
         {
             var providerId = GetProviderId(authType);
@@ -122,11 +97,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Using the provided Id token from google signin, get the firebase auth with token and basic user credentials.
-        /// </summary>
-        /// <param name="oauthAccessToken"> The access token retrieved from twitter. </param>
-        /// <param name="oauthTokenSecret"> The access token secret supplied by twitter. </param>
         public async Task SignInWithOAuthTwitterTokenAsync(string oauthAccessToken, string oauthTokenSecret)
         {
             var providerId = GetProviderId(FirebaseAuthType.Twitter);
@@ -138,10 +108,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Using the provided Id token from google signin, get the firebase auth with token and basic user credentials.
-        /// </summary>
-        /// <param name="idToken"> The Id token retrieved from google signin </param>
         public async Task SignInWithGoogleIdTokenAsync(string idToken)
         {
             var providerId = GetProviderId(FirebaseAuthType.Google);
@@ -153,12 +119,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Using the provided email and password, get the firebase auth with token and basic user credentials.
-        /// </summary>
-        /// <param name="email"> The email. </param>
-        /// <param name="password"> The password. </param>
-        /// <param name="tenantId"></param>
         public async Task SignInWithEmailAndPasswordAsync(string email, string password, string tenantId = null)
         {
             StringBuilder sb = new StringBuilder($"{{\"email\":\"{email}\",\"password\":\"{password}\",");
@@ -176,9 +136,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Sign in user anonymously. He would still have a user id and access token generated, but name and other personal user properties will be null.
-        /// </summary>
         public async Task SignInAnonymouslyAsync()
         {
             var content = $"{{\"returnSecureToken\":true}}";
@@ -189,10 +146,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Change a password from an user with his token.
-        /// </summary>
-        /// <param name="password"> The new password. </param>
         public async Task ChangeUserPassword(string password)
         {
             var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
@@ -203,10 +156,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Sends user an email with a link to reset his password.
-        /// </summary>
-        /// <param name="email"> The email. </param>
         public async Task SendPasswordResetEmailAsync(string email)
         {
             var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{email}\"}}";
@@ -226,9 +175,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Deletes the user with a recent Firebase Token.
-        /// </summary>
         public async Task DeleteUserAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -250,9 +196,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Sends user an email with a link to verify his email address.
-        /// </summary>
         public async Task SendEmailVerificationAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -264,11 +207,6 @@ namespace RestfulFirebase.Auth
             response.EnsureSuccessStatusCode();
         }
 
-        /// <summary>
-        /// Links the authenticated user with an email and password. 
-        /// </summary>
-        /// <param name="email"> The email. </param>
-        /// <param name="password"> The password. </param>
         public async Task LinkAccountsAsync(string email, string password)
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -281,11 +219,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Links the authenticated user with an account from a third party provider.
-        /// </summary>
-        /// <param name="authType"> The auth type.  </param>
-        /// <param name="oauthAccessToken"> The access token retrieved from login provider of your choice. </param>
         public async Task LinkAccountsAsync(FirebaseAuthType authType, string oauthAccessToken)
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -299,10 +232,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Unlinks the authenticated user from the account associated with <see cref="FirebaseAuthType"/>.
-        /// </summary>
-        /// <param name="authType"> The auth type.  </param>
         public async Task UnlinkAccountsAsync(FirebaseAuthType authType)
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -325,10 +254,6 @@ namespace RestfulFirebase.Auth
             await RefreshUserDetailsAsync();
         }
 
-        /// <summary>
-        /// Gets a list of accounts linked.
-        /// </summary>
-        /// <returns> The <see cref="ProviderQueryResult"/></returns>
         public async Task<ProviderQueryResult> GetLinkedAccountsAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -354,9 +279,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Refresh authenticated user details.
-        /// </summary>
         public async Task RefreshUserDetailsAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -380,9 +302,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Gets fresh authenticated auth.
-        /// </summary>
         public async Task RefreshAuthAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -416,9 +335,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Gets fresh authenticated auth.
-        /// </summary>
         public async Task<string> GetFreshTokenAsync()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -454,11 +370,6 @@ namespace RestfulFirebase.Auth
             return FirebaseToken;
         }
 
-        /// <summary>
-        /// Updates profile (displayName and photoUrl) of user.
-        /// </summary>
-        /// <param name="displayName"> The new display name. </param>
-        /// <param name="photoUrl"> The new photo URL. </param>
         public async Task UpdateProfileAsync(string displayName, string photoUrl)
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
@@ -489,18 +400,12 @@ namespace RestfulFirebase.Auth
             CopyPropertiesLocally(auth);
         }
 
-        /// <summary>
-        /// Signout authenticated user.
-        /// </summary>
         public void Signout()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
 
         }
 
-        /// <summary>
-        /// Disposes all allocated resources. 
-        /// </summary>
         public void Dispose()
         {
             client.Dispose();
@@ -536,10 +441,6 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        /// <summary>
-        /// Resolves failure reason flags based on the returned error code.
-        /// </summary>
-        /// <remarks>Currently only provides support for failed email auth flags.</remarks>
         private static AuthErrorReason GetFailureReason(string responseData)
         {
             var failureReason = AuthErrorReason.Undefined;

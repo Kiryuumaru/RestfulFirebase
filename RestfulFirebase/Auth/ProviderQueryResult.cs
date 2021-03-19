@@ -1,12 +1,9 @@
-﻿namespace RestfulFirebase.Auth
-{
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System.Collections.Generic;
 
-    /// <summary>
-    /// More info at <see cref="https://developers.google.com/identity/toolkit/web/reference/relyingparty/createAuthUri"/>.
-    /// </summary>
+namespace RestfulFirebase.Auth
+{
     public class ProviderQueryResult
     {
         internal ProviderQueryResult()
@@ -14,46 +11,22 @@
             Providers = new List<FirebaseAuthType>();
         }
 
-        public string Email
-        {
-            get;
-            set;
-        }
+        public string Email { get; set; }
 
         [JsonProperty("registered")]
-        public bool IsRegistered
-        {
-            get;
-            set;
-        }
+        public bool IsRegistered { get; set; }
 
         [JsonProperty("forExistingProvider")]
-        public bool IsForExistingProvider
-        {
-            get;
-            set;
-        }
+        public bool IsForExistingProvider { get; set; }
 
         [JsonProperty("authUri")]
-        public string AuthUri
-        {
-            get;
-            set;
-        }
+        public string AuthUri { get; set; }
 
         [JsonProperty("providerId")]
         [JsonConverter(typeof(StringEnumConverter))]
-        public FirebaseAuthType? ProviderId
-        {
-            get;
-            set;
-        }
+        public FirebaseAuthType? ProviderId { get; set; }
 
         [JsonProperty("allProviders", ItemConverterType = typeof(StringEnumConverter))]
-        public List<FirebaseAuthType> Providers
-        {
-            get;
-            set;
-        }
+        public List<FirebaseAuthType> Providers { get; set; }
     }
 }

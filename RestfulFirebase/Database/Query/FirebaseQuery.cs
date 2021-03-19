@@ -1,23 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+
+using RestfulFirebase.Database.Streaming;
+
+using Newtonsoft.Json;
+using System.Net;
+using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Common;
+using RestfulFirebase.Common.Models;
+using System.Linq;
+
 namespace RestfulFirebase.Database.Query
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Net.Http;
-    using System.Reactive.Linq;
-    using System.Threading.Tasks;
-
-    using RestfulFirebase.Database.Streaming;
-
-    using Newtonsoft.Json;
-    using System.Net;
-    using RestfulFirebase.Extensions.Http;
-    using RestfulFirebase.Common;
-    using RestfulFirebase.Common.Models;
-    using System.Linq;
-
-    /// <summary>
-    /// Represents a firebase query. 
-    /// </summary>
     public abstract class FirebaseQuery : IFirebaseQuery, IDisposable
     {
         protected readonly TimeSpan DefaultHttpClientTimeout = new TimeSpan(0, 0, 180);
@@ -26,46 +23,23 @@ namespace RestfulFirebase.Database.Query
 
         private IHttpClientProxy client;
 
-        /// <summary> 
-        /// Initializes a new instance of the <see cref="FirebaseQuery"/> class.
-        /// </summary>
-        /// <param name="parent"> The parent of this query. </param>
-        /// <param name="app"> The owner. </param>
         protected FirebaseQuery(FirebaseQuery parent, RestfulFirebaseApp app)
         {
             App = app;
             Parent = parent;
         }
 
-        /// <summary>
-        /// Gets the app.
-        /// </summary>
-        public RestfulFirebaseApp App
-        {
-            get;
-        }
+        public RestfulFirebaseApp App { get; }
 
-        /// <summary>
-        /// Adds an auth parameter to the query.
-        /// </summary>
-        /// <param name="tokenFactory"> The auth token. </param>
-        /// <returns> The <see cref="AuthQuery"/>. </returns>
         internal AuthQuery WithAuth(Func<string> tokenFactory)
         {
             return new AuthQuery(this, tokenFactory, App);
         }
 
-        /// <summary>
-        /// Appends print=silent to save bandwidth.
-        /// </summary>
-        /// <param name="node"> The child. </param>
-        /// <returns> The <see cref="SilentQuery"/>. </returns>
         internal SilentQuery Silent()
         {
             return new SilentQuery(this, App);
         }
-
-        #region News
 
         public async Task SetAsync(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
@@ -231,12 +205,6 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        #endregion
-
-        /// <summary>
-        /// Builds the actual URL of this query.
-        /// </summary>
-        /// <returns> The <see cref="string"/>. </returns>
         public async Task<string> BuildUrlAsync()
         {
             if (App.Auth.Authenticated)
@@ -250,19 +218,11 @@ namespace RestfulFirebase.Database.Query
             return BuildUrl(null);
         }
 
-        /// <summary>
-        /// Disposes this instance.  
-        /// </summary>
         public void Dispose()
         {
             client?.Dispose();
         }
 
-        /// <summary>
-        /// Build the url segment of this child.
-        /// </summary>
-        /// <param name="child"> The child of this query. </param>
-        /// <returns> The <see cref="string"/>. </returns>
         protected abstract string BuildUrlSegment(FirebaseQuery child);
 
         private string BuildUrl(FirebaseQuery child)

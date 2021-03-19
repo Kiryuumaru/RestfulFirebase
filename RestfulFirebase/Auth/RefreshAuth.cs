@@ -1,8 +1,8 @@
-﻿namespace RestfulFirebase.Auth
-{
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
+namespace RestfulFirebase.Auth
+{
     internal class RefreshAuth
     {
         [JsonProperty("access_token")]

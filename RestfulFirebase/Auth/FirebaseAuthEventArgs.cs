@@ -1,7 +1,7 @@
-﻿namespace RestfulFirebase.Auth
-{
-    using System;
+﻿using System;
 
+namespace RestfulFirebase.Auth
+{
     public class FirebaseAuthEventArgs : EventArgs
     {
         public readonly FirebaseAuth FirebaseAuth;

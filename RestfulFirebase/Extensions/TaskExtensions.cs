@@ -1,13 +1,10 @@
-﻿namespace RestfulFirebase.Extensions
-{
-    using System;
-    using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
+namespace RestfulFirebase.Extensions
+{
     public static class TaskExtensions
     {
-        /// <summary>
-        /// Instead of unwrapping <see cref="AggregateException"/> it throws it as it is.
-        /// </summary>
         public static async Task WithAggregateException(this Task source)
         {
             try
