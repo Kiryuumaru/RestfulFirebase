@@ -6,7 +6,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database
 {
-    public abstract class FirebaseProperty : DistinctProperty
+    public abstract class FirebaseProperty : DistinctProperty, IDisposable
     {
         #region Initializers
 
@@ -23,6 +23,11 @@ namespace RestfulFirebase.Database
         public FirebaseProperty(AttributeHolder holder) : base(holder)
         {
 
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

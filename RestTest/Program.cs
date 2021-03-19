@@ -131,9 +131,12 @@ namespace RestTest
             await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props2);
             await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props3);
 
+            var node = app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop");
+            var path = node.GetAbsolutePath();
+
             var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<double>(props1.Key);
             var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<string>(props2.Key);
-            var ss3 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsStorableAsync<TestStorable>(props3.Key);
+            var ss3 = await node.GetAsObjectAsync<TestStorable>(props3.Key);
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)

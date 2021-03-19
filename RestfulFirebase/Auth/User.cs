@@ -5,9 +5,6 @@ namespace RestfulFirebase.Auth
 {
     public class User
     {
-        /// <summary>
-        /// Gets or sets the local id.
-        /// </summary>
         [JsonProperty("localId", DefaultValueHandling = DefaultValueHandling.Populate)]
         [DefaultValue("")]
         public string LocalId { get; set; }

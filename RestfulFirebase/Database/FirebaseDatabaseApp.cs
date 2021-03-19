@@ -17,7 +17,7 @@ namespace RestfulFirebase.Database
 
         public ChildQuery Child(string resourceName)
         {
-            return new ChildQuery(App, () => App.Config.DatabaseURL + resourceName);
+            return new ChildQuery(() => App.Config.DatabaseURL + resourceName, App);
         }
 
         public void Dispose()

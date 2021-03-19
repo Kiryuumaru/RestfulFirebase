@@ -12,8 +12,6 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
-            //OfflineDatabaseFactory = (t, s) => new Dictionary<string, OfflineEntry>();
-            SubscriptionStreamReaderFactory = s => new StreamReader(s);
             JsonSerializerSettings = new JsonSerializerSettings();
             SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
@@ -24,8 +22,6 @@ namespace RestfulFirebase
         public string DatabaseURL { get; set; }
 
         public string StorageBucket { get; set; }
-
-        public Func<Stream, TextReader> SubscriptionStreamReaderFactory { get; set; }
 
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 

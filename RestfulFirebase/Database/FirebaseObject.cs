@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database
 {
-    public class FirebaseObject : DistinctObject
+    public class FirebaseObject : DistinctObject, IDisposable
     {
         #region Initializers
 
@@ -46,6 +46,11 @@ namespace RestfulFirebase.Database
         public IEnumerable<DistinctProperty> GetRawPersistableProperties()
         {
             return GetRawProperties(nameof(FirebaseObject));
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

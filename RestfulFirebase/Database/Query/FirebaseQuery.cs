@@ -50,6 +50,8 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(property.Data, App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
+
+
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
             catch (Exception ex)
@@ -63,13 +65,13 @@ namespace RestfulFirebase.Database.Query
             await SetAsync(property, timeout, onException);
         }
         
-        public async Task SetAsync(FirebaseObject storable, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task SetAsync(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             try
             {
-                var query = new ChildQuery(this, () => storable.Key, App);
+                var query = new ChildQuery(this, () => obj.Key, App);
 
-                var collection = storable.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Data);
+                var collection = obj.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Data);
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
@@ -83,9 +85,9 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async void Set(FirebaseObject storable, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async void Set(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
-            await SetAsync(storable, timeout, onException);
+            await SetAsync(obj, timeout, onException);
         }
 
         public async Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
@@ -130,7 +132,7 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task<T> GetAsStorableAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
             where T : FirebaseObject
         {
             var query = new ChildQuery(this, () => path, App);
@@ -171,6 +173,21 @@ namespace RestfulFirebase.Database.Query
                 onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
                 return null;
             }
+        }
+
+        public async Task<T> GetAsObjectCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        {
+            return default;
+        }
+
+        public IObservable<FirebaseEvent<T>> AsObservable<T>(EventHandler<ContinueExceptionEventArgs<FirebaseException>> exceptionHandler = null, string elementRoot = "")
+        {
+            return Observable.Create<FirebaseEvent<T>>(observer =>
+            {
+                var sub = new FirebaseSubscription<T>(observer, this, elementRoot, new FirebaseCache<T>());
+                sub.ExceptionThrown += exceptionHandler;
+                return sub.Run();
+            });
         }
 
         public async void DeleteAsync(string path, TimeSpan? timeout = null)
@@ -216,6 +233,18 @@ namespace RestfulFirebase.Database.Query
             }
 
             return BuildUrl(null);
+        }
+
+        public string GetAbsolutePath()
+        {
+            var url = BuildUrlSegment(this);
+
+            if (Parent != null)
+            {
+                url = Parent.BuildUrl(this) + url;
+            }
+
+            return url;
         }
 
         public void Dispose()

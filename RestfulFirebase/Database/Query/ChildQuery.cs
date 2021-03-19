@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database.Query
             this.pathFactory = pathFactory;
         }
 
-        public ChildQuery(RestfulFirebaseApp app, Func<string> pathFactory)
+        public ChildQuery(Func<string> pathFactory, RestfulFirebaseApp app)
             : this(null, pathFactory, app)
         {
         }

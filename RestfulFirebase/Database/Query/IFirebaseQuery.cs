@@ -21,7 +21,7 @@ namespace RestfulFirebase.Database.Query
 
         Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
-        Task<T> GetAsStorableAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
+        Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
 
         Task<string> BuildUrlAsync();
     }
