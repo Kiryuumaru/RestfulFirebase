@@ -108,14 +108,6 @@ namespace RestTest
 
             int x11 = 0;
 
-            props3.PropertyChanged += (s, e) =>
-            {
-
-            };
-
-            props3.Modified = default;
-            props3.Created = default;
-
             await app.Database.Child("public").Child("prop").SetAsync(props1);
             await app.Database.Child("public").Child("prop").SetAsync(props2);
             await app.Database.Child("public").Child("prop").SetAsync(props3);

@@ -10,6 +10,17 @@ namespace RestfulFirebase.Common.Models
 {
     public class ObservableObject : AttributeHolder, INotifyPropertyChanged
     {
+        #region Helpers
+
+        private class PropertyHolder
+        {
+            public DistinctProperty Property { get; set; }
+            public string Group { get; set; }
+            public string PropertyName { get; set; }
+        }
+
+        #endregion
+
         #region Properties
 
         private PropertyChangedEventHandler PropertyChangedHandler
@@ -24,10 +35,10 @@ namespace RestfulFirebase.Common.Models
             set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
-        private List<(DistinctProperty Model, string Group, string PropertyName)> Properties
+        private List<PropertyHolder> PropertyHolders
         {
-            get => GetAttribute(nameof(Properties), nameof(ObservableObject), new List<(DistinctProperty Model, string Group, string PropertyName)>()).Value;
-            set => SetAttribute(nameof(Properties), nameof(ObservableObject), value);
+            get => GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
+            set => SetAttribute(nameof(PropertyHolders), nameof(ObservableObject), value);
         }
 
         public event PropertyChangedEventHandler PropertyChanged
@@ -97,30 +108,48 @@ namespace RestfulFirebase.Common.Models
         
         protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
 
-        protected virtual bool SetProperty<T>(T value, string key, string group = "", [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        protected virtual bool SetProperty<T>(T value, string key, string group = null, [CallerMemberName] string propertyName = null, Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
             try
             {
-                var existingCell = Properties.FirstOrDefault(i => i.Model.Key.Equals(key)).Model;
-                var newCell = DistinctProperty.CreateFromKeyAndValue(key, value);
-
-                if (existingCell != null)
+                var existingHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+                var newHolder = new PropertyHolder()
                 {
-                    //if value didn't change
-                    if (existingCell.Data?.Equals(newCell.Data) ?? newCell.Data == null)
-                        return false;
+                    Property = DistinctProperty.CreateFromKeyAndValue(key, value),
+                    Group = group,
+                    PropertyName = propertyName
+                };
 
-                    var existingValue = existingCell.ParseValue<T>();
+                if (existingHolder != null)
+                {
+                    var existingValue = existingHolder.Property.ParseValue<T>();
 
-                    //if value changed but didn't validate
-                    if (validateValue != null && !(validateValue?.Invoke(existingValue, value) ?? false))
-                        return false;
+                    bool hasChanges = false;
 
-                    existingCell.Update(newCell);
+                    if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
+                    {
+                        existingHolder.Group = newHolder.Group;
+                        hasChanges = true;
+                    }
+
+                    if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
+                    {
+                        existingHolder.PropertyName = newHolder.PropertyName;
+                        hasChanges = true;
+                    }
+
+                    if (existingHolder.Property.Data != newHolder.Property.Data ||
+                        (validateValue?.Invoke(existingValue, value) ?? false))
+                    {
+                        existingHolder.Property.Update(newHolder.Property);
+                        hasChanges = true;
+                    }
+
+                    if (!hasChanges) return false;
                 }
                 else
                 {
-                    Properties.Add((newCell, group, propertyName));
+                    PropertyHolders.Add(newHolder);
                 }
             }
             catch (Exception ex)
@@ -133,54 +162,93 @@ namespace RestfulFirebase.Common.Models
             return true;
         }
 
-        protected virtual T GetProperty<T>(string key, string group = "", T defaultValue = default, [CallerMemberName] string propertyName = "")
+        protected virtual T GetProperty<T>(string key, string group = null, T defaultValue = default, [CallerMemberName] string propertyName = null)
         {
-            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key) && i.Group.Equals(group));
-            if (Model == null)
+            var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+            if (propertyHolder == null)
             {
-                Properties.Add((DistinctProperty.CreateFromKeyAndValue(key, defaultValue), group, propertyName));
-                return defaultValue;
+                propertyHolder = new PropertyHolder()
+                {
+                    Property = DistinctProperty.CreateFromKeyAndValue(key, defaultValue),
+                    Group = group,
+                    PropertyName = propertyName
+                };
+                PropertyHolders.Add(propertyHolder);
             }
-            return Model.ParseValue<T>();
+            else
+            {
+                if (propertyHolder.Group != group && group != null)
+                {
+                    propertyHolder.Group = group;
+                }
+
+                if (propertyHolder.PropertyName != propertyName && propertyName != null)
+                {
+                    propertyHolder.PropertyName = propertyName;
+                }
+            }
+
+            return propertyHolder.Property.ParseValue<T>();
         }
 
         protected virtual void DeleteProperty(string key)
         {
-            var (Model, Group, PropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(key));
-            if (Model == null) return;
-            Properties.RemoveAll(i => i.Model.Key.Equals(key));
-            OnChanged(PropertyChangeType.Delete, key, Group, PropertyName);
+            var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+            if (propertyHolder == null) return;
+            PropertyHolders.RemoveAll(i => i.Property.Key.Equals(key));
+            OnChanged(PropertyChangeType.Delete, key, propertyHolder.Group, propertyHolder.PropertyName);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
         {
-            return group == null ? Properties.Select(i => i.Model) : Properties.FindAll(i => i.Group.Equals(group)).Select(i => i.Model);
+            return group == null ? PropertyHolders.Select(i => i.Property) : PropertyHolders.FindAll(i => i.Group == group).Select(i => i.Property);
         }
 
         public void PatchRawProperties(IEnumerable<DistinctProperty> properties, string group = null)
         {
-            var groupProperties = group == null ? Properties : Properties.FindAll(i => i.Group.Equals(group));
+            var groupProperties = group == null ? PropertyHolders : PropertyHolders.FindAll(i => i.Group.Equals(group));
             foreach (var property in properties)
             {
                 try
                 {
-                    var (ExistingModel, ExistingGroup, ExistingPropertyName) = groupProperties.FirstOrDefault(i => i.Model.Key.Equals(property.Key));
-
-                    if (ExistingModel != null)
+                    var existingHolder = groupProperties.FirstOrDefault(i => i.Property.Key.Equals(property.Key));
+                    var newHolder = new PropertyHolder()
                     {
-                        //if value didn't change
-                        if (ExistingModel.Data?.Equals(property.Data) ?? property.Data == null)
-                            continue;
+                        Property = property,
+                        Group = group,
+                        PropertyName = null
+                    };
 
-                        ExistingModel.Update(property);
+                    if (existingHolder != null)
+                    {
+                        bool hasChanges = false;
+
+                        if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
+                        {
+                            existingHolder.Group = newHolder.Group;
+                            hasChanges = true;
+                        }
+
+                        if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
+                        {
+                            existingHolder.PropertyName = newHolder.PropertyName;
+                            hasChanges = true;
+                        }
+
+                        if (existingHolder.Property.Data != newHolder.Property.Data)
+                        {
+                            existingHolder.Property.Update(newHolder.Property);
+                            hasChanges = true;
+                        }
+
+                        if (!hasChanges) continue;
                     }
                     else
                     {
-                        ExistingModel = property;
-                        Properties.Add((ExistingModel, ExistingGroup, ExistingPropertyName));
+                        PropertyHolders.Add(newHolder);
                     }
 
-                    OnChanged(PropertyChangeType.Set, ExistingModel.Key, ExistingGroup, ExistingPropertyName);
+                    OnChanged(PropertyChangeType.Set, existingHolder.Property.Key, existingHolder.Group, existingHolder.PropertyName);
                 }
                 catch (Exception ex)
                 {
@@ -189,29 +257,50 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void PatchRawProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
+        public void PatchRawProperties(IEnumerable<(DistinctProperty Property, string Group, string PropertyName)> properties)
         {
-            foreach (var (Model, Group, PropertyName) in properties)
+            foreach (var (Property, Group, PropertyName) in properties)
             {
                 try
                 {
-                    var (ExistingModel, ExistingGroup, ExistingPropertyName) = Properties.FirstOrDefault(i => i.Model.Key.Equals(Model.Key) && i.Group.Equals(Group));
-
-                    if (ExistingModel != null)
+                    var existingHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(Property.Key));
+                    var newHolder = new PropertyHolder()
                     {
-                        //if value didn't change
-                        if (ExistingModel.Data?.Equals(Model.Data) ?? Model.Data == null)
-                            continue;
+                        Property = Property,
+                        Group = Group,
+                        PropertyName = PropertyName
+                    };
 
-                        ExistingModel.Update(Model);
+                    if (existingHolder != null)
+                    {
+                        bool hasChanges = false;
+
+                        if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
+                        {
+                            existingHolder.Group = newHolder.Group;
+                            hasChanges = true;
+                        }
+
+                        if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
+                        {
+                            existingHolder.PropertyName = newHolder.PropertyName;
+                            hasChanges = true;
+                        }
+
+                        if (existingHolder.Property.Data != newHolder.Property.Data)
+                        {
+                            existingHolder.Property.Update(newHolder.Property);
+                            hasChanges = true;
+                        }
+
+                        if (!hasChanges) continue;
                     }
                     else
                     {
-                        ExistingModel = Model;
-                        Properties.Add((Model, ExistingGroup, ExistingPropertyName));
+                        PropertyHolders.Add(newHolder);
                     }
 
-                    OnChanged(PropertyChangeType.Set, ExistingModel.Key, ExistingGroup, ExistingPropertyName);
+                    OnChanged(PropertyChangeType.Set, existingHolder.Property.Key, existingHolder.Group, existingHolder.PropertyName);
                 }
                 catch (Exception ex)
                 {
