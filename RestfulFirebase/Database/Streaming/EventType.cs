@@ -3,7 +3,7 @@ namespace RestfulFirebase.Database.Streaming
     /// <summary>
     /// The type of event. 
     /// </summary>
-    public enum FirebaseEventType
+    public enum EventType
     {
         /// <summary>
         /// Item was inserted or updated.

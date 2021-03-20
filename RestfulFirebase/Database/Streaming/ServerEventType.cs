@@ -1,6 +1,6 @@
 namespace RestfulFirebase.Database.Streaming
 {
-    internal enum FirebaseServerEventType
+    internal enum ServerEventType
     {
         Put,
 

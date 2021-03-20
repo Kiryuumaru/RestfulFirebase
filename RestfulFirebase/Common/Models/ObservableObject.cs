@@ -245,6 +245,7 @@ namespace RestfulFirebase.Common.Models
                     }
                     else
                     {
+                        existingHolder = newHolder;
                         PropertyHolders.Add(newHolder);
                     }
 

@@ -3,7 +3,7 @@
     /// <summary>
     /// Specifies the origin of given <see cref="FirebaseEvent{T}"/>
     /// </summary>
-    public enum FirebaseEventSource
+    public enum EventSource
     {
         /// <summary>
         /// Event comes from an offline source.

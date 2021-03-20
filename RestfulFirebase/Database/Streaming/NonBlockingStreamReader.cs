@@ -17,22 +17,22 @@ namespace RestfulFirebase.Database.Streaming
         {
             this.stream = stream;
             this.bufferSize = bufferSize;
-            this.buffer = new byte[bufferSize];
+            buffer = new byte[bufferSize];
 
-            this.cachedData = string.Empty;
+            cachedData = string.Empty;
         }
 
         public override string ReadLine()
         {
-            var currentString = this.TryGetNewLine();
+            var currentString = TryGetNewLine();
             
             while (currentString == null)
             {
-                var read = this.stream.Read(this.buffer, 0, this.bufferSize);
+                var read = stream.Read(buffer, 0, bufferSize);
                 var str = Encoding.UTF8.GetString(buffer, 0, read);
 
                 cachedData += str;
-                currentString = this.TryGetNewLine();
+                currentString = TryGetNewLine();
             }
             
             return currentString;
@@ -45,7 +45,7 @@ namespace RestfulFirebase.Database.Streaming
             if (newLine >= 0)
             {
                 var r = cachedData.Substring(0, newLine + 1);
-                this.cachedData = cachedData.Remove(0, r.Length);
+                cachedData = cachedData.Remove(0, r.Length);
                 return r.Trim();
             }
 

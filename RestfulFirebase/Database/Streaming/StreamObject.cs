@@ -4,16 +4,16 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public class StreamObject<T>
+    public class StreamObject
     {
         public string Key { get; }
 
-        public T Object { get; }
+        public string Data { get; }
 
-        internal StreamObject(string key, T obj)
+        internal StreamObject(string key, string data)
         {
             Key = key;
-            Object = obj;
+            Data = data;
         }
     }
 }

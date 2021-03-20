@@ -1,8 +1,6 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
 using RestfulFirebase.Database.Streaming;
 
 namespace RestfulFirebase.Database.Query
@@ -24,5 +22,7 @@ namespace RestfulFirebase.Database.Query
         Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
 
         Task<string> BuildUrlAsync();
+
+        string GetAbsolutePath();
     }
 }

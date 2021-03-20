@@ -164,8 +164,18 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value)));
 
+                var s = Observable.Create<StreamEvent>(observer =>
+                {
+                    var sub = new NodeStreamer(observer, query);
+                    return sub.Run();
+                });
+                s.Subscribe(ss =>
+                {
+                    var dat = ss.Data;
+                    var d = 1;
+                });
 
-                
+
                 return obj.Parse<T>();
             }
             catch (Exception ex)
@@ -175,19 +185,14 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task<T> GetAsObjectCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<T> GetAsPropertyCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             return default;
         }
 
-        public IObservable<FirebaseEvent<T>> AsObservable<T>(EventHandler<ContinueExceptionEventArgs<FirebaseException>> exceptionHandler = null, string elementRoot = "")
+        public async Task<T> GetAsObjectCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
-            return Observable.Create<FirebaseEvent<T>>(observer =>
-            {
-                var sub = new FirebaseSubscription<T>(observer, this, elementRoot, new FirebaseCache<T>());
-                sub.ExceptionThrown += exceptionHandler;
-                return sub.Run();
-            });
+            return default;
         }
 
         public async void DeleteAsync(string path, TimeSpan? timeout = null)
