@@ -50,6 +50,15 @@ namespace RestfulFirebase.Database.Models
             return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
 
+        internal void ConsumeStream(StreamEvent streamEvent)
+        {
+            if (streamEvent.Path.Length != 0)
+            {
+                if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key Mismatch");
+            }
+
+        }
+
         public IEnumerable<DistinctProperty> GetRawPersistableProperties()
         {
             return GetRawProperties(nameof(FirebaseObject));

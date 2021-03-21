@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.Common.Conversions;
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -51,6 +52,15 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Methods
+
+        internal void ConsumeStream(StreamEvent streamEvent)
+        {
+            if (streamEvent.Path.Length != 0)
+            {
+                if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key Mismatch");
+            }
+            Update(streamEvent.Data);
+        }
 
         public T ParseValue()
         {
