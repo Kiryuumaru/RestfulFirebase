@@ -15,5 +15,12 @@ namespace RestfulFirebase.Database.Streaming
             Key = key;
             Data = data;
         }
+
+        public override string ToString()
+        {
+            var key = Key == null ? "null" : "\"" + Key + "\"";
+            var data = Data == null ? "null" : "\"" + Data + "\"";
+            return "Key: " + key + " Data: " + data;
+        }
     }
 }

@@ -115,7 +115,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                Bytes = Encoding.Unicode.GetBytes(data);
+                if (data != null) Bytes = Encoding.Unicode.GetBytes(data);
                 OnChanged(nameof(Bytes));
                 OnChanged(nameof(Data));
             }

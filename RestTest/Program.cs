@@ -144,7 +144,7 @@ namespace RestTest
 
             int x = 0;
 
-            await Task.Delay(100000);
+            await Task.Delay(10000000);
 
             //foreach (var dino in dinos)
             //{

@@ -17,6 +17,9 @@ namespace RestfulFirebase.Database.Streaming
             EventSource = eventSource;
         }
 
-        public static StreamEvent Empty(EventSource source) => new StreamEvent(string.Empty, default, EventType.InsertOrUpdate, source);
+        public override string ToString()
+        {
+            return base.ToString() + " EventType: \"" + EventType.ToString() + "\"" + " EventSource: \"" + EventSource.ToString() + "\"";
+        }
     }
 }

@@ -164,19 +164,16 @@ namespace RestfulFirebase.Database.Streaming
                 case ServerEventType.Put:
                 case ServerEventType.Patch:
                     var result = JObject.Parse(serverData);
-                    var path = result["path"].ToString();
-                    var data = result["data"].ToString();
+                    var pathToken = result["path"];
+                    var dataToken = result["data"];
+                    var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
+                    var data = dataToken.Type == JTokenType.Null ? null : dataToken.ToString();
 
-                    // If an elementRoot parameter is provided, but it's not in the cache, it was already deleted. So we can return an empty object.
-                    if (path == "/" && string.IsNullOrEmpty(data))
-                    {
-                        this.observer.OnNext(StreamEvent.Empty(EventSource.OnlineStream));
-                        return;
-                    }
-
-                    var eventType = string.IsNullOrWhiteSpace(data) ? EventType.Delete : EventType.InsertOrUpdate;
-
-                    this.observer.OnNext(new StreamEvent(path, data, eventType, EventSource.OnlineStream));
+                    this.observer.OnNext(new StreamEvent(
+                        path,
+                        data,
+                        string.IsNullOrWhiteSpace(data) ? EventType.Delete : EventType.InsertOrUpdate,
+                        EventSource.OnlineStream));
 
                     break;
                 case ServerEventType.KeepAlive:

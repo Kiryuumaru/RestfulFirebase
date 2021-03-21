@@ -164,17 +164,13 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value)));
 
-                var s = Observable.Create<StreamEvent>(observer =>
-                {
-                    var sub = new NodeStreamer(observer, query);
-                    return sub.Run();
-                });
+                var s = Observable.Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run());
                 s.Subscribe(ss =>
                 {
                     var dat = ss.Data;
+                    Console.WriteLine(ss.ToString());
                     var d = 1;
                 });
-
 
                 return obj.Parse<T>();
             }
