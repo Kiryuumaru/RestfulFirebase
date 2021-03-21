@@ -10,16 +10,11 @@ namespace RestfulFirebase.Database.Streaming
 
         public EventType EventType { get; }
 
-        public StreamEvent(string key, string data, EventType eventType, EventSource eventSource)
-            : base(key, data)
+        public StreamEvent(string[] path, string data, EventType eventType, EventSource eventSource)
+            : base(path, data)
         {
             EventType = eventType;
             EventSource = eventSource;
-        }
-
-        public override string ToString()
-        {
-            return base.ToString() + " EventType: \"" + EventType.ToString() + "\"" + " EventSource: \"" + EventSource.ToString() + "\"";
         }
     }
 }

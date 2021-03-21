@@ -168,9 +168,11 @@ namespace RestfulFirebase.Database.Streaming
                     var dataToken = result["data"];
                     var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
                     var data = dataToken.Type == JTokenType.Null ? null : dataToken.ToString();
+                    string[] separatedPath = new string[0];
+                    if (path != "/") separatedPath = path.Split('/').Skip(1).ToArray();
 
                     this.observer.OnNext(new StreamEvent(
-                        path,
+                        separatedPath,
                         data,
                         string.IsNullOrWhiteSpace(data) ? EventType.Delete : EventType.InsertOrUpdate,
                         EventSource.OnlineStream));

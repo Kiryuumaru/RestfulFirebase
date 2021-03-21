@@ -12,7 +12,6 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
-            JsonSerializerSettings = new JsonSerializerSettings();
             SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
         }

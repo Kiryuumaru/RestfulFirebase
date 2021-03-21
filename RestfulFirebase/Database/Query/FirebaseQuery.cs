@@ -162,13 +162,22 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData, query.App.Config.JsonSerializerSettings);
-                var obj = FirebaseObject.CreateFromKeyAndProperties(path, data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value)));
+                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData);
+                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
+                var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
 
                 var s = Observable.Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run());
                 s.Subscribe(ss =>
                 {
-                    var dat = ss.Data;
+                    var ups = new Dictionary<string, string>();
+                    //if (ss.Key == "/")
+                    //{
+                    //    ups = JsonConvert.DeserializeObject<Dictionary<string, string>>(ss.Data);
+                    //}
+                    //else if (ss.Key == "/")
+                    //{
+                    //    ups = JsonConvert.DeserializeObject<Dictionary<string, string>>(ss.Data);
+                    //}
                     var d = 1;
                 });
 

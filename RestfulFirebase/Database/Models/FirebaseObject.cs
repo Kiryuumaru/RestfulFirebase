@@ -10,7 +10,7 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        internal IObservable<StreamEvent> 
+        public event EventHandler OnDisposing;
 
         #endregion
 
@@ -57,7 +57,7 @@ namespace RestfulFirebase.Database.Models
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            OnDisposing?.Invoke(this, new EventArgs());
         }
 
         #endregion
