@@ -12,6 +12,7 @@ using RestfulFirebase.Extensions.Http;
 using RestfulFirebase.Common;
 using RestfulFirebase.Common.Models;
 using System.Linq;
+using RestfulFirebase.Database.Models;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -168,7 +169,6 @@ namespace RestfulFirebase.Database.Query
                 s.Subscribe(ss =>
                 {
                     var dat = ss.Data;
-                    Console.WriteLine(ss.ToString());
                     var d = 1;
                 });
 

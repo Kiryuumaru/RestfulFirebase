@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Streaming;
 
 namespace RestfulFirebase.Database.Query

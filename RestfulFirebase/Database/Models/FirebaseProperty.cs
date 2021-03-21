@@ -4,10 +4,16 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.Database
+namespace RestfulFirebase.Database.Models
 {
     public abstract class FirebaseProperty : DistinctProperty, IDisposable
     {
+        #region Properties
+
+        public event EventHandler OnDisposing;
+
+        #endregion
+
         #region Initializers
 
         public static new FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value)
@@ -27,7 +33,7 @@ namespace RestfulFirebase.Database
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            OnDisposing?.Invoke(this, new EventArgs());
         }
 
         #endregion

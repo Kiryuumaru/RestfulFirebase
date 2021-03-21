@@ -1,12 +1,19 @@
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace RestfulFirebase.Database
+namespace RestfulFirebase.Database.Models
 {
     public class FirebaseObject : DistinctObject, IDisposable
     {
+        #region Properties
+
+        internal IObservable<StreamEvent> 
+
+        #endregion
+
         #region Initializers
 
         public static new FirebaseObject Create()

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using RestfulFirebase.Common;
 using RestfulFirebase;
+using RestfulFirebase.Database.Models;
 
 namespace RestTest
 {
