@@ -1,7 +1,10 @@
+using Newtonsoft.Json;
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
@@ -10,7 +13,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public event EventHandler OnDisposing;
+        public bool HasRealtimeWire => RealtimeSubscription != null;
+        internal IDisposable RealtimeSubscription { get; set; }
 
         #endregion
 
@@ -50,13 +54,32 @@ namespace RestfulFirebase.Database.Models
             return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
 
-        internal void ConsumeStream(StreamEvent streamEvent)
+        internal void ConsumePersistableStream(StreamEvent streamEvent)
         {
-            if (streamEvent.Path.Length != 0)
+            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+            else if(streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+            else if(streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+            else if(streamEvent.Path.Length == 1)
             {
-                if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key Mismatch");
+                foreach (var key in GetRawPersistableProperties().Select(i => i.Key))
+                {
+                    DeleteProperty(key);
+                }
+                if (streamEvent.Data != null)
+                {
+                    var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(streamEvent.Data);
+                    var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
+                    PatchRawProperties(props);
+                }
             }
-
+            else if (streamEvent.Path.Length == 2)
+            {
+                var props = new List<DistinctProperty>()
+                {
+                    DistinctProperty.CreateFromKeyAndData(streamEvent.Path[1], streamEvent.Data)
+                };
+                PatchRawProperties(props);
+            }
         }
 
         public IEnumerable<DistinctProperty> GetRawPersistableProperties()
@@ -66,7 +89,7 @@ namespace RestfulFirebase.Database.Models
 
         public void Dispose()
         {
-            OnDisposing?.Invoke(this, new EventArgs());
+            RealtimeSubscription?.Dispose();
         }
 
         #endregion

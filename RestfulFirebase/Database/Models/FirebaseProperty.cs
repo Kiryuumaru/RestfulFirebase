@@ -11,7 +11,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public event EventHandler OnDisposing;
+        public bool HasRealtimeWire => RealtimeSubscription != null;
+        internal IDisposable RealtimeSubscription { get; set; }
 
         #endregion
 
@@ -34,7 +35,7 @@ namespace RestfulFirebase.Database.Models
 
         public void Dispose()
         {
-            OnDisposing?.Invoke(this, new EventArgs());
+            RealtimeSubscription?.Dispose();
         }
 
         #endregion
@@ -53,13 +54,16 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        internal void ConsumeStream(StreamEvent streamEvent)
+        internal void ConsumePersistableStream(StreamEvent streamEvent)
         {
-            if (streamEvent.Path.Length != 0)
+            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+            else if (streamEvent.Path.Length == 1)
             {
-                if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key Mismatch");
+                if (streamEvent.Data == null) Empty();
+                else Update(streamEvent.Data);
             }
-            Update(streamEvent.Data);
         }
 
         public T ParseValue()

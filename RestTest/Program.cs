@@ -138,12 +138,21 @@ namespace RestTest
             var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<double>(props1.Key);
             var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<string>(props2.Key);
             var ss3 = await node.GetAsObjectAsync<TestStorable>(props3.Key);
+            ss2.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("SS2: " + e.PropertyName);
+            };
+            ss3.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("SS3: " + e.PropertyName);
+            };
 
             //var dinos = await firebase
             //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
             //    .OnceAsync<object>();
 
             int x = 0;
+            Console.WriteLine("FIN");
 
             await Task.Delay(10000000);
 

@@ -2,6 +2,7 @@
 using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -18,12 +19,16 @@ namespace RestfulFirebase.Database.Streaming
         private readonly CancellationTokenSource cancel;
         private readonly IFirebaseQuery query;
 
-        private static readonly HttpClient http;
+        private readonly HttpClient http;
 
         internal event EventHandler<ContinueExceptionEventArgs<FirebaseException>> ExceptionThrown;
 
-        static NodeStreamer()
+        internal NodeStreamer(IObserver<StreamEvent> observer, IFirebaseQuery query)
         {
+            this.observer = observer;
+            this.query = query;
+            cancel = new CancellationTokenSource();
+
             var handler = new HttpClientHandler
             {
                 AllowAutoRedirect = true,
@@ -36,13 +41,6 @@ namespace RestfulFirebase.Database.Streaming
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
 
             http = httpClient;
-        }
-
-        internal NodeStreamer(IObserver<StreamEvent> observer, IFirebaseQuery query)
-        {
-            this.observer = observer;
-            this.query = query;
-            cancel = new CancellationTokenSource();
         }
 
         public void Dispose()
@@ -168,11 +166,14 @@ namespace RestfulFirebase.Database.Streaming
                     var dataToken = result["data"];
                     var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
                     var data = dataToken.Type == JTokenType.Null ? null : dataToken.ToString();
-                    string[] separatedPath = new string[0];
-                    if (path != "/") separatedPath = path.Split('/').Skip(1).ToArray();
+                    List<string> separatedPath = new List<string>()
+                    {
+                        query.GetAbsolutePath().Split('/').Where(x => !string.IsNullOrWhiteSpace(x)).LastOrDefault()
+                    };
+                    if (path != "/") separatedPath.AddRange(path.Split('/').Skip(1));
 
                     this.observer.OnNext(new StreamEvent(
-                        separatedPath,
+                        separatedPath.ToArray(),
                         data,
                         string.IsNullOrWhiteSpace(data) ? EventType.Delete : EventType.InsertOrUpdate,
                         EventSource.OnlineStream));

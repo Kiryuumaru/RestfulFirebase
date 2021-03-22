@@ -139,6 +139,20 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
+        public void Empty()
+        {
+            try
+            {
+                Bytes = default;
+                OnChanged(nameof(Bytes));
+                OnChanged(nameof(Data));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
         public T ParseValue<T>()
         {
             return DataTypeDecoder.GetDecoder<T>().Parse(this);

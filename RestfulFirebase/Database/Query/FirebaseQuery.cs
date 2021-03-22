@@ -122,7 +122,9 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.DeserializeObject<string>(responseData, query.App.Config.JsonSerializerSettings);
                 var prop = FirebaseProperty.CreateFromKeyAndData<T>(path, data);
 
-
+                prop.RealtimeSubscription = Observable
+                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                    .Subscribe(stream => prop.ConsumePersistableStream(stream));
 
                 return prop;
             }
@@ -166,20 +168,9 @@ namespace RestfulFirebase.Database.Query
                 var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
 
-                var s = Observable.Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run());
-                s.Subscribe(ss =>
-                {
-                    var ups = new Dictionary<string, string>();
-                    //if (ss.Key == "/")
-                    //{
-                    //    ups = JsonConvert.DeserializeObject<Dictionary<string, string>>(ss.Data);
-                    //}
-                    //else if (ss.Key == "/")
-                    //{
-                    //    ups = JsonConvert.DeserializeObject<Dictionary<string, string>>(ss.Data);
-                    //}
-                    var d = 1;
-                });
+                obj.RealtimeSubscription = Observable
+                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
 
                 return obj.Parse<T>();
             }

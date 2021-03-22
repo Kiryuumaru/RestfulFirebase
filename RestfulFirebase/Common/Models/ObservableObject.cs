@@ -88,13 +88,6 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public static ObservableObject CreateFromProperties(IEnumerable<(DistinctProperty Model, string Group, string PropertyName)> properties)
-        {
-            var obj = new ObservableObject(null);
-            obj.PatchRawProperties(properties);
-            return obj;
-        }
-
         public ObservableObject(AttributeHolder holder) : base(holder)
         {
 
@@ -195,16 +188,20 @@ namespace RestfulFirebase.Common.Models
         {
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
-            PropertyHolders.RemoveAll(i => i.Property.Key.Equals(key));
+            propertyHolder.Property.Empty();
             OnChanged(PropertyChangeType.Delete, key, propertyHolder.Group, propertyHolder.PropertyName);
         }
 
-        public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
+        protected virtual void DeleteProperties(string group)
         {
-            return group == null ? PropertyHolders.Select(i => i.Property) : PropertyHolders.FindAll(i => i.Group == group).Select(i => i.Property);
+            foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
+            {
+                propertyHolder.Property.Empty();
+                OnChanged(PropertyChangeType.Delete, propertyHolder.Property.Key, propertyHolder.Group, propertyHolder.PropertyName);
+            }
         }
 
-        public void PatchRawProperties(IEnumerable<DistinctProperty> properties, string group = null)
+        protected void PatchRawProperties(IEnumerable<DistinctProperty> properties, string group = null)
         {
             var groupProperties = group == null ? PropertyHolders : PropertyHolders.FindAll(i => i.Group.Equals(group));
             foreach (var property in properties)
@@ -258,56 +255,9 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void PatchRawProperties(IEnumerable<(DistinctProperty Property, string Group, string PropertyName)> properties)
+        public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
         {
-            foreach (var (Property, Group, PropertyName) in properties)
-            {
-                try
-                {
-                    var existingHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(Property.Key));
-                    var newHolder = new PropertyHolder()
-                    {
-                        Property = Property,
-                        Group = Group,
-                        PropertyName = PropertyName
-                    };
-
-                    if (existingHolder != null)
-                    {
-                        bool hasChanges = false;
-
-                        if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
-                        {
-                            existingHolder.Group = newHolder.Group;
-                            hasChanges = true;
-                        }
-
-                        if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
-                        {
-                            existingHolder.PropertyName = newHolder.PropertyName;
-                            hasChanges = true;
-                        }
-
-                        if (existingHolder.Property.Data != newHolder.Property.Data)
-                        {
-                            existingHolder.Property.Update(newHolder.Property);
-                            hasChanges = true;
-                        }
-
-                        if (!hasChanges) continue;
-                    }
-                    else
-                    {
-                        PropertyHolders.Add(newHolder);
-                    }
-
-                    OnChanged(PropertyChangeType.Set, existingHolder.Property.Key, existingHolder.Group, existingHolder.PropertyName);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
+            return group == null ? PropertyHolders.Select(i => i.Property) : PropertyHolders.FindAll(i => i.Group == group).Select(i => i.Property);
         }
 
         public T Parse<T>()
