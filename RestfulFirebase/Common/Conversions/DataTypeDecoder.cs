@@ -42,6 +42,7 @@ namespace RestfulFirebase.Common.Conversions
 
         public static void RegisterDecoder(DataTypeDecoder convertion)
         {
+            if (decoders.Any(i => i.Type == convertion.Type || i.TypeIdentifier == convertion.TypeIdentifier)) throw new Exception("Decoder already registered");
             decoders.RemoveAll(i => i.Type == convertion.Type);
             decoders.Add(convertion);
         }
