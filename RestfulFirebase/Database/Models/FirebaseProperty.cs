@@ -12,7 +12,11 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         public bool HasRealtimeWire => RealtimeSubscription != null;
-        internal IDisposable RealtimeSubscription { get; set; }
+        internal IDisposable RealtimeSubscription
+        {
+            get => GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;
+            set => SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
+        }
 
         #endregion
 

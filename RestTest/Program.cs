@@ -150,6 +150,7 @@ namespace RestTest
             };
             ss3.PropertyChanged += (s, e) =>
             {
+                var sssss = ss3;
                 Console.WriteLine("SS3: " + e.PropertyName);
             };
 

@@ -16,7 +16,7 @@ namespace RestfulFirebase.Common.Models
         public string Key
         {
             get => GetAttribute<string>(nameof(Key), nameof(DistinctProperty)).Value;
-            set => SetAttribute(nameof(Key), nameof(DistinctProperty), value);
+            private set => SetAttribute(nameof(Key), nameof(DistinctProperty), value);
         }
 
         #endregion
