@@ -7,14 +7,16 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class ByteDecoder : DataTypeDecoder<byte>
     {
-        public override ObservableProperty Parse(byte value)
+        public override string TypeIdentifier => "byte";
+
+        protected override string ParseValue(byte value)
         {
-            return ObservableProperty.CreateFromData(value.ToString());
+            return value.ToString();
         }
 
-        public override byte Parse(ObservableProperty decodable)
+        protected override byte ParseData(string data)
         {
-            if (byte.TryParse(decodable.Data, out byte result)) return result;
+            if (byte.TryParse(data, out byte result)) return result;
             throw new Exception("Parse error");
         }
     }

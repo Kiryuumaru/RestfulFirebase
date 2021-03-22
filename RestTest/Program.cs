@@ -35,6 +35,12 @@ namespace RestTest
             set => SetPersistableProperty(value, "_md");
         }
 
+        public bool IsOk
+        {
+            get => GetPersistableProperty<bool>("isOk");
+            set => SetPersistableProperty(value, "isOk");
+        }
+
         #endregion
 
         #region Initializers

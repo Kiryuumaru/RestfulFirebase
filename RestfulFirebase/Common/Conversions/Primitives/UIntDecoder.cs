@@ -7,14 +7,16 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class UIntDecoder : DataTypeDecoder<uint>
     {
-        public override ObservableProperty Parse(uint value)
+        public override string TypeIdentifier => "uint";
+
+        protected override string ParseValue(uint value)
         {
-            return ObservableProperty.CreateFromData(value.ToString());
+            return value.ToString();
         }
 
-        public override uint Parse(ObservableProperty decodable)
+        protected override uint ParseData(string data)
         {
-            if (uint.TryParse(decodable.Data, out uint result)) return result;
+            if (uint.TryParse(data, out uint result)) return result;
             throw new Exception("Parse error");
         }
     }

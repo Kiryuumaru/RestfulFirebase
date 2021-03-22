@@ -7,14 +7,16 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class ShortDecoder : DataTypeDecoder<short>
     {
-        public override ObservableProperty Parse(short value)
+        public override string TypeIdentifier => "short";
+
+        protected override string ParseValue(short value)
         {
-            return ObservableProperty.CreateFromData(value.ToString());
+            return value.ToString();
         }
 
-        public override short Parse(ObservableProperty decodable)
+        protected override short ParseData(string data)
         {
-            if (short.TryParse(decodable.Data, out short result)) return result;
+            if (short.TryParse(data, out short result)) return result;
             throw new Exception("Parse error");
         }
     }

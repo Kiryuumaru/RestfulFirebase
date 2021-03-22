@@ -33,6 +33,18 @@ namespace RestfulFirebase.Database.Models
 
         }
 
+        internal void ConsumePersistableStream(StreamEvent streamEvent)
+        {
+            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+            else if (streamEvent.Path.Length == 1)
+            {
+                if (streamEvent.Data == null) Empty();
+                else Update(streamEvent.Data);
+            }
+        }
+
         public void Dispose()
         {
             RealtimeSubscription?.Dispose();
@@ -53,18 +65,6 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Methods
-
-        internal void ConsumePersistableStream(StreamEvent streamEvent)
-        {
-            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if (streamEvent.Path.Length == 1)
-            {
-                if (streamEvent.Data == null) Empty();
-                else Update(streamEvent.Data);
-            }
-        }
 
         public T ParseValue()
         {

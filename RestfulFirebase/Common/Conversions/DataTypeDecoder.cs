@@ -47,6 +47,7 @@ namespace RestfulFirebase.Common.Conversions
         }
 
         public abstract Type Type { get; }
+        public abstract string TypeIdentifier { get; }
     }
 
     public abstract class DataTypeDecoder<T> : DataTypeDecoder
@@ -54,8 +55,26 @@ namespace RestfulFirebase.Common.Conversions
         #region Properties
 
         public override Type Type { get => typeof(T); }
-        public abstract ObservableProperty Parse(T value);
-        public abstract T Parse(ObservableProperty decodable);
+        protected abstract string ParseValue(T value);
+        protected abstract T ParseData(string data);
+
+        public string Parse(T value)
+        {
+            var data = ParseValue(value);
+            var encoded = Helpers.SerializeString(TypeIdentifier, data);
+            if (encoded == null) throw new Exception("Data encoded is null.");
+            return encoded;
+        }
+
+        public T Parse(string data)
+        {
+            if (data == null) throw new Exception("Data to decode is null.");
+            var decoded = Helpers.DeserializeString(data);
+            if (decoded == null) throw new Exception("Data decoded is null.");
+            if (decoded.Length != 2) throw new Exception("Data length error.");
+            if (decoded[0] != TypeIdentifier) throw new Exception("Data decoded type mismatch.");
+            return ParseData(decoded[1]);
+        }
 
         #endregion
     }

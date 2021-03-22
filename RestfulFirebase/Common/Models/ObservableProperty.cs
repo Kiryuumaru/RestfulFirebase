@@ -81,7 +81,7 @@ namespace RestfulFirebase.Common.Models
 
         public static ObservableProperty CreateFromValue<T>(T value)
         {
-            return DataTypeDecoder.GetDecoder<T>().Parse(value);
+            return CreateFromData(DataTypeDecoder.GetDecoder<T>().Parse(value));
         }
 
         public static ObservableProperty CreateFromData(string data)
@@ -155,7 +155,7 @@ namespace RestfulFirebase.Common.Models
 
         public T ParseValue<T>()
         {
-            return DataTypeDecoder.GetDecoder<T>().Parse(this);
+            return DataTypeDecoder.GetDecoder<T>().Parse(Data);
         }
 
         public T Parse<T>()

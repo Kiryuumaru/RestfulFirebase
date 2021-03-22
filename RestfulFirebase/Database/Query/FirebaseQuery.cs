@@ -51,7 +51,9 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(property.Data, App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
-
+                property.RealtimeSubscription = Observable
+                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                    .Subscribe(stream => property.ConsumePersistableStream(stream));
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
@@ -76,7 +78,9 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
-
+                obj.RealtimeSubscription = Observable
+                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
@@ -181,7 +185,7 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task<T> GetAsPropertyCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<ObservableGroup<FirebaseProperty>> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             return default;
         }

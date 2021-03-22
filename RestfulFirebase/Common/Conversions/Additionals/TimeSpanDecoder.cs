@@ -7,14 +7,16 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 {
     public class TimeSpanDecoder : DataTypeDecoder<TimeSpan>
     {
-        public override ObservableProperty Parse(TimeSpan value)
+        public override string TypeIdentifier => "timeSpan";
+
+        protected override string ParseValue(TimeSpan value)
         {
-            return ObservableProperty.CreateFromData(value.TotalHours.ToString());
+            return value.TotalHours.ToString();
         }
 
-        public override TimeSpan Parse(ObservableProperty decodable)
+        protected override TimeSpan ParseData(string data)
         {
-            if (double.TryParse(decodable.Data, out double result)) return TimeSpan.FromHours(result);
+            if (double.TryParse(data, out double result)) return TimeSpan.FromHours(result);
             throw new Exception("Parse error");
         }
     }
