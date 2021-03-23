@@ -14,11 +14,13 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         public bool HasRealtimeWire => RealtimeSubscription != null;
+
         public string RealtimeWirePath
         {
             get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseProperty)).Value;
             internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseProperty), value);
         }
+
         public IDisposable RealtimeSubscription
         {
             get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;

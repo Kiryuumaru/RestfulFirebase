@@ -13,7 +13,7 @@ namespace RestfulFirebase.Common.Conversions
         private static readonly List<DataTypeDecoder> decoders = new List<DataTypeDecoder>();
         private static bool isInitialized = false;
 
-        public static DataTypeDecoder<T> GetDecoder<T>()
+        static DataTypeDecoder()
         {
             if (!isInitialized)
             {
@@ -35,6 +35,34 @@ namespace RestfulFirebase.Common.Conversions
                 decoders.Add(new DateTimeDecoder());
                 decoders.Add(new TimeSpanDecoder());
             }
+        }
+
+        protected static string SerializeData(string typeIdentifier, string data)
+        {
+            var encoded = Helpers.SerializeString(typeIdentifier, data);
+            if (encoded == null) throw new Exception("Data encoded is null.");
+            return encoded;
+        }
+
+        protected static string[] DeserializeData(string data)
+        {
+            if (data == null) throw new Exception("Data to decode is null.");
+            var decoded = Helpers.DeserializeString(data);
+            if (decoded == null) throw new Exception("Data decoded is null.");
+            if (decoded.Length != 2) throw new Exception("Data length error.");
+            return decoded;
+        }
+
+        public static Type GetType(string data)
+        {
+            var deserialized = DeserializeData(data);
+            var conversion = decoders.FirstOrDefault(i => i.TypeIdentifier == deserialized[0]);
+            if (conversion == null) throw new Exception(deserialized[0] + " data type not supported");
+            return conversion.Type;
+        }
+
+        public static DataTypeDecoder<T> GetDecoder<T>()
+        {
             var conversion = decoders.FirstOrDefault(i => i.Type == typeof(T));
             if (conversion == null) throw new Exception(typeof(T).Name + " data type not supported");
             return (DataTypeDecoder<T>)conversion;
@@ -62,19 +90,13 @@ namespace RestfulFirebase.Common.Conversions
         public string Parse(T value)
         {
             var data = ParseValue(value);
-            var encoded = Helpers.SerializeString(TypeIdentifier, data);
-            if (encoded == null) throw new Exception("Data encoded is null.");
-            return encoded;
+            return SerializeData(TypeIdentifier, data);
         }
 
         public T Parse(string data)
         {
-            if (data == null) throw new Exception("Data to decode is null.");
-            var decoded = Helpers.DeserializeString(data);
-            if (decoded == null) throw new Exception("Data decoded is null.");
-            if (decoded.Length != 2) throw new Exception("Data length error.");
-            if (decoded[0] != TypeIdentifier) throw new Exception("Data decoded type mismatch.");
-            return ParseData(decoded[1]);
+            var deserialized = DeserializeData(data);
+            return ParseData(deserialized[1]);
         }
 
         #endregion

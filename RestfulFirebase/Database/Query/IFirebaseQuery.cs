@@ -23,9 +23,9 @@ namespace RestfulFirebase.Database.Query
 
         Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
 
-        Task<ObservableGroup<FirebaseProperty>> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+        Task<FirebasePropertyGroup> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
-        Task<ObservableGroup<FirebaseObject>> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+        Task<FirebaseObjectGroup> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
         Task<string> BuildUrlAsync();
 

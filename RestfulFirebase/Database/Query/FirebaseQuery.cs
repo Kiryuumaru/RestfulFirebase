@@ -13,6 +13,7 @@ using RestfulFirebase.Common;
 using RestfulFirebase.Common.Models;
 using System.Linq;
 using RestfulFirebase.Database.Models;
+using System.IO;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -188,12 +189,54 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task<ObservableGroup<FirebaseProperty>> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<FirebasePropertyGroup> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
-            return default;
+            var query = new ChildQuery(this, () => path, App);
+            var c = query.GetClient(timeout);
+
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
+            try
+            {
+                url = await query.BuildUrlAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
+                return null;
+            }
+
+            try
+            {
+                var response = await c.GetAsync(url).ConfigureAwait(false);
+                statusCode = response.StatusCode;
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                response.EnsureSuccessStatusCode();
+                response.Dispose();
+
+                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData);
+                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
+                var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
+
+                obj.RealtimeWirePath = query.GetAbsolutePath();
+                obj.RealtimeSubscription = Observable
+                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
+
+                //return obj.Parse<T>();
+                return null;
+            }
+            catch (Exception ex)
+            {
+                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
+                return null;
+            }
         }
 
-        public async Task<ObservableGroup<FirebaseObject>> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<FirebaseObjectGroup> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             return default;
         }
@@ -249,7 +292,7 @@ namespace RestfulFirebase.Database.Query
 
             if (Parent != null)
             {
-                url = Parent.BuildUrl(this) + url;
+                url = Path.Combine(Parent.BuildUrl(this), url);
             }
 
             return url;
@@ -268,7 +311,7 @@ namespace RestfulFirebase.Database.Query
 
             if (Parent != null)
             {
-                url = Parent.BuildUrl(this) + url;
+                url = Path.Combine(Parent.BuildUrl(this), url);
             }
 
             return url;

@@ -9,9 +9,32 @@ using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObjectGroup : DistinctGroup<FirebaseObject>, IDisposable
+    public class FirebaseObjectGroup : DistinctGroup<FirebaseObject>, IRealtimeModel
     {
+        #region Properties
+
+        public bool HasRealtimeWire => RealtimeSubscription != null;
+
+        public string RealtimeWirePath
+        {
+            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseObjectGroup)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseObjectGroup), value);
+        }
+
+        public IDisposable RealtimeSubscription
+        {
+            get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseObjectGroup)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObjectGroup), value);
+        }
+
+        #endregion
+
         #region Initializers
+
+        public static new FirebaseObjectGroup CreateFromKey(string key)
+        {
+            return new FirebaseObjectGroup(DistinctGroup<FirebaseObject>.CreateFromKey(key));
+        }
 
         public FirebaseObjectGroup(IAttributed attributed)
             : base(attributed)
