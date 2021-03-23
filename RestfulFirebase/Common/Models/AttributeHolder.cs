@@ -6,7 +6,12 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public abstract class AttributeHolder
+    public interface IAttributed
+    {
+        AttributeHolder Holder { get; }
+    }
+
+    public class AttributeHolder
     {
         #region Helpers
 
@@ -25,18 +30,19 @@ namespace RestfulFirebase.Common.Models
 
         #region Properties
 
-        private readonly List<Attribute> attributes = new List<Attribute>();
+        private List<Attribute> attributes = new List<Attribute>();
 
         #endregion
 
         #region Initializers
 
-        protected AttributeHolder(AttributeHolder holder)
+        public void Initialize(IAttributed attributed, IAttributed derived)
         {
-            attributes = holder == null ? new List<Attribute>() : holder.attributes;
-            foreach (var property in GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            if (attributed == null) throw new Exception("Attributed class is null");
+            attributes = derived == null ? new List<Attribute>() : derived.Holder.attributes;
+            foreach (var property in attributed.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                property.GetValue(this);
+                property.GetValue(attributed);
             }
         }
 
@@ -44,7 +50,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected (string Key, string Group, T Value) GetAttribute<T>(string key, string group, T defaultValue = default)
+        public (string Key, string Group, T Value) GetAttribute<T>(string key, string group, T defaultValue = default)
         {
             var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
             if (attribute == null)
@@ -60,7 +66,7 @@ namespace RestfulFirebase.Common.Models
             return (attribute.Key, attribute.Group, attribute.Value);
         }
 
-        protected void SetAttribute<T>(string key, string group, T value)
+        public void SetAttribute<T>(string key, string group, T value)
         {
             var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
             if (attribute == null)
@@ -76,7 +82,7 @@ namespace RestfulFirebase.Common.Models
             attribute.Value = value;
         }
 
-        protected void DeleteAttribute(string key, string group)
+        public void DeleteAttribute(string key, string group)
         {
             var attribute = attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
             if (attribute == null) return;

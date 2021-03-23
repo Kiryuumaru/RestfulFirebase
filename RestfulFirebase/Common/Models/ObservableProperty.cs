@@ -10,29 +10,32 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class ObservableProperty : AttributeHolder, INotifyPropertyChanged
+    public class ObservableProperty : IAttributed, INotifyPropertyChanged
     {
         #region Properties
 
+        public AttributeHolder Holder { get; } = new AttributeHolder();
+
         private PropertyChangedEventHandler PropertyChangedHandler
         {
-            get => GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableProperty), delegate { }).Value;
-            set => SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableProperty), value);
+            get => Holder.GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableProperty), delegate { }).Value;
+            set => Holder.SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableProperty), value);
         }
 
         private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
         {
-            get => GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
-            set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
+            get => Holder.GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
+            set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
         }
 
         public IEnumerable<byte> Bytes
         {
-            get => GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
-            private set => SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
+            get => Holder.GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
+            private set => Holder.SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
         }
 
         public string Data { get => Bytes == null ? null : Encoding.Unicode.GetString(Bytes.ToArray()); }
+
 
         public event PropertyChangedEventHandler PropertyChanged
         {
@@ -98,9 +101,9 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public ObservableProperty(AttributeHolder holder) : base(holder)
+        public ObservableProperty(IAttributed attributed)
         {
-
+            Holder.Initialize(this, attributed);
         }
 
         #endregion

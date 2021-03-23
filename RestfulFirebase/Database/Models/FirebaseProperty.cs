@@ -1,8 +1,10 @@
 ﻿using RestfulFirebase.Common.Conversions;
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
+using System.Reactive.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Database.Models
@@ -12,10 +14,15 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         public bool HasRealtimeWire => RealtimeSubscription != null;
-        internal IDisposable RealtimeSubscription
+        public string RealtimeWirePath
         {
-            get => GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;
-            set => SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
+            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseProperty)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseProperty), value);
+        }
+        public IDisposable RealtimeSubscription
+        {
+            get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
         }
 
         #endregion
@@ -32,10 +39,20 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseProperty<T>(CreateFromKeyAndData(key, data));
         }
 
-        public FirebaseProperty(AttributeHolder holder) : base(holder)
+        public FirebaseProperty(IAttributed attributed)
+            : base(attributed)
         {
 
         }
+
+        public void Dispose()
+        {
+            RealtimeSubscription?.Dispose();
+        }
+
+        #endregion
+
+        #region Methods
 
         internal void ConsumePersistableStream(StreamEvent streamEvent)
         {
@@ -49,11 +66,6 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void Dispose()
-        {
-            RealtimeSubscription?.Dispose();
-        }
-
         #endregion
     }
 
@@ -61,7 +73,7 @@ namespace RestfulFirebase.Database.Models
     {
         #region Initializers
 
-        public FirebaseProperty(AttributeHolder holder) : base(holder)
+        public FirebaseProperty(IAttributed attributed) : base(attributed)
         {
 
         }

@@ -15,8 +15,8 @@ namespace RestfulFirebase.Common.Models
 
         public string Key
         {
-            get => GetAttribute<string>(nameof(Key), nameof(DistinctProperty)).Value;
-            private set => SetAttribute(nameof(Key), nameof(DistinctProperty), value);
+            get => Holder.GetAttribute<string>(nameof(Key), nameof(DistinctProperty)).Value;
+            private set => Holder.SetAttribute(nameof(Key), nameof(DistinctProperty), value);
         }
 
         #endregion
@@ -59,7 +59,8 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public DistinctProperty(AttributeHolder holder) : base(holder)
+        public DistinctProperty(IAttributed attributed)
+            : base(attributed)
         {
 
         }

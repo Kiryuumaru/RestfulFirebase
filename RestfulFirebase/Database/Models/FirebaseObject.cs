@@ -14,10 +14,15 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         public bool HasRealtimeWire => RealtimeSubscription != null;
+        public string RealtimeWirePath
+        {
+            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseProperty)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseProperty), value);
+        }
         internal IDisposable RealtimeSubscription
         {
-            get => GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseObject)).Value;
-            set => SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObject), value);
+            get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseObject)).Value;
+            set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObject), value);
         }
 
         #endregion
@@ -39,7 +44,8 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseObject(DistinctObject.CreateFromKeyAndProperties(key, properties));
         }
 
-        public FirebaseObject(AttributeHolder holder) : base(holder)
+        public FirebaseObject(IAttributed attributed)
+            : base(attributed)
         {
 
         }

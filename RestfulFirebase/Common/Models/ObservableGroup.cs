@@ -6,17 +6,35 @@ using System.ComponentModel;
 
 namespace RestfulFirebase.Common.Models
 {
-	public class ObservableGroup<T> : ObservableCollection<T>
+	public class ObservableGroup<T> : ObservableCollection<T>, IAttributed
 	{
-		public ObservableGroup()
-			: base()
-		{
+		#region Properties
+
+		public AttributeHolder Holder { get; } = new AttributeHolder();
+
+		#endregion
+
+		#region Initializers
+
+		public static ObservableGroup<T> CreateFromEnumerable(IEnumerable<T> collection)
+        {
+			return new ObservableGroup<T>(collection);
+
 		}
 
-		public ObservableGroup(IEnumerable<T> collection)
+		public ObservableGroup(IAttributed attributed)
+		{
+			Holder.Initialize(this, attributed);
+		}
+
+		private ObservableGroup(IEnumerable<T> collection)
 			: base(collection)
 		{
 		}
+
+		#endregion
+
+		#region Methods
 
 		public void AddRange(IEnumerable<T> collection, NotifyCollectionChangedAction notificationMode = NotifyCollectionChangedAction.Add)
 		{
@@ -135,5 +153,7 @@ namespace RestfulFirebase.Common.Models
 			else
 				OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, changedItems: changedItems, startingIndex: startingIndex));
 		}
-	}
+
+        #endregion
+    }
 }

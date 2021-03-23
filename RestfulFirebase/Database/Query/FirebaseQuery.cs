@@ -78,6 +78,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
+                obj.RealtimeWirePath = query.GetAbsolutePath();
                 obj.RealtimeSubscription = Observable
                     .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
                     .Subscribe(stream => obj.ConsumePersistableStream(stream));
@@ -126,6 +127,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.DeserializeObject<string>(responseData, query.App.Config.JsonSerializerSettings);
                 var prop = FirebaseProperty.CreateFromKeyAndData<T>(path, data);
 
+                prop.RealtimeWirePath = query.GetAbsolutePath();
                 prop.RealtimeSubscription = Observable
                     .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
                     .Subscribe(stream => prop.ConsumePersistableStream(stream));
@@ -172,6 +174,7 @@ namespace RestfulFirebase.Database.Query
                 var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
 
+                obj.RealtimeWirePath = query.GetAbsolutePath();
                 obj.RealtimeSubscription = Observable
                     .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
                     .Subscribe(stream => obj.ConsumePersistableStream(stream));
@@ -190,7 +193,7 @@ namespace RestfulFirebase.Database.Query
             return default;
         }
 
-        public async Task<T> GetAsObjectCollectionAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task<ObservableGroup<FirebaseObject>> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             return default;
         }

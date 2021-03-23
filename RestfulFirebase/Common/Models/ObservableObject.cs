@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class ObservableObject : AttributeHolder, INotifyPropertyChanged
+    public class ObservableObject : IAttributed, INotifyPropertyChanged
     {
         #region Helpers
 
@@ -23,22 +23,24 @@ namespace RestfulFirebase.Common.Models
 
         #region Properties
 
+        public AttributeHolder Holder { get; } = new AttributeHolder();
+
         private PropertyChangedEventHandler PropertyChangedHandler
         {
-            get => GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableObject), delegate { }).Value;
-            set => SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableObject), value);
+            get => Holder.GetAttribute<PropertyChangedEventHandler>(nameof(PropertyChangedHandler), nameof(ObservableObject), delegate { }).Value;
+            set => Holder.SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableObject), value);
         }
 
         private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
         {
-            get => GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
-            set => SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
+            get => Holder.GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
+            set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
         private List<PropertyHolder> PropertyHolders
         {
-            get => GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
-            set => SetAttribute(nameof(PropertyHolders), nameof(ObservableObject), value);
+            get => Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
+            set => Holder.SetAttribute(nameof(PropertyHolders), nameof(ObservableObject), value);
         }
 
         public event PropertyChangedEventHandler PropertyChanged
@@ -88,9 +90,9 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public ObservableObject(AttributeHolder holder) : base(holder)
+        public ObservableObject(IAttributed attributed)
         {
-
+            Holder.Initialize(this, attributed);
         }
 
         #endregion

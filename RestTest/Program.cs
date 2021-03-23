@@ -41,6 +41,12 @@ namespace RestTest
             set => SetPersistableProperty(value, "isOk");
         }
 
+        public TimeSpan Premium
+        {
+            get => GetPersistableProperty<TimeSpan>("premium");
+            set => SetPersistableProperty(value, "premium");
+        }
+
         #endregion
 
         #region Initializers
@@ -77,7 +83,7 @@ namespace RestTest
             return new TestStorable(CreateFromKeyAndProperties(key, properties));
         }
 
-        public TestStorable(AttributeHolder holder) : base(holder)
+        public TestStorable(IAttributed attributed) : base(attributed)
         {
 
         }
@@ -160,6 +166,11 @@ namespace RestTest
 
             int x = 0;
             Console.WriteLine("FIN");
+
+            await Task.Delay(10000);
+            Console.WriteLine("FIN1");
+
+            ss3.Premium = TimeSpan.FromDays(365);
 
             await Task.Delay(10000000);
 

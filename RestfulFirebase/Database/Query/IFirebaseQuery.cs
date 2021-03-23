@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Streaming;
 
@@ -21,6 +22,10 @@ namespace RestfulFirebase.Database.Query
         Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
         Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
+
+        Task<ObservableGroup<FirebaseProperty>> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+
+        Task<ObservableGroup<FirebaseObject>> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
 
         Task<string> BuildUrlAsync();
 
