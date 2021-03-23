@@ -83,7 +83,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public static ObservableObject CreateFromProperties(IEnumerable<DistinctProperty> properties)
+        public static ObservableObject CreateFromProperties(IEnumerable<(string Key, string Data)> properties)
         {
             var obj = new ObservableObject(null);
             obj.PatchRawProperties(properties);
@@ -107,36 +107,31 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var existingHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-                var newHolder = new PropertyHolder()
-                {
-                    Property = DistinctProperty.CreateFromKeyAndValue(key, value),
-                    Group = group,
-                    PropertyName = propertyName
-                };
+                var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+                var newProp = DistinctProperty.CreateFromKeyAndValue(key, value);
 
-                if (existingHolder != null)
+                if (propHolder != null)
                 {
-                    var existingValue = existingHolder.Property.ParseValue<T>();
+                    var existingValue = propHolder.Property.ParseValue<T>();
 
                     bool hasChanges = false;
 
-                    if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
+                    if (propHolder.Group != group && group != null)
                     {
-                        existingHolder.Group = newHolder.Group;
+                        propHolder.Group = group;
                         hasChanges = true;
                     }
 
-                    if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
+                    if (propHolder.PropertyName != propertyName && propertyName != null)
                     {
-                        existingHolder.PropertyName = newHolder.PropertyName;
+                        propHolder.PropertyName = propertyName;
                         hasChanges = true;
                     }
 
-                    if (existingHolder.Property.Data != newHolder.Property.Data ||
+                    if (propHolder.Property.Data != newProp.Data ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        existingHolder.Property.Update(newHolder.Property);
+                        propHolder.Property.Update(newProp.Data);
                         hasChanges = true;
                     }
 
@@ -144,7 +139,12 @@ namespace RestfulFirebase.Common.Models
                 }
                 else
                 {
-                    PropertyHolders.Add(newHolder);
+                    PropertyHolders.Add(new PropertyHolder()
+                    {
+                        Property = newProp,
+                        Group = group,
+                        PropertyName = propertyName
+                    });
                 }
             }
             catch (Exception ex)
@@ -203,52 +203,38 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        protected void PatchRawProperties(IEnumerable<DistinctProperty> properties, string group = null)
+        public void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
         {
-            var groupProperties = group == null ? PropertyHolders : PropertyHolders.FindAll(i => i.Group.Equals(group));
             foreach (var property in properties)
             {
                 try
                 {
-                    var existingHolder = groupProperties.FirstOrDefault(i => i.Property.Key.Equals(property.Key));
-                    var newHolder = new PropertyHolder()
-                    {
-                        Property = property,
-                        Group = group,
-                        PropertyName = null
-                    };
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(property.Key));
 
-                    if (existingHolder != null)
+                    if (propHolder == null)
+                    {
+                        propHolder = new PropertyHolder()
+                        {
+                            Property = DistinctProperty.CreateFromKeyAndData(property.Key, property.Data),
+                            Group = null,
+                            PropertyName = null
+                        };
+                        PropertyHolders.Add(propHolder);
+                    }
+                    else
                     {
                         bool hasChanges = false;
 
-                        if (existingHolder.Group != newHolder.Group && newHolder.Group != null)
+                        if (propHolder.Property.Data != property.Data)
                         {
-                            existingHolder.Group = newHolder.Group;
-                            hasChanges = true;
-                        }
-
-                        if (existingHolder.PropertyName != newHolder.PropertyName && newHolder.PropertyName != null)
-                        {
-                            existingHolder.PropertyName = newHolder.PropertyName;
-                            hasChanges = true;
-                        }
-
-                        if (existingHolder.Property.Data != newHolder.Property.Data)
-                        {
-                            existingHolder.Property.Update(newHolder.Property);
+                            propHolder.Property.Update(property.Data);
                             hasChanges = true;
                         }
 
                         if (!hasChanges) continue;
                     }
-                    else
-                    {
-                        existingHolder = newHolder;
-                        PropertyHolders.Add(newHolder);
-                    }
 
-                    OnChanged(PropertyChangeType.Set, existingHolder.Property.Key, existingHolder.Group, existingHolder.PropertyName);
+                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                 }
                 catch (Exception ex)
                 {
@@ -259,7 +245,13 @@ namespace RestfulFirebase.Common.Models
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)
         {
-            return group == null ? PropertyHolders.Select(i => i.Property) : PropertyHolders.FindAll(i => i.Group == group).Select(i => i.Property);
+            return group == null ?
+                PropertyHolders
+                    .Where(i => i.Property.Data != null)
+                    .Select(i => i.Property) :
+                PropertyHolders
+                    .Where(i => i.Property.Data != null && i.Group == group)
+                    .Select(i => i.Property);
         }
 
         public T Parse<T>()

@@ -12,6 +12,12 @@ namespace RestfulFirebase.Common.Models
 
 		public AttributeHolder Holder { get; } = new AttributeHolder();
 
+		private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
+		{
+			get => Holder.GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableGroup<T>), delegate { }).Value;
+			set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableGroup<T>), value);
+		}
+
 		#endregion
 
 		#region Initializers
@@ -43,6 +49,8 @@ namespace RestfulFirebase.Common.Models
 		#endregion
 
 		#region Methods
+
+		protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
 
 		public void AddRange(IEnumerable<T> collection, NotifyCollectionChangedAction notificationMode = NotifyCollectionChangedAction.Add)
 		{

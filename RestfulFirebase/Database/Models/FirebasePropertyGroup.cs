@@ -5,6 +5,7 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
@@ -49,26 +50,76 @@ namespace RestfulFirebase.Database.Models
 
         public void Dispose()
         {
-
+            RealtimeSubscription?.Dispose();
         }
 
         #endregion
 
         #region Methods
 
-        internal void ConsumePersistableStream(StreamEvent streamEvent)
+        public void SetStreamer(IFirebaseQuery query)
         {
-            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if (streamEvent.Path.Length == 1)
-            {
+            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeSubscription = Observable
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Subscribe(streamEvent =>
+                {
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1)
+                    {
+                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                        foreach (var item in new List<FirebaseProperty>(this.Where(i => !data.ContainsKey(i.Key))))
+                        {
+                            Remove(item);
+                        }
+                        if (data.Count != 0)
+                        {
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            PatchRawProperties(props);
+                        }
+                    }
+                    else if (streamEvent.Path.Length == 2)
+                    {
+                        var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
+                        if (prop == null)
+                        {
+                            Add(FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null));
+                        }
+                        else
+                        {
+                            prop.Update(streamEvent.Data);
+                        }
+                    }
+                });
+        }
 
-                
-            }
-            else if (streamEvent.Path.Length == 2)
+        protected void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
+        {
+            foreach (var property in properties)
             {
+                try
+                {
+                    var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
 
+                    if (propHolder == null)
+                    {
+                        propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
+                        Add(propHolder);
+                    }
+                    else
+                    {
+                        if (propHolder.Data != property.Data)
+                        {
+                            propHolder.Update(property.Data);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
             }
         }
 

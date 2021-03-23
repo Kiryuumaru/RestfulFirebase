@@ -69,15 +69,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        public bool Update(DistinctProperty cellModel)
-        {
-            if (cellModel.Key.Equals(Key))
-            {
-                Update(cellModel.Data);
-                return true;
-            }
-            return false;
-        }
+
 
         #endregion
     }

@@ -9,7 +9,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseProperty : DistinctProperty, IDisposable
+    public class FirebaseProperty : DistinctProperty, IRealtimeModel
     {
         #region Properties
 
@@ -66,16 +66,22 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        internal void ConsumePersistableStream(StreamEvent streamEvent)
+        public void SetStreamer(IFirebaseQuery query)
         {
-            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if (streamEvent.Path.Length == 1)
-            {
-                if (streamEvent.Data == null) Empty();
-                else Update(streamEvent.Data);
-            }
+            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeSubscription = Observable
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Subscribe(streamEvent =>
+                {
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1)
+                    {
+                        if (streamEvent.Data == null) Empty();
+                        else Update(streamEvent.Data);
+                    }
+                });
         }
 
         #endregion

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using RestfulFirebase.Common;
 using RestfulFirebase;
 using RestfulFirebase.Database.Models;
+using System.Collections.ObjectModel;
 
 namespace RestTest
 {
@@ -78,7 +79,7 @@ namespace RestTest
             };
         }
 
-        public static TestStorable Create(string key, IEnumerable<DistinctProperty> properties)
+        public static TestStorable Create(string key, IEnumerable<(string Key, string Data)> properties)
         {
             return new TestStorable(CreateFromKeyAndProperties(key, properties));
         }
@@ -130,8 +131,20 @@ namespace RestTest
             await userNode.Child("objCollection").SetAsync(props32);
             await userNode.Child("objCollection").SetAsync(props33);
 
-            var ss1 = userNode.GetAsPropertyCollectionAsync("propCollection");
-            //var ss2 = userNode.Child("objCollection").GetAsPropertyAsync<string>(props2.Key);
+            var ss1 = await userNode.GetAsPropertyCollectionAsync("propCollection");
+            var ss2 = await userNode.GetAsObjectCollectionAsync("objCollection");
+            ss1.CollectionChanged += (s, e) =>
+            {
+
+            };
+            ss2.CollectionChanged += (s, e) =>
+            {
+
+            };
+            ss2[0].PropertyChanged += (s, e) =>
+            {
+
+            };
 
             Console.WriteLine("FIN");
 

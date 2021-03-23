@@ -40,7 +40,7 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public static DistinctObject CreateFromKeyAndProperties(string key, IEnumerable<DistinctProperty> properties)
+        public static DistinctObject CreateFromKeyAndProperties(string key, IEnumerable<(string Key, string Data)> properties)
         {
             var obj = new DistinctObject(CreateFromProperties(properties))
             {

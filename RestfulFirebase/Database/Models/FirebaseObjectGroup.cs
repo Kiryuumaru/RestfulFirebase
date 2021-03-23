@@ -5,6 +5,7 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
@@ -36,6 +37,11 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseObjectGroup(DistinctGroup<FirebaseObject>.CreateFromKey(key));
         }
 
+        public static new FirebaseObjectGroup CreateFromKeyAndEnumerable(string key, IEnumerable<FirebaseObject> properties)
+        {
+            return new FirebaseObjectGroup(DistinctGroup<FirebaseObject>.CreateFromKeyAndEnumerable(key, properties));
+        }
+
         public FirebaseObjectGroup(IAttributed attributed)
             : base(attributed)
         {
@@ -44,25 +50,92 @@ namespace RestfulFirebase.Database.Models
 
         public void Dispose()
         {
-
+            RealtimeSubscription?.Dispose();
         }
 
         #endregion
 
         #region Methods
 
-        internal void ConsumePersistableStream(StreamEvent streamEvent)
+        public void SetStreamer(IFirebaseQuery query)
         {
-            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-            else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if (streamEvent.Path.Length == 1)
-            {
+            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeSubscription = Observable
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Subscribe(streamEvent =>
+                {
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1)
+                    {
+                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                        foreach (var item in new List<FirebaseObject>(this.Where(i => !data.ContainsKey(i.Key))))
+                        {
+                            Remove(item);
+                        }
+                        if (data.Count != 0)
+                        {
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            PatchRawProperties(props);
+                        }
+                    }
+                    else if (streamEvent.Path.Length == 2)
+                    {
+                        var obj = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
+                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                        var props = data.Select(i => (i.Key, i.Value.ToString()));
+                        if (obj == null)
+                        {
+                            Add(FirebaseObject.CreateFromKeyAndProperties(streamEvent.Path[1], props));
+                        }
+                        else
+                        {
+                            obj.PatchRawProperties(props);
+                        }
+                    }
+                    else if (streamEvent.Path.Length == 3)
+                    {
+                        var obj = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
+                        var props = new List<(string Key, string Value)>()
+                        {
+                            (streamEvent.Path[2], streamEvent.Data)
+                        };
+                        if (obj == null)
+                        {
+                            Add(FirebaseObject.CreateFromKeyAndProperties(streamEvent.Path[1], props));
+                        }
+                        else
+                        {
+                            obj.PatchRawProperties(props);
+                        }
+                    }
+                });
+        }
 
-            }
-            else if (streamEvent.Path.Length == 2)
+        public void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
+        {
+            foreach (var property in properties)
             {
+                try
+                {
+                    var obj = this.FirstOrDefault(i => i.Key.Equals(property.Key));
 
+                    var data = property.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(property.Data);
+                    var props = data.Select(i => (i.Key, i.Value.ToString()));
+                    if (obj == null)
+                    {
+                        Add(FirebaseObject.CreateFromKeyAndProperties(property.Key, props));
+                    }
+                    else
+                    {
+                        obj.PatchRawProperties(props);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
             }
         }
 

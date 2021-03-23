@@ -161,7 +161,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public object ParseValue()
+        public object ParseValueAsObject()
         {
             return DataTypeDecoder.GetDecoder(GetDataType()).DecodeAsObject(Data);
         }

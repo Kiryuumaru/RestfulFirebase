@@ -5,6 +5,7 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
@@ -41,7 +42,7 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseObject(DistinctObject.CreateFromKey(key));
         }
 
-        public static new FirebaseObject CreateFromKeyAndProperties(string key, IEnumerable<DistinctProperty> properties)
+        public static new FirebaseObject CreateFromKeyAndProperties(string key, IEnumerable<(string Key, string Data)> properties)
         {
             return new FirebaseObject(DistinctObject.CreateFromKeyAndProperties(key, properties));
         }
@@ -66,32 +67,38 @@ namespace RestfulFirebase.Database.Models
             return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
 
-        internal void ConsumePersistableStream(StreamEvent streamEvent)
+        public void SetStreamer(IFirebaseQuery query)
         {
-            if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-            else if(streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if(streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if(streamEvent.Path.Length == 1)
-            {
-                foreach (var key in GetRawPersistableProperties().Select(i => i.Key))
+            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeSubscription = Observable
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Subscribe(streamEvent =>
                 {
-                    DeleteProperty(key);
-                }
-                if (streamEvent.Data != null)
-                {
-                    var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(streamEvent.Data);
-                    var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
-                    PatchRawProperties(props);
-                }
-            }
-            else if (streamEvent.Path.Length == 2)
-            {
-                var props = new List<DistinctProperty>()
-                {
-                    DistinctProperty.CreateFromKeyAndData(streamEvent.Path[1], streamEvent.Data)
-                };
-                PatchRawProperties(props);
-            }
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1)
+                    {
+                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                        foreach (var prop in GetRawPersistableProperties().Where(i => !data.ContainsKey(i.Key)))
+                        {
+                            DeleteProperty(prop.Key);
+                        }
+                        if (data.Count != 0)
+                        {
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            PatchRawProperties(props);
+                        }
+                    }
+                    else if (streamEvent.Path.Length == 2)
+                    {
+                        var props = new List<(string Key, string Data)>()
+                        {
+                            (streamEvent.Path[1], streamEvent.Data)
+                        };
+                        PatchRawProperties(props);
+                    }
+                });
         }
 
         public IEnumerable<DistinctProperty> GetRawPersistableProperties()

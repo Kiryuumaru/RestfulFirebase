@@ -52,9 +52,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(property.Data, App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
-                property.RealtimeSubscription = Observable
-                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => property.ConsumePersistableStream(stream));
+                property.SetStreamer(query);
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
@@ -79,10 +77,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
                 var c = query.GetClient(timeout);
 
-                obj.RealtimeWirePath = query.GetAbsolutePath();
-                obj.RealtimeSubscription = Observable
-                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
+                obj.SetStreamer(query);
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
@@ -128,10 +123,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.DeserializeObject<object>(responseData, query.App.Config.JsonSerializerSettings);
                 var prop = FirebaseProperty.CreateDerivedFromKeyAndData<T>(path, data.ToString());
 
-                prop.RealtimeWirePath = query.GetAbsolutePath();
-                prop.RealtimeSubscription = Observable
-                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => prop.ConsumePersistableStream(stream));
+                prop.SetStreamer(query);
 
                 return prop;
             }
@@ -172,13 +164,10 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value.ToString()));
+                var props = data.Select(i => (i.Key, i.Value.ToString()));
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
 
-                obj.RealtimeWirePath = query.GetAbsolutePath();
-                obj.RealtimeSubscription = Observable
-                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
+                obj.SetStreamer(query);
 
                 return obj.Parse<T>();
             }
@@ -221,10 +210,7 @@ namespace RestfulFirebase.Database.Query
                 var props = data.Select(i => FirebaseProperty.CreateFromKeyAndData(i.Key, i.Value.ToString()));
                 var group = FirebasePropertyGroup.CreateFromKeyAndEnumerable(path, props);
 
-                group.RealtimeWirePath = query.GetAbsolutePath();
-                group.RealtimeSubscription = Observable
-                    .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => group.ConsumePersistableStream(stream));
+                group.SetStreamer(query);
 
                 return group;
             }
@@ -237,7 +223,50 @@ namespace RestfulFirebase.Database.Query
 
         public async Task<FirebaseObjectGroup> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
-            return default;
+            var query = new ChildQuery(this, () => path, App);
+            var c = query.GetClient(timeout);
+
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
+            try
+            {
+                url = await query.BuildUrlAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
+                return null;
+            }
+
+            try
+            {
+                var response = await c.GetAsync(url).ConfigureAwait(false);
+                statusCode = response.StatusCode;
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                response.EnsureSuccessStatusCode();
+                response.Dispose();
+
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
+                var objs = data.Select(i =>
+                {
+                    var subData = i.Value == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(i.Value.ToString());
+                    var props = subData.Select(subI => (subI.Key, subI.Value.ToString()));
+                    return FirebaseObject.CreateFromKeyAndProperties(i.Key, props);
+                });
+                var group = FirebaseObjectGroup.CreateFromKeyAndEnumerable(path, objs);
+
+                group.SetStreamer(query);
+
+                return group;
+            }
+            catch (Exception ex)
+            {
+                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
+                return null;
+            }
         }
 
         public async void DeleteAsync(string path, TimeSpan? timeout = null)
