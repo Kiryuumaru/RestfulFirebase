@@ -217,17 +217,16 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData);
-                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
-                var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
+                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value.ToString())).ToList();
+                var group = FirebasePropertyGroup.CreateFromKey(path);
 
-                obj.RealtimeWirePath = query.GetAbsolutePath();
-                obj.RealtimeSubscription = Observable
+                group.RealtimeWirePath = query.GetAbsolutePath();
+                group.RealtimeSubscription = Observable
                     .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
-                    .Subscribe(stream => obj.ConsumePersistableStream(stream));
+                    .Subscribe(stream => group.ConsumePersistableStream(stream));
 
-                //return obj.Parse<T>();
-                return null;
+                return group;
             }
             catch (Exception ex)
             {

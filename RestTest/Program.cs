@@ -115,62 +115,25 @@ namespace RestTest
 
             var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
-            var props3 = TestStorable.Create();
-
-            var pr = props3.GetRawPersistableProperties().ToList();
+            var props31 = TestStorable.Create();
+            var props32 = TestStorable.Create();
+            var props33 = TestStorable.Create();
 
             int x11 = 0;
 
-            await app.Database.Child("public").Child("prop").SetAsync(props1);
-            await app.Database.Child("public").Child("prop").SetAsync(props2);
-            await app.Database.Child("public").Child("prop").SetAsync(props3);
-
-            //try
-            //{
-            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props1);
-            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props2);
-            //    await app.Database.Child("users").Child("a").Child("prop").SetAsync(props3);
-            //}
-            //catch(FirebaseException s)
-            //{
-
-            //}
-
-            var ss = props3.Key;
-
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             await app.Auth.UpdateProfileAsync("disp", "123123");
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props1);
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props2);
-            await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").SetAsync(props3);
+            var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
+            await userNode.Child("propCollection").SetAsync(props1);
+            await userNode.Child("propCollection").SetAsync(props2);
+            await userNode.Child("objCollection").SetAsync(props31);
+            await userNode.Child("objCollection").SetAsync(props32);
+            await userNode.Child("objCollection").SetAsync(props33);
 
-            var node = app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop");
-            var path = node.GetAbsolutePath();
+            var ss1 = userNode.GetAsPropertyCollectionAsync("propCollection");
+            //var ss2 = userNode.Child("objCollection").GetAsPropertyAsync<string>(props2.Key);
 
-            var ss1 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<double>(props1.Key);
-            var ss2 = await app.Database.Child("users").Child(app.Auth.User.LocalId).Child("prop").GetAsPropertyAsync<string>(props2.Key);
-            var ss3 = await node.GetAsObjectAsync<TestStorable>(props3.Key);
-            ss2.PropertyChanged += (s, e) =>
-            {
-                Console.WriteLine("SS2: " + e.PropertyName);
-            };
-            ss3.PropertyChanged += (s, e) =>
-            {
-                var sssss = ss3;
-                Console.WriteLine("SS3: " + e.PropertyName);
-            };
-
-            //var dinos = await firebase
-            //    .Child("ss").AsRealtimeDatabase("", "", StreamingOptions.LatestOnly, InitialPullStrategy.MissingOnly, true)
-            //    .OnceAsync<object>();
-
-            int x = 0;
             Console.WriteLine("FIN");
-
-            await Task.Delay(10000);
-            Console.WriteLine("FIN1");
-
-            ss3.Premium = TimeSpan.FromDays(365);
 
             await Task.Delay(10000000);
 

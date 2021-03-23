@@ -40,7 +40,10 @@ namespace RestfulFirebase.Common.Models
         {
             if (attributed == null) throw new Exception("Attributed class is null");
             attributes = derived == null ? new List<Attribute>() : derived.Holder.attributes;
-            foreach (var property in attributed.GetType().GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            foreach (var property in attributed
+                .GetType()
+                .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(p => p.GetIndexParameters().Length == 0))
             {
                 property.GetValue(attributed);
             }
