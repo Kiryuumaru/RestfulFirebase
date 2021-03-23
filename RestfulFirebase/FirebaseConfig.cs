@@ -2,6 +2,7 @@
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Extensions.Http;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
+            OfflineActions = new ConcurrentDictionary<string, OfflineAction>();
             SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
         }
@@ -21,6 +23,8 @@ namespace RestfulFirebase
         public string DatabaseURL { get; set; }
 
         public string StorageBucket { get; set; }
+
+        public ConcurrentDictionary<string, OfflineAction> OfflineActions { get; set; }
 
         public TimeSpan SyncPeriod { get; set; }
 

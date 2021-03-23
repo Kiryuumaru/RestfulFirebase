@@ -114,6 +114,18 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
+            app.Database.OfflinePersistence.SetAction("a/b/c/", new OfflineAction("s", "s", 1));
+            app.Database.OfflinePersistence.SetAction("a/b/c", new OfflineAction("a", "a", 1));
+            app.Database.OfflinePersistence.SetAction("a/b/q", new OfflineAction("a", "a", 1));
+            app.Database.OfflinePersistence.SetAction("a/b/cd", new OfflineAction("a", "a", 1));
+            app.Database.OfflinePersistence.SetAction("a/s", new OfflineAction("a", "a", 1));
+            app.Database.OfflinePersistence.SetAction("a/s/s", new OfflineAction("a", "a", 1));
+            app.Database.OfflinePersistence.SetAction("a/s/s/a", new OfflineAction("a", "a", 1));
+            var ssasa = app.Database.OfflinePersistence.GetAction("a/b/c");
+            var ssas = app.Database.OfflinePersistence.GetAction("a/b/c/");
+            var ssacas = app.Database.OfflinePersistence.GetSubPaths("a/b/");
+            var ssaacas = app.Database.OfflinePersistence.GetSubPaths("a/s/");
+
             var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
             var props31 = TestStorable.Create();
