@@ -133,18 +133,6 @@ namespace RestTest
 
             var ss1 = await userNode.GetAsPropertyCollectionAsync("propCollection");
             var ss2 = await userNode.GetAsObjectCollectionAsync("objCollection");
-            ss1.CollectionChanged += (s, e) =>
-            {
-
-            };
-            ss2.CollectionChanged += (s, e) =>
-            {
-
-            };
-            ss2[0].PropertyChanged += (s, e) =>
-            {
-
-            };
 
             Console.WriteLine("FIN");
 

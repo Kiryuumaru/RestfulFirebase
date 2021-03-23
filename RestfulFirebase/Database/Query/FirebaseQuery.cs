@@ -49,7 +49,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => property.Key, App);
 
-                var data = JsonConvert.SerializeObject(property.Data, App.Config.JsonSerializerSettings);
+                var data = JsonConvert.SerializeObject(property.Data);
                 var c = query.GetClient(timeout);
 
                 property.SetStreamer(query);
@@ -74,7 +74,7 @@ namespace RestfulFirebase.Database.Query
                 var query = new ChildQuery(this, () => obj.Key, App);
 
                 var collection = obj.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Data);
-                var data = JsonConvert.SerializeObject(collection, query.App.Config.JsonSerializerSettings);
+                var data = JsonConvert.SerializeObject(collection);
                 var c = query.GetClient(timeout);
 
                 obj.SetStreamer(query);
@@ -120,7 +120,7 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<object>(responseData, query.App.Config.JsonSerializerSettings);
+                var data = JsonConvert.DeserializeObject<object>(responseData);
                 var prop = FirebaseProperty.CreateDerivedFromKeyAndData<T>(path, data.ToString());
 
                 prop.SetStreamer(query);

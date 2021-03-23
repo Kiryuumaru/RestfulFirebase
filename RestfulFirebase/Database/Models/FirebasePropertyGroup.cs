@@ -4,6 +4,7 @@ using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
@@ -14,7 +15,7 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public bool HasRealtimeWire => RealtimeSubscription != null;
+        public bool HasRealtimeWire => RealtimeWirePath != null;
 
         public string RealtimeWirePath
         {
@@ -115,6 +116,7 @@ namespace RestfulFirebase.Database.Models
                             propHolder.Update(property.Data);
                         }
                     }
+                    propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                 }
                 catch (Exception ex)
                 {

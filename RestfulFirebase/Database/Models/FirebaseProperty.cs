@@ -13,7 +13,7 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public bool HasRealtimeWire => RealtimeSubscription != null;
+        public bool HasRealtimeWire => RealtimeWirePath != null;
 
         public string RealtimeWirePath
         {

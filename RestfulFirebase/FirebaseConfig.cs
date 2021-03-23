@@ -22,8 +22,6 @@ namespace RestfulFirebase
 
         public string StorageBucket { get; set; }
 
-        public JsonSerializerSettings JsonSerializerSettings { get; set; }
-
         public TimeSpan SyncPeriod { get; set; }
 
         public bool AsAccessToken { get; set; }
