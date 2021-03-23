@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "decimal";
 
-        protected override string ParseValue(decimal value)
+        protected override string EncodeValue(decimal value)
         {
             return value.ToString();
         }
 
-        protected override decimal ParseData(string data)
+        protected override decimal DecodeData(string data)
         {
             if (decimal.TryParse(data, out decimal result)) return result;
             throw new Exception("Parse error");

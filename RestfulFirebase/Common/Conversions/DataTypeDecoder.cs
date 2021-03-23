@@ -53,12 +53,19 @@ namespace RestfulFirebase.Common.Conversions
             return decoded;
         }
 
-        public static Type GetType(string data)
+        public static Type GetDataType(string data)
         {
             var deserialized = DeserializeData(data);
             var conversion = decoders.FirstOrDefault(i => i.TypeIdentifier == deserialized[0]);
             if (conversion == null) throw new Exception(deserialized[0] + " data type not supported");
             return conversion.Type;
+        }
+
+        public static DataTypeDecoder GetDecoder(Type type)
+        {
+            var conversion = decoders.FirstOrDefault(i => i.Type == type);
+            if (conversion == null) throw new Exception(type.Name + " data type not supported");
+            return conversion;
         }
 
         public static DataTypeDecoder<T> GetDecoder<T>()
@@ -77,6 +84,21 @@ namespace RestfulFirebase.Common.Conversions
 
         public abstract Type Type { get; }
         public abstract string TypeIdentifier { get; }
+
+        protected abstract string EncodeValueAsObject(object value);
+        protected abstract object DecodeDataAsObject(string data);
+
+        public string EncodeAsObject(object value)
+        {
+            var data = EncodeValueAsObject(value);
+            return SerializeData(TypeIdentifier, data);
+        }
+
+        public object DecodeAsObject(string data)
+        {
+            var deserialized = DeserializeData(data);
+            return DecodeDataAsObject(deserialized[1]);
+        }
     }
 
     public abstract class DataTypeDecoder<T> : DataTypeDecoder
@@ -84,19 +106,25 @@ namespace RestfulFirebase.Common.Conversions
         #region Properties
 
         public override Type Type { get => typeof(T); }
-        protected abstract string ParseValue(T value);
-        protected abstract T ParseData(string data);
 
-        public string Parse(T value)
+        protected abstract string EncodeValue(T value);
+
+        protected abstract T DecodeData(string data);
+
+        protected override string EncodeValueAsObject(object value) => EncodeValue((T)value);
+
+        protected override object DecodeDataAsObject(string data) => DecodeData(data);
+
+        public string Encode(T value)
         {
-            var data = ParseValue(value);
+            var data = EncodeValue(value);
             return SerializeData(TypeIdentifier, data);
         }
 
-        public T Parse(string data)
+        public T Decode(string data)
         {
             var deserialized = DeserializeData(data);
-            return ParseData(deserialized[1]);
+            return DecodeData(deserialized[1]);
         }
 
         #endregion

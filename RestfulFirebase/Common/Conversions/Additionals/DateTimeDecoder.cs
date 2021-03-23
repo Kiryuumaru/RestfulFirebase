@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Additionals
     {
         public override string TypeIdentifier => "dateTime";
 
-        protected override string ParseValue(DateTime value)
+        protected override string EncodeValue(DateTime value)
         {
             return Helpers.EncodeDateTime(value);
         }
 
-        protected override DateTime ParseData(string data)
+        protected override DateTime DecodeData(string data)
         {
             var dateTime = Helpers.DecodeDateTime(data);
             if (dateTime.HasValue) return dateTime.Value;

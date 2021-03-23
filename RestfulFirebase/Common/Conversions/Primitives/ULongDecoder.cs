@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "ulong";
 
-        protected override string ParseValue(ulong value)
+        protected override string EncodeValue(ulong value)
         {
             return value.ToString();
         }
 
-        protected override ulong ParseData(string data)
+        protected override ulong DecodeData(string data)
         {
             if (ulong.TryParse(data, out ulong result)) return result;
             throw new Exception("Parse error");

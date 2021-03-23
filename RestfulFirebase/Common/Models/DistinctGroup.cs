@@ -40,6 +40,16 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
+        public static DistinctGroup<T> CreateFromKeyAndEnumerable(string key, IEnumerable<T> properties)
+        {
+            var obj = new DistinctGroup<T>(null)
+            {
+                Key = key
+            };
+            obj.AddRange(properties, System.Collections.Specialized.NotifyCollectionChangedAction.Add);
+            return obj;
+        }
+
         public DistinctGroup(IAttributed attributed)
             : base(attributed)
         {

@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Additionals
     {
         public override string TypeIdentifier => "string";
 
-        protected override string ParseValue(string value)
+        protected override string EncodeValue(string value)
         {
             return value;
         }
 
-        protected override string ParseData(string data)
+        protected override string DecodeData(string data)
         {
             return data;
         }

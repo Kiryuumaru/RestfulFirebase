@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Additionals
     {
         public override string TypeIdentifier => "timeSpan";
 
-        protected override string ParseValue(TimeSpan value)
+        protected override string EncodeValue(TimeSpan value)
         {
             return value.TotalHours.ToString();
         }
 
-        protected override TimeSpan ParseData(string data)
+        protected override TimeSpan DecodeData(string data)
         {
             if (double.TryParse(data, out double result)) return TimeSpan.FromHours(result);
             throw new Exception("Parse error");

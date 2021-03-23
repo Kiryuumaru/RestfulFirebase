@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "sbyte";
 
-        protected override string ParseValue(sbyte value)
+        protected override string EncodeValue(sbyte value)
         {
             return value.ToString();
         }
 
-        protected override sbyte ParseData(string data)
+        protected override sbyte DecodeData(string data)
         {
             if (sbyte.TryParse(data, out sbyte result)) return result;
             throw new Exception("Parse error");

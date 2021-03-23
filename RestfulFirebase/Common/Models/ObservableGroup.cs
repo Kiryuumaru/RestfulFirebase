@@ -25,6 +25,14 @@ namespace RestfulFirebase.Common.Models
 		public ObservableGroup(IAttributed attributed)
 		{
 			Holder.Initialize(this, attributed);
+			if (attributed != null)
+            {
+				if (attributed is ObservableCollection<T> collection)
+				{
+					AddArrangeCore(collection);
+					collection.CollectionChanged += (s, e) => OnCollectionChanged(e);
+				}
+            }
 		}
 
 		private ObservableGroup(IEnumerable<T> collection)
@@ -47,9 +55,7 @@ namespace RestfulFirebase.Common.Models
 
 			var startIndex = Count;
 
-			var itemsAdded = AddArrangeCore(collection);
-
-			if (!itemsAdded)
+			if (!AddArrangeCore(collection))
 				return;
 
 			if (notificationMode == NotifyCollectionChangedAction.Reset)

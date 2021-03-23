@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "double";
 
-        protected override string ParseValue(double value)
+        protected override string EncodeValue(double value)
         {
             return value.ToString();
         }
 
-        protected override double ParseData(string data)
+        protected override double DecodeData(string data)
         {
             if (double.TryParse(data, out double result)) return result;
             throw new Exception("Parse error");

@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "int";
 
-        protected override string ParseValue(int value)
+        protected override string EncodeValue(int value)
         {
             return value.ToString();
         }
 
-        protected override int ParseData(string data)
+        protected override int DecodeData(string data)
         {
             if (int.TryParse(data, out int result)) return result;
             throw new Exception("Parse error");

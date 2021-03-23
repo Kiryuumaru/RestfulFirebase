@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "ushort";
 
-        protected override string ParseValue(ushort value)
+        protected override string EncodeValue(ushort value)
         {
             return value.ToString();
         }
 
-        protected override ushort ParseData(string data)
+        protected override ushort DecodeData(string data)
         {
             if (ushort.TryParse(data, out ushort result)) return result;
             throw new Exception("Parse error");

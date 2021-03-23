@@ -36,6 +36,11 @@ namespace RestfulFirebase.Database.Models
             return new FirebasePropertyGroup(DistinctGroup<FirebaseProperty>.CreateFromKey(key));
         }
 
+        public static new FirebasePropertyGroup CreateFromKeyAndEnumerable(string key, IEnumerable<FirebaseProperty> properties)
+        {
+            return new FirebasePropertyGroup(DistinctGroup<FirebaseProperty>.CreateFromKeyAndEnumerable(key, properties));
+        }
+
         public FirebasePropertyGroup(IAttributed attributed)
             : base(attributed)
         {
@@ -59,6 +64,7 @@ namespace RestfulFirebase.Database.Models
             else if (streamEvent.Path.Length == 1)
             {
 
+                
             }
             else if (streamEvent.Path.Length == 2)
             {

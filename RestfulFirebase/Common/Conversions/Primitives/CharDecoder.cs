@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "char";
 
-        protected override string ParseValue(char value)
+        protected override string EncodeValue(char value)
         {
             return value.ToString();
         }
 
-        protected override char ParseData(string data)
+        protected override char DecodeData(string data)
         {
             if (char.TryParse(data, out char result)) return result;
             throw new Exception("Parse error");

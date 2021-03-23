@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "uint";
 
-        protected override string ParseValue(uint value)
+        protected override string EncodeValue(uint value)
         {
             return value.ToString();
         }
 
-        protected override uint ParseData(string data)
+        protected override uint DecodeData(string data)
         {
             if (uint.TryParse(data, out uint result)) return result;
             throw new Exception("Parse error");

@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "long";
 
-        protected override string ParseValue(long value)
+        protected override string EncodeValue(long value)
         {
             return value.ToString();
         }
 
-        protected override long ParseData(string data)
+        protected override long DecodeData(string data)
         {
             if (long.TryParse(data, out long result)) return result;
             throw new Exception("Parse error");

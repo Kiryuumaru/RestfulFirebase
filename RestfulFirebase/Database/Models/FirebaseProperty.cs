@@ -9,7 +9,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public abstract class FirebaseProperty : DistinctProperty, IDisposable
+    public class FirebaseProperty : DistinctProperty, IDisposable
     {
         #region Properties
 
@@ -31,12 +31,22 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public static new FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value)
+        public static new FirebaseProperty CreateFromKeyAndValue<T>(string key, T value)
         {
-            return new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
+            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndValue(key, value));
         }
 
-        public static FirebaseProperty<T> CreateFromKeyAndData<T>(string key, string data)
+        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
+        {
+            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
+        }
+
+        public static FirebaseProperty<T> CreateDerivedFromKeyAndValue<T>(string key, T value)
+        {
+            return new FirebaseProperty<T>(CreateFromKeyAndValue(key, value));
+        }
+
+        public static FirebaseProperty<T> CreateDerivedFromKeyAndData<T>(string key, string data)
         {
             return new FirebaseProperty<T>(CreateFromKeyAndData(key, data));
         }

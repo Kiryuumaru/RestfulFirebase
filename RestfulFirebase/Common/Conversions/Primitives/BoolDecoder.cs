@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "bool";
 
-        protected override string ParseValue(bool value)
+        protected override string EncodeValue(bool value)
         {
             return value ? "1" : "0";
         }
 
-        protected override bool ParseData(string data)
+        protected override bool DecodeData(string data)
         {
             return data.Equals("1");
         }

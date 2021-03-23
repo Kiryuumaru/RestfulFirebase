@@ -84,7 +84,7 @@ namespace RestfulFirebase.Common.Models
 
         public static ObservableProperty CreateFromValue<T>(T value)
         {
-            return CreateFromData(DataTypeDecoder.GetDecoder<T>().Parse(value));
+            return CreateFromData(DataTypeDecoder.GetDecoder<T>().Encode(value));
         }
 
         public static ObservableProperty CreateFromData(string data)
@@ -113,6 +113,11 @@ namespace RestfulFirebase.Common.Models
         protected virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
+
+        public Type GetDataType()
+        {
+            return DataTypeDecoder.GetDataType(Data);
+        }
 
         public void Update(string data)
         {
@@ -156,9 +161,15 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
+        public object ParseValue()
+        {
+            return DataTypeDecoder.GetDecoder(GetDataType()).DecodeAsObject(Data);
+        }
+
         public T ParseValue<T>()
         {
-            return DataTypeDecoder.GetDecoder<T>().Parse(Data);
+            if (GetDataType() != typeof(T)) throw new Exception("Data type mismatch");
+            return DataTypeDecoder.GetDecoder<T>().Decode(Data);
         }
 
         public T Parse<T>()

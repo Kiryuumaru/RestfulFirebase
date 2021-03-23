@@ -125,8 +125,8 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<string>(responseData, query.App.Config.JsonSerializerSettings);
-                var prop = FirebaseProperty.CreateFromKeyAndData<T>(path, data);
+                var data = JsonConvert.DeserializeObject<object>(responseData, query.App.Config.JsonSerializerSettings);
+                var prop = FirebaseProperty.CreateDerivedFromKeyAndData<T>(path, data.ToString());
 
                 prop.RealtimeWirePath = query.GetAbsolutePath();
                 prop.RealtimeSubscription = Observable
@@ -171,8 +171,8 @@ namespace RestfulFirebase.Database.Query
                 response.EnsureSuccessStatusCode();
                 response.Dispose();
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseData);
-                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value));
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
+                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value.ToString()));
                 var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
 
                 obj.RealtimeWirePath = query.GetAbsolutePath();
@@ -218,8 +218,8 @@ namespace RestfulFirebase.Database.Query
                 response.Dispose();
 
                 var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-                var props = data.Select(i => DistinctProperty.CreateFromKeyAndData(i.Key, i.Value.ToString())).ToList();
-                var group = FirebasePropertyGroup.CreateFromKey(path);
+                var props = data.Select(i => FirebaseProperty.CreateFromKeyAndData(i.Key, i.Value.ToString()));
+                var group = FirebasePropertyGroup.CreateFromKeyAndEnumerable(path, props);
 
                 group.RealtimeWirePath = query.GetAbsolutePath();
                 group.RealtimeSubscription = Observable

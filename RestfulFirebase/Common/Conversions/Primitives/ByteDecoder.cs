@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "byte";
 
-        protected override string ParseValue(byte value)
+        protected override string EncodeValue(byte value)
         {
             return value.ToString();
         }
 
-        protected override byte ParseData(string data)
+        protected override byte DecodeData(string data)
         {
             if (byte.TryParse(data, out byte result)) return result;
             throw new Exception("Parse error");

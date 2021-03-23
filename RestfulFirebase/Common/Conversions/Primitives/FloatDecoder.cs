@@ -9,12 +9,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
     {
         public override string TypeIdentifier => "float";
 
-        protected override string ParseValue(float value)
+        protected override string EncodeValue(float value)
         {
             return value.ToString();
         }
 
-        protected override float ParseData(string data)
+        protected override float DecodeData(string data)
         {
             if (float.TryParse(data, out float result)) return result;
             throw new Exception("Parse error");
