@@ -10,12 +10,12 @@ namespace RestfulFirebase.Database
     public class FirebaseDatabaseApp : IDisposable
     {
         public RestfulFirebaseApp App { get; }
-        public OfflineActionStore OfflinePersistence { get; }
+        public OfflineDatabase OfflineDatabase { get; }
 
         internal FirebaseDatabaseApp(RestfulFirebaseApp app)
         {
             App = app;
-            OfflinePersistence = new OfflineActionStore(app);
+            OfflineDatabase = new OfflineDatabase(app);
         }
 
         public ChildQuery Child(string resourceName)

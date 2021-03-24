@@ -1,9 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using RestfulFirebase.Common;
 using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -26,6 +28,7 @@ namespace RestfulFirebase.Auth
         private const string GoogleUpdateUserPassword = "https://identitytoolkit.googleapis.com/v1/accounts:update?key={0}";
         private const string ProfileDeleteDisplayName = "DISPLAY_NAME";
         private const string ProfileDeletePhotoUrl = "PHOTO_URL";
+        private const string AuthRoot = "auth";
 
         private readonly HttpClient client;
 
@@ -48,6 +51,7 @@ namespace RestfulFirebase.Auth
         {
             App = firebaseApp;
             client = new HttpClient();
+            RetainPropertiesLocally();
         }
 
         public async Task CreateUserWithEmailAndPasswordAsync(string email, string password, string displayName = "", bool sendVerificationEmail = false)
@@ -403,7 +407,7 @@ namespace RestfulFirebase.Auth
         public void Signout()
         {
             if (!Authenticated) throw new Exception("NOT AUTHENTICATED");
-
+            PurgePropertiesLocally();
         }
 
         public void Dispose()
@@ -584,7 +588,39 @@ namespace RestfulFirebase.Auth
                 if (auth.ExpiresIn != default) ExpiresIn = auth.ExpiresIn;
                 if (!string.IsNullOrEmpty(auth.RefreshToken)) RefreshToken = auth.RefreshToken;
                 if (!string.IsNullOrEmpty(auth.FirebaseToken)) FirebaseToken = auth.FirebaseToken;
+                SavePropertiesLocally();
             }
+        }
+
+        private void SavePropertiesLocally()
+        {
+            App.LocalDatabase.Set(Path.Combine(AuthRoot, "user"), JsonConvert.SerializeObject(User));
+            App.LocalDatabase.Set(Path.Combine(AuthRoot, "created"), Helpers.EncodeDateTime(Created));
+            App.LocalDatabase.Set(Path.Combine(AuthRoot, "expiresIn"), ExpiresIn.ToString());
+            App.LocalDatabase.Set(Path.Combine(AuthRoot, "refreshToken"), RefreshToken);
+            App.LocalDatabase.Set(Path.Combine(AuthRoot, "firebaseToken"), FirebaseToken);
+        }
+
+        private void RetainPropertiesLocally()
+        {
+            var rawUser = App.LocalDatabase.Get(Path.Combine(AuthRoot, "user"));
+            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(rawUser);
+            var rawCreated = App.LocalDatabase.Get(Path.Combine(AuthRoot, "created"));
+            Created = rawCreated == null ? default : Helpers.DecodeDateTime(rawCreated, default);
+            var rawExpiredIn = App.LocalDatabase.Get(Path.Combine(AuthRoot, "expiresIn"));
+            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Path.Combine(AuthRoot, "expiresIn")));
+            RefreshToken = App.LocalDatabase.Get(Path.Combine(AuthRoot, "refreshToken"));
+            FirebaseToken = App.LocalDatabase.Get(Path.Combine(AuthRoot, "firebaseToken"));
+        }
+
+        private void PurgePropertiesLocally()
+        {
+            User = null;
+            Created = default;
+            ExpiresIn = 0;
+            RefreshToken = null;
+            FirebaseToken = null;
+            App.LocalDatabase.DeletePath(AuthRoot);
         }
     }
 }

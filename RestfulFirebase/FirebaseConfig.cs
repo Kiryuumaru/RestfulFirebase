@@ -13,7 +13,7 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
-            OfflineActions = new ConcurrentDictionary<string, OfflineAction>();
+            LocalDatabase = new ConcurrentDictionary<string, string>();
             SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
         }
@@ -24,7 +24,7 @@ namespace RestfulFirebase
 
         public string StorageBucket { get; set; }
 
-        public ConcurrentDictionary<string, OfflineAction> OfflineActions { get; set; }
+        public IDictionary<string, string> LocalDatabase { get; set; }
 
         public TimeSpan SyncPeriod { get; set; }
 

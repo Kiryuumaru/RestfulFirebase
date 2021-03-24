@@ -1,5 +1,7 @@
 ﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
+using RestfulFirebase.Database.Offline;
+using RestfulFirebase.Local;
 using RestfulFirebase.Storage;
 using System;
 
@@ -8,6 +10,8 @@ namespace RestfulFirebase
     public class RestfulFirebaseApp : IDisposable
     {
         public FirebaseConfig Config { get; }
+
+        public LocalDatabase LocalDatabase { get; }
 
         public FirebaseAuthApp Auth { get; }
 
@@ -24,6 +28,7 @@ namespace RestfulFirebase
                 Config.DatabaseURL += "/";
             }
 
+            LocalDatabase = new LocalDatabase(this);
             Auth = new FirebaseAuthApp(this);
             Database = new FirebaseDatabaseApp(this);
             Storage = new FirebaseStorageApp(this);
