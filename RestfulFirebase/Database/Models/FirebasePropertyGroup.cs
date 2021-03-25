@@ -65,33 +65,40 @@ namespace RestfulFirebase.Database.Models
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
-                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamEvent.Path.Length == 1)
+                    try
                     {
-                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                        foreach (var item in new List<FirebaseProperty>(this.Where(i => !data.ContainsKey(i.Key))))
+                        if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamEvent.Path.Length == 1)
                         {
-                            Remove(item);
+                            var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                            foreach (var item in new List<FirebaseProperty>(this.Where(i => !data.ContainsKey(i.Key))))
+                            {
+                                Remove(item);
+                            }
+                            if (data.Count != 0)
+                            {
+                                var props = data.Select(i => (i.Key, i.Value.ToString()));
+                                PatchRawProperties(props);
+                            }
                         }
-                        if (data.Count != 0)
+                        else if (streamEvent.Path.Length == 2)
                         {
-                            var props = data.Select(i => (i.Key, i.Value.ToString()));
-                            PatchRawProperties(props);
+                            var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
+                            if (prop == null)
+                            {
+                                Add(FirebaseProperty.CreateFromKeyAndBlob(streamEvent.Path[1], null));
+                            }
+                            else
+                            {
+                                prop.Update(streamEvent.Data);
+                            }
                         }
                     }
-                    else if (streamEvent.Path.Length == 2)
+                    catch (Exception ex)
                     {
-                        var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
-                        if (prop == null)
-                        {
-                            Add(FirebaseProperty.CreateFromKeyAndBlob(streamEvent.Path[1], null));
-                        }
-                        else
-                        {
-                            prop.Update(streamEvent.Data);
-                        }
+                        OnError(ex);
                     }
                 });
         }
@@ -102,27 +109,20 @@ namespace RestfulFirebase.Database.Models
             {
                 try
                 {
-                    try
+                    var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
+                    if (propHolder == null)
                     {
-                        var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
-                        if (propHolder == null)
-                        {
-                            propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
-                            Add(propHolder);
-                        }
-                        else
-                        {
-                            if (propHolder.Data != property.Data)
-                            {
-                                propHolder.Update(property.Data);
-                            }
-                        }
-                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
+                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
+                        Add(propHolder);
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        OnError(ex);
+                        if (propHolder.Data != property.Data)
+                        {
+                            propHolder.Update(property.Data);
+                        }
                     }
+                    propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                 }
                 catch (Exception ex)
                 {
