@@ -92,29 +92,36 @@ namespace RestfulFirebase.Database.Models
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
-                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamEvent.Path.Length == 1)
+                    try
                     {
-                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                        foreach (var prop in GetRawPersistableProperties().Where(i => !data.ContainsKey(i.Key)))
+                        if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamEvent.Path.Length == 1)
                         {
-                            DeleteProperty(prop.Key);
+                            var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                            foreach (var prop in GetRawPersistableProperties().Where(i => !data.ContainsKey(i.Key)))
+                            {
+                                DeleteProperty(prop.Key);
+                            }
+                            if (data.Count != 0)
+                            {
+                                var props = data.Select(i => (i.Key, i.Value.ToString()));
+                                PatchRawProperties(props);
+                            }
                         }
-                        if (data.Count != 0)
+                        else if (streamEvent.Path.Length == 2)
                         {
-                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            var props = new List<(string Key, string Data)>()
+                            {
+                                (streamEvent.Path[1], streamEvent.Data)
+                            };
                             PatchRawProperties(props);
                         }
                     }
-                    else if (streamEvent.Path.Length == 2)
+                    catch (Exception ex)
                     {
-                        var props = new List<(string Key, string Data)>()
-                        {
-                            (streamEvent.Path[1], streamEvent.Data)
-                        };
-                        PatchRawProperties(props);
+                        OnError(ex);
                     }
                 });
         }

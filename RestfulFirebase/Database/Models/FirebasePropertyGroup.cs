@@ -102,21 +102,27 @@ namespace RestfulFirebase.Database.Models
             {
                 try
                 {
-                    var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
-
-                    if (propHolder == null)
+                    try
                     {
-                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
-                        Add(propHolder);
-                    }
-                    else
-                    {
-                        if (propHolder.Data != property.Data)
+                        var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
+                        if (propHolder == null)
                         {
-                            propHolder.Update(property.Data);
+                            propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
+                            Add(propHolder);
                         }
+                        else
+                        {
+                            if (propHolder.Data != property.Data)
+                            {
+                                propHolder.Update(property.Data);
+                            }
+                        }
+                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                     }
-                    propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
+                    catch (Exception ex)
+                    {
+                        OnError(ex);
+                    }
                 }
                 catch (Exception ex)
                 {
