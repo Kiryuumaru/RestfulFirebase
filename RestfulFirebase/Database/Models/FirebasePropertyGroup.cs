@@ -88,7 +88,7 @@ namespace RestfulFirebase.Database.Models
                             var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
                             if (prop == null)
                             {
-                                Add(FirebaseProperty.CreateFromKeyAndBlob(streamEvent.Path[1], null));
+                                Add(FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null));
                             }
                             else
                             {
@@ -112,7 +112,7 @@ namespace RestfulFirebase.Database.Models
                     var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
                     if (propHolder == null)
                     {
-                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
+                        propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
                         Add(propHolder);
                     }
                     else

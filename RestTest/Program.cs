@@ -25,17 +25,6 @@ namespace RestTest
             set => SetPersistableProperty(value, "ss");
         }
 
-        public DateTime Created
-        {
-            get => GetPersistableProperty<DateTime>("_cr");
-            set => SetPersistableProperty(value, "_cr");
-        }
-        public DateTime Modified
-        {
-            get => GetPersistableProperty<DateTime>("_md");
-            set => SetPersistableProperty(value, "_md");
-        }
-
         public bool IsOk
         {
             get => GetPersistableProperty<bool>("isOk");

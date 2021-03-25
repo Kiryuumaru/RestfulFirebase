@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndValue(key, value));
         }
 
-        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string data)
+        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
         {
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
         }

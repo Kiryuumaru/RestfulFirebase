@@ -28,16 +28,10 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObject), value);
         }
 
-        public string Type
+        public string TypeIdentifier
         {
             get => GetPersistableProperty<string>("_t");
             protected set => SetPersistableProperty(value, "_t");
-        }
-
-        public DateTime Created
-        {
-            get => GetPersistableProperty<DateTime>("_c");
-            set => SetPersistableProperty(value, "_c");
         }
 
         public DateTime Modified
