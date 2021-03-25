@@ -103,7 +103,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(PropertyChangeType propertyChangeType, string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, propertyName));
+        protected virtual void OnChanged(PropertyChangeType propertyChangeType, bool isAdditionals, string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -129,12 +129,81 @@ namespace RestfulFirebase.Common.Models
             return DataTypeDecoder.GetDataType(Data);
         }
 
+        public void SetAdditional(string key, string data)
+        {
+            try
+            {
+                var deserialized = Helpers.DeserializeString(Data);
+                if (deserialized == null) deserialized = new string[3];
+                if (deserialized.Length == 2) Array.Resize(ref deserialized, deserialized.Length + 1);
+                deserialized[2] = Helpers.BlobSetValue(deserialized[2], key, data);
+                Data = Helpers.SerializeString(deserialized);
+                OnChanged(PropertyChangeType.Set, true, nameof(Data));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public string GetAdditional(string key)
+        {
+            try
+            {
+                var deserialized = Helpers.DeserializeString(Data);
+                if (deserialized == null) return null;
+                if (deserialized.Length == 2) Array.Resize(ref deserialized, deserialized.Length + 1);
+                return Helpers.BlobGetValue(deserialized[2], key);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                return null;
+            }
+        }
+
+        public void DeleteAdditional(string key)
+        {
+            try
+            {
+                var deserialized = Helpers.DeserializeString(Data);
+                if (deserialized == null) return;
+                if (deserialized.Length == 2) Array.Resize(ref deserialized, deserialized.Length + 1);
+                deserialized[2] = Helpers.BlobDeleteValue(deserialized[2], key);
+                Data = Helpers.SerializeString(deserialized);
+                OnChanged(PropertyChangeType.Delete, true, nameof(Data));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public void ClearAdditional()
+        {
+            try
+            {
+                var deserialized = Helpers.DeserializeString(Data);
+                if (deserialized == null) return;
+                if (deserialized.Length == 3)
+                {
+                    Array.Resize(ref deserialized, deserialized.Length - 1);
+                    Data = Helpers.SerializeString(deserialized);
+                    OnChanged(PropertyChangeType.Delete, true, nameof(Data));
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
         public void Update(string data)
         {
             try
             {
                 Data = data;
-                OnChanged(PropertyChangeType.Set, nameof(Data));
+                OnChanged(PropertyChangeType.Set, false, nameof(Data));
             }
             catch (Exception ex)
             {
@@ -147,7 +216,7 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 Data = default;
-                OnChanged(PropertyChangeType.Delete, nameof(Data));
+                OnChanged(PropertyChangeType.Delete, false, nameof(Data));
             }
             catch (Exception ex)
             {

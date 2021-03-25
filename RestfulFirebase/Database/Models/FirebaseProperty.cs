@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Common.Conversions;
+﻿using RestfulFirebase.Common;
+using RestfulFirebase.Common.Conversions;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -25,6 +26,12 @@ namespace RestfulFirebase.Database.Models
         {
             get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;
             internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
+        }
+
+        public DateTime Modified
+        {
+            get => Helpers.DecodeDateTime(GetAdditional("_d"), default);
+            set => SetAdditional("_d", Helpers.EncodeDateTime(value));
         }
 
         #endregion

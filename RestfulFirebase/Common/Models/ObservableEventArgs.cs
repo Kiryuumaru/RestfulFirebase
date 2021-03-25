@@ -13,9 +13,11 @@ namespace RestfulFirebase.Common.Models
     public class ObservablePropertyChangesEventArgs : PropertyChangedEventArgs
     {
         public PropertyChangeType Type { get; }
-        public ObservablePropertyChangesEventArgs(PropertyChangeType type, string propertyName = "") : base(propertyName)
+        public bool IsAdditionals { get; }
+        public ObservablePropertyChangesEventArgs(PropertyChangeType type, bool isAdditionals, string propertyName = "") : base(propertyName)
         {
             Type = type;
+            IsAdditionals = isAdditionals;
         }
     }
 

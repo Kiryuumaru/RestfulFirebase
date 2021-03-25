@@ -45,7 +45,6 @@ namespace RestTest
         {
             return new TestStorable(FirebaseObject.Create())
             {
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             };
         }
@@ -54,7 +53,6 @@ namespace RestTest
         {
             return new TestStorable(CreateFromKey(key))
             {
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             };
         }
@@ -63,7 +61,6 @@ namespace RestTest
         {
             return new TestStorable(CreateFromKey(key))
             {
-                Created = created,
                 Modified = modified
             };
         }
@@ -121,6 +118,8 @@ namespace RestTest
             var props32 = TestStorable.Create();
             var props33 = TestStorable.Create();
 
+            props1.Modified = DateTime.UtcNow;
+
             int x11 = 0;
 
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
@@ -133,9 +132,14 @@ namespace RestTest
             userNode.Child("objCollection").Set(props33);
 
             var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
+            var ss111 = userNode.Child("propCollection").GetAsProperty(props1.Key);
             var ss1 = userNode.GetAsPropertyCollection("propCollection");
             var ss2 = userNode.GetAsObjectCollection("objCollection");
 
+            ss111.PropertyChanged += (s, e) =>
+            {
+
+            };
             ss11.PropertyChanged += (s, e) =>
             {
 

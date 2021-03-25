@@ -49,7 +49,7 @@ namespace RestfulFirebase.Common.Conversions
             if (data == null) throw new Exception("Data to decode is null.");
             var decoded = Helpers.DeserializeString(data);
             if (decoded == null) throw new Exception("Data decoded is null.");
-            if (decoded.Length != 2) throw new Exception("Data length error.");
+            if (decoded.Length < 2) throw new Exception("Data length error.");
             return decoded;
         }
 
