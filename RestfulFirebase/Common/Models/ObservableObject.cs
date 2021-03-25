@@ -31,9 +31,9 @@ namespace RestfulFirebase.Common.Models
             set => Holder.SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableObject), value);
         }
 
-        private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
+        private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
         {
-            get => Holder.GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
+            get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
@@ -61,7 +61,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public event EventHandler<ObservableExceptionEventArgs> PropertyError
+        public event EventHandler<ContinueExceptionEventArgs> PropertyError
         {
             add
             {
@@ -100,8 +100,25 @@ namespace RestfulFirebase.Common.Models
         #region Methods
 
         protected virtual void OnChanged(PropertyChangeType type, string key, string group, string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
-        
-        protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
+
+        public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
+        {
+            var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
+        }
+
+        public virtual void OnError(ContinueExceptionEventArgs args)
+        {
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
+        }
 
         protected virtual bool SetProperty<T>(T value, string key, string group = null, [CallerMemberName] string propertyName = null, Action onChanged = null, Func<T, T, bool> validateValue = null)
         {
@@ -190,7 +207,7 @@ namespace RestfulFirebase.Common.Models
         {
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
-            propertyHolder.Property.Empty();
+            propertyHolder.Property.Null();
             OnChanged(PropertyChangeType.Delete, key, propertyHolder.Group, propertyHolder.PropertyName);
         }
 
@@ -198,7 +215,7 @@ namespace RestfulFirebase.Common.Models
         {
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
-                propertyHolder.Property.Empty();
+                propertyHolder.Property.Null();
                 OnChanged(PropertyChangeType.Delete, propertyHolder.Property.Key, propertyHolder.Group, propertyHolder.PropertyName);
             }
         }
@@ -247,10 +264,9 @@ namespace RestfulFirebase.Common.Models
         {
             return group == null ?
                 PropertyHolders
-                    .Where(i => i.Property.Data != null)
                     .Select(i => i.Property) :
                 PropertyHolders
-                    .Where(i => i.Property.Data != null && i.Group == group)
+                    .Where(i => i.Group == group)
                     .Select(i => i.Property);
         }
 

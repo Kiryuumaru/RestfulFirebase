@@ -10,6 +10,15 @@ namespace RestfulFirebase.Common.Models
         Set, Delete
     }
 
+    public class ObservablePropertyChangesEventArgs : PropertyChangedEventArgs
+    {
+        public PropertyChangeType Type { get; }
+        public ObservablePropertyChangesEventArgs(PropertyChangeType type, string propertyName = "") : base(propertyName)
+        {
+            Type = type;
+        }
+    }
+
     public class ObservableObjectChangesEventArgs : PropertyChangedEventArgs
     {
         public string Key { get; }
@@ -23,12 +32,15 @@ namespace RestfulFirebase.Common.Models
         }
     }
 
-    public class ObservableExceptionEventArgs : EventArgs
+    public class ContinueExceptionEventArgs
     {
-        public Exception Exception { get; }
-        public ObservableExceptionEventArgs(Exception exception)
+        public readonly Exception Exception;
+        public bool IgnoreAndContinue { get; set; }
+
+        public ContinueExceptionEventArgs(Exception exception, bool ignoreAndContinue)
         {
             Exception = exception;
+            IgnoreAndContinue = ignoreAndContinue;
         }
     }
 }

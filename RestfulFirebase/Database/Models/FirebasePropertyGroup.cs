@@ -62,7 +62,7 @@ namespace RestfulFirebase.Database.Models
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
                     if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
@@ -86,7 +86,7 @@ namespace RestfulFirebase.Database.Models
                         var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
                         if (prop == null)
                         {
-                            Add(FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null));
+                            Add(FirebaseProperty.CreateFromKeyAndBlob(streamEvent.Path[1], null));
                         }
                         else
                         {
@@ -106,7 +106,7 @@ namespace RestfulFirebase.Database.Models
 
                     if (propHolder == null)
                     {
-                        propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
+                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
                         Add(propHolder);
                     }
                     else

@@ -31,24 +31,19 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
+        public static new FirebaseProperty CreateFromKey(string key)
+        {
+            return new FirebaseProperty(DistinctProperty.CreateFromKey(key));
+        }
+
         public static new FirebaseProperty CreateFromKeyAndValue<T>(string key, T value)
         {
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndValue(key, value));
         }
 
-        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
+        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string data)
         {
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
-        }
-
-        public static FirebaseProperty<T> CreateDerivedFromKeyAndValue<T>(string key, T value)
-        {
-            return new FirebaseProperty<T>(CreateFromKeyAndValue(key, value));
-        }
-
-        public static FirebaseProperty<T> CreateDerivedFromKeyAndData<T>(string key, string data)
-        {
-            return new FirebaseProperty<T>(CreateFromKeyAndData(key, data));
         }
 
         public FirebaseProperty(IAttributed attributed)
@@ -70,7 +65,7 @@ namespace RestfulFirebase.Database.Models
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
                     if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
@@ -78,31 +73,10 @@ namespace RestfulFirebase.Database.Models
                     else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                     else if (streamEvent.Path.Length == 1)
                     {
-                        if (streamEvent.Data == null) Empty();
+                        if (streamEvent.Data == null) Null();
                         else Update(streamEvent.Data);
                     }
                 });
-        }
-
-        #endregion
-    }
-
-    public class FirebaseProperty<T> : FirebaseProperty
-    {
-        #region Initializers
-
-        public FirebaseProperty(IAttributed attributed) : base(attributed)
-        {
-
-        }
-
-        #endregion
-
-        #region Methods
-
-        public T ParseValue()
-        {
-            return ParseValue<T>();
         }
 
         #endregion

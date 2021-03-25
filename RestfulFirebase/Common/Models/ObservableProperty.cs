@@ -14,6 +14,9 @@ namespace RestfulFirebase.Common.Models
     {
         #region Properties
 
+        private const string DataKey = "d";
+        private const string AdditionsKey = "a";
+
         public AttributeHolder Holder { get; } = new AttributeHolder();
 
         private PropertyChangedEventHandler PropertyChangedHandler
@@ -22,20 +25,17 @@ namespace RestfulFirebase.Common.Models
             set => Holder.SetAttribute(nameof(PropertyChangedHandler), nameof(ObservableProperty), value);
         }
 
-        private EventHandler<ObservableExceptionEventArgs> PropertyErrorHandler
+        private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
         {
-            get => Holder.GetAttribute<EventHandler<ObservableExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
+            get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
         }
 
-        public IEnumerable<byte> Bytes
+        public string Data
         {
-            get => Holder.GetAttribute<IEnumerable<byte>>(nameof(Bytes), nameof(ObservableProperty)).Value;
-            private set => Holder.SetAttribute(nameof(Bytes), nameof(ObservableProperty), value);
+            get => Holder.GetAttribute<string>(nameof(Data), nameof(ObservableProperty)).Value;
+            private set => Holder.SetAttribute(nameof(Data), nameof(ObservableProperty), value);
         }
-
-        public string Data { get => Bytes == null ? null : Encoding.Unicode.GetString(Bytes.ToArray()); }
-
 
         public event PropertyChangedEventHandler PropertyChanged
         {
@@ -55,7 +55,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public event EventHandler<ObservableExceptionEventArgs> PropertyError
+        public event EventHandler<ContinueExceptionEventArgs> PropertyError
         {
             add
             {
@@ -94,13 +94,6 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public static ObservableProperty CreateFromBytes(IEnumerable<byte> bytes)
-        {
-            var obj = new ObservableProperty(null);
-            obj.Update(bytes);
-            return obj;
-        }
-
         public ObservableProperty(IAttributed attributed)
         {
             Holder.Initialize(this, attributed);
@@ -110,9 +103,26 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected virtual void OnChanged(PropertyChangeType propertyChangeType, string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, propertyName));
 
-        protected virtual void OnError(Exception exception) => PropertyErrorHandler?.Invoke(this, new ObservableExceptionEventArgs(exception));
+        public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
+        {
+            var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
+        }
+
+        public virtual void OnError(ContinueExceptionEventArgs args)
+        {
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
+        }
 
         public Type GetDataType()
         {
@@ -123,9 +133,8 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                if (data != null) Bytes = Encoding.Unicode.GetBytes(data);
-                OnChanged(nameof(Bytes));
-                OnChanged(nameof(Data));
+                Data = data;
+                OnChanged(PropertyChangeType.Set, nameof(Data));
             }
             catch (Exception ex)
             {
@@ -133,37 +142,17 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void Update(IEnumerable<byte> bytes)
+        public void Null()
         {
             try
             {
-                Bytes = bytes;
-                OnChanged(nameof(Bytes));
-                OnChanged(nameof(Data));
+                Data = default;
+                OnChanged(PropertyChangeType.Delete, nameof(Data));
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
-        }
-
-        public void Empty()
-        {
-            try
-            {
-                Bytes = default;
-                OnChanged(nameof(Bytes));
-                OnChanged(nameof(Data));
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
-
-        public object ParseValueAsObject()
-        {
-            return DataTypeDecoder.GetDecoder(GetDataType()).DecodeAsObject(Data);
         }
 
         public T ParseValue<T>()

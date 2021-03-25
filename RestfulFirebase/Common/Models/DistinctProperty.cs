@@ -50,15 +50,6 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public static DistinctProperty CreateFromKeyAndBytes(string key, IEnumerable<byte> bytes)
-        {
-            var obj = new DistinctProperty(CreateFromBytes(bytes))
-            {
-                Key = key
-            };
-            return obj;
-        }
-
         public DistinctProperty(IAttributed attributed)
             : base(attributed)
         {

@@ -137,23 +137,32 @@ namespace RestTest
             await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
-            await userNode.Child("propCollection").SetAsync(props1);
-            await userNode.Child("propCollection").SetAsync(props2);
-            await userNode.Child("objCollection").SetAsync(props31);
-            await userNode.Child("objCollection").SetAsync(props32);
-            await userNode.Child("objCollection").SetAsync(props33);
+            userNode.Child("propCollection").Set(props1);
+            userNode.Child("propCollection").Set(props2);
+            userNode.Child("objCollection").Set(props31);
+            userNode.Child("objCollection").Set(props32);
+            userNode.Child("objCollection").Set(props33);
 
-            var ss1 = await userNode.GetAsPropertyCollectionAsync("propCollection");
-            var ss2 = await userNode.GetAsObjectCollectionAsync("objCollection");
+            var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
+            var ss1 = userNode.GetAsPropertyCollection("propCollection");
+            var ss2 = userNode.GetAsObjectCollection("objCollection");
+
+            ss11.PropertyChanged += (s, e) =>
+            {
+
+            };
+            ss1.CollectionChanged += (s, e) =>
+            {
+
+            };
+            ss2.CollectionChanged += (s, e) =>
+            {
+
+            };
 
             Console.WriteLine("FIN");
 
             await Task.Delay(10000000);
-
-            //foreach (var dino in dinos)
-            //{
-            //    Console.WriteLine($"{dino.Key} is {dino.Object.Height}m high.");
-            //}
         }
     }
 }

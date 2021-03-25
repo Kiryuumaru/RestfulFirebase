@@ -28,6 +28,24 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObject), value);
         }
 
+        public string Type
+        {
+            get => GetPersistableProperty<string>("_t");
+            protected set => SetPersistableProperty(value, "_t");
+        }
+
+        public DateTime Created
+        {
+            get => GetPersistableProperty<DateTime>("_c");
+            set => SetPersistableProperty(value, "_c");
+        }
+
+        public DateTime Modified
+        {
+            get => GetPersistableProperty<DateTime>("_m");
+            set => SetPersistableProperty(value, "_m");
+        }
+
         #endregion
 
         #region Initializers
@@ -71,7 +89,7 @@ namespace RestfulFirebase.Database.Models
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
                     if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");

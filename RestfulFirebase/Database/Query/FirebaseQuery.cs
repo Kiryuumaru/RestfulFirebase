@@ -43,18 +43,13 @@ namespace RestfulFirebase.Database.Query
             return new SilentQuery(this, App);
         }
 
-        public async Task SetAsync(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task Put(string jsonData, TimeSpan? timeout = null, Action<Exception> onException = null)
         {
             try
             {
-                var query = new ChildQuery(this, () => property.Key, App);
+                var c = GetClient(timeout);
 
-                var data = JsonConvert.SerializeObject(property.Data);
-                var c = query.GetClient(timeout);
-
-                property.SetStreamer(query);
-
-                await query.Silent().SendAsync(c, data, HttpMethod.Put);
+                await Silent().SendAsync(c, jsonData, HttpMethod.Put);
             }
             catch (Exception ex)
             {
@@ -62,12 +57,26 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async void Set(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async void Set(FirebaseProperty property, TimeSpan? timeout = null)
         {
-            await SetAsync(property, timeout, onException);
+            try
+            {
+                var query = new ChildQuery(this, () => property.Key, App);
+
+                var blob = JsonConvert.SerializeObject(property.Data);
+                var c = query.GetClient(timeout);
+
+                property.SetStreamer(query);
+
+                await query.Silent().SendAsync(c, blob, HttpMethod.Put);
+            }
+            catch (FirebaseException ex)
+            {
+                property.OnError(ex);
+            }
         }
-        
-        public async Task SetAsync(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null)
+
+        public async void Set(FirebaseObject obj, TimeSpan? timeout = null)
         {
             try
             {
@@ -81,192 +90,50 @@ namespace RestfulFirebase.Database.Query
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
-            catch (Exception ex)
+            catch (FirebaseException ex)
             {
-                onException?.Invoke(ex);
+                obj.OnError(ex);
             }
         }
 
-        public async void Set(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public FirebaseProperty GetAsProperty(string path, TimeSpan? timeout = null)
         {
-            await SetAsync(obj, timeout, onException);
-        }
+            var prop = FirebaseProperty.CreateFromKey(path);
 
-        public async Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
-        {
             var query = new ChildQuery(this, () => path, App);
-            var c = query.GetClient(timeout);
+            prop.SetStreamer(query);
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            try
-            {
-                url = await query.BuildUrlAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
-                return null;
-            }
-
-            try
-            {
-                var response = await c.GetAsync(url).ConfigureAwait(false);
-                statusCode = response.StatusCode;
-                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                response.EnsureSuccessStatusCode();
-                response.Dispose();
-
-                var data = JsonConvert.DeserializeObject<object>(responseData);
-                var prop = FirebaseProperty.CreateDerivedFromKeyAndData<T>(path, data.ToString());
-
-                prop.SetStreamer(query);
-
-                return prop;
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
-                return null;
-            }
+            return prop;
         }
 
-        public async Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
-            where T : FirebaseObject
+        public FirebaseObject GetAsObject(string path, TimeSpan? timeout = null)
         {
+            var obj = FirebaseObject.CreateFromKey(path);
+
             var query = new ChildQuery(this, () => path, App);
-            var c = query.GetClient(timeout);
+            obj.SetStreamer(query);
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            try
-            {
-                url = await query.BuildUrlAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
-                return null;
-            }
-
-            try
-            {
-                var response = await c.GetAsync(url).ConfigureAwait(false);
-                statusCode = response.StatusCode;
-                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                response.EnsureSuccessStatusCode();
-                response.Dispose();
-
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-                var props = data.Select(i => (i.Key, i.Value.ToString()));
-                var obj = FirebaseObject.CreateFromKeyAndProperties(path, props);
-
-                obj.SetStreamer(query);
-
-                return obj.Parse<T>();
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
-                return null;
-            }
+            return obj;
         }
 
-        public async Task<FirebasePropertyGroup> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public FirebasePropertyGroup GetAsPropertyCollection(string path, TimeSpan? timeout = null)
         {
+            var group = FirebasePropertyGroup.CreateFromKey(path);
+
             var query = new ChildQuery(this, () => path, App);
-            var c = query.GetClient(timeout);
+            group.SetStreamer(query);
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            try
-            {
-                url = await query.BuildUrlAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
-                return null;
-            }
-
-            try
-            {
-                var response = await c.GetAsync(url).ConfigureAwait(false);
-                statusCode = response.StatusCode;
-                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                response.EnsureSuccessStatusCode();
-                response.Dispose();
-
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-                var props = data.Select(i => FirebaseProperty.CreateFromKeyAndData(i.Key, i.Value.ToString()));
-                var group = FirebasePropertyGroup.CreateFromKeyAndEnumerable(path, props);
-
-                group.SetStreamer(query);
-
-                return group;
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
-                return null;
-            }
+            return group;
         }
 
-        public async Task<FirebaseObjectGroup> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public FirebaseObjectGroup GetAsObjectCollection(string path, TimeSpan? timeout = null)
         {
+            var group = FirebaseObjectGroup.CreateFromKey(path);
+
             var query = new ChildQuery(this, () => path, App);
-            var c = query.GetClient(timeout);
+            group.SetStreamer(query);
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            try
-            {
-                url = await query.BuildUrlAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
-                return null;
-            }
-
-            try
-            {
-                var response = await c.GetAsync(url).ConfigureAwait(false);
-                statusCode = response.StatusCode;
-                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                response.EnsureSuccessStatusCode();
-                response.Dispose();
-
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-                var objs = data.Select(i =>
-                {
-                    var subData = i.Value == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(i.Value.ToString());
-                    var props = subData.Select(subI => (subI.Key, subI.Value.ToString()));
-                    return FirebaseObject.CreateFromKeyAndProperties(i.Key, props);
-                });
-                var group = FirebaseObjectGroup.CreateFromKeyAndEnumerable(path, objs);
-
-                group.SetStreamer(query);
-
-                return group;
-            }
-            catch (Exception ex)
-            {
-                onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
-                return null;
-            }
+            return group;
         }
 
         public async void DeleteAsync(string path, TimeSpan? timeout = null)

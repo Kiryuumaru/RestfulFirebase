@@ -11,21 +11,19 @@ namespace RestfulFirebase.Database.Query
     {
         RestfulFirebaseApp App { get; }
 
-        Task SetAsync(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null);
+        Task Put(string data, TimeSpan? timeout = null, Action<Exception> onException = null);
 
-        void Set(FirebaseProperty property, TimeSpan? timeout = null, Action<Exception> onException = null);
+        void Set(FirebaseProperty property, TimeSpan? timeout = null);
 
-        Task SetAsync(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null);
+        void Set(FirebaseObject obj, TimeSpan? timeout = null);
 
-        void Set(FirebaseObject obj, TimeSpan? timeout = null, Action<Exception> onException = null);
+        FirebaseProperty GetAsProperty(string path, TimeSpan? timeout = null);
 
-        Task<FirebaseProperty<T>> GetAsPropertyAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+        FirebaseObject GetAsObject(string path, TimeSpan? timeout = null);
 
-        Task<T> GetAsObjectAsync<T>(string path, TimeSpan? timeout = null, Action<Exception> onException = null) where T : FirebaseObject;
+        FirebasePropertyGroup GetAsPropertyCollection(string path, TimeSpan? timeout = null);
 
-        Task<FirebasePropertyGroup> GetAsPropertyCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
-
-        Task<FirebaseObjectGroup> GetAsObjectCollectionAsync(string path, TimeSpan? timeout = null, Action<Exception> onException = null);
+        FirebaseObjectGroup GetAsObjectCollection(string path, TimeSpan? timeout = null);
 
         Task<string> BuildUrlAsync();
 

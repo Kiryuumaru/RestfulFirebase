@@ -62,7 +62,7 @@ namespace RestfulFirebase.Database.Models
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query).Run())
+                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
                 {
                     if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");

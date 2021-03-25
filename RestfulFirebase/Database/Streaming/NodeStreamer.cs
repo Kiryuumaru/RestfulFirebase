@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulFirebase.Common.Models;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -21,12 +22,13 @@ namespace RestfulFirebase.Database.Streaming
 
         private readonly HttpClient http;
 
-        internal event EventHandler<ContinueExceptionEventArgs<FirebaseException>> ExceptionThrown;
+        private EventHandler<ContinueExceptionEventArgs> exceptionThrown;
 
-        internal NodeStreamer(IObserver<StreamEvent> observer, IFirebaseQuery query)
+        internal NodeStreamer(IObserver<StreamEvent> observer, IFirebaseQuery query, EventHandler<ContinueExceptionEventArgs> exceptionThrown)
         {
             this.observer = observer;
             this.query = query;
+            this.exceptionThrown = exceptionThrown;
             cancel = new CancellationTokenSource();
 
             var handler = new HttpClientHandler
@@ -117,8 +119,8 @@ namespace RestfulFirebase.Database.Streaming
                 catch (Exception ex)
                 {
                     var fireEx = new FirebaseException(url, string.Empty, line, statusCode, ex);
-                    var args = new ContinueExceptionEventArgs<FirebaseException>(fireEx, statusCode == HttpStatusCode.OK);
-                    ExceptionThrown?.Invoke(this, args);
+                    var args = new ContinueExceptionEventArgs(fireEx, statusCode == HttpStatusCode.OK);
+                    exceptionThrown?.Invoke(this, args);
 
                     if (!args.IgnoreAndContinue)
                     {
