@@ -93,6 +93,13 @@
         /// <summary>
         /// Linked accounts: account to link has already been linked.
         /// </summary>
-        AlreadyLinked
+        AlreadyLinked,
+
+        //Customs
+
+        /// <summary>
+        /// User not authenticated
+        /// </summary>
+        NotAuthenticated
     }
 }

@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class DoubleDecoder : DataTypeDecoder<double>
     {
-        public override string TypeIdentifier => "double";
-
-        protected override string EncodeValue(double value)
+        public override string Encode(double value)
         {
             return value.ToString();
         }
 
-        protected override double DecodeData(string data)
+        public override double Decode(string data)
         {
             if (double.TryParse(data, out double result)) return result;
             throw new Exception("Parse error");

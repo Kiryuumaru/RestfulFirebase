@@ -110,7 +110,7 @@ namespace RestfulFirebase.Common
             return datas;
         }
 
-        public static string EncodeDateTime(DateTime dateTime)
+        public static string EncodeDateTime2(DateTime dateTime)
         {
             string data = "";
             data += dateTime.Year.ToString("0000");
@@ -119,40 +119,61 @@ namespace RestfulFirebase.Common
             data += dateTime.Hour.ToString("00");
             data += dateTime.Minute.ToString("00");
             data += dateTime.Second.ToString("00");
+            data += dateTime.Millisecond.ToString("000");
             return data;
         }
 
-        public static DateTime DecodeDateTime(string data, DateTime defaultValue)
+        public static DateTime DecodeDateTime2(string data, DateTime defaultValue)
         {
-            try
-            {
-                if (data.Length != 14) return defaultValue;
-                string[] datas = Split(data, 4, 2, 2, 2, 2, 2);
-                int year = Convert.ToInt32(datas[0]);
-                int month = Convert.ToInt32(datas[1]);
-                int day = Convert.ToInt32(datas[2]);
-                int hour = Convert.ToInt32(datas[3]);
-                int minute = Convert.ToInt32(datas[4]);
-                int second = Convert.ToInt32(datas[5]);
-                return new DateTime(year, month, day, hour, minute, second);
-            }
-            catch { return defaultValue; }
+            var decoded = DecodeDateTime2(data);
+            return decoded.HasValue ? decoded.Value : defaultValue;
         }
 
-        public static DateTime? DecodeDateTime(string data)
+        public static DateTime? DecodeDateTime2(string data)
         {
             try
             {
-                string[] datas = Split(data, 4, 2, 2, 2, 2, 2);
+                string[] datas = Split(data, 4, 2, 2, 2, 2, 2, 3);
                 int year = Convert.ToInt32(datas[0]);
                 int month = Convert.ToInt32(datas[1]);
                 int day = Convert.ToInt32(datas[2]);
                 int hour = Convert.ToInt32(datas[3]);
                 int minute = Convert.ToInt32(datas[4]);
                 int second = Convert.ToInt32(datas[5]);
-                return new DateTime(year, month, day, hour, minute, second);
+                int millisecond = Convert.ToInt32(datas[6]);
+                return new DateTime(year, month, day, hour, minute, second, millisecond);
             }
             catch { return null; }
+        }
+
+        public static string EncodeDateTime(DateTime date)
+        {
+            long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
+            var bytes = BitConverter.GetBytes(shortTicks);
+            if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
+            return Convert.ToBase64String(bytes).Substring(0, 7);
+        }
+
+        public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
+        {
+            var dateTime = DecodeDateTime(encodedTimestamp);
+            return dateTime.HasValue ? dateTime.Value : defaultValue;
+        }
+
+        public static DateTime? DecodeDateTime(string encodedTimestamp)
+        {
+            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+            try
+            {
+                byte[] data = new byte[8];
+                Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
+                if (!BitConverter.IsLittleEndian) Array.Reverse(data);
+                return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public static string BlobGetValue(string blob, string key, string defaultValue = "")

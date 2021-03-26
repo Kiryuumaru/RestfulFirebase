@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class BoolDecoder : DataTypeDecoder<bool>
     {
-        public override string TypeIdentifier => "bool";
-
-        protected override string EncodeValue(bool value)
+        public override string Encode(bool value)
         {
             return value ? "1" : "0";
         }
 
-        protected override bool DecodeData(string data)
+        public override bool Decode(string data)
         {
             return data.Equals("1");
         }

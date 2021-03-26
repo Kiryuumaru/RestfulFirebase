@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class IntDecoder : DataTypeDecoder<int>
     {
-        public override string TypeIdentifier => "int";
-
-        protected override string EncodeValue(int value)
+        public override string Encode(int value)
         {
             return value.ToString();
         }
 
-        protected override int DecodeData(string data)
+        public override int Decode(string data)
         {
             if (int.TryParse(data, out int result)) return result;
             throw new Exception("Parse error");

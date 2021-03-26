@@ -174,7 +174,12 @@ namespace RestfulFirebase.Database.Query
             {
                 return await Task.Run(delegate
                 {
-                    return WithAuth(() => App.Auth.GetFreshTokenAsync().Result).BuildUrl(null);
+                    return WithAuth(() =>
+                    {
+                        var getTokenResult = App.Auth.GetFreshTokenAsync();
+                        if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
+                        return getTokenResult.Result.Result;
+                    }).BuildUrl(null);
                 });
             }
 

@@ -37,30 +37,6 @@ namespace RestfulFirebase.Common.Conversions
             }
         }
 
-        protected static string SerializeData(string typeIdentifier, string data)
-        {
-            var encoded = Helpers.SerializeString(typeIdentifier, data);
-            if (encoded == null) throw new Exception("Data encoded is null.");
-            return encoded;
-        }
-
-        protected static string[] DeserializeData(string data)
-        {
-            if (data == null) throw new Exception("Data to decode is null.");
-            var decoded = Helpers.DeserializeString(data);
-            if (decoded == null) throw new Exception("Data decoded is null.");
-            if (decoded.Length < 2) throw new Exception("Data length error.");
-            return decoded;
-        }
-
-        public static Type GetDataType(string data)
-        {
-            var deserialized = DeserializeData(data);
-            var conversion = decoders.FirstOrDefault(i => i.TypeIdentifier == deserialized[0]);
-            if (conversion == null) throw new Exception(deserialized[0] + " data type not supported");
-            return conversion.Type;
-        }
-
         public static DataTypeDecoder<T> GetDecoder<T>()
         {
             var conversion = decoders.FirstOrDefault(i => i.Type == typeof(T));
@@ -70,13 +46,12 @@ namespace RestfulFirebase.Common.Conversions
 
         public static void RegisterDecoder(DataTypeDecoder convertion)
         {
-            if (decoders.Any(i => i.Type == convertion.Type || i.TypeIdentifier == convertion.TypeIdentifier)) throw new Exception("Decoder already registered");
+            if (decoders.Any(i => i.Type == convertion.Type)) throw new Exception("Decoder already registered");
             decoders.RemoveAll(i => i.Type == convertion.Type);
             decoders.Add(convertion);
         }
 
         public abstract Type Type { get; }
-        public abstract string TypeIdentifier { get; }
     }
 
     public abstract class DataTypeDecoder<T> : DataTypeDecoder
@@ -85,21 +60,9 @@ namespace RestfulFirebase.Common.Conversions
 
         public override Type Type { get => typeof(T); }
 
-        protected abstract string EncodeValue(T value);
+        public abstract string Encode(T value);
 
-        protected abstract T DecodeData(string data);
-
-        public string Encode(T value)
-        {
-            var data = EncodeValue(value);
-            return SerializeData(TypeIdentifier, data);
-        }
-
-        public T Decode(string data)
-        {
-            var deserialized = DeserializeData(data);
-            return DecodeData(deserialized[1]);
-        }
+        public abstract T Decode(string data);
 
         #endregion
     }

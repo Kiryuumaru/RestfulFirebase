@@ -4,12 +4,18 @@ namespace RestfulFirebase.Auth
 {
     public class FirebaseAuthException : Exception
     {
-        public FirebaseAuthException(string requestUrl, string requestData, string responseData, Exception innerException, AuthErrorReason reason = AuthErrorReason.Undefined) 
+        public FirebaseAuthException(string requestUrl, string requestData, string responseData, Exception innerException, AuthErrorReason reason = AuthErrorReason.Undefined)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData, reason), innerException)
         {
             RequestUrl = requestUrl;
             RequestData = requestData;
             ResponseData = responseData;
+            Reason = reason;
+        }
+
+        public FirebaseAuthException(Exception innerException, AuthErrorReason reason = AuthErrorReason.Undefined)
+            : base(innerException.Message, innerException)
+        {
             Reason = reason;
         }
 

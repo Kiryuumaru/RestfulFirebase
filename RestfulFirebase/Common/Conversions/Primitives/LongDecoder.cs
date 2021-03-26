@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class LongDecoder : DataTypeDecoder<long>
     {
-        public override string TypeIdentifier => "long";
-
-        protected override string EncodeValue(long value)
+        public override string Encode(long value)
         {
             return value.ToString();
         }
 
-        protected override long DecodeData(string data)
+        public override long Decode(string data)
         {
             if (long.TryParse(data, out long result)) return result;
             throw new Exception("Parse error");

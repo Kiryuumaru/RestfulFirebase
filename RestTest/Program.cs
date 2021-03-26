@@ -119,11 +119,12 @@ namespace RestTest
             var props33 = TestStorable.Create();
 
             props1.Modified = DateTime.UtcNow;
+            props2.Modified = DateTime.UtcNow;
 
             int x11 = 0;
 
-            await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            await app.Auth.UpdateProfileAsync("disp", "123123");
+            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
             userNode.Child("propCollection").Set(props1);
             userNode.Child("propCollection").Set(props2);

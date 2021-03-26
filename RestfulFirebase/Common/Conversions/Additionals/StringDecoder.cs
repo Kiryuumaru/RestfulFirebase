@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 {
     public class StringDecoder : DataTypeDecoder<string>
     {
-        public override string TypeIdentifier => "string";
-
-        protected override string EncodeValue(string value)
+        public override string Encode(string value)
         {
             return value;
         }
 
-        protected override string DecodeData(string data)
+        public override string Decode(string data)
         {
             return data;
         }

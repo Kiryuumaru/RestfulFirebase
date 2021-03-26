@@ -7,14 +7,12 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 {
     public class UShortDecoder : DataTypeDecoder<ushort>
     {
-        public override string TypeIdentifier => "ushort";
-
-        protected override string EncodeValue(ushort value)
+        public override string Encode(ushort value)
         {
             return value.ToString();
         }
 
-        protected override ushort DecodeData(string data)
+        public override ushort Decode(string data)
         {
             if (ushort.TryParse(data, out ushort result)) return result;
             throw new Exception("Parse error");
