@@ -110,7 +110,7 @@ namespace RestfulFirebase.Common
             return datas;
         }
 
-        public static string EncodeDateTime2(DateTime dateTime)
+        public static string EncodeDateTime(DateTime dateTime)
         {
             string data = "";
             data += dateTime.Year.ToString("0000");
@@ -123,14 +123,15 @@ namespace RestfulFirebase.Common
             return data;
         }
 
-        public static DateTime DecodeDateTime2(string data, DateTime defaultValue)
+        public static DateTime DecodeDateTime(string data, DateTime defaultValue)
         {
-            var decoded = DecodeDateTime2(data);
+            var decoded = DecodeDateTime(data);
             return decoded.HasValue ? decoded.Value : defaultValue;
         }
 
-        public static DateTime? DecodeDateTime2(string data)
+        public static DateTime? DecodeDateTime(string data)
         {
+            if (string.IsNullOrEmpty(data)) return null;
             try
             {
                 string[] datas = Split(data, 4, 2, 2, 2, 2, 2, 3);
@@ -146,35 +147,35 @@ namespace RestfulFirebase.Common
             catch { return null; }
         }
 
-        public static string EncodeDateTime(DateTime date)
-        {
-            long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
-            var bytes = BitConverter.GetBytes(shortTicks);
-            if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
-            return Convert.ToBase64String(bytes).Substring(0, 7);
-        }
+        //public static string EncodeDateTime(DateTime date)
+        //{
+        //    long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
+        //    var bytes = BitConverter.GetBytes(shortTicks);
+        //    if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
+        //    return Convert.ToBase64String(bytes).Substring(0, 7);
+        //}
 
-        public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
-        {
-            var dateTime = DecodeDateTime(encodedTimestamp);
-            return dateTime.HasValue ? dateTime.Value : defaultValue;
-        }
+        //public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
+        //{
+        //    var dateTime = DecodeDateTime(encodedTimestamp);
+        //    return dateTime.HasValue ? dateTime.Value : defaultValue;
+        //}
 
-        public static DateTime? DecodeDateTime(string encodedTimestamp)
-        {
-            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
-            try
-            {
-                byte[] data = new byte[8];
-                Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
-                if (!BitConverter.IsLittleEndian) Array.Reverse(data);
-                return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        //public static DateTime? DecodeDateTime(string encodedTimestamp)
+        //{
+        //    if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+        //    try
+        //    {
+        //        byte[] data = new byte[8];
+        //        Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
+        //        if (!BitConverter.IsLittleEndian) Array.Reverse(data);
+        //        return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
+        //    }
+        //    catch
+        //    {
+        //        return null;
+        //    }
+        //}
 
         public static string BlobGetValue(string blob, string key, string defaultValue = "")
         {
