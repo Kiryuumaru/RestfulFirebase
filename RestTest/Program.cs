@@ -156,6 +156,10 @@ namespace RestTest
 
             Console.WriteLine("FIN");
 
+            await Task.Delay(10000);
+
+            Console.WriteLine("FIN");
+
             await Task.Delay(10000000);
         }
     }

@@ -94,15 +94,8 @@ namespace RestfulFirebase.Database.Models
                         else if (streamEvent.Path.Length == 1)
                         {
                             var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                            foreach (var prop in GetRawPersistableProperties().Where(i => !data.ContainsKey(i.Key)))
-                            {
-                                DeleteProperty(prop.Key);
-                            }
-                            if (data.Count != 0)
-                            {
-                                var props = data.Select(i => (i.Key, i.Value.ToString()));
-                                PatchRawProperties(props);
-                            }
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            ReplaceRawProperties(props);
                         }
                         else if (streamEvent.Path.Length == 2)
                         {
@@ -110,7 +103,7 @@ namespace RestfulFirebase.Database.Models
                             {
                                 (streamEvent.Path[1], streamEvent.Data)
                             };
-                            PatchRawProperties(props);
+                            UpdateRawProperties(props);
                         }
                     }
                     catch (Exception ex)

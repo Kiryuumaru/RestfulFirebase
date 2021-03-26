@@ -73,27 +73,29 @@ namespace RestfulFirebase.Database.Models
                         else if (streamEvent.Path.Length == 1)
                         {
                             var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                            foreach (var item in new List<FirebaseProperty>(this.Where(i => !data.ContainsKey(i.Key))))
-                            {
-                                Remove(item);
-                            }
-                            if (data.Count != 0)
-                            {
-                                var props = data.Select(i => (i.Key, i.Value.ToString()));
-                                PatchRawProperties(props);
-                            }
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            ReplaceRawProperties(props);
                         }
                         else if (streamEvent.Path.Length == 2)
                         {
+                            var props = new List<(string, string)>()
+                            {
+                                (streamEvent.Path[1], streamEvent.Data)
+                            };
+                            UpdateRawProperties(props);
+
+
                             var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
                             if (prop == null)
                             {
-                                Add(FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null));
+                                prop = FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null);
+                                Add(prop);
                             }
                             else
                             {
                                 prop.Update(streamEvent.Data);
                             }
+                            prop.RealtimeWirePath = Path.Combine(RealtimeWirePath, prop.Key);
                         }
                     }
                     catch (Exception ex)
@@ -103,7 +105,7 @@ namespace RestfulFirebase.Database.Models
                 });
         }
 
-        protected void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
+        protected void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)
         {
             foreach (var property in properties)
             {
@@ -129,6 +131,15 @@ namespace RestfulFirebase.Database.Models
                     OnError(ex);
                 }
             }
+        }
+
+        protected void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties)
+        {
+            foreach (var prop in new List<FirebaseProperty>(this.Where(i => !properties.Any(j => j.Key == i.Key))))
+            {
+                Remove(prop);
+            }
+            UpdateRawProperties(properties);
         }
 
         #endregion

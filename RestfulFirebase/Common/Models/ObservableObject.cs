@@ -86,7 +86,7 @@ namespace RestfulFirebase.Common.Models
         public static ObservableObject CreateFromProperties(IEnumerable<(string Key, string Data)> properties)
         {
             var obj = new ObservableObject(null);
-            obj.PatchRawProperties(properties);
+            obj.UpdateRawProperties(properties);
             return obj;
         }
 
@@ -220,7 +220,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
+        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)
         {
             foreach (var property in properties)
             {
@@ -258,6 +258,15 @@ namespace RestfulFirebase.Common.Models
                     OnError(ex);
                 }
             }
+        }
+
+        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties)
+        {
+            foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
+            {
+                propHolder.Property.Null();
+            }
+            UpdateRawProperties(properties);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

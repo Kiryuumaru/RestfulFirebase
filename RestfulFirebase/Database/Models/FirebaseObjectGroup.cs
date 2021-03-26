@@ -73,29 +73,16 @@ namespace RestfulFirebase.Database.Models
                         else if (streamEvent.Path.Length == 1)
                         {
                             var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                            foreach (var item in new List<FirebaseObject>(this.Where(i => !data.ContainsKey(i.Key))))
-                            {
-                                Remove(item);
-                            }
-                            if (data.Count != 0)
-                            {
-                                var props = data.Select(i => (i.Key, i.Value.ToString()));
-                                PatchRawProperties(props);
-                            }
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            ReplaceRawObjects(props);
                         }
                         else if (streamEvent.Path.Length == 2)
                         {
-                            var obj = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
-                            var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                            var props = data.Select(i => (i.Key, i.Value.ToString()));
-                            if (obj == null)
+                            var props = new List<(string, string)>()
                             {
-                                Add(FirebaseObject.CreateFromKeyAndProperties(streamEvent.Path[1], props));
-                            }
-                            else
-                            {
-                                obj.PatchRawProperties(props);
-                            }
+                                (streamEvent.Path[1], streamEvent.Data)
+                            };
+                            UpdateRawObjects(props);
                         }
                         else if (streamEvent.Path.Length == 3)
                         {
@@ -110,7 +97,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                obj.PatchRawProperties(props);
+                                obj.UpdateRawProperties(props);
                             }
                         }
                     }
@@ -121,9 +108,9 @@ namespace RestfulFirebase.Database.Models
                 });
         }
 
-        public void PatchRawProperties(IEnumerable<(string Key, string Data)> properties)
+        public void UpdateRawObjects(IEnumerable<(string Key, string Data)> objects)
         {
-            foreach (var property in properties)
+            foreach (var property in objects)
             {
                 try
                 {
@@ -138,7 +125,7 @@ namespace RestfulFirebase.Database.Models
                     }
                     else
                     {
-                        obj.PatchRawProperties(props);
+                        obj.ReplaceRawProperties(props);
                     }
                     obj.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                 }
@@ -147,6 +134,15 @@ namespace RestfulFirebase.Database.Models
                     OnError(ex);
                 }
             }
+        }
+
+        public void ReplaceRawObjects(IEnumerable<(string Key, string Data)> properties)
+        {
+            foreach (var obj in new List<FirebaseObject>(this.Where(i => !properties.Any(j => j.Key == i.Key))))
+            {
+                Remove(obj);
+            }
+            UpdateRawObjects(properties);
         }
 
         #endregion

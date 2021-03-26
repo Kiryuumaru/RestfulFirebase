@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.Auth
+namespace RestfulFirebase
 {
     public class CallResult
     {
