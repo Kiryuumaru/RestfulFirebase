@@ -13,10 +13,10 @@ namespace RestfulFirebase.Common
         #region UIDGenerator
 
         // Modeled after base64 web-safe chars, but ordered by ASCII.
-        private const string PushCharsString = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-        private const string UIDCaseSensetiveCharset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        private const string UIDNonCaseSensetiveCharset = "0123456789abcdefghijklmnopqrstuvwxyz";
-        private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(PushCharsString));
+        private const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+        private const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        private const string AlphanumericNonCaseSensitive = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Base64Charset));
         private static readonly DateTimeOffset Epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
 
         private static readonly Random random = new Random();
@@ -27,12 +27,11 @@ namespace RestfulFirebase.Common
         public static string GenerateUID(int length = 10, bool isCaseSensetive = true)
         {
             string id = "";
-            Random random = new Random();
             for (int i = 0; i < length; i++)
             {
                 id += isCaseSensetive ?
-                    UIDCaseSensetiveCharset[random.Next(UIDCaseSensetiveCharset.Length)] :
-                    UIDNonCaseSensetiveCharset[random.Next(UIDNonCaseSensetiveCharset.Length)];
+                    Base62Charset[random.Next(Base62Charset.Length)] :
+                    AlphanumericNonCaseSensitive[random.Next(AlphanumericNonCaseSensitive.Length)];
             }
             return id;
         }
@@ -367,8 +366,89 @@ namespace RestfulFirebase.Common
 
         #region StringArraySerializer
 
-        private const string NullIdentifier = "N";
-        private const string EmptyIdentifier = "E";
+        private const string NullIdentifier = "-";
+        private const string EmptyIdentifier = "_";
+
+        private static string ToBase62(int number)
+        {
+            var arbitraryBase = ToArbitraryBaseSystem((ulong)number, 62);
+            string base62 = "";
+            foreach (var num in arbitraryBase)
+            {
+                base62 += Base62Charset[(int)num];
+            }
+            return base62;
+        }
+
+        private static int FromBase62(string number)
+        {
+            var indexes = new List<uint>();
+            foreach (var num in number)
+            {
+                var indexOf = Base62Charset.IndexOf(num);
+                if (indexOf == -1) throw new Exception("Unknown charset");
+                indexes.Add((uint)indexOf);
+            }
+            return (int)ToNormalBaseSystem(indexes.ToArray(), 62);
+        }
+
+        public static string SerializeString2(params string[] datas)
+        {
+            if (datas == null) return NullIdentifier;
+            if (datas.Length == 0) return EmptyIdentifier;
+            var dataLength = ToBase62(datas.Length);
+            var lengths = datas.Select(i => i == null ? NullIdentifier : (i == "" ? EmptyIdentifier : ToBase62(i.Length))).ToArray();
+            int maxDigitLength = Math.Max(lengths.Max(i => i == null ? 0 : i.Length), dataLength.Length);
+            var maxDigitLength62 = ToBase62(maxDigitLength);
+            string serialized = maxDigitLength62 + dataLength.PadLeft(maxDigitLength, Base62Charset[0]);
+            for (int i = 0; i < datas.Length; i++)
+            {
+                serialized += lengths[i].PadLeft(maxDigitLength, Base62Charset[0]);
+            }
+            for (int i = 0; i < datas.Length; i++)
+            {
+                serialized += datas[i];
+            }
+            return serialized;
+        }
+
+        public static string[] DeserializeString2(string data)
+        {
+            if (string.IsNullOrEmpty(data)) return null;
+            if (data.Equals(NullIdentifier)) return null;
+            if (data.Equals(EmptyIdentifier)) return Array.Empty<string>();
+            if (data.Length < 4) return new string[] { "" };
+            var d = (string)data.Clone();
+            try
+            {
+                int indexDigits = FromBase62(d[0].ToString());
+                d = d.Substring(1);
+                int indexCount = FromBase62(d.Substring(0, indexDigits));
+                d = d.Substring(indexDigits);
+                int[] lengths = new int[indexCount];
+                for (int i = 0; i < lengths.Length; i++)
+                {
+                    var subData = d.Substring(0, indexDigits).TrimStart(Base62Charset[0]);
+                    d = d.Substring(indexDigits);
+                    if (subData.Equals(NullIdentifier)) lengths[i] = -1;
+                    else if (subData.Equals(EmptyIdentifier)) lengths[i] = 0;
+                    else lengths[i] = FromBase62(subData);
+                }
+                string[] datas = new string[indexCount];
+                for (int i = 0; i < datas.Length; i++)
+                {
+                    if (lengths[i] == -1) datas[i] = null;
+                    else if (lengths[i] == 0) datas[i] = "";
+                    else
+                    {
+                        datas[i] = d.Substring(0, lengths[i]);
+                        d = d.Substring(lengths[i]);
+                    }
+                }
+                return datas;
+            }
+            catch { return null; }
+        }
 
         public static string SerializeString(params string[] datas)
         {
@@ -428,6 +508,36 @@ namespace RestfulFirebase.Common
         #endregion
 
         #region Math
+
+        public static uint[] ToArbitraryBaseSystem(ulong number, uint baseSystem)
+        {
+            if (baseSystem < 2) throw new Exception("Base below 1 error");
+            if (number < 0) throw new Exception("Number below zero error");
+            var baseArr = new List<uint>();
+            while (number >= baseSystem)
+            {
+                var ans = number / baseSystem;
+                var remainder = number % baseSystem;
+                number = ans;
+                baseArr.Add((uint)remainder);
+            }
+            baseArr.Add((uint)number);
+            baseArr.Reverse();
+            return baseArr.ToArray();
+        }
+
+        public static ulong ToNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
+        {
+            if (baseSystem < 2) throw new Exception("Base below 1 error");
+            if (arbitraryBaseNumber.Any(i => i >= baseSystem)) throw new Exception("Number has greater value than base number system");
+            ulong value = 0;
+            var reverse = arbitraryBaseNumber.Reverse().ToArray();
+            for (int i = 0; i < arbitraryBaseNumber.Length; i++)
+            {
+                value += (ulong)(reverse[i] * Math.Pow(baseSystem, i));
+            }
+            return value;
+        }
 
         public static double CalcVariance(IEnumerable<double> datas)
         {

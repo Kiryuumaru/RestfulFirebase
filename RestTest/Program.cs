@@ -12,6 +12,7 @@ using RestfulFirebase.Common;
 using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 
 namespace RestTest
 {
@@ -93,6 +94,40 @@ namespace RestTest
 
         public static async Task Run()
         {
+            var ran = new Random();
+            string[] arr = new string[10000];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                int r = ran.Next(10);
+                if (r == 0) arr[i] = null;
+                else if (r == 1) arr[i] = "";
+                else arr[i] = Helpers.GenerateUID(ran.Next(10, 100));
+            }
+
+
+            Stopwatch stop = new Stopwatch();
+
+            stop.Restart();
+            var ser2 = Helpers.SerializeString2(arr);
+            var deser2 = Helpers.DeserializeString2(ser2);
+            var l2 = ser2.Length;
+            var f2 = stop.ElapsedMilliseconds;
+
+            stop.Restart();
+            var ser1 = Helpers.SerializeString(arr);
+            var deser1 = Helpers.DeserializeString(ser1);
+            var l1 = ser1.Length;
+            var f1 = stop.ElapsedMilliseconds;
+
+
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (deser1[i] != arr[i]) throw new Exception();
+                if (deser2[i] != arr[i]) throw new Exception();
+            }
+
+
+
             var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
