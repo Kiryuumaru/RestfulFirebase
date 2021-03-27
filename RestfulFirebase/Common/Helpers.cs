@@ -392,6 +392,29 @@ namespace RestfulFirebase.Common
             return (int)ToNormalBaseSystem(indexes.ToArray(), 62);
         }
 
+        private static string ToBase64(int number)
+        {
+            var arbitraryBase = ToArbitraryBaseSystem((ulong)number, 64);
+            string base64 = "";
+            foreach (var num in arbitraryBase)
+            {
+                base64 += Base64Charset[(int)num];
+            }
+            return base64;
+        }
+
+        private static int FromBase64(string number)
+        {
+            var indexes = new List<uint>();
+            foreach (var num in number)
+            {
+                var indexOf = Base64Charset.IndexOf(num);
+                if (indexOf == -1) throw new Exception("Unknown charset");
+                indexes.Add((uint)indexOf);
+            }
+            return (int)ToNormalBaseSystem(indexes.ToArray(), 64);
+        }
+
         public static string SerializeString2(params string[] datas)
         {
             if (datas == null) return NullIdentifier;

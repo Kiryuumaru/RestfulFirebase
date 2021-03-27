@@ -109,15 +109,22 @@ namespace RestTest
 
             stop.Restart();
             var ser2 = Helpers.SerializeString2(arr);
+            var fs2 = stop.ElapsedMilliseconds;
+            stop.Restart();
             var deser2 = Helpers.DeserializeString2(ser2);
+            var fd2 = stop.ElapsedMilliseconds;
+            stop.Restart();
             var l2 = ser2.Length;
-            var f2 = stop.ElapsedMilliseconds;
+
 
             stop.Restart();
             var ser1 = Helpers.SerializeString(arr);
+            var fs1 = stop.ElapsedMilliseconds;
+            stop.Restart();
             var deser1 = Helpers.DeserializeString(ser1);
+            var fd1 = stop.ElapsedMilliseconds;
+            stop.Restart();
             var l1 = ser1.Length;
-            var f1 = stop.ElapsedMilliseconds;
 
 
             for (int i = 0; i < arr.Length; i++)
