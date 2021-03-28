@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -109,72 +110,72 @@ namespace RestfulFirebase.Common
             return datas;
         }
 
-        public static string EncodeDateTime(DateTime dateTime)
-        {
-            string data = "";
-            data += dateTime.Year.ToString("0000");
-            data += dateTime.Month.ToString("00");
-            data += dateTime.Day.ToString("00");
-            data += dateTime.Hour.ToString("00");
-            data += dateTime.Minute.ToString("00");
-            data += dateTime.Second.ToString("00");
-            data += dateTime.Millisecond.ToString("000");
-            return data;
-        }
-
-        public static DateTime DecodeDateTime(string data, DateTime defaultValue)
-        {
-            var decoded = DecodeDateTime(data);
-            return decoded.HasValue ? decoded.Value : defaultValue;
-        }
-
-        public static DateTime? DecodeDateTime(string data)
-        {
-            if (string.IsNullOrEmpty(data)) return null;
-            try
-            {
-                string[] datas = Split(data, 4, 2, 2, 2, 2, 2, 3);
-                int year = Convert.ToInt32(datas[0]);
-                int month = Convert.ToInt32(datas[1]);
-                int day = Convert.ToInt32(datas[2]);
-                int hour = Convert.ToInt32(datas[3]);
-                int minute = Convert.ToInt32(datas[4]);
-                int second = Convert.ToInt32(datas[5]);
-                int millisecond = Convert.ToInt32(datas[6]);
-                return new DateTime(year, month, day, hour, minute, second, millisecond);
-            }
-            catch { return null; }
-        }
-
-        //public static string EncodeDateTime(DateTime date)
+        //public static string EncodeDateTime(DateTime dateTime)
         //{
-        //    long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
-        //    var bytes = BitConverter.GetBytes(shortTicks);
-        //    if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
-        //    return Convert.ToBase64String(bytes).Substring(0, 7);
+        //    string data = "";
+        //    data += dateTime.Year.ToString("0000");
+        //    data += dateTime.Month.ToString("00");
+        //    data += dateTime.Day.ToString("00");
+        //    data += dateTime.Hour.ToString("00");
+        //    data += dateTime.Minute.ToString("00");
+        //    data += dateTime.Second.ToString("00");
+        //    data += dateTime.Millisecond.ToString("000");
+        //    return data;
         //}
 
-        //public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
+        //public static DateTime DecodeDateTime(string data, DateTime defaultValue)
         //{
-        //    var dateTime = DecodeDateTime(encodedTimestamp);
-        //    return dateTime.HasValue ? dateTime.Value : defaultValue;
+        //    var decoded = DecodeDateTime(data);
+        //    return decoded.HasValue ? decoded.Value : defaultValue;
         //}
 
-        //public static DateTime? DecodeDateTime(string encodedTimestamp)
+        //public static DateTime? DecodeDateTime(string data)
         //{
-        //    if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+        //    if (string.IsNullOrEmpty(data)) return null;
         //    try
         //    {
-        //        byte[] data = new byte[8];
-        //        Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
-        //        if (!BitConverter.IsLittleEndian) Array.Reverse(data);
-        //        return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
+        //        string[] datas = Split(data, 4, 2, 2, 2, 2, 2, 3);
+        //        int year = Convert.ToInt32(datas[0]);
+        //        int month = Convert.ToInt32(datas[1]);
+        //        int day = Convert.ToInt32(datas[2]);
+        //        int hour = Convert.ToInt32(datas[3]);
+        //        int minute = Convert.ToInt32(datas[4]);
+        //        int second = Convert.ToInt32(datas[5]);
+        //        int millisecond = Convert.ToInt32(datas[6]);
+        //        return new DateTime(year, month, day, hour, minute, second, millisecond);
         //    }
-        //    catch
-        //    {
-        //        return null;
-        //    }
+        //    catch { return null; }
         //}
+
+        public static string EncodeDateTime(DateTime date)
+        {
+            long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
+            var bytes = BitConverter.GetBytes(shortTicks);
+            if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
+            return Convert.ToBase64String(bytes).Substring(0, 7);
+        }
+
+        public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
+        {
+            var dateTime = DecodeDateTime(encodedTimestamp);
+            return dateTime.HasValue ? dateTime.Value : defaultValue;
+        }
+
+        public static DateTime? DecodeDateTime(string encodedTimestamp)
+        {
+            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+            try
+            {
+                byte[] data = new byte[8];
+                Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
+                if (!BitConverter.IsLittleEndian) Array.Reverse(data);
+                return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         public static string BlobGetValue(string blob, string key, string defaultValue = "")
         {
@@ -415,27 +416,28 @@ namespace RestfulFirebase.Common
             return (int)ToNormalBaseSystem(indexes.ToArray(), 64);
         }
 
-        public static string SerializeString2(params string[] datas)
+        public static string SerializeString(params string[] datas)
         {
             if (datas == null) return NullIdentifier;
             if (datas.Length == 0) return EmptyIdentifier;
             var dataLength = ToBase62(datas.Length);
             var lengths = datas.Select(i => i == null ? NullIdentifier : (i == "" ? EmptyIdentifier : ToBase62(i.Length))).ToArray();
-            int maxDigitLength = Math.Max(lengths.Max(i => i == null ? 0 : i.Length), dataLength.Length);
-            var maxDigitLength62 = ToBase62(maxDigitLength);
-            string serialized = maxDigitLength62 + dataLength.PadLeft(maxDigitLength, Base62Charset[0]);
+            int maxDigitLength = Math.Max(lengths.Max(i => i.Length), dataLength.Length);
+            var maxDigitLength62 = ToBase62(maxDigitLength); ;
             for (int i = 0; i < datas.Length; i++)
             {
-                serialized += lengths[i].PadLeft(maxDigitLength, Base62Charset[0]);
+                lengths[i] = lengths[i].PadLeft(maxDigitLength, Base62Charset[0]);
             }
-            for (int i = 0; i < datas.Length; i++)
-            {
-                serialized += datas[i];
-            }
-            return serialized;
+            var lengthsAndDatas = new string[lengths.Length + datas.Length];
+            Array.Copy(lengths, lengthsAndDatas, lengths.Length);
+            Array.Copy(datas, 0, lengthsAndDatas, lengths.Length, datas.Length);
+            var joinedLengthsAndDatas = string.Join("", lengthsAndDatas);
+            string serialized = string.Join("", maxDigitLength62, dataLength.PadLeft(maxDigitLength, Base62Charset[0]));
+            var joinedArr = new string[] { serialized, joinedLengthsAndDatas };
+            return string.Join("", joinedArr);
         }
 
-        public static string[] DeserializeString2(string data)
+        public static string[] DeserializeString(string data)
         {
             if (string.IsNullOrEmpty(data)) return null;
             if (data.Equals(NullIdentifier)) return null;
@@ -445,82 +447,21 @@ namespace RestfulFirebase.Common
             try
             {
                 int indexDigits = FromBase62(d[0].ToString());
-                d = d.Substring(1);
-                int indexCount = FromBase62(d.Substring(0, indexDigits));
-                d = d.Substring(indexDigits);
-                int[] lengths = new int[indexCount];
-                for (int i = 0; i < lengths.Length; i++)
-                {
-                    var subData = d.Substring(0, indexDigits).TrimStart(Base62Charset[0]);
-                    d = d.Substring(indexDigits);
-                    if (subData.Equals(NullIdentifier)) lengths[i] = -1;
-                    else if (subData.Equals(EmptyIdentifier)) lengths[i] = 0;
-                    else lengths[i] = FromBase62(subData);
-                }
+                int indexCount = FromBase62(d.Substring(1, indexDigits));
+                var indices = d.Substring(1 + indexDigits, indexDigits * indexCount);
+                var dataPart = d.Substring(1 + indexDigits + (indexDigits * indexCount));
                 string[] datas = new string[indexCount];
-                for (int i = 0; i < datas.Length; i++)
+                var currIndex = 0;
+                for (int i = 0; i < indexCount; i++)
                 {
-                    if (lengths[i] == -1) datas[i] = null;
-                    else if (lengths[i] == 0) datas[i] = "";
+                    var subData = indices.Substring(indexDigits * i, indexDigits).TrimStart(Base62Charset[0]);
+                    if (subData.Equals(NullIdentifier)) datas[i] = null;
+                    else if (subData.Equals(EmptyIdentifier)) datas[i] = "";
                     else
                     {
-                        datas[i] = d.Substring(0, lengths[i]);
-                        d = d.Substring(lengths[i]);
-                    }
-                }
-                return datas;
-            }
-            catch { return null; }
-        }
-
-        public static string SerializeString(params string[] datas)
-        {
-            if (datas == null) return NullIdentifier;
-            if (datas.Length == 0) return EmptyIdentifier;
-            int maxLength = datas.Max(i => i == null ? 0 : i.Length);
-            int indexDigits = Math.Max(datas.Length.ToString().Length, Math.Max(maxLength.ToString().Length, Math.Max(NullIdentifier.Length, EmptyIdentifier.Length)));
-            string serializedDataHeader = datas.Length.ToString("D" + indexDigits);
-            for (int i = 0; i < datas.Length; i++)
-            {
-                if (datas[i] == null) serializedDataHeader += (indexDigits - NullIdentifier.Length == 0 ? "" : 0.ToString("D0" + (indexDigits - NullIdentifier.Length))) + NullIdentifier;
-                else serializedDataHeader += datas[i].Length.ToString("D" + indexDigits);
-            }
-            string dataBody = "";
-            for (int i = 0; i < datas.Length; i++)
-            {
-                dataBody += datas[i];
-            }
-            return indexDigits.ToString() + serializedDataHeader + dataBody;
-        }
-
-        public static string[] DeserializeString(string data)
-        {
-            if (string.IsNullOrEmpty(data)) return null;
-            if (data.Equals(NullIdentifier)) return null;
-            if (data.Equals(EmptyIdentifier)) return Array.Empty<string>();
-            if (data.Length < 4) return new string[] { "" };
-            try
-            {
-                int indexDigits = int.Parse(data[0].ToString());
-                data = data.Substring(1);
-                int indexCount = int.Parse(data.Substring(0, indexDigits));
-                data = data.Substring(indexDigits);
-                int[] lengths = new int[indexCount];
-                for (int i = 0; i < lengths.Length; i++)
-                {
-                    var subData = data.Substring(0, indexDigits);
-                    data = data.Substring(indexDigits);
-                    if (subData.Equals((indexDigits - NullIdentifier.Length == 0 ? "" : 0.ToString("D0" + (indexDigits - NullIdentifier.Length))) + NullIdentifier)) lengths[i] = -1;
-                    else lengths[i] = int.Parse(subData);
-                }
-                string[] datas = new string[indexCount];
-                for (int i = 0; i < datas.Length; i++)
-                {
-                    if (lengths[i] == -1) datas[i] = null;
-                    else
-                    {
-                        datas[i] = data.Substring(0, lengths[i]);
-                        data = data.Substring(lengths[i]);
+                        var currLength = FromBase62(subData);
+                        datas[i] = dataPart.Substring(currIndex, currLength);
+                        currIndex += currLength;
                     }
                 }
                 return datas;

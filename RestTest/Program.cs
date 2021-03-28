@@ -95,7 +95,7 @@ namespace RestTest
         public static async Task Run()
         {
             var ran = new Random();
-            string[] arr = new string[10000];
+            string[] arr = new string[1000000];
             for (int i = 0; i < arr.Length; i++)
             {
                 int r = ran.Next(10);
@@ -104,32 +104,21 @@ namespace RestTest
                 else arr[i] = Helpers.GenerateUID(ran.Next(10, 100));
             }
 
-
             Stopwatch stop = new Stopwatch();
 
             stop.Restart();
-            var ser2 = Helpers.SerializeString2(arr);
+            var ser2 = Helpers.SerializeString(arr);
             var fs2 = stop.ElapsedMilliseconds;
             stop.Restart();
-            var deser2 = Helpers.DeserializeString2(ser2);
+            var deser2 = Helpers.DeserializeString(ser2);
             var fd2 = stop.ElapsedMilliseconds;
             stop.Restart();
             var l2 = ser2.Length;
 
 
-            stop.Restart();
-            var ser1 = Helpers.SerializeString(arr);
-            var fs1 = stop.ElapsedMilliseconds;
-            stop.Restart();
-            var deser1 = Helpers.DeserializeString(ser1);
-            var fd1 = stop.ElapsedMilliseconds;
-            stop.Restart();
-            var l1 = ser1.Length;
-
 
             for (int i = 0; i < arr.Length; i++)
             {
-                if (deser1[i] != arr[i]) throw new Exception();
                 if (deser2[i] != arr[i]) throw new Exception();
             }
 
