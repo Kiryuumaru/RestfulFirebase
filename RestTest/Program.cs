@@ -157,9 +157,9 @@ namespace RestTest
 
             int x11 = 0;
 
-            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
-            var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
+            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            var userNode = app.Database.Child("users").Child("sample");
             userNode.Child("propCollection").Set(props1);
             userNode.Child("propCollection").Set(props2);
             userNode.Child("objCollection").Set(props31);

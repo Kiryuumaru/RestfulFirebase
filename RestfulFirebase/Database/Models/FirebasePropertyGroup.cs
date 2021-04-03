@@ -83,19 +83,6 @@ namespace RestfulFirebase.Database.Models
                                 (streamEvent.Path[1], streamEvent.Data)
                             };
                             UpdateRawProperties(props);
-
-
-                            var prop = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
-                            if (prop == null)
-                            {
-                                prop = FirebaseProperty.CreateFromKeyAndData(streamEvent.Path[1], null);
-                                Add(prop);
-                            }
-                            else
-                            {
-                                prop.Update(streamEvent.Data);
-                            }
-                            prop.RealtimeWirePath = Path.Combine(RealtimeWirePath, prop.Key);
                         }
                     }
                     catch (Exception ex)
@@ -115,16 +102,17 @@ namespace RestfulFirebase.Database.Models
                     if (propHolder == null)
                     {
                         propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
+                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                         Add(propHolder);
                     }
                     else
                     {
+                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                         if (propHolder.Data != property.Data)
                         {
                             propHolder.Update(property.Data);
                         }
                     }
-                    propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
                 }
                 catch (Exception ex)
                 {

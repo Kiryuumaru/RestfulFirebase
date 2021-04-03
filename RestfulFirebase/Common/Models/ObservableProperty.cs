@@ -105,7 +105,10 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(PropertyChangeType propertyChangeType, bool isAdditionals, string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
+        protected virtual void OnChanged(
+            PropertyChangeType propertyChangeType,
+            bool isAdditionals,
+            string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {

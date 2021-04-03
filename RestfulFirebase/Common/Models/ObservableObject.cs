@@ -8,19 +8,20 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
+    #region Helpers
+
+    public class PropertyHolder
+    {
+        public DistinctProperty Property { get; set; }
+        public string Group { get; set; }
+        public string PropertyName { get; set; }
+    }
+
+    #endregion
+
+
     public class ObservableObject : IAttributed, INotifyPropertyChanged
     {
-        #region Helpers
-
-        private class PropertyHolder
-        {
-            public DistinctProperty Property { get; set; }
-            public string Group { get; set; }
-            public string PropertyName { get; set; }
-        }
-
-        #endregion
-
         #region Properties
 
         public AttributeHolder Holder { get; } = new AttributeHolder();
@@ -37,7 +38,7 @@ namespace RestfulFirebase.Common.Models
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
-        private List<PropertyHolder> PropertyHolders
+        protected List<PropertyHolder> PropertyHolders
         {
             get => Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
             set => Holder.SetAttribute(nameof(PropertyHolders), nameof(ObservableObject), value);
@@ -99,7 +100,12 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(PropertyChangeType type, string key, string group, string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
+        protected virtual void OnChanged(
+            DistinctProperty newProperty,
+            PropertyChangeType type,
+            string key,
+            string group,
+            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectInternalChangesEventArgs(newProperty, type, key, group, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -120,12 +126,25 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        protected virtual bool SetProperty<T>(T value, string key, string group = null, [CallerMemberName] string propertyName = null, Action onChanged = null, Func<T, T, bool> validateValue = null)
+        protected virtual DistinctProperty PropertyFactory<T>(T property)
+            where T : DistinctProperty
         {
+            return property;
+        }
+
+        protected virtual bool SetProperty<T>(
+            T value,
+            string key,
+            string group = null,
+            [CallerMemberName] string propertyName = null,
+            Func<T, T, bool> validateValue = null,
+            Action<DistinctProperty> onInternalChanged = null)
+        {
+            DistinctProperty newProperty = null;
             try
             {
                 var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-                var newProp = DistinctProperty.CreateFromKeyAndValue(key, value);
+                newProperty = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, value));
 
                 if (propHolder != null)
                 {
@@ -145,10 +164,10 @@ namespace RestfulFirebase.Common.Models
                         hasChanges = true;
                     }
 
-                    if (propHolder.Property.Data != newProp.Data ||
+                    if (propHolder.Property.Data != newProperty.Data ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        propHolder.Property.Update(newProp.Data);
+                        propHolder.Property.Update(newProperty.Data);
                         hasChanges = true;
                     }
 
@@ -158,7 +177,7 @@ namespace RestfulFirebase.Common.Models
                 {
                     PropertyHolders.Add(new PropertyHolder()
                     {
-                        Property = newProp,
+                        Property = newProperty,
                         Group = group,
                         PropertyName = propertyName
                     });
@@ -167,21 +186,26 @@ namespace RestfulFirebase.Common.Models
             catch (Exception ex)
             {
                 OnError(ex);
+                return false;
             }
 
-            onChanged?.Invoke();
-            OnChanged(PropertyChangeType.Set, key, group, propertyName);
+            onInternalChanged?.Invoke(newProperty);
+            OnChanged(newProperty, PropertyChangeType.Set, key, group, propertyName);
             return true;
         }
 
-        protected virtual T GetProperty<T>(string key, string group = null, T defaultValue = default, [CallerMemberName] string propertyName = null)
+        protected virtual T GetProperty<T>(
+            string key,
+            string group = null,
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = null)
         {
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null)
             {
                 propertyHolder = new PropertyHolder()
                 {
-                    Property = DistinctProperty.CreateFromKeyAndValue(key, defaultValue),
+                    Property = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
                     Group = group,
                     PropertyName = propertyName
                 };
@@ -208,7 +232,7 @@ namespace RestfulFirebase.Common.Models
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
             propertyHolder.Property.Null();
-            OnChanged(PropertyChangeType.Delete, key, propertyHolder.Group, propertyHolder.PropertyName);
+            OnChanged(propertyHolder.Property, PropertyChangeType.Delete, key, propertyHolder.Group, propertyHolder.PropertyName);
         }
 
         protected virtual void DeleteProperties(string group)
@@ -216,11 +240,11 @@ namespace RestfulFirebase.Common.Models
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
                 propertyHolder.Property.Null();
-                OnChanged(PropertyChangeType.Delete, propertyHolder.Property.Key, propertyHolder.Group, propertyHolder.PropertyName);
+                OnChanged(propertyHolder.Property, PropertyChangeType.Delete, propertyHolder.Property.Key, propertyHolder.Group, propertyHolder.PropertyName);
             }
         }
 
-        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)
+        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties, Action<PropertyHolder> perItemFollowup = null)
         {
             foreach (var property in properties)
             {
@@ -232,7 +256,7 @@ namespace RestfulFirebase.Common.Models
                     {
                         propHolder = new PropertyHolder()
                         {
-                            Property = DistinctProperty.CreateFromKeyAndData(property.Key, property.Data),
+                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndData(property.Key, property.Data)),
                             Group = null,
                             PropertyName = null
                         };
@@ -251,7 +275,8 @@ namespace RestfulFirebase.Common.Models
                         if (!hasChanges) continue;
                     }
 
-                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                    perItemFollowup?.Invoke(propHolder);
+                    OnChanged(propHolder.Property, PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                 }
                 catch (Exception ex)
                 {
@@ -260,13 +285,14 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties)
+        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties, Action<PropertyHolder> perItemFollowup = null)
         {
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
+                perItemFollowup?.Invoke(propHolder);
                 propHolder.Property.Null();
             }
-            UpdateRawProperties(properties);
+            UpdateRawProperties(properties, perItemFollowup);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

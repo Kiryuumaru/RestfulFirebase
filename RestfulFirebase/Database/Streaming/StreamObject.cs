@@ -15,5 +15,10 @@ namespace RestfulFirebase.Database.Streaming
             Path = path;
             Data = data;
         }
+
+        public StreamObject Clone()
+        {
+            return new StreamObject(Path, Data);
+        }
     }
 }

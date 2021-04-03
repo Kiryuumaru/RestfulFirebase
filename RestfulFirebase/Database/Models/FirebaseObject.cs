@@ -4,6 +4,7 @@ using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
@@ -69,12 +70,35 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected void SetPersistableProperty<T>(T value, string key, [CallerMemberName] string propertyName = "", Action onChanged = null, Func<T, T, bool> validateValue = null)
+        protected virtual DateTime CurrentDateTimeFactory()
         {
-            SetProperty(value, key, nameof(FirebaseObject), propertyName, onChanged, validateValue);
+            return DateTime.UtcNow;
         }
 
-        protected T GetPersistableProperty<T>(string key, T defaultValue = default, [CallerMemberName] string propertyName = "")
+        protected override DistinctProperty PropertyFactory<T>(T property)
+        {
+            return new FirebaseProperty(property);
+        }
+
+        protected void SetPersistableProperty<T>(
+            T value,
+            string key,
+            [CallerMemberName] string propertyName = "",
+            Action<FirebaseProperty> onInternalChanged = null,
+            Func<T, T, bool> validateValue = null)
+        {
+            SetProperty(value, key, nameof(FirebaseProperty), propertyName, validateValue, onChanged =>
+            {
+                var prop = (FirebaseProperty)onChanged;
+                prop.Modified = CurrentDateTimeFactory();
+                onInternalChanged?.Invoke(prop);
+            });
+        }
+
+        protected T GetPersistableProperty<T>(
+            string key,
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = "")
         {
             return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
@@ -95,7 +119,13 @@ namespace RestfulFirebase.Database.Models
                         {
                             var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
                             var props = data.Select(i => (i.Key, i.Value.ToString()));
-                            ReplaceRawProperties(props);
+                            ReplaceRawProperties(props, perItemFollowup =>
+                            {
+                                if (perItemFollowup.Property is FirebaseProperty firebaseProperty)
+                                {
+                                    firebaseProperty.RealtimeWirePath = Path.Combine(RealtimeWirePath, firebaseProperty.Key);
+                                }
+                            });
                         }
                         else if (streamEvent.Path.Length == 2)
                         {
@@ -103,7 +133,13 @@ namespace RestfulFirebase.Database.Models
                             {
                                 (streamEvent.Path[1], streamEvent.Data)
                             };
-                            UpdateRawProperties(props);
+                            UpdateRawProperties(props, perItemFollowup =>
+                            {
+                                if (perItemFollowup.Property is FirebaseProperty firebaseProperty)
+                                {
+                                    firebaseProperty.RealtimeWirePath = Path.Combine(RealtimeWirePath, firebaseProperty.Key);
+                                }
+                            });
                         }
                     }
                     catch (Exception ex)
@@ -113,9 +149,9 @@ namespace RestfulFirebase.Database.Models
                 });
         }
 
-        public IEnumerable<DistinctProperty> GetRawPersistableProperties()
+        public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
         {
-            return GetRawProperties(nameof(FirebaseObject));
+            return GetRawProperties(nameof(FirebaseObject)).Select(i => (FirebaseProperty)i);
         }
 
         public void Dispose()
