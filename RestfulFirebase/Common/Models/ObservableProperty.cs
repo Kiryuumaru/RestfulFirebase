@@ -176,7 +176,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ClearAdditional()
+        public void ClearAdditionals()
         {
             try
             {
