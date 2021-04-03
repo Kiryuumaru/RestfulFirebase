@@ -94,6 +94,9 @@ namespace RestTest
 
         public static async Task Run()
         {
+            var negativee = Helpers.ToSignedArbitraryBaseSystem(123123123, 666);
+            var andd = Helpers.ToSignedNormalBaseSystem(negativee, 666);
+
             var ran = new Random();
             string[] arr = new string[1000000];
             for (int i = 0; i < arr.Length; i++)

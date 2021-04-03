@@ -11,12 +11,14 @@ namespace RestfulFirebase.Common
 {
     public static class Helpers
     {
-        #region UIDGenerator
+        #region Properties
 
         // Modeled after base64 web-safe chars, but ordered by ASCII.
         private const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
         private const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         private const string AlphanumericNonCaseSensitive = "0123456789abcdefghijklmnopqrstuvwxyz";
+        private const string NullIdentifier = "-";
+        private const string EmptyIdentifier = "_";
         private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Base64Charset));
         private static readonly DateTimeOffset Epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
 
@@ -24,6 +26,16 @@ namespace RestfulFirebase.Common
         private static readonly byte[] lastRandChars = new byte[12];
 
         private static long lastPushTime;
+
+        private const int Second = 1;
+        private const int Minute = 60 * Second;
+        private const int Hour = 60 * Minute;
+        private const int Day = 24 * Hour;
+        private const int Month = 30 * Day;
+
+        #endregion
+
+        #region UIDGenerator
 
         public static string GenerateUID(int length = 10, bool isCaseSensetive = true)
         {
@@ -110,49 +122,16 @@ namespace RestfulFirebase.Common
             return datas;
         }
 
-        //public static string EncodeDateTime(DateTime dateTime)
-        //{
-        //    string data = "";
-        //    data += dateTime.Year.ToString("0000");
-        //    data += dateTime.Month.ToString("00");
-        //    data += dateTime.Day.ToString("00");
-        //    data += dateTime.Hour.ToString("00");
-        //    data += dateTime.Minute.ToString("00");
-        //    data += dateTime.Second.ToString("00");
-        //    data += dateTime.Millisecond.ToString("000");
-        //    return data;
-        //}
-
-        //public static DateTime DecodeDateTime(string data, DateTime defaultValue)
-        //{
-        //    var decoded = DecodeDateTime(data);
-        //    return decoded.HasValue ? decoded.Value : defaultValue;
-        //}
-
-        //public static DateTime? DecodeDateTime(string data)
-        //{
-        //    if (string.IsNullOrEmpty(data)) return null;
-        //    try
-        //    {
-        //        string[] datas = Split(data, 4, 2, 2, 2, 2, 2, 3);
-        //        int year = Convert.ToInt32(datas[0]);
-        //        int month = Convert.ToInt32(datas[1]);
-        //        int day = Convert.ToInt32(datas[2]);
-        //        int hour = Convert.ToInt32(datas[3]);
-        //        int minute = Convert.ToInt32(datas[4]);
-        //        int second = Convert.ToInt32(datas[5]);
-        //        int millisecond = Convert.ToInt32(datas[6]);
-        //        return new DateTime(year, month, day, hour, minute, second, millisecond);
-        //    }
-        //    catch { return null; }
-        //}
-
         public static string EncodeDateTime(DateTime date)
         {
             long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
-            var bytes = BitConverter.GetBytes(shortTicks);
-            if (!BitConverter.IsLittleEndian) Array.Reverse(bytes);
-            return Convert.ToBase64String(bytes).Substring(0, 7);
+            var bytes = ToUnsignedArbitraryBaseSystem((ulong)shortTicks, 64);
+            string base64 = "";
+            foreach (var num in bytes)
+            {
+                base64 += Base64Charset[(int)num];
+            }
+            return base64;
         }
 
         public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
@@ -166,10 +145,15 @@ namespace RestfulFirebase.Common
             if (string.IsNullOrEmpty(encodedTimestamp)) return null;
             try
             {
-                byte[] data = new byte[8];
-                Convert.FromBase64String(encodedTimestamp + "AAAA=").CopyTo(data, 0);
-                if (!BitConverter.IsLittleEndian) Array.Reverse(data);
-                return new DateTime((BitConverter.ToInt64(data, 0) * 10000L) + 631139040000000000L);
+                var indexes = new List<uint>();
+                foreach (var num in encodedTimestamp)
+                {
+                    var indexOf = Base64Charset.IndexOf(num);
+                    if (indexOf == -1) throw new Exception("Unknown charset");
+                    indexes.Add((uint)indexOf);
+                }
+                var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+                return new DateTime(((long)unix * 10000L) + 631139040000000000L);
             }
             catch
             {
@@ -272,12 +256,6 @@ namespace RestfulFirebase.Common
 
         #region UIStringer
 
-        private const int Second = 1;
-        private const int Minute = 60 * Second;
-        private const int Hour = 60 * Minute;
-        private const int Day = 24 * Hour;
-        private const int Month = 30 * Day;
-
         public static string GetFormattedTimeSpan(TimeSpan timeSpan)
         {
             double delta = Math.Abs(timeSpan.TotalSeconds);
@@ -367,12 +345,9 @@ namespace RestfulFirebase.Common
 
         #region StringArraySerializer
 
-        private const string NullIdentifier = "-";
-        private const string EmptyIdentifier = "_";
-
-        private static string ToBase62(int number)
+        public static string ToBase62(int number)
         {
-            var arbitraryBase = ToArbitraryBaseSystem((ulong)number, 62);
+            var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 62);
             string base62 = "";
             foreach (var num in arbitraryBase)
             {
@@ -381,7 +356,7 @@ namespace RestfulFirebase.Common
             return base62;
         }
 
-        private static int FromBase62(string number)
+        public static int FromBase62(string number)
         {
             var indexes = new List<uint>();
             foreach (var num in number)
@@ -390,12 +365,12 @@ namespace RestfulFirebase.Common
                 if (indexOf == -1) throw new Exception("Unknown charset");
                 indexes.Add((uint)indexOf);
             }
-            return (int)ToNormalBaseSystem(indexes.ToArray(), 62);
+            return (int)ToUnsignedNormalBaseSystem(indexes.ToArray(), 62);
         }
 
-        private static string ToBase64(int number)
+        public static string ToBase64(int number)
         {
-            var arbitraryBase = ToArbitraryBaseSystem((ulong)number, 64);
+            var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 64);
             string base64 = "";
             foreach (var num in arbitraryBase)
             {
@@ -404,7 +379,7 @@ namespace RestfulFirebase.Common
             return base64;
         }
 
-        private static int FromBase64(string number)
+        public static int FromBase64(string number)
         {
             var indexes = new List<uint>();
             foreach (var num in number)
@@ -413,7 +388,7 @@ namespace RestfulFirebase.Common
                 if (indexOf == -1) throw new Exception("Unknown charset");
                 indexes.Add((uint)indexOf);
             }
-            return (int)ToNormalBaseSystem(indexes.ToArray(), 64);
+            return (int)ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
         }
 
         public static string SerializeString(params string[] datas)
@@ -473,10 +448,9 @@ namespace RestfulFirebase.Common
 
         #region Math
 
-        public static uint[] ToArbitraryBaseSystem(ulong number, uint baseSystem)
+        public static uint[] ToUnsignedArbitraryBaseSystem(ulong number, uint baseSystem)
         {
             if (baseSystem < 2) throw new Exception("Base below 1 error");
-            if (number < 0) throw new Exception("Number below zero error");
             var baseArr = new List<uint>();
             while (number >= baseSystem)
             {
@@ -490,7 +464,7 @@ namespace RestfulFirebase.Common
             return baseArr.ToArray();
         }
 
-        public static ulong ToNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
+        public static ulong ToUnsignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
         {
             if (baseSystem < 2) throw new Exception("Base below 1 error");
             if (arbitraryBaseNumber.Any(i => i >= baseSystem)) throw new Exception("Number has greater value than base number system");
@@ -501,6 +475,25 @@ namespace RestfulFirebase.Common
                 value += (ulong)(reverse[i] * Math.Pow(baseSystem, i));
             }
             return value;
+        }
+
+        public static uint[] ToSignedArbitraryBaseSystem(long number, uint baseSystem)
+        {
+            var num = ToUnsignedArbitraryBaseSystem((ulong)Math.Abs(number), baseSystem);
+            var newNum = new uint[num.Length + 1];
+            Array.Copy(num, 0, newNum, 1, num.Length);
+            newNum[0] = number < 0 ? baseSystem - 1 : 0;
+            return newNum;
+        }
+
+        public static long ToSignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
+        {
+            bool isNegative;
+            if (arbitraryBaseNumber[0] == 0) isNegative = false;
+            else if (arbitraryBaseNumber[0] == baseSystem - 1) isNegative = true;
+            else throw new Exception("Not a signed number");
+            var num = (long)ToUnsignedNormalBaseSystem(arbitraryBaseNumber.Skip(1).ToArray(), baseSystem);
+            return isNegative ? -num : num;
         }
 
         public static double CalcVariance(IEnumerable<double> datas)
