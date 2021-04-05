@@ -31,10 +31,30 @@ namespace RestfulFirebase.Common.Models
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
         }
 
+        protected DataFactory DataFactory
+        {
+            get
+            {
+                var factory = Holder.GetAttribute<DataFactory>(nameof(DataFactory), nameof(ObservableProperty)).Value;
+                if (factory == null)
+                {
+                    factory = new DataFactory(value =>
+                    {
+                        Holder.SetAttribute(nameof(Data), nameof(ObservableProperty), value);
+                    }, delegate
+                    {
+                        return Holder.GetAttribute<string>(nameof(Data), nameof(ObservableProperty)).Value;
+                    });
+                }
+                return factory;
+            }
+            set => Holder.SetAttribute(nameof(DataFactory), nameof(ObservableProperty), value);
+        }
+
         public string Data
         {
-            get => Holder.GetAttribute<string>(nameof(Data), nameof(ObservableProperty)).Value;
-            private set => Holder.SetAttribute(nameof(Data), nameof(ObservableProperty), value);
+            get => DataFactory.Get.Invoke();
+            private set => DataFactory.Set.Invoke(value);
         }
 
         public event PropertyChangedEventHandler PropertyChanged
