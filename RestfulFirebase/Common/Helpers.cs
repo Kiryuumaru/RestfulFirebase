@@ -557,5 +557,20 @@ namespace RestfulFirebase.Common
         }
 
         #endregion
+
+        #region UrlUtils
+
+        public static string CombineUrl(params string[] paths)
+        {
+            string ret = "";
+            foreach (var path in paths)
+            {
+                if (path.EndsWith("/")) ret += path;
+                else ret += (path + "/");
+            }
+            return ret.Length == 0 ? "/" : ret;
+        }
+
+        #endregion
     }
 }

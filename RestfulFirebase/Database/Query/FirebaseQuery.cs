@@ -190,7 +190,7 @@ namespace RestfulFirebase.Database.Query
 
             if (Parent != null)
             {
-                url = Path.Combine(Parent.BuildUrl(this), url);
+                url = Parent.BuildUrl(this) + url;
             }
 
             return url;
@@ -209,7 +209,7 @@ namespace RestfulFirebase.Database.Query
 
             if (Parent != null)
             {
-                url = Path.Combine(Parent.BuildUrl(this), url);
+                url = Parent.BuildUrl(this) + url;
             }
 
             return url;

@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using RestfulFirebase.Common;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -102,12 +103,12 @@ namespace RestfulFirebase.Database.Models
                     if (propHolder == null)
                     {
                         propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
-                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
+                        propHolder.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, property.Key);
                         Add(propHolder);
                     }
                     else
                     {
-                        propHolder.RealtimeWirePath = Path.Combine(RealtimeWirePath, property.Key);
+                        propHolder.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, property.Key);
                         if (propHolder.Data != property.Data)
                         {
                             propHolder.Update(property.Data);

@@ -225,6 +225,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
+        public bool IsNull()
+        {
+            return Data == default;
+        }
+
         public T ParseValue<T>()
         {
             var deserialized = Helpers.DeserializeString(Data);

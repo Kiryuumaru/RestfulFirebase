@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using RestfulFirebase.Common;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -89,7 +90,7 @@ namespace RestfulFirebase.Database.Models
         {
             SetProperty(value, key, nameof(FirebaseProperty), propertyName, validateValue, onChanged =>
             {
-                var prop = (FirebaseProperty)onChanged;
+                var prop = (FirebaseProperty)onChanged.PropertyHolder.Property;
                 prop.Modified = CurrentDateTimeFactory();
                 onInternalChanged?.Invoke(prop);
             });
@@ -121,9 +122,9 @@ namespace RestfulFirebase.Database.Models
                             var props = data.Select(i => (i.Key, i.Value.ToString()));
                             ReplaceRawProperties(props, perItemFollowup =>
                             {
-                                if (perItemFollowup.Property is FirebaseProperty firebaseProperty)
+                                if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                                 {
-                                    firebaseProperty.RealtimeWirePath = Path.Combine(RealtimeWirePath, firebaseProperty.Key);
+                                    firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, firebaseProperty.Key);
                                 }
                             });
                         }
@@ -135,9 +136,9 @@ namespace RestfulFirebase.Database.Models
                             };
                             UpdateRawProperties(props, perItemFollowup =>
                             {
-                                if (perItemFollowup.Property is FirebaseProperty firebaseProperty)
+                                if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                                 {
-                                    firebaseProperty.RealtimeWirePath = Path.Combine(RealtimeWirePath, firebaseProperty.Key);
+                                    firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, firebaseProperty.Key);
                                 }
                             });
                         }

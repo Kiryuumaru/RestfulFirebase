@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,7 +9,7 @@ namespace RestfulFirebase.Database.Offline
     public class OfflineDatabase
     {
         private const string OfflineDatabaseRoot = "offlineDatabase";
-        private readonly string OfflineDatabaseDataRoot = Path.Combine(OfflineDatabaseRoot, "data");
+        private readonly string OfflineDatabaseDataRoot = Helpers.CombineUrl(OfflineDatabaseRoot, "data");
 
         public RestfulFirebaseApp App { get; }
 
@@ -19,17 +20,17 @@ namespace RestfulFirebase.Database.Offline
 
         public void Set(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Path.Combine(OfflineDatabaseDataRoot, path), data.ToString());
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path), data.ToString());
         }
 
         public OfflineData Get(string path)
         {
-            return OfflineData.Parse(App.LocalDatabase.Get(Path.Combine(OfflineDatabaseDataRoot, path)));
+            return OfflineData.Parse(App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path)));
         }
 
         public IEnumerable<OfflineData> GetAll(string path)
         {
-            foreach (var data in App.LocalDatabase.GetAll(Path.Combine(OfflineDatabaseDataRoot, path)))
+            foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseDataRoot, path)))
             {
                 yield return OfflineData.Parse(data);
             }
@@ -37,7 +38,7 @@ namespace RestfulFirebase.Database.Offline
 
         public IEnumerable<string> GetSubPaths(string path)
         {
-            return App.LocalDatabase.GetSubPaths(Path.Combine(OfflineDatabaseDataRoot, path));
+            return App.LocalDatabase.GetSubPaths(Helpers.CombineUrl(OfflineDatabaseDataRoot, path));
         }
 
         private void AddPathQueue(IEnumerable<string> paths)
