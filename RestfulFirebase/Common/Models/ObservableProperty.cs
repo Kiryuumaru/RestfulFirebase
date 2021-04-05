@@ -53,8 +53,8 @@ namespace RestfulFirebase.Common.Models
 
         public string Data
         {
-            get => DataFactory.Get.Invoke();
-            private set => DataFactory.Set.Invoke(value);
+            get => GetData();
+            private set => SetData(value);
         }
 
         public event PropertyChangedEventHandler PropertyChanged
@@ -129,6 +129,16 @@ namespace RestfulFirebase.Common.Models
             PropertyChangeType propertyChangeType,
             bool isAdditionals,
             string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
+
+        protected void SetData(string data, DataParameter parameter = null)
+        {
+            DataFactory.Set.Invoke((parameter, data));
+        }
+
+        protected string GetData(DataParameter parameter = null)
+        {
+            return DataFactory.Get.Invoke(parameter);
+        }
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {

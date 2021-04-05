@@ -74,6 +74,11 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
+        public async void Set2(FirebaseProperty property, TimeSpan? timeout = null)
+        {
+
+        }
+
         public async void Set(FirebaseObject obj, TimeSpan? timeout = null)
         {
             try

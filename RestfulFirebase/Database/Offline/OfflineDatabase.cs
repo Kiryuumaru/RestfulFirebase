@@ -18,14 +18,24 @@ namespace RestfulFirebase.Database.Offline
             App = app;
         }
 
-        public void Set(string path, OfflineData data)
+        public void SetSyncData(string path, string data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path), data.ToString());
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"), data.ToString());
         }
 
-        public OfflineData Get(string path)
+        public void SetLocalData(string path, string data)
         {
-            return OfflineData.Parse(App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path)));
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"), data.ToString());
+        }
+
+        public string GetSyncData(string path)
+        {
+            return App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"));
+        }
+
+        public string GetLocalData(string path)
+        {
+            return App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"));
         }
 
         public IEnumerable<OfflineData> GetAll(string path)

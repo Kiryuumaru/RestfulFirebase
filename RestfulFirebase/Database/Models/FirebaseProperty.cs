@@ -71,6 +71,13 @@ namespace RestfulFirebase.Database.Models
         public void SetStreamer(IFirebaseQuery query)
         {
             RealtimeWirePath = query.GetAbsolutePath();
+            DataFactory = new DataFactory(value =>
+            {
+                query.App.Database.OfflineDatabase.Set(RealtimeWirePath, );
+            }, delegate
+            {
+
+            });
             RealtimeSubscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
@@ -91,6 +98,11 @@ namespace RestfulFirebase.Database.Models
                         OnError(ex);
                     }
                 });
+        }
+
+        public void Update(string data, bool fromSync)
+        {
+
         }
 
         #endregion
