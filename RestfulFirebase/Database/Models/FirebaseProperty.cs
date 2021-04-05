@@ -30,8 +30,8 @@ namespace RestfulFirebase.Database.Models
 
         public DateTime Modified
         {
-            get => Helpers.DecodeDateTime(GetAdditional("_d"), default);
-            set => SetAdditional("_d", Helpers.EncodeDateTime(value));
+            get => Helpers.DecodeDateTime(GetAdditional("_m"), default);
+            set => SetAdditional("_m", Helpers.EncodeDateTime(value));
         }
 
         #endregion
