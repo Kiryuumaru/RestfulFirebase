@@ -7,26 +7,26 @@ namespace RestfulFirebase.Database.Offline
 {
     public class OfflineData
     {
-        public string LastData { get; internal set; }
-        public string CurrentData { get; internal set; }
+        public string SyncedData { get; internal set; }
+        public string LocalData { get; internal set; }
 
         public static OfflineData Parse(string data)
         {
-            var lastData = Helpers.BlobGetValue(data, "lastData");
-            var currentData = Helpers.BlobGetValue(data, "currentData");
-            return new OfflineData(lastData, currentData);
+            var syncedData = Helpers.BlobGetValue(data, "sync");
+            var localData = Helpers.BlobGetValue(data, "local");
+            return new OfflineData(syncedData, localData);
         }
 
-        public OfflineData(string lastData, string currentData)
+        public OfflineData(string syncedData, string localData)
         {
-            LastData = lastData;
-            CurrentData = currentData;
+            SyncedData = syncedData;
+            LocalData = localData;
         }
 
         public override string ToString()
         {
-            var data = Helpers.BlobSetValue("", "lastData", LastData);
-            data = Helpers.BlobSetValue(data, "currentData", CurrentData);
+            var data = Helpers.BlobSetValue("", "sync", SyncedData);
+            data = Helpers.BlobSetValue(data, "local", LocalData);
             return data;
         }
     }

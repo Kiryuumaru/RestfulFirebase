@@ -94,39 +94,6 @@ namespace RestTest
 
         public static async Task Run()
         {
-            var negativee = Helpers.ToSignedArbitraryBaseSystem(123123123, 666);
-            var andd = Helpers.ToSignedNormalBaseSystem(negativee, 666);
-
-            var ran = new Random();
-            string[] arr = new string[1000000];
-            for (int i = 0; i < arr.Length; i++)
-            {
-                int r = ran.Next(10);
-                if (r == 0) arr[i] = null;
-                else if (r == 1) arr[i] = "";
-                else arr[i] = Helpers.GenerateUID(ran.Next(10, 100));
-            }
-
-            Stopwatch stop = new Stopwatch();
-
-            stop.Restart();
-            var ser2 = Helpers.SerializeString(arr);
-            var fs2 = stop.ElapsedMilliseconds;
-            stop.Restart();
-            var deser2 = Helpers.DeserializeString(ser2);
-            var fd2 = stop.ElapsedMilliseconds;
-            stop.Restart();
-            var l2 = ser2.Length;
-
-
-
-            for (int i = 0; i < arr.Length; i++)
-            {
-                if (deser2[i] != arr[i]) throw new Exception();
-            }
-
-
-
             var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",

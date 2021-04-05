@@ -196,8 +196,10 @@ namespace RestfulFirebase.Common.Models
             string key,
             string group = null,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
+            bool hasChanges = false;
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null)
             {
@@ -208,41 +210,57 @@ namespace RestfulFirebase.Common.Models
                     PropertyName = propertyName
                 };
                 PropertyHolders.Add(propertyHolder);
+                hasChanges = true;
             }
             else
             {
                 if (propertyHolder.Group != group && group != null)
                 {
                     propertyHolder.Group = group;
+                    hasChanges = true;
                 }
 
                 if (propertyHolder.PropertyName != propertyName && propertyName != null)
                 {
                     propertyHolder.PropertyName = propertyName;
+                    hasChanges = true;
                 }
             }
 
+            onInternalSet?.Invoke((hasChanges, propertyHolder));
             return propertyHolder.Property.ParseValue<T>();
         }
 
-        protected virtual void DeleteProperty(string key)
+        protected virtual void DeleteProperty(string key, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
-            propertyHolder.Property.Null();
+            bool hasChanges = false;
+            if (!propertyHolder.Property.IsNull())
+            {
+                propertyHolder.Property.Null();
+                hasChanges = true;
+            }
+            onInternalSet?.Invoke((hasChanges, propertyHolder));
             OnChanged(propertyHolder, PropertyChangeType.Delete);
         }
 
-        protected virtual void DeleteProperties(string group)
+        protected virtual void DeleteProperties(string group, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
-                propertyHolder.Property.Null();
+                bool hasChanges = false;
+                if (!propertyHolder.Property.IsNull())
+                {
+                    propertyHolder.Property.Null();
+                    hasChanges = true;
+                }
+                onInternalSet?.Invoke((hasChanges, propertyHolder));
                 OnChanged(propertyHolder, PropertyChangeType.Delete);
             }
         }
 
-        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> perItemFollowup = null)
+        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             foreach (var property in properties)
             {
@@ -272,7 +290,7 @@ namespace RestfulFirebase.Common.Models
                         }
                     }
 
-                    perItemFollowup?.Invoke((hasChanges, propHolder));
+                    onInternalSet?.Invoke((hasChanges, propHolder));
                     if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
                 }
                 catch (Exception ex)
@@ -282,7 +300,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> perItemFollowup = null)
+        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
@@ -292,9 +310,9 @@ namespace RestfulFirebase.Common.Models
                     propHolder.Property.Null();
                     hasChanges = true;
                 }
-                perItemFollowup?.Invoke((hasChanges, propHolder));
+                onInternalSet?.Invoke((hasChanges, propHolder));
             }
-            UpdateRawProperties(properties, perItemFollowup);
+            UpdateRawProperties(properties, onInternalSet);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

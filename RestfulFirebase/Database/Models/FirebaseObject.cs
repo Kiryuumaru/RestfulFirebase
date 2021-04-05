@@ -38,8 +38,14 @@ namespace RestfulFirebase.Database.Models
 
         public DateTime Modified
         {
-            get => GetPersistableProperty<DateTime>("_m");
-            set => SetPersistableProperty(value, "_m");
+            get
+            {
+                GetPersistableProperty<DateTime>("_m");
+                var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key == "_m");
+                var prop = (FirebaseProperty)propHolder.Property;
+                return prop.Modified;
+            }
+            set => SetPersistableProperty<string>(null, "_m");
         }
 
         #endregion
@@ -85,23 +91,35 @@ namespace RestfulFirebase.Database.Models
             T value,
             string key,
             [CallerMemberName] string propertyName = "",
-            Action<FirebaseProperty> onInternalChanged = null,
-            Func<T, T, bool> validateValue = null)
+            Func<T, T, bool> validateValue = null,
+            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
-            SetProperty(value, key, nameof(FirebaseProperty), propertyName, validateValue, onChanged =>
+            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue, internalSet =>
             {
-                var prop = (FirebaseProperty)onChanged.PropertyHolder.Property;
-                prop.Modified = CurrentDateTimeFactory();
-                onInternalChanged?.Invoke(prop);
+                if (internalSet.HasChanges)
+                {
+                    var prop = (FirebaseProperty)internalSet.PropertyHolder.Property;
+                    prop.Modified = CurrentDateTimeFactory();
+                }
+                onInternalSet?.Invoke(internalSet);
             });
         }
 
         protected T GetPersistableProperty<T>(
             string key,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = "")
+            [CallerMemberName] string propertyName = "",
+            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
-            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
+            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName, internalSet =>
+            {
+                if (internalSet.HasChanges)
+                {
+                    var prop = (FirebaseProperty)internalSet.PropertyHolder.Property;
+                    prop.Modified = CurrentDateTimeFactory();
+                }
+                onInternalSet?.Invoke(internalSet);
+            });
         }
 
         public void SetStreamer(IFirebaseQuery query)
