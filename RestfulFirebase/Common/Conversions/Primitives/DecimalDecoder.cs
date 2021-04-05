@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override decimal Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (decimal.TryParse(data, out decimal result)) return result;
             throw new Exception("Parse error");
         }

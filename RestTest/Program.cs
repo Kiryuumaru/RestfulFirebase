@@ -161,6 +161,8 @@ namespace RestTest
 
             await Task.Delay(10000);
 
+            var fff = ss11.Modified;
+
             Console.WriteLine("FIN");
 
             await Task.Delay(10000000);

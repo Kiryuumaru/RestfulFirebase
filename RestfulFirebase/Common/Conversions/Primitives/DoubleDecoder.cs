@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override double Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (double.TryParse(data, out double result)) return result;
             throw new Exception("Parse error");
         }

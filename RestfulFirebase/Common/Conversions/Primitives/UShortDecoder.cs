@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override ushort Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (ushort.TryParse(data, out ushort result)) return result;
             throw new Exception("Parse error");
         }

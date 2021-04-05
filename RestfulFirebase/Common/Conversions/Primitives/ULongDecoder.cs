@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override ulong Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (ulong.TryParse(data, out ulong result)) return result;
             throw new Exception("Parse error");
         }

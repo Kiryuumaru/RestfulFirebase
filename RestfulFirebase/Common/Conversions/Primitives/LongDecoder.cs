@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override long Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (long.TryParse(data, out long result)) return result;
             throw new Exception("Parse error");
         }

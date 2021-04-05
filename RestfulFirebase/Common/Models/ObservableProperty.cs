@@ -134,10 +134,12 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) deserialized = new string[2];
-                if (deserialized.Length != 2) throw new Exception("Data length error");
-                deserialized[1] = Helpers.BlobSetValue(deserialized[1], key, data);
-                Data = Helpers.SerializeString(deserialized);
+                if (deserialized == null) deserialized = new string[1];
+                var adsData = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), key, data);
+                var newEncodedData = new string[adsData.Length + 1];
+                newEncodedData[0] = deserialized[0];
+                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
+                Data = Helpers.SerializeString(newEncodedData);
                 OnChanged(PropertyChangeType.Set, true, nameof(Data));
             }
             catch (Exception ex)
@@ -151,9 +153,8 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) return null;
-                if (deserialized.Length != 2) throw new Exception("Data length error");
-                return Helpers.BlobGetValue(deserialized[1], key);
+                if (deserialized == null) deserialized = new string[1];
+                return Helpers.BlobGetValue(deserialized.Skip(1).ToArray(), key);
             }
             catch (Exception ex)
             {
@@ -167,10 +168,12 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) return;
-                if (deserialized.Length != 2) throw new Exception("Data length error");
-                deserialized[1] = Helpers.BlobDeleteValue(deserialized[1], key);
-                Data = Helpers.SerializeString(deserialized);
+                if (deserialized == null) deserialized = new string[1];
+                var adsData = Helpers.BlobDeleteValue(deserialized.Skip(1).ToArray(), key);
+                var newEncodedData = new string[adsData.Length + 1];
+                newEncodedData[0] = deserialized[0];
+                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
+                Data = Helpers.SerializeString(newEncodedData);
                 OnChanged(PropertyChangeType.Delete, true, nameof(Data));
             }
             catch (Exception ex)
@@ -184,14 +187,9 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) return;
-                if (deserialized.Length != 2) throw new Exception("Data length error");
-                else
-                {
-                    deserialized[1] = null;
-                    Data = Helpers.SerializeString(deserialized);
-                    OnChanged(PropertyChangeType.Delete, true, nameof(Data));
-                }
+                if (deserialized == null) deserialized = new string[1];
+                Data = Helpers.SerializeString(deserialized[0]);
+                OnChanged(PropertyChangeType.Delete, true, nameof(Data));
             }
             catch (Exception ex)
             {
@@ -234,7 +232,8 @@ namespace RestfulFirebase.Common.Models
         {
             var deserialized = Helpers.DeserializeString(Data);
             if (deserialized == null) return default;
-            if (deserialized.Length != 2) throw new Exception("Data length error");
+            if (deserialized.Length == 0) return default;
+            if (deserialized[0] == null) return default;
             return DataTypeDecoder.GetDecoder<T>().Decode(deserialized[0]);
         }
 

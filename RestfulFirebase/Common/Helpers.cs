@@ -161,9 +161,8 @@ namespace RestfulFirebase.Common
             }
         }
 
-        public static string BlobGetValue(string blob, string key, string defaultValue = "")
+        public static string BlobGetValue(string[] blobArray, string key, string defaultValue = "")
         {
-            var blobArray = DeserializeString(blob);
             if (blobArray == null) return defaultValue;
             else if (blobArray.Length <= 1) return defaultValue;
             else if (blobArray.Length % 2 != 0) return defaultValue;
@@ -172,9 +171,14 @@ namespace RestfulFirebase.Common
             else return defaultValue;
         }
 
-        public static string BlobSetValue(string blob, string key, string value)
+        public static string BlobGetValue(string blob, string key, string defaultValue = "")
         {
             var blobArray = DeserializeString(blob);
+            return BlobGetValue(blobArray, key, defaultValue);
+        }
+
+        public static string[] BlobSetValue(string[] blobArray, string key, string value)
+        {
             if (blobArray == null) blobArray = Array.Empty<string>();
             else if (blobArray.Length <= 1) blobArray = Array.Empty<string>();
             else if (blobArray.Length % 2 != 0) blobArray = Array.Empty<string>();
@@ -182,32 +186,43 @@ namespace RestfulFirebase.Common
             if (keyIndex != 1 && keyIndex % 2 == 0 && (keyIndex + 1) < blobArray.Length)
             {
                 blobArray[keyIndex + 1] = value;
-                return SerializeString(blobArray);
+                return blobArray;
             }
             else
             {
                 var newBlobArray = blobArray.ToList();
                 newBlobArray.Add(key);
                 newBlobArray.Add(value);
-                return SerializeString(newBlobArray.ToArray());
+                return newBlobArray.ToArray();
             }
         }
 
-        public static string BlobDeleteValue(string blob, string key)
+        public static string BlobSetValue(string blob, string key, string value)
         {
             var blobArray = DeserializeString(blob);
-            if (blobArray == null) return blob;
-            else if (blobArray.Length <= 1) return blob;
-            else if (blobArray.Length % 2 != 0) return blob;
+            return SerializeString(BlobSetValue(blobArray, key, value));
+        }
+
+        public static string[] BlobDeleteValue(string[] blobArray, string key)
+        {
+            if (blobArray == null) return blobArray;
+            else if (blobArray.Length <= 1) return blobArray;
+            else if (blobArray.Length % 2 != 0) return blobArray;
             int keyIndex = blobArray.ToList().IndexOf(key);
             if (keyIndex != 1 && keyIndex % 2 == 0 && (keyIndex + 1) < blobArray.Length)
             {
                 var newBlobArray = blobArray.ToList();
                 newBlobArray.RemoveAt(keyIndex);
                 newBlobArray.RemoveAt(keyIndex);
-                return SerializeString(newBlobArray.ToArray());
+                return newBlobArray.ToArray();
             }
-            else return blob;
+            else return blobArray;
+        }
+
+        public static string BlobDeleteValue(string blob, string key)
+        {
+            var blobArray = DeserializeString(blob);
+            return SerializeString(BlobDeleteValue(blobArray, key));
         }
 
 

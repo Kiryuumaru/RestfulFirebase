@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 
         public override TimeSpan Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (double.TryParse(data, out double result)) return TimeSpan.FromHours(result);
             throw new Exception("Parse error");
         }

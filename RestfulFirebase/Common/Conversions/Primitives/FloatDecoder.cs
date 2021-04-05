@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override float Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (float.TryParse(data, out float result)) return result;
             throw new Exception("Parse error");
         }

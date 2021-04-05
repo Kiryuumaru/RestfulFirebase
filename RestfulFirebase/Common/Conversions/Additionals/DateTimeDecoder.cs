@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Additionals
 
         public override DateTime Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             var dateTime = Helpers.DecodeDateTime(data);
             if (dateTime.HasValue) return dateTime.Value;
             throw new Exception("Parse error");

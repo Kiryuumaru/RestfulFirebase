@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override sbyte Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             if (sbyte.TryParse(data, out sbyte result)) return result;
             throw new Exception("Parse error");
         }

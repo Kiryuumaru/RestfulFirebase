@@ -14,6 +14,7 @@ namespace RestfulFirebase.Common.Conversions.Primitives
 
         public override bool Decode(string data)
         {
+            if (string.IsNullOrEmpty(data)) return default;
             return data.Equals("1");
         }
     }
