@@ -10,14 +10,9 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class ObservableProperty : IAttributed, INotifyPropertyChanged
+    public class ObservableProperty : PrimitiveData, INotifyPropertyChanged
     {
         #region Properties
-
-        private const string DataKey = "d";
-        private const string AdditionsKey = "a";
-
-        public AttributeHolder Holder { get; } = new AttributeHolder();
 
         private PropertyChangedEventHandler PropertyChangedHandler
         {
@@ -29,32 +24,6 @@ namespace RestfulFirebase.Common.Models
         {
             get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableProperty), delegate { }).Value;
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableProperty), value);
-        }
-
-        protected DataFactory DataFactory
-        {
-            get
-            {
-                var factory = Holder.GetAttribute<DataFactory>(nameof(DataFactory), nameof(ObservableProperty)).Value;
-                if (factory == null)
-                {
-                    factory = new DataFactory(value =>
-                    {
-                        Holder.SetAttribute(nameof(Data), nameof(ObservableProperty), value);
-                    }, delegate
-                    {
-                        return Holder.GetAttribute<string>(nameof(Data), nameof(ObservableProperty)).Value;
-                    });
-                }
-                return factory;
-            }
-            set => Holder.SetAttribute(nameof(DataFactory), nameof(ObservableProperty), value);
-        }
-
-        public string Data
-        {
-            get => GetData();
-            private set => SetData(value);
         }
 
         public event PropertyChangedEventHandler PropertyChanged
@@ -97,19 +66,19 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public static ObservableProperty Create()
+        public static new ObservableProperty Create()
         {
             return new ObservableProperty(null);
         }
 
-        public static ObservableProperty CreateFromValue<T>(T value)
+        public static new ObservableProperty CreateFromValue<T>(T value)
         {
             var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
             return CreateFromData(data);
         }
 
-        public static ObservableProperty CreateFromData(string data)
+        public static new ObservableProperty CreateFromData(string data)
         {
             var obj = new ObservableProperty(null);
             obj.Update(data);
@@ -117,8 +86,9 @@ namespace RestfulFirebase.Common.Models
         }
 
         public ObservableProperty(IAttributed attributed)
+            : base(attributed)
         {
-            Holder.Initialize(this, attributed);
+
         }
 
         #endregion
@@ -129,16 +99,6 @@ namespace RestfulFirebase.Common.Models
             PropertyChangeType propertyChangeType,
             bool isAdditionals,
             string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
-
-        protected void SetData(string data, DataParameter parameter = null)
-        {
-            DataFactory.Set.Invoke((parameter, data));
-        }
-
-        protected string GetData(DataParameter parameter = null)
-        {
-            return DataFactory.Get.Invoke(parameter);
-        }
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -159,32 +119,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void SetAdditional(string key, string data)
+        public new string GetAdditional(string key)
         {
             try
             {
-                var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) deserialized = new string[1];
-                var adsData = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), key, data);
-                var newEncodedData = new string[adsData.Length + 1];
-                newEncodedData[0] = deserialized[0];
-                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-                Data = Helpers.SerializeString(newEncodedData);
-                OnChanged(PropertyChangeType.Set, true, nameof(Data));
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
-
-        public string GetAdditional(string key)
-        {
-            try
-            {
-                var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) deserialized = new string[1];
-                return Helpers.BlobGetValue(deserialized.Skip(1).ToArray(), key);
+                return base.GetAdditional(key);
             }
             catch (Exception ex)
             {
@@ -193,17 +132,24 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void DeleteAdditional(string key)
+        public new void SetAdditional(string key, string data)
         {
             try
             {
-                var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) deserialized = new string[1];
-                var adsData = Helpers.BlobDeleteValue(deserialized.Skip(1).ToArray(), key);
-                var newEncodedData = new string[adsData.Length + 1];
-                newEncodedData[0] = deserialized[0];
-                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-                Data = Helpers.SerializeString(newEncodedData);
+                base.SetAdditional(key, data);
+                OnChanged(PropertyChangeType.Set, true, nameof(Data));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public new void DeleteAdditional(string key)
+        {
+            try
+            {
+                base.DeleteAdditional(key);
                 OnChanged(PropertyChangeType.Delete, true, nameof(Data));
             }
             catch (Exception ex)
@@ -212,13 +158,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ClearAdditionals()
+        public new void ClearAdditionals()
         {
             try
             {
-                var deserialized = Helpers.DeserializeString(Data);
-                if (deserialized == null) deserialized = new string[1];
-                Data = Helpers.SerializeString(deserialized[0]);
+                base.ClearAdditionals();
                 OnChanged(PropertyChangeType.Delete, true, nameof(Data));
             }
             catch (Exception ex)
@@ -227,11 +171,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void Update(string data)
+        public new void Update(string data)
         {
             try
             {
-                Data = data;
+                base.Update(data);
                 OnChanged(PropertyChangeType.Set, false, nameof(Data));
             }
             catch (Exception ex)
@@ -240,37 +184,17 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void Null()
+        public new void Null()
         {
             try
             {
-                Data = default;
+                base.Null();
                 OnChanged(PropertyChangeType.Delete, false, nameof(Data));
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
-        }
-
-        public bool IsNull()
-        {
-            return Data == default;
-        }
-
-        public T ParseValue<T>()
-        {
-            var deserialized = Helpers.DeserializeString(Data);
-            if (deserialized == null) return default;
-            if (deserialized.Length == 0) return default;
-            if (deserialized[0] == null) return default;
-            return DataTypeDecoder.GetDecoder<T>().Decode(deserialized[0]);
-        }
-
-        public T Parse<T>()
-            where T : ObservableObject
-        {
-            return (T)Activator.CreateInstance(typeof(T), this);
         }
 
         #endregion

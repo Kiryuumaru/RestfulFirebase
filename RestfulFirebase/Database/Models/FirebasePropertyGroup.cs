@@ -59,7 +59,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void SetStreamer(IFirebaseQuery query)
+        public void SetRealtime(IFirebaseQuery query, RealtimeConfig config)
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable

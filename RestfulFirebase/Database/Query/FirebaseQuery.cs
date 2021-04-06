@@ -55,6 +55,8 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
+        #region V1
+
         public async void Set(FirebaseProperty property, TimeSpan? timeout = null)
         {
             try
@@ -64,7 +66,7 @@ namespace RestfulFirebase.Database.Query
                 var blob = JsonConvert.SerializeObject(property.Data);
                 var c = query.GetClient(timeout);
 
-                property.SetStreamer(query);
+                property.SetRealtime(query);
 
                 await query.Silent().SendAsync(c, blob, HttpMethod.Put);
             }
@@ -72,11 +74,6 @@ namespace RestfulFirebase.Database.Query
             {
                 property.OnError(ex);
             }
-        }
-
-        public async void Set2(FirebaseProperty property, TimeSpan? timeout = null)
-        {
-
         }
 
         public async void Set(FirebaseObject obj, TimeSpan? timeout = null)
@@ -89,7 +86,7 @@ namespace RestfulFirebase.Database.Query
                 var data = JsonConvert.SerializeObject(collection);
                 var c = query.GetClient(timeout);
 
-                obj.SetStreamer(query);
+                obj.SetRealtime(query);
 
                 await query.Silent().SendAsync(c, data, HttpMethod.Put);
             }
@@ -97,46 +94,6 @@ namespace RestfulFirebase.Database.Query
             {
                 obj.OnError(ex);
             }
-        }
-
-        public FirebaseProperty GetAsProperty(string path, TimeSpan? timeout = null)
-        {
-            var prop = FirebaseProperty.CreateFromKey(path);
-
-            var query = new ChildQuery(this, () => path, App);
-            prop.SetStreamer(query);
-
-            return prop;
-        }
-
-        public FirebaseObject GetAsObject(string path, TimeSpan? timeout = null)
-        {
-            var obj = FirebaseObject.CreateFromKey(path);
-
-            var query = new ChildQuery(this, () => path, App);
-            obj.SetStreamer(query);
-
-            return obj;
-        }
-
-        public FirebasePropertyGroup GetAsPropertyCollection(string path, TimeSpan? timeout = null)
-        {
-            var group = FirebasePropertyGroup.CreateFromKey(path);
-
-            var query = new ChildQuery(this, () => path, App);
-            group.SetStreamer(query);
-
-            return group;
-        }
-
-        public FirebaseObjectGroup GetAsObjectCollection(string path, TimeSpan? timeout = null)
-        {
-            var group = FirebaseObjectGroup.CreateFromKey(path);
-
-            var query = new ChildQuery(this, () => path, App);
-            group.SetStreamer(query);
-
-            return group;
         }
 
         public async void DeleteAsync(string path, TimeSpan? timeout = null)
@@ -170,6 +127,96 @@ namespace RestfulFirebase.Database.Query
                 throw new FirebaseException(url, string.Empty, responseData, statusCode, ex);
             }
         }
+
+        #endregion
+
+        #region V2
+
+        public void Set2(FirebaseProperty property)
+        {
+            var query = new ChildQuery(this, () => property.Key, App);
+            property.SetRealtime(query);
+        }
+
+        public void Set2(FirebaseObject obj)
+        {
+            var query = new ChildQuery(this, () => obj.Key, App);
+            obj.SetRealtime(query);
+        }
+
+        public FirebaseProperty GetAsProperty(string path)
+        {
+            var prop = FirebaseProperty.CreateFromKey(path);
+
+            var query = new ChildQuery(this, () => path, App);
+            prop.SetRealtime(query);
+
+            return prop;
+        }
+
+        public FirebaseObject GetAsObject(string path)
+        {
+            var obj = FirebaseObject.CreateFromKey(path);
+
+            var query = new ChildQuery(this, () => path, App);
+            obj.SetRealtime(query);
+
+            return obj;
+        }
+
+        public FirebasePropertyGroup GetAsPropertyCollection(string path)
+        {
+            var group = FirebasePropertyGroup.CreateFromKey(path);
+
+            var query = new ChildQuery(this, () => path, App);
+            group.SetRealtime(query);
+
+            return group;
+        }
+
+        public FirebaseObjectGroup GetAsObjectCollection(string path)
+        {
+            var group = FirebaseObjectGroup.CreateFromKey(path);
+
+            var query = new ChildQuery(this, () => path, App);
+            group.SetRealtime(query);
+
+            return group;
+        }
+
+        public async void Delete(string path, TimeSpan? timeout = null)
+        {
+            var query = new ChildQuery(this, () => path, App);
+            var c = query.GetClient(timeout);
+
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
+            try
+            {
+                url = await query.BuildUrlAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                throw new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex);
+            }
+
+            try
+            {
+                var result = await c.DeleteAsync(url).ConfigureAwait(false);
+                statusCode = result.StatusCode;
+                responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                result.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                throw new FirebaseException(url, string.Empty, responseData, statusCode, ex);
+            }
+        }
+
+        #endregion
 
         public async Task<string> BuildUrlAsync()
         {

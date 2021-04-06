@@ -325,12 +325,6 @@ namespace RestfulFirebase.Common.Models
                     .Select(i => i.Property);
         }
 
-        public T Parse<T>()
-            where T : ObservableObject
-        {
-            return (T)Activator.CreateInstance(typeof(T), this);
-        }
-
         #endregion
     }
 }

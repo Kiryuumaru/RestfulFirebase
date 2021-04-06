@@ -1,4 +1,6 @@
 ﻿using RestfulFirebase.Common;
+using RestfulFirebase.Common.Models;
+using RestfulFirebase.Database.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,31 +20,33 @@ namespace RestfulFirebase.Database.Offline
             App = app;
         }
 
-        public void SetSyncData(string path, string data)
+        public void SetSyncData(string path, PrimitiveData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"), data.ToString());
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"), data.Data);
         }
 
-        public void SetLocalData(string path, string data)
+        public void SetLocalData(string path, PrimitiveData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"), data.ToString());
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"), data.Data);
         }
 
-        public string GetSyncData(string path)
+        public PrimitiveData GetSyncData(string path)
         {
-            return App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"));
+            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"));
+            return PrimitiveData.CreateFromData(data);
         }
 
-        public string GetLocalData(string path)
+        public PrimitiveData GetLocalData(string path)
         {
-            return App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"));
+            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"));
+            return PrimitiveData.CreateFromData(data);
         }
 
-        public IEnumerable<OfflineData> GetAll(string path)
+        public IEnumerable<PrimitiveData> GetAll(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseDataRoot, path)))
             {
-                yield return OfflineData.Parse(data);
+                yield return PrimitiveData.CreateFromData(data);
             }
         }
 

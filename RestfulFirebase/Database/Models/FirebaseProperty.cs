@@ -68,16 +68,25 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void SetStreamer(IFirebaseQuery query)
+        public void SetRealtime(IFirebaseQuery query, RealtimeConfig config)
         {
             RealtimeWirePath = query.GetAbsolutePath();
-            DataFactory = new DataFactory(value =>
+            var oldDataFactory = DataFactory;
+            DataFactory = new DataFactory(args =>
             {
-                query.App.Database.OfflineDatabase.Set(RealtimeWirePath, );
-            }, delegate
+                query.App.Database.OfflineDatabase.SetSyncData(RealtimeWirePath, args.Value);
+            }, args =>
             {
-
+                var sync = query.App.Database.OfflineDatabase.GetSyncData(RealtimeWirePath);
+                var local = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWirePath);
             });
+            switch (config.InitialStrategy)
+            {
+                case InitialStrategy.Pull:
+                    break;
+                case InitialStrategy.Push:
+                    break;
+            }
             RealtimeSubscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
@@ -98,11 +107,6 @@ namespace RestfulFirebase.Database.Models
                         OnError(ex);
                     }
                 });
-        }
-
-        public void Update(string data, bool fromSync)
-        {
-
         }
 
         #endregion
