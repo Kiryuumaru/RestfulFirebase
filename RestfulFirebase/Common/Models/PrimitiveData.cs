@@ -16,20 +16,20 @@ namespace RestfulFirebase.Common.Models
         {
             get
             {
-                var factory = Holder.GetAttribute<DataFactory>(nameof(DataFactory), nameof(ObservableProperty)).Value;
+                var factory = Holder.GetAttribute<DataFactory>(nameof(DataFactory), nameof(PrimitiveData)).Value;
                 if (factory == null)
                 {
                     factory = new DataFactory(value =>
                     {
-                        Holder.SetAttribute(nameof(Data), nameof(ObservableProperty), value);
+                        Holder.SetAttribute(nameof(Data), nameof(PrimitiveData), value);
                     }, delegate
                     {
-                        return Holder.GetAttribute<string>(nameof(Data), nameof(ObservableProperty)).Value;
+                        return Holder.GetAttribute<string>(nameof(Data), nameof(PrimitiveData)).Value;
                     });
                 }
                 return factory;
             }
-            set => Holder.SetAttribute(nameof(DataFactory), nameof(ObservableProperty), value);
+            set => Holder.SetAttribute(nameof(DataFactory), nameof(PrimitiveData), value);
         }
 
         public string Data
@@ -42,21 +42,21 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public static ObservableProperty Create()
+        public static PrimitiveData Create()
         {
-            return new ObservableProperty(null);
+            return new PrimitiveData(null);
         }
 
-        public static ObservableProperty CreateFromValue<T>(T value)
+        public static PrimitiveData CreateFromValue<T>(T value)
         {
             var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
             return CreateFromData(data);
         }
 
-        public static ObservableProperty CreateFromData(string data)
+        public static PrimitiveData CreateFromData(string data)
         {
-            var obj = new ObservableProperty(null);
+            var obj = new PrimitiveData(null);
             obj.Update(data);
             return obj;
         }
