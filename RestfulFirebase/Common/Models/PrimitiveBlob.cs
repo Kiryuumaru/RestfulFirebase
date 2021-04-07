@@ -21,7 +21,7 @@ namespace RestfulFirebase.Common.Models
                 {
                     factory = new BlobFactory(value =>
                     {
-                        Holder.SetAttribute(nameof(Blob), nameof(PrimitiveBlob), value);
+                        Holder.SetAttribute(nameof(Blob), nameof(PrimitiveBlob), value.Value);
                     }, delegate
                     {
                         return Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
@@ -35,25 +35,6 @@ namespace RestfulFirebase.Common.Models
         public string Blob
         {
             get => BlobFactory.Get.Invoke();
-            private set => BlobFactory.Set.Invoke(value);
-        }
-
-        public string Data
-        {
-            get
-            {
-                var deserialized = Helpers.DeserializeString(Blob);
-                if (deserialized == null) return null;
-                return deserialized[0];
-
-            }
-            private set
-            {
-                var deserialized = Helpers.DeserializeString(Blob);
-                if (deserialized == null) deserialized = new string[1];
-                deserialized[0] = value;
-                Blob = Helpers.SerializeString(deserialized);
-            }
         }
 
         #endregion
@@ -86,7 +67,7 @@ namespace RestfulFirebase.Common.Models
 
         #endregion
 
-         #region Methods
+        #region Methods
 
         public T GetAdditional<T>(string key)
         {
@@ -96,7 +77,7 @@ namespace RestfulFirebase.Common.Models
             return DataTypeDecoder.GetDecoder<T>().Decode(data);
         }
 
-        public void SetAdditional<T>(string key, T value)
+        public void SetAdditional<T>(string key, T value, string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
@@ -105,10 +86,10 @@ namespace RestfulFirebase.Common.Models
             var newEncodedData = new string[adsData.Length + 1];
             newEncodedData[0] = deserialized[0];
             Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-            Blob = Helpers.SerializeString(newEncodedData);
+            BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
         }
 
-        public void DeleteAdditional(string key)
+        public void DeleteAdditional(string key, string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
@@ -116,24 +97,34 @@ namespace RestfulFirebase.Common.Models
             var newEncodedData = new string[adsData.Length + 1];
             newEncodedData[0] = deserialized[0];
             Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-            Blob = Helpers.SerializeString(newEncodedData);
+            BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
         }
 
-        public void ClearAdditionals()
+        public void ClearAdditionals(string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
-            Blob = Helpers.SerializeString(deserialized[0]);
+            BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized[0]), tag));
         }
 
-        public void UpdateBlob(string blob)
+        public string GetData()
         {
-            Blob = blob;
+            var deserialized = Helpers.DeserializeString(Blob);
+            if (deserialized == null) return null;
+            return deserialized[0];
         }
 
-        public void UpdateData(string data)
+        public void UpdateBlob(string blob, string tag = null)
         {
-            Data = data;
+            BlobFactory.Set.Invoke((blob, tag));
+        }
+
+        public void UpdateData(string data, string tag = null)
+        {
+            var deserialized = Helpers.DeserializeString(Blob);
+            if (deserialized == null) deserialized = new string[1];
+            deserialized[0] = data;
+            BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized), tag));
         }
 
         public T ParseValue<T>()

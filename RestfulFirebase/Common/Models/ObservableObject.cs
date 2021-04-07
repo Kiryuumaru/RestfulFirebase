@@ -236,7 +236,7 @@ namespace RestfulFirebase.Common.Models
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
             bool hasChanges = false;
-            if (propertyHolder.Property.Data != null)
+            if (propertyHolder.Property.GetData() != null)
             {
                 propertyHolder.Property.UpdateData(null);
                 hasChanges = true;
@@ -250,7 +250,7 @@ namespace RestfulFirebase.Common.Models
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
                 bool hasChanges = false;
-                if (propertyHolder.Property.Data != null)
+                if (propertyHolder.Property.GetData() != null)
                 {
                     propertyHolder.Property.UpdateData(null);
                     hasChanges = true;
@@ -305,7 +305,7 @@ namespace RestfulFirebase.Common.Models
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
                 bool hasChanges = false;
-                if (propHolder.Property.Data != null)
+                if (propHolder.Property.GetData() != null)
                 {
                     propHolder.Property.UpdateData(null);
                     hasChanges = true;

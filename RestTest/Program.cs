@@ -129,9 +129,9 @@ namespace RestTest
             //var ss1 = userNode.GetAsPropertyCollection("propCollection");
             //var ss2 = userNode.GetAsObjectCollection("objCollection");
 
-            ss111.Realtime.PropertyChanged += (s, e) =>
+            ss111.RealtimeModel.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("s111 blob: " + ss111.Realtime.Blob);
+                Console.WriteLine("s111 blob: " + ss111.RealtimeModel.Blob);
             };
             //ss11.PropertyChanged += (s, e) =>
             //{
@@ -153,8 +153,8 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                if (string.IsNullOrEmpty(line)) ss111.Realtime.UpdateData(null);
-                else ss111.Realtime.UpdateData(DataTypeDecoder.GetDecoder<string>().Encode(line));
+                if (string.IsNullOrEmpty(line)) ss111.RealtimeModel.ModifyData(null);
+                else ss111.RealtimeModel.ModifyData(DataTypeDecoder.GetDecoder<string>().Encode(line));
             }
         }
     }

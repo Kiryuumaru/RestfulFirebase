@@ -16,6 +16,8 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         private const string ModifiedKey = "_m";
+        private const string SyncTag = "sync";
+        private const string RevertTag = "revert";
 
         public bool HasRealtimeWire => RealtimeWirePath != null;
 
@@ -86,27 +88,72 @@ namespace RestfulFirebase.Database.Models
             BlobFactory = new BlobFactory(
                 blob =>
                 {
-                    if (blob == Blob) return;
-                    var newBlob = PrimitiveBlob.CreateFromBlob(blob);
-                    if (blob == null)
+                    void put(string blobToPut, string revertBlob)
                     {
-                        query.Put(null, null, ex => OnError(ex));
+                        query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                        {
+                            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                            {
+                                UpdateBlob(revertBlob, RevertTag);
+                            }
+                            OnError(ex);
+                        });
+                    }
+                    if (blob.Value == Blob) return;
+                    var newBlob = PrimitiveBlob.CreateFromBlob(blob.Value);
+                    if (blob.Tag == RevertTag)
+                    {
+                        if (blob.Value == null)
+                        {
+                            query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
+                        }
+                        else
+                        {
+                            query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                        }
+                    }
+                    else if (blob.Tag == SyncTag)
+                    {
+                        if (blob.Value == null)
+                        {
+                            query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
+                        }
+                        else
+                        {
+                            var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                            if (newBlobModified >= Modified)
+                            {
+                                query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                            }
+                            else
+                            {
+                                put(Blob, newBlob.Blob);
+                            }
+                        }
                     }
                     else
                     {
-                        var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
-                        if (newBlobModified > Modified)
+                        if (blob.Value == null)
                         {
-                            query.Put(JsonConvert.SerializeObject(newBlob.Blob), null, ex => OnError(ex));
+                            query.Put(null, null, ex => OnError(ex));
+                            query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
+                        }
+                        else
+                        {
+                            var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                            if (newBlobModified >= Modified)
+                            {
+                                put(newBlob.Blob, Blob);
+                                query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                            }
                         }
                     }
-                    query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
                 },
                 () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
             if (invokeSetFirst)
             {
                 Modified = DateTime.MinValue;
-                BlobFactory.Set(oldDataFactory.Get());
+                BlobFactory.Set((oldDataFactory.Get(), null));
             }
             RealtimeSubscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
@@ -117,17 +164,7 @@ namespace RestfulFirebase.Database.Models
                         if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
                         else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                         else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamEvent.Path.Length == 1)
-                        {
-                            if (streamEvent.Data == null)
-                            {
-                                var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
-                                newBlob.UpdateData(null);
-                                newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
-                                UpdateData(newBlob.Data);
-                            }
-                            else if (Blob != streamEvent.Data) UpdateBlob(streamEvent.Data);
-                        }
+                        else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
                     }
                     catch (Exception ex)
                     {
@@ -136,12 +173,19 @@ namespace RestfulFirebase.Database.Models
                 });
         }
 
-        public new void UpdateData(string data)
+        public void ModifyData(string data)
         {
-            var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
-            newBlob.UpdateData(data);
-            newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
-            base.UpdateBlob(newBlob.Blob);
+            if (data == null)
+            {
+                UpdateBlob(null);
+            }
+            else
+            {
+                var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
+                newBlob.UpdateData(data);
+                newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
+                UpdateBlob(newBlob.Blob);
+            }
         }
 
         #endregion

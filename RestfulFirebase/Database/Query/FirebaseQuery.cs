@@ -51,6 +51,11 @@ namespace RestfulFirebase.Database.Query
             {
                 url = await BuildUrlAsync().ConfigureAwait(false);
             }
+            catch (FirebaseException ex)
+            {
+                onException?.Invoke(ex);
+                return;
+            }
             catch (Exception ex)
             {
                 onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
@@ -69,6 +74,10 @@ namespace RestfulFirebase.Database.Query
 
                     result.EnsureSuccessStatusCode();
                 }
+                catch (FirebaseException ex)
+                {
+                    onException?.Invoke(ex);
+                }
                 catch (Exception ex)
                 {
                     onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
@@ -81,6 +90,10 @@ namespace RestfulFirebase.Database.Query
                     var c = GetClient(timeout);
 
                     await Silent().SendAsync(c, jsonData, HttpMethod.Put);
+                }
+                catch (FirebaseException ex)
+                {
+                    onException?.Invoke(ex);
                 }
                 catch (Exception ex)
                 {

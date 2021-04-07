@@ -8,13 +8,13 @@ namespace RestfulFirebase.Database.Streaming
     public class RealtimeHolder<T>
         where T : IRealtimeModel
     {
-        public T Realtime { get; private set; }
+        public T RealtimeModel { get; private set; }
 
         private Action onStart;
 
         internal RealtimeHolder(T realtime, Action starter)
         {
-            Realtime = realtime;
+            RealtimeModel = realtime;
             onStart = starter;
         }
 
