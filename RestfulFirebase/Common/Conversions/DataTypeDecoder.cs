@@ -33,6 +33,7 @@ namespace RestfulFirebase.Common.Conversions
                 decoders.Add(new UShortDecoder());
                 decoders.Add(new StringDecoder());
                 decoders.Add(new DateTimeDecoder());
+                decoders.Add(new CompressedDateTimeDecoder());
                 decoders.Add(new TimeSpanDecoder());
             }
         }

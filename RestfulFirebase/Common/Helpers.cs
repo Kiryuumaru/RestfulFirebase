@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Models;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -153,6 +154,44 @@ namespace RestfulFirebase.Common
                 }
                 var ticks = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
                 return new DateTime((long)ticks);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static string EncodeUnixDateTime(CompressedDateTime date)
+        {
+            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.GetCompressedTime(), 64);
+            string base64 = "";
+            foreach (var num in bytes)
+            {
+                base64 += Base64Charset[(int)num];
+            }
+            return base64;
+        }
+
+        public static CompressedDateTime DecodeUnixDateTime(string encodedTimestamp, CompressedDateTime defaultValue)
+        {
+            var dateTime = DecodeUnixDateTime(encodedTimestamp);
+            return dateTime.HasValue ? dateTime.Value : defaultValue;
+        }
+
+        public static CompressedDateTime? DecodeUnixDateTime(string encodedTimestamp)
+        {
+            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+            try
+            {
+                var indexes = new List<uint>();
+                foreach (var num in encodedTimestamp)
+                {
+                    var indexOf = Base64Charset.IndexOf(num);
+                    if (indexOf == -1) throw new Exception("Unknown charset");
+                    indexes.Add((uint)indexOf);
+                }
+                var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+                return new CompressedDateTime((long)unix);
             }
             catch
             {

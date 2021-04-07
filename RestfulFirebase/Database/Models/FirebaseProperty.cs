@@ -34,9 +34,9 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
         }
 
-        public DateTime Modified
+        public CompressedDateTime Modified
         {
-            get => GetAdditional<DateTime>(ModifiedKey);
+            get => GetAdditional<CompressedDateTime>(ModifiedKey);
             set => SetAdditional(ModifiedKey, value);
         }
 
@@ -77,9 +77,9 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual DateTime CurrentDateTimeFactory()
+        protected virtual CompressedDateTime CurrentDateTimeFactory()
         {
-            return DateTime.UtcNow;
+            return new CompressedDateTime(DateTime.UtcNow);
         }
 
         public void Delete()
@@ -117,7 +117,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                                var newBlobModified = newBlob.GetAdditional<CompressedDateTime>(ModifiedKey);
                                 if (newBlobModified >= Modified)
                                 {
                                     query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
@@ -148,7 +148,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                                var newBlobModified = newBlob.GetAdditional<CompressedDateTime>(ModifiedKey);
                                 if (newBlobModified >= Modified)
                                 {
                                     put(newBlob.Blob, Blob);

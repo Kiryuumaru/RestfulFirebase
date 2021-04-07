@@ -47,7 +47,7 @@ namespace RestTest
         {
             return new TestStorable(FirebaseObject.Create())
             {
-                Modified = DateTime.UtcNow
+                Modified = CompressedDateTime.UtcNow
             };
         }
 
@@ -55,11 +55,11 @@ namespace RestTest
         {
             return new TestStorable(CreateFromKey(key))
             {
-                Modified = DateTime.UtcNow
+                Modified = CompressedDateTime.UtcNow
             };
         }
 
-        public static TestStorable Create(string key, DateTime created, DateTime modified)
+        public static TestStorable Create(string key, DateTime created, CompressedDateTime modified)
         {
             return new TestStorable(CreateFromKey(key))
             {
@@ -108,8 +108,8 @@ namespace RestTest
             var props32 = TestStorable.Create();
             var props33 = TestStorable.Create();
 
-            props1.Modified = DateTime.UtcNow;
-            props2.Modified = DateTime.UtcNow;
+            props1.Modified = CompressedDateTime.MaxValue;
+            props2.Modified = CompressedDateTime.MinValue;
 
             int x11 = 0;
 
