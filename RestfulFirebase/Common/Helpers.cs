@@ -172,7 +172,7 @@ namespace RestfulFirebase.Common
             return base64;
         }
 
-        public static SmallDateTime DecodeUnixDateTime(string encodedTimestamp, SmallDateTime defaultValue)
+        public static SmallDateTime DecodeSmallDateTime(string encodedTimestamp, SmallDateTime defaultValue)
         {
             var dateTime = DecodeSmallDateTime(encodedTimestamp);
             return dateTime.HasValue ? dateTime.Value : defaultValue;
@@ -397,6 +397,27 @@ namespace RestfulFirebase.Common
         #endregion
 
         #region StringArraySerializer
+
+        public static string ToBase(int number, uint baseNumber)
+        {
+            var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, baseNumber);
+            string encoded = "";
+            foreach (var num in arbitraryBase)
+            {
+                encoded += (char)num;
+            }
+            return encoded;
+        }
+
+        public static int FromBase(string number, uint baseNumber)
+        {
+            var indexes = new List<uint>();
+            foreach (var num in number)
+            {
+                indexes.Add((uint)num);
+            }
+            return (int)ToUnsignedNormalBaseSystem(indexes.ToArray(), baseNumber);
+        }
 
         public static string ToBase62(int number)
         {

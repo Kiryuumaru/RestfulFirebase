@@ -95,6 +95,8 @@ namespace RestTest
 
         public static async Task Run()
         {
+            var asdasd1 = Helpers.ToBase(1234567890, 1024);
+            var asdasd2 = Helpers.FromBase(asdasd1, 1024);
             var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
