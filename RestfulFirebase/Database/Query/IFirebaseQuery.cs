@@ -11,19 +11,21 @@ namespace RestfulFirebase.Database.Query
     {
         RestfulFirebaseApp App { get; }
 
-        Task Put(string data, TimeSpan? timeout = null, Action<Exception> onException = null);
+        Task Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
 
-        void Set(FirebaseProperty property, TimeSpan? timeout = null);
+        void Set(FirebaseProperty property);
 
-        void Set(FirebaseObject obj, TimeSpan? timeout = null);
+        void Set(FirebaseObject obj);
 
-        FirebaseProperty GetAsProperty(string path, TimeSpan? timeout = null);
+        FirebaseProperty GetAsProperty(string path);
 
-        FirebaseObject GetAsObject(string path, TimeSpan? timeout = null);
+        FirebaseObject GetAsObject(string path);
 
-        FirebasePropertyGroup GetAsPropertyCollection(string path, TimeSpan? timeout = null);
+        FirebasePropertyGroup GetAsPropertyCollection(string path);
 
-        FirebaseObjectGroup GetAsObjectCollection(string path, TimeSpan? timeout = null);
+        FirebaseObjectGroup GetAsObjectCollection(string path);
+
+        void Delete(string path);
 
         Task<string> BuildUrlAsync();
 

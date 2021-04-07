@@ -4,11 +4,11 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class DataFactory
+    public class BlobFactory
     {
         public Action<string> Set { get; private set; }
         public Func<string> Get { get; private set; }
-        public DataFactory(Action<string> set, Func<string> get)
+        public BlobFactory(Action<string> set, Func<string> get)
         {
             Set = set;
             Get = get;

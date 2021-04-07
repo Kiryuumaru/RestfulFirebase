@@ -10,21 +10,6 @@ namespace RestfulFirebase.Common.Models
         Set, Delete
     }
 
-    public class ObservablePropertyChangesEventArgs : PropertyChangedEventArgs
-    {
-        public PropertyChangeType Type { get; }
-        public bool IsAdditionals { get; }
-        public ObservablePropertyChangesEventArgs(
-            PropertyChangeType type,
-            bool isAdditionals,
-            string propertyName = "")
-            : base(propertyName)
-        {
-            Type = type;
-            IsAdditionals = isAdditionals;
-        }
-    }
-
     public class ObservableObjectInternalChangesEventArgs : PropertyChangedEventArgs
     {
         public PropertyChangeType Type { get; }

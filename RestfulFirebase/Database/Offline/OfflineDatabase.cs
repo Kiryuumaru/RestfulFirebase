@@ -20,33 +20,22 @@ namespace RestfulFirebase.Database.Offline
             App = app;
         }
 
-        public void SetSyncData(string path, PrimitiveData data)
+        public void SetData(string path, PrimitiveBlob data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"), data.Data);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path), data.Blob);
         }
 
-        public void SetLocalData(string path, PrimitiveData data)
+        public PrimitiveBlob GetData(string path)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"), data.Data);
+            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path));
+            return PrimitiveBlob.CreateFromBlob(data);
         }
 
-        public PrimitiveData GetSyncData(string path)
-        {
-            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "sync"));
-            return PrimitiveData.CreateFromData(data);
-        }
-
-        public PrimitiveData GetLocalData(string path)
-        {
-            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseDataRoot, path, "local"));
-            return PrimitiveData.CreateFromData(data);
-        }
-
-        public IEnumerable<PrimitiveData> GetAll(string path)
+        public IEnumerable<PrimitiveBlob> GetAll(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseDataRoot, path)))
             {
-                yield return PrimitiveData.CreateFromData(data);
+                yield return PrimitiveBlob.CreateFromBlob(data);
             }
         }
 

@@ -41,9 +41,9 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
-        public static DistinctProperty CreateFromKeyAndData(string key, string data)
+        public static DistinctProperty CreateFromKeyAndBlob(string key, string blob)
         {
-            var obj = new DistinctProperty(CreateFromData(data))
+            var obj = new DistinctProperty(CreateFromBlob(blob))
             {
                 Key = key
             };

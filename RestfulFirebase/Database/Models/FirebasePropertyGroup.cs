@@ -59,7 +59,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void SetRealtime(IFirebaseQuery query, RealtimeConfig config)
+        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable
@@ -102,16 +102,16 @@ namespace RestfulFirebase.Database.Models
                     var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
                     if (propHolder == null)
                     {
-                        propHolder = FirebaseProperty.CreateFromKeyAndData(property.Key, property.Data);
+                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
                         propHolder.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, property.Key);
                         Add(propHolder);
                     }
                     else
                     {
                         propHolder.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, property.Key);
-                        if (propHolder.Data != property.Data)
+                        if (propHolder.Blob != property.Data)
                         {
-                            propHolder.Update(property.Data);
+                            propHolder.UpdateBlob(property.Data);
                         }
                     }
                 }

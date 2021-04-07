@@ -10,7 +10,7 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class ObservableProperty : PrimitiveData, INotifyPropertyChanged
+    public class ObservableProperty : PrimitiveBlob, INotifyPropertyChanged
     {
         #region Properties
 
@@ -75,13 +75,13 @@ namespace RestfulFirebase.Common.Models
         {
             var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
-            return CreateFromData(data);
+            return CreateFromBlob(data);
         }
 
-        public static new ObservableProperty CreateFromData(string data)
+        public static new ObservableProperty CreateFromBlob(string blob)
         {
             var obj = new ObservableProperty(null);
-            obj.Update(data);
+            obj.UpdateBlob(blob);
             return obj;
         }
 
@@ -95,10 +95,7 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
-        protected virtual void OnChanged(
-            PropertyChangeType propertyChangeType,
-            bool isAdditionals,
-            string propertyName = "") => PropertyChangedHandler?.Invoke(this, new ObservablePropertyChangesEventArgs(propertyChangeType, isAdditionals, propertyName));
+        protected virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -119,25 +116,25 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new string GetAdditional(string key)
+        public new T GetAdditional<T>(string key)
         {
             try
             {
-                return base.GetAdditional(key);
+                return base.GetAdditional<T>(key);
             }
             catch (Exception ex)
             {
                 OnError(ex);
-                return null;
+                return default;
             }
         }
 
-        public new void SetAdditional(string key, string data)
+        public new void SetAdditional<T>(string key, T value)
         {
             try
             {
-                base.SetAdditional(key, data);
-                OnChanged(PropertyChangeType.Set, true, nameof(Data));
+                base.SetAdditional(key, value);
+                OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -150,7 +147,7 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 base.DeleteAdditional(key);
-                OnChanged(PropertyChangeType.Delete, true, nameof(Data));
+                OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -163,7 +160,7 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 base.ClearAdditionals();
-                OnChanged(PropertyChangeType.Delete, true, nameof(Data));
+                OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -171,12 +168,12 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void Update(string data)
+        public new void UpdateBlob(string blob)
         {
             try
             {
-                base.Update(data);
-                OnChanged(PropertyChangeType.Set, false, nameof(Data));
+                base.UpdateBlob(blob);
+                OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -184,12 +181,25 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void Null()
+        public new void UpdateData(string data)
         {
             try
             {
-                base.Null();
-                OnChanged(PropertyChangeType.Delete, false, nameof(Data));
+                base.UpdateData(data);
+                OnChanged(nameof(Blob));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        public new void SetDataNull()
+        {
+            try
+            {
+                base.SetDataNull();
+                OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {

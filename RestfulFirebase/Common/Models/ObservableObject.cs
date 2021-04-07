@@ -162,10 +162,10 @@ namespace RestfulFirebase.Common.Models
                         hasChanges = true;
                     }
 
-                    if (propHolder.Property.Data != newProperty.Data ||
+                    if (propHolder.Property.Blob != newProperty.Blob ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        propHolder.Property.Update(newProperty.Data);
+                        propHolder.Property.UpdateBlob(newProperty.Blob);
                         hasChanges = true;
                     }
                 }
@@ -236,9 +236,9 @@ namespace RestfulFirebase.Common.Models
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
             bool hasChanges = false;
-            if (!propertyHolder.Property.IsNull())
+            if (!propertyHolder.Property.IsDataNull())
             {
-                propertyHolder.Property.Null();
+                propertyHolder.Property.SetDataNull();
                 hasChanges = true;
             }
             onInternalSet?.Invoke((hasChanges, propertyHolder));
@@ -250,9 +250,9 @@ namespace RestfulFirebase.Common.Models
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
                 bool hasChanges = false;
-                if (!propertyHolder.Property.IsNull())
+                if (!propertyHolder.Property.IsDataNull())
                 {
-                    propertyHolder.Property.Null();
+                    propertyHolder.Property.SetDataNull();
                     hasChanges = true;
                 }
                 onInternalSet?.Invoke((hasChanges, propertyHolder));
@@ -274,7 +274,7 @@ namespace RestfulFirebase.Common.Models
                     {
                         propHolder = new PropertyHolder()
                         {
-                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndData(property.Key, property.Data)),
+                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(property.Key, property.Data)),
                             Group = null,
                             PropertyName = null
                         };
@@ -283,9 +283,9 @@ namespace RestfulFirebase.Common.Models
                     }
                     else
                     {
-                        if (propHolder.Property.Data != property.Data)
+                        if (propHolder.Property.Blob != property.Data)
                         {
-                            propHolder.Property.Update(property.Data);
+                            propHolder.Property.UpdateBlob(property.Data);
                             hasChanges = true;
                         }
                     }
@@ -305,9 +305,9 @@ namespace RestfulFirebase.Common.Models
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
                 bool hasChanges = false;
-                if (!propHolder.Property.IsNull())
+                if (!propHolder.Property.IsDataNull())
                 {
-                    propHolder.Property.Null();
+                    propHolder.Property.SetDataNull();
                     hasChanges = true;
                 }
                 onInternalSet?.Invoke((hasChanges, propHolder));

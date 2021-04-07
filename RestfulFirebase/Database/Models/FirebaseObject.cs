@@ -122,7 +122,7 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        public void SetRealtime(IFirebaseQuery query, RealtimeConfig config)
+        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWirePath = query.GetAbsolutePath();
             RealtimeSubscription = Observable

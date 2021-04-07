@@ -11,6 +11,6 @@ namespace RestfulFirebase.Database.Models
         bool HasRealtimeWire { get; }
         string RealtimeWirePath { get; }
         IDisposable RealtimeSubscription { get; }
-        void SetRealtime(IFirebaseQuery query, RealtimeConfig config);
+        void SetRealtime(IFirebaseQuery query, bool invokeSetFirst);
     }
 }

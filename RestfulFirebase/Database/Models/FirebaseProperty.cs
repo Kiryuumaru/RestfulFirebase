@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Common;
+﻿using Newtonsoft.Json;
+using RestfulFirebase.Common;
 using RestfulFirebase.Common.Conversions;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
@@ -13,6 +14,8 @@ namespace RestfulFirebase.Database.Models
     public class FirebaseProperty : DistinctProperty, IRealtimeModel
     {
         #region Properties
+
+        private const string ModifiedKey = "_m";
 
         public bool HasRealtimeWire => RealtimeWirePath != null;
 
@@ -30,8 +33,8 @@ namespace RestfulFirebase.Database.Models
 
         public DateTime Modified
         {
-            get => Helpers.DecodeDateTime(GetAdditional("_m"), default);
-            set => SetAdditional("_m", Helpers.EncodeDateTime(value));
+            get => GetAdditional<DateTime>(ModifiedKey);
+            set => SetAdditional(ModifiedKey, value);
         }
 
         #endregion
@@ -48,9 +51,9 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndValue(key, value));
         }
 
-        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
+        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string blob  )
         {
-            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
+            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
         }
 
         public FirebaseProperty(IAttributed attributed)
@@ -62,31 +65,33 @@ namespace RestfulFirebase.Database.Models
         public void Dispose()
         {
             RealtimeSubscription?.Dispose();
+            var oldDataFactory = BlobFactory;
+            BlobFactory = null;
+            UpdateBlob(oldDataFactory.Get());
         }
 
         #endregion
 
         #region Methods
 
-        public void SetRealtime(IFirebaseQuery query, RealtimeConfig config)
+        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWirePath = query.GetAbsolutePath();
-            var oldDataFactory = DataFactory;
-            DataFactory = new DataFactory(args =>
-            {
-                query.App.Database.OfflineDatabase.SetSyncData(RealtimeWirePath, args.Value);
-            }, args =>
-            {
-                var sync = query.App.Database.OfflineDatabase.GetSyncData(RealtimeWirePath);
-                var local = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWirePath);
-            });
-            switch (config.InitialStrategy)
-            {
-                case InitialStrategy.Pull:
-                    break;
-                case InitialStrategy.Push:
-                    break;
-            }
+            var oldDataFactory = BlobFactory;
+            BlobFactory = new BlobFactory(
+                blob =>
+                {
+                    var newBlob = PrimitiveBlob.CreateFromBlob(blob);
+                    var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                    if (newBlobModified > Modified) query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                    else
+                    {
+                        if (Blob == null) query.Put(null, null, ex => OnError(ex));
+                        query.Put(JsonConvert.SerializeObject(Blob), null, ex => OnError(ex));
+                    }
+                },
+                () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
+            if (invokeSetFirst) BlobFactory.Set(oldDataFactory.Get());
             RealtimeSubscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
@@ -98,8 +103,8 @@ namespace RestfulFirebase.Database.Models
                         else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                         else if (streamEvent.Path.Length == 1)
                         {
-                            if (streamEvent.Data == null) Null();
-                            else Update(streamEvent.Data);
+                            if (streamEvent.Data == null) SetDataNull();
+                            else UpdateBlob(streamEvent.Data);
                         }
                     }
                     catch (Exception ex)

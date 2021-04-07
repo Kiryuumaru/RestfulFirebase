@@ -41,17 +41,51 @@ namespace RestfulFirebase.Database.Query
             return new SilentQuery(this, App);
         }
 
-        public async Task Put(string jsonData, TimeSpan? timeout = null, Action<Exception> onException = null)
+        public async Task Put(string jsonData, TimeSpan? timeout = null, Action<FirebaseException> onException = null)
         {
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
             try
             {
-                var c = GetClient(timeout);
-
-                await Silent().SendAsync(c, jsonData, HttpMethod.Put);
+                url = await BuildUrlAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                onException?.Invoke(ex);
+                onException?.Invoke(new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
+                return;
+            }
+
+            if (jsonData == null)
+            {
+                var c = GetClient(timeout);
+
+                try
+                {
+                    var result = await c.DeleteAsync(url).ConfigureAwait(false);
+                    statusCode = result.StatusCode;
+                    responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    result.EnsureSuccessStatusCode();
+                }
+                catch (Exception ex)
+                {
+                    onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
+                }
+            }
+            else
+            {
+                try
+                {
+                    var c = GetClient(timeout);
+
+                    await Silent().SendAsync(c, jsonData, HttpMethod.Put);
+                }
+                catch (Exception ex)
+                {
+                    onException?.Invoke(new FirebaseException(url, string.Empty, responseData, statusCode, ex));
+                }
             }
         }
 
@@ -63,7 +97,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => property.Key, App);
 
-                var blob = JsonConvert.SerializeObject(property.Data);
+                var blob = JsonConvert.SerializeObject(property.Blob);
                 var c = query.GetClient(timeout);
 
                 property.SetRealtime(query);
@@ -82,7 +116,7 @@ namespace RestfulFirebase.Database.Query
             {
                 var query = new ChildQuery(this, () => obj.Key, App);
 
-                var collection = obj.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Data);
+                var collection = obj.GetRawPersistableProperties().ToDictionary(i => i.Key, i => i.Blob);
                 var data = JsonConvert.SerializeObject(collection);
                 var c = query.GetClient(timeout);
 
@@ -132,16 +166,16 @@ namespace RestfulFirebase.Database.Query
 
         #region V2
 
-        public void Set2(FirebaseProperty property)
+        public void Set(FirebaseProperty property)
         {
             var query = new ChildQuery(this, () => property.Key, App);
-            property.SetRealtime(query);
+            property.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Push });
         }
 
-        public void Set2(FirebaseObject obj)
+        public void Set(FirebaseObject obj)
         {
             var query = new ChildQuery(this, () => obj.Key, App);
-            obj.SetRealtime(query);
+            obj.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Push });
         }
 
         public FirebaseProperty GetAsProperty(string path)
@@ -149,7 +183,7 @@ namespace RestfulFirebase.Database.Query
             var prop = FirebaseProperty.CreateFromKey(path);
 
             var query = new ChildQuery(this, () => path, App);
-            prop.SetRealtime(query);
+            prop.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Pull });
 
             return prop;
         }
@@ -159,7 +193,7 @@ namespace RestfulFirebase.Database.Query
             var obj = FirebaseObject.CreateFromKey(path);
 
             var query = new ChildQuery(this, () => path, App);
-            obj.SetRealtime(query);
+            obj.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Pull });
 
             return obj;
         }
@@ -169,7 +203,7 @@ namespace RestfulFirebase.Database.Query
             var group = FirebasePropertyGroup.CreateFromKey(path);
 
             var query = new ChildQuery(this, () => path, App);
-            group.SetRealtime(query);
+            group.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Pull });
 
             return group;
         }
@@ -179,41 +213,14 @@ namespace RestfulFirebase.Database.Query
             var group = FirebaseObjectGroup.CreateFromKey(path);
 
             var query = new ChildQuery(this, () => path, App);
-            group.SetRealtime(query);
+            group.SetRealtime(query, new RealtimeConfig() { InitialStrategy = InitialStrategy.Pull });
 
             return group;
         }
 
-        public async void Delete(string path, TimeSpan? timeout = null)
+        public void Delete(string path)
         {
-            var query = new ChildQuery(this, () => path, App);
-            var c = query.GetClient(timeout);
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            try
-            {
-                url = await query.BuildUrlAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                throw new FirebaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex);
-            }
-
-            try
-            {
-                var result = await c.DeleteAsync(url).ConfigureAwait(false);
-                statusCode = result.StatusCode;
-                responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                result.EnsureSuccessStatusCode();
-            }
-            catch (Exception ex)
-            {
-                throw new FirebaseException(url, string.Empty, responseData, statusCode, ex);
-            }
         }
 
         #endregion
