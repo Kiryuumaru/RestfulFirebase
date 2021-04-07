@@ -94,7 +94,7 @@ namespace RestfulFirebase.Database.Models
             BlobFactory = new BlobFactory(
                 blob =>
                 {
-                    if (blob.Value == Blob) return;
+                    if (blob.Value == Blob) return false;
                     void put(string blobToPut, string revertBlob)
                     {
                         query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
@@ -113,6 +113,7 @@ namespace RestfulFirebase.Database.Models
                             if (blob.Value == null)
                             {
                                 query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
+                                return true;
                             }
                             else
                             {
@@ -120,13 +121,14 @@ namespace RestfulFirebase.Database.Models
                                 if (newBlobModified >= Modified)
                                 {
                                     query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                                    return true;
                                 }
                                 else
                                 {
                                     put(Blob, newBlob.Blob);
+                                    return false;
                                 }
                             }
-                            break;
                         case RevertTag:
                             if (blob.Value == null)
                             {
@@ -136,12 +138,13 @@ namespace RestfulFirebase.Database.Models
                             {
                                 query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
                             }
-                            break;
+                            return true;
                         default:
                             if (blob.Value == null)
                             {
                                 query.Put(null, null, ex => OnError(ex));
                                 query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
+                                return true;
                             }
                             else
                             {
@@ -150,15 +153,15 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     put(newBlob.Blob, Blob);
                                     query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                                    return true;
                                 }
                             }
-                            break;
+                            return false;
                     }
                 },
                 () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
             if (invokeSetFirst)
             {
-                Modified = DateTime.MinValue;
                 BlobFactory.Set((oldDataFactory.Get(), null));
             }
             RealtimeSubscription = Observable

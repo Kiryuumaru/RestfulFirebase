@@ -21,7 +21,9 @@ namespace RestfulFirebase.Common.Models
                 {
                     factory = new BlobFactory(value =>
                     {
+                        var oldValue = Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
                         Holder.SetAttribute(nameof(Blob), nameof(PrimitiveBlob), value.Value);
+                        return oldValue != value.Value;
                     }, delegate
                     {
                         return Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
@@ -77,7 +79,7 @@ namespace RestfulFirebase.Common.Models
             return DataTypeDecoder.GetDecoder<T>().Decode(data);
         }
 
-        public void SetAdditional<T>(string key, T value, string tag = null)
+        public bool SetAdditional<T>(string key, T value, string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
@@ -86,10 +88,10 @@ namespace RestfulFirebase.Common.Models
             var newEncodedData = new string[adsData.Length + 1];
             newEncodedData[0] = deserialized[0];
             Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-            BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
+            return BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
         }
 
-        public void DeleteAdditional(string key, string tag = null)
+        public bool DeleteAdditional(string key, string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
@@ -97,14 +99,27 @@ namespace RestfulFirebase.Common.Models
             var newEncodedData = new string[adsData.Length + 1];
             newEncodedData[0] = deserialized[0];
             Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-            BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
+            return BlobFactory.Set.Invoke((Helpers.SerializeString(newEncodedData), tag));
         }
 
-        public void ClearAdditionals(string tag = null)
+        public bool ClearAdditionals(string tag = null)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
-            BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized[0]), tag));
+            return BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized[0]), tag));
+        }
+
+        public bool UpdateBlob(string blob, string tag = null)
+        {
+            return BlobFactory.Set.Invoke((blob, tag));
+        }
+
+        public bool UpdateData(string data, string tag = null)
+        {
+            var deserialized = Helpers.DeserializeString(Blob);
+            if (deserialized == null) deserialized = new string[1];
+            deserialized[0] = data;
+            return BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized), tag));
         }
 
         public string GetData()
@@ -112,19 +127,6 @@ namespace RestfulFirebase.Common.Models
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) return null;
             return deserialized[0];
-        }
-
-        public void UpdateBlob(string blob, string tag = null)
-        {
-            BlobFactory.Set.Invoke((blob, tag));
-        }
-
-        public void UpdateData(string data, string tag = null)
-        {
-            var deserialized = Helpers.DeserializeString(Blob);
-            if (deserialized == null) deserialized = new string[1];
-            deserialized[0] = data;
-            BlobFactory.Set.Invoke((Helpers.SerializeString(deserialized), tag));
         }
 
         public T ParseValue<T>()

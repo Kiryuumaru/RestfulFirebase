@@ -133,9 +133,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var oldBlob = Blob;
-                base.SetAdditional(key, value, tag);
-                if (oldBlob != Blob) OnChanged(nameof(Blob));
+                if (base.SetAdditional(key, value, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -147,9 +145,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var oldBlob = Blob;
-                base.DeleteAdditional(key, tag);
-                if (oldBlob != Blob) OnChanged(nameof(Blob));
+                if (base.DeleteAdditional(key, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -161,9 +157,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var oldBlob = Blob;
-                base.ClearAdditionals(tag);
-                if (oldBlob != Blob) OnChanged(nameof(Blob));
+                if (base.ClearAdditionals(tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -175,9 +169,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var oldBlob = Blob;
-                base.UpdateBlob(blob, tag);
-                if (oldBlob != Blob) OnChanged(nameof(Blob));
+                if (base.UpdateBlob(blob, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -189,9 +181,7 @@ namespace RestfulFirebase.Common.Models
         {
             try
             {
-                var oldBlob = Blob;
-                base.UpdateData(data, tag);
-                if (oldBlob != Blob) OnChanged(nameof(Blob));
+                if (base.UpdateData(data, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
