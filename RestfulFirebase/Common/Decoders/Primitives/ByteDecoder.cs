@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Decoders.Primitives
 {
-    public class UIntDecoder : DataTypeDecoder<uint>
+    public class ByteDecoder : DataTypeDecoder<byte>
     {
-        public override string Encode(uint value)
+        public override string Encode(byte value)
         {
             return value.ToString();
         }
 
-        public override uint Decode(string data)
+        public override byte Decode(string data)
         {
             if (string.IsNullOrEmpty(data)) return default;
-            if (uint.TryParse(data, out uint result)) return result;
+            if (byte.TryParse(data, out byte result)) return result;
             throw new Exception("Parse error");
         }
     }

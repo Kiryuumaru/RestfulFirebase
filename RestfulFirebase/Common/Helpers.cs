@@ -161,7 +161,7 @@ namespace RestfulFirebase.Common
             }
         }
 
-        public static string EncodeUnixDateTime(CompressedDateTime date)
+        public static string EncodeSmallDateTime(SmallDateTime date)
         {
             var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.GetCompressedTime(), 64);
             string base64 = "";
@@ -172,13 +172,13 @@ namespace RestfulFirebase.Common
             return base64;
         }
 
-        public static CompressedDateTime DecodeUnixDateTime(string encodedTimestamp, CompressedDateTime defaultValue)
+        public static SmallDateTime DecodeUnixDateTime(string encodedTimestamp, SmallDateTime defaultValue)
         {
-            var dateTime = DecodeUnixDateTime(encodedTimestamp);
+            var dateTime = DecodeSmallDateTime(encodedTimestamp);
             return dateTime.HasValue ? dateTime.Value : defaultValue;
         }
 
-        public static CompressedDateTime? DecodeUnixDateTime(string encodedTimestamp)
+        public static SmallDateTime? DecodeSmallDateTime(string encodedTimestamp)
         {
             if (string.IsNullOrEmpty(encodedTimestamp)) return null;
             try
@@ -191,7 +191,7 @@ namespace RestfulFirebase.Common
                     indexes.Add((uint)indexOf);
                 }
                 var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-                return new CompressedDateTime((long)unix);
+                return new SmallDateTime((long)unix);
             }
             catch
             {

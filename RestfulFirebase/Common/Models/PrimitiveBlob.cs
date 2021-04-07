@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Common.Conversions;
+﻿using RestfulFirebase.Common.Decoders;
 using System;
 using System.Collections.Generic;
 using System.Linq;

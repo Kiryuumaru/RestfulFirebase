@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Decoders.Primitives
 {
     public class SByteDecoder : DataTypeDecoder<sbyte>
     {

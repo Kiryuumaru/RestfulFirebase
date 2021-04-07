@@ -1,6 +1,6 @@
-﻿using RestfulFirebase.Common.Conversions;
-using RestfulFirebase.Common.Conversions.Additionals;
-using RestfulFirebase.Common.Conversions.Primitives;
+﻿using RestfulFirebase.Common.Decoders;
+using RestfulFirebase.Common.Decoders.Additionals;
+using RestfulFirebase.Common.Decoders.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

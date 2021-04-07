@@ -13,7 +13,7 @@ using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using RestfulFirebase.Common.Conversions;
+using RestfulFirebase.Common.Decoders;
 
 namespace RestTest
 {
@@ -47,7 +47,7 @@ namespace RestTest
         {
             return new TestStorable(FirebaseObject.Create())
             {
-                Modified = CompressedDateTime.UtcNow
+                Modified = SmallDateTime.UtcNow
             };
         }
 
@@ -55,11 +55,11 @@ namespace RestTest
         {
             return new TestStorable(CreateFromKey(key))
             {
-                Modified = CompressedDateTime.UtcNow
+                Modified = SmallDateTime.UtcNow
             };
         }
 
-        public static TestStorable Create(string key, DateTime created, CompressedDateTime modified)
+        public static TestStorable Create(string key, DateTime created, SmallDateTime modified)
         {
             return new TestStorable(CreateFromKey(key))
             {
@@ -108,8 +108,8 @@ namespace RestTest
             var props32 = TestStorable.Create();
             var props33 = TestStorable.Create();
 
-            props1.Modified = CompressedDateTime.MaxValue;
-            props2.Modified = CompressedDateTime.MinValue;
+            props1.Modified = SmallDateTime.MaxValue;
+            props2.Modified = SmallDateTime.MinValue;
 
             int x11 = 0;
 

@@ -1,12 +1,12 @@
-﻿using RestfulFirebase.Common.Conversions.Additionals;
-using RestfulFirebase.Common.Conversions.Primitives;
+﻿using RestfulFirebase.Common.Decoders.Additionals;
+using RestfulFirebase.Common.Decoders.Primitives;
 using RestfulFirebase.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RestfulFirebase.Common.Conversions
+namespace RestfulFirebase.Common.Decoders
 {
     public abstract class DataTypeDecoder
     {
@@ -33,7 +33,7 @@ namespace RestfulFirebase.Common.Conversions
                 decoders.Add(new UShortDecoder());
                 decoders.Add(new StringDecoder());
                 decoders.Add(new DateTimeDecoder());
-                decoders.Add(new CompressedDateTimeDecoder());
+                decoders.Add(new SmallDateTimeDecoder());
                 decoders.Add(new TimeSpanDecoder());
             }
         }

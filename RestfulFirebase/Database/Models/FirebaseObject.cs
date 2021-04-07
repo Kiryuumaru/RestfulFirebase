@@ -36,7 +36,7 @@ namespace RestfulFirebase.Database.Models
             protected set => SetPersistableProperty(value, "_t");
         }
 
-        public CompressedDateTime Modified
+        public SmallDateTime Modified
         {
             get
             {
@@ -77,9 +77,9 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual CompressedDateTime CurrentDateTimeFactory()
+        protected virtual SmallDateTime CurrentDateTimeFactory()
         {
-            return new CompressedDateTime(DateTime.UtcNow);
+            return new SmallDateTime(DateTime.UtcNow);
         }
 
         public void Delete()

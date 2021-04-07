@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Decoders.Primitives
 {
-    public class DecimalDecoder : DataTypeDecoder<decimal>
+    public class FloatDecoder : DataTypeDecoder<float>
     {
-        public override string Encode(decimal value)
+        public override string Encode(float value)
         {
             return value.ToString();
         }
 
-        public override decimal Decode(string data)
+        public override float Decode(string data)
         {
             if (string.IsNullOrEmpty(data)) return default;
-            if (decimal.TryParse(data, out decimal result)) return result;
+            if (float.TryParse(data, out float result)) return result;
             throw new Exception("Parse error");
         }
     }

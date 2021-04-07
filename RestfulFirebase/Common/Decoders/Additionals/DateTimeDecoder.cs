@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Additionals
+namespace RestfulFirebase.Common.Decoders.Additionals
 {
     public class DateTimeDecoder : DataTypeDecoder<DateTime>
     {

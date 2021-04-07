@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Common;
-using RestfulFirebase.Common.Conversions;
+using RestfulFirebase.Common.Decoders;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -34,9 +34,9 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
         }
 
-        public CompressedDateTime Modified
+        public SmallDateTime Modified
         {
-            get => GetAdditional<CompressedDateTime>(ModifiedKey);
+            get => GetAdditional<SmallDateTime>(ModifiedKey);
             set => SetAdditional(ModifiedKey, value);
         }
 
@@ -77,9 +77,9 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual CompressedDateTime CurrentDateTimeFactory()
+        protected virtual SmallDateTime CurrentDateTimeFactory()
         {
-            return new CompressedDateTime(DateTime.UtcNow);
+            return new SmallDateTime(DateTime.UtcNow);
         }
 
         public void Delete()
@@ -117,7 +117,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                var newBlobModified = newBlob.GetAdditional<CompressedDateTime>(ModifiedKey);
+                                var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
                                 if (newBlobModified >= Modified)
                                 {
                                     query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
@@ -148,7 +148,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                var newBlobModified = newBlob.GetAdditional<CompressedDateTime>(ModifiedKey);
+                                var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
                                 if (newBlobModified >= Modified)
                                 {
                                     put(newBlob.Blob, Blob);
