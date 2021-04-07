@@ -82,6 +82,11 @@ namespace RestfulFirebase.Database.Models
             return DateTime.UtcNow;
         }
 
+        public void Delete()
+        {
+
+        }
+
         protected override DistinctProperty PropertyFactory<T>(T property)
         {
             return new FirebaseProperty(property);

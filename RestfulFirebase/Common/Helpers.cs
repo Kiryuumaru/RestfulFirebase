@@ -124,8 +124,7 @@ namespace RestfulFirebase.Common
 
         public static string EncodeDateTime(DateTime date)
         {
-            long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
-            var bytes = ToUnsignedArbitraryBaseSystem((ulong)shortTicks, 64);
+            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.Ticks, 64);
             string base64 = "";
             foreach (var num in bytes)
             {
@@ -152,8 +151,8 @@ namespace RestfulFirebase.Common
                     if (indexOf == -1) throw new Exception("Unknown charset");
                     indexes.Add((uint)indexOf);
                 }
-                var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-                return new DateTime(((long)unix * 10000L) + 631139040000000000L);
+                var ticks = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+                return new DateTime((long)ticks);
             }
             catch
             {

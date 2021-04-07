@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Database.Models;
+using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,18 +10,24 @@ namespace RestfulFirebase.Database.Streaming
         where T : IRealtimeModel
     {
         public T RealtimeModel { get; private set; }
+        public IFirebaseQuery Query { get; private set; }
+        public bool InvokeSetFirst { get; private set; }
 
-        private Action onStart;
-
-        internal RealtimeHolder(T realtime, Action starter)
+        internal RealtimeHolder(T realtime, IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeModel = realtime;
-            onStart = starter;
+            Query = query;
+            InvokeSetFirst = invokeSetFirst;
         }
 
         public void Start()
         {
-            onStart?.Invoke();
+            RealtimeModel.SetRealtime(Query, InvokeSetFirst);
+        }
+
+        public void Delete()
+        {
+            RealtimeModel.Delete();
         }
     }
 }
