@@ -74,6 +74,11 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        protected virtual DateTime CurrentDateTimeFactory()
+        {
+            return DateTime.UtcNow;
+        }
+
         public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWirePath = query.GetAbsolutePath();
@@ -81,14 +86,15 @@ namespace RestfulFirebase.Database.Models
             BlobFactory = new BlobFactory(
                 blob =>
                 {
+                    if (blob == Blob) return;
                     var newBlob = PrimitiveBlob.CreateFromBlob(blob);
                     var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
-                    if (newBlobModified > Modified) query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
-                    else
+                    if (newBlobModified >= Modified)
                     {
-                        if (Blob == null) query.Put(null, null, ex => OnError(ex));
-                        query.Put(JsonConvert.SerializeObject(Blob), null, ex => OnError(ex));
+                        if (newBlob.Blob == null) query.Put(null, null, ex => OnError(ex));
+                        query.Put(JsonConvert.SerializeObject(newBlob.Blob), null, ex => OnError(ex));
                     }
+                    query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
                 },
                 () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
             if (invokeSetFirst) BlobFactory.Set(oldDataFactory.Get());
@@ -103,8 +109,14 @@ namespace RestfulFirebase.Database.Models
                         else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                         else if (streamEvent.Path.Length == 1)
                         {
-                            if (streamEvent.Data == null) SetDataNull();
-                            else UpdateBlob(streamEvent.Data);
+                            if (streamEvent.Data == null)
+                            {
+                                var newBlob = new PrimitiveBlob(this);
+                                newBlob.UpdateData(null);
+                                newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
+                                UpdateData(newBlob.Data);
+                            }
+                            else if (Blob != streamEvent.Data) UpdateBlob(streamEvent.Data);
                         }
                     }
                     catch (Exception ex)
@@ -112,6 +124,14 @@ namespace RestfulFirebase.Database.Models
                         OnError(ex);
                     }
                 });
+        }
+
+        public new void UpdateData(string data)
+        {
+            var newBlob = new PrimitiveBlob(this);
+            newBlob.UpdateData(data);
+            newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
+            base.UpdateBlob(newBlob.Blob);
         }
 
         #endregion

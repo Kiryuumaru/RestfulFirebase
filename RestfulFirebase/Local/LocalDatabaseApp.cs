@@ -4,13 +4,13 @@ using System.Linq;
 
 namespace RestfulFirebase.Local
 {
-    public class LocalDatabase
+    public class LocalDatabaseApp
     {
         public RestfulFirebaseApp App { get; }
 
-        private IDictionary<string, string> db => App.Config.LocalDatabase;
+        private ILocalDatabase db => App.Config.LocalDatabase;
 
-        public LocalDatabase(RestfulFirebaseApp app)
+        public LocalDatabaseApp(RestfulFirebaseApp app)
         {
             App = app;
         }
@@ -18,39 +18,39 @@ namespace RestfulFirebase.Local
         public void Set(string path, string data)
         {
             path = ValidatePath(path);
-            db[path] = data;
+            db.Set(path, data);
         }
 
         public string Get(string path)
         {
             path = ValidatePath(path);
-            return db.ContainsKey(path) ? db[path] : null;
+            return db.Get(path);
         }
 
         public void Delete(string path)
         {
             path = ValidatePath(path);
-            db.Remove(path);
+            db.Delete(path);
         }
 
         public void DeletePath(string path)
         {
             path = ValidatePath(path);
-            foreach (var subPath in db.Keys.Where(i => i.StartsWith(path)))
+            foreach (var subPath in db.GetKeys().Where(i => i.StartsWith(path)))
             {
-                db.Remove(subPath);
+                db.Delete(subPath);
             }
-            db.Remove(path);
+            db.Delete(path);
         }
 
         public IEnumerable<string> GetAll(string path)
         {
             path = ValidatePath(path);
-            var paths = db.Keys.Where(i => i.StartsWith(path));
+            var paths = db.GetKeys().Where(i => i.StartsWith(path));
             var ret = new List<string>();
             foreach (var subPath in paths)
             {
-                if (db.ContainsKey(path)) ret.Add(db[subPath]);
+                if (db.ContainsKey(path)) ret.Add(db.Get(subPath));
             }
             return ret;
         }
@@ -58,13 +58,13 @@ namespace RestfulFirebase.Local
         public IEnumerable<string> GetSubPaths(string path)
         {
             path = ValidatePath(path);
-            return db.Keys.Where(i => i.StartsWith(path));
+            return db.GetKeys().Where(i => i.StartsWith(path));
         }
 
         public bool ContainsPath(string path)
         {
             path = ValidatePath(path);
-            return db.Keys.Where(i => i.StartsWith(path) && !i.Equals(path)).Count() != 0;
+            return db.GetKeys().Where(i => i.StartsWith(path) && !i.Equals(path)).Count() != 0;
         }
 
         public bool ContainsData(string path)

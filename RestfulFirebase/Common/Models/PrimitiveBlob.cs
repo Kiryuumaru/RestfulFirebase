@@ -38,6 +38,24 @@ namespace RestfulFirebase.Common.Models
             private set => BlobFactory.Set.Invoke(value);
         }
 
+        public string Data
+        {
+            get
+            {
+                var deserialized = Helpers.DeserializeString(Blob);
+                if (deserialized == null) return null;
+                return deserialized[0];
+
+            }
+            private set
+            {
+                var deserialized = Helpers.DeserializeString(Blob);
+                if (deserialized == null) deserialized = new string[1];
+                deserialized[0] = value;
+                Blob = Helpers.SerializeString(deserialized);
+            }
+        }
+
         #endregion
 
         #region Initializers
@@ -115,27 +133,7 @@ namespace RestfulFirebase.Common.Models
 
         public void UpdateData(string data)
         {
-            var deserialized = Helpers.DeserializeString(Blob);
-            if (deserialized == null) deserialized = new string[1];
-            deserialized[0] = data;
-            Blob = Helpers.SerializeString(deserialized);
-        }
-
-        public void SetDataNull()
-        {
-            var deserialized = Helpers.DeserializeString(Blob);
-            if (deserialized == null) deserialized = new string[1];
-            deserialized[0] = null;
-            Blob = Helpers.SerializeString(deserialized);
-        }
-
-        public bool IsDataNull()
-        {
-            var deserialized = Helpers.DeserializeString(Blob);
-            if (deserialized == null) return true;
-            if (deserialized.Length == 0) return true;
-            if (deserialized[0] == null) return true;
-            return false;
+            Data = data;
         }
 
         public T ParseValue<T>()

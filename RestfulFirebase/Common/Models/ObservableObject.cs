@@ -236,9 +236,9 @@ namespace RestfulFirebase.Common.Models
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
             bool hasChanges = false;
-            if (!propertyHolder.Property.IsDataNull())
+            if (propertyHolder.Property.Data != null)
             {
-                propertyHolder.Property.SetDataNull();
+                propertyHolder.Property.UpdateData(null);
                 hasChanges = true;
             }
             onInternalSet?.Invoke((hasChanges, propertyHolder));
@@ -250,9 +250,9 @@ namespace RestfulFirebase.Common.Models
             foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
             {
                 bool hasChanges = false;
-                if (!propertyHolder.Property.IsDataNull())
+                if (propertyHolder.Property.Data != null)
                 {
-                    propertyHolder.Property.SetDataNull();
+                    propertyHolder.Property.UpdateData(null);
                     hasChanges = true;
                 }
                 onInternalSet?.Invoke((hasChanges, propertyHolder));
@@ -305,9 +305,9 @@ namespace RestfulFirebase.Common.Models
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
                 bool hasChanges = false;
-                if (!propHolder.Property.IsDataNull())
+                if (propHolder.Property.Data != null)
                 {
-                    propHolder.Property.SetDataNull();
+                    propHolder.Property.UpdateData(null);
                     hasChanges = true;
                 }
                 onInternalSet?.Invoke((hasChanges, propHolder));

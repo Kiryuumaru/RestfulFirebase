@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Local;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,7 +14,7 @@ namespace RestfulFirebase
     {
         public FirebaseConfig()
         {
-            LocalDatabase = new ConcurrentDictionary<string, string>();
+            LocalDatabase = new SimpleLocalDatabase();
             SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
         }
@@ -24,7 +25,7 @@ namespace RestfulFirebase
 
         public string StorageBucket { get; set; }
 
-        public IDictionary<string, string> LocalDatabase { get; set; }
+        public ILocalDatabase LocalDatabase { get; set; }
 
         public TimeSpan SyncPeriod { get; set; }
 

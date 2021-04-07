@@ -13,6 +13,7 @@ using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using RestfulFirebase.Common.Conversions;
 
 namespace RestTest
 {
@@ -101,8 +102,8 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var props1 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
-            var props2 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
+            var props1 = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
+            var props2 = FirebaseProperty.CreateFromKeyAndValue("keyD", 999.9299);
             var props31 = TestStorable.Create();
             var props32 = TestStorable.Create();
             var props33 = TestStorable.Create();
@@ -115,45 +116,46 @@ namespace RestTest
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
-            userNode.Child("propCollection").Set(props1);
-            userNode.Child("propCollection").Set(props2);
-            userNode.Child("objCollection").Set(props31);
-            userNode.Child("objCollection").Set(props32);
-            userNode.Child("objCollection").Set(props33);
+            userNode.Child("propCollection").SetStream(props1).Start();
+            userNode.Child("propCollection").SetStream(props2).Start();
+            userNode.Child("objCollection").SetStream(props31).Start();
+            userNode.Child("objCollection").SetStream(props32).Start();
+            userNode.Child("objCollection").SetStream(props33).Start();
 
-            await Task.Delay(5000);
+            await Task.Delay(2000);
 
-            var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
-            var ss111 = userNode.Child("propCollection").GetAsProperty(props1.Key);
-            var ss1 = userNode.GetAsPropertyCollection("propCollection");
-            var ss2 = userNode.GetAsObjectCollection("objCollection");
+            var ss111 = userNode.Child("propCollection").GetStreamAsProperty(props1.Key);
+            //var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
+            //var ss1 = userNode.GetAsPropertyCollection("propCollection");
+            //var ss2 = userNode.GetAsObjectCollection("objCollection");
 
-            ss111.PropertyChanged += (s, e) =>
+            ss111.Realtime.PropertyChanged += (s, e) =>
             {
-
+                Console.WriteLine("s111 blob: " + ss111.Realtime.Blob);
             };
-            ss11.PropertyChanged += (s, e) =>
-            {
+            //ss11.PropertyChanged += (s, e) =>
+            //{
 
-            };
-            ss1.CollectionChanged += (s, e) =>
-            {
+            //};
+            //ss1.CollectionChanged += (s, e) =>
+            //{
 
-            };
-            ss2.CollectionChanged += (s, e) =>
-            {
+            //};
+            //ss2.CollectionChanged += (s, e) =>
+            //{
 
-            };
+            //};
+
+            ss111.Start();
 
             Console.WriteLine("FIN");
 
-            await Task.Delay(10000);
-
-            var fff = ss11.Modified;
-
-            Console.WriteLine("FIN");
-
-            await Task.Delay(10000000);
+            while (true)
+            {
+                string line = Console.ReadLine();
+                if (string.IsNullOrEmpty(line)) ss111.Realtime.UpdateData(null);
+                else ss111.Realtime.UpdateData(DataTypeDecoder.GetDecoder<string>().Encode(line));
+            }
         }
     }
 }

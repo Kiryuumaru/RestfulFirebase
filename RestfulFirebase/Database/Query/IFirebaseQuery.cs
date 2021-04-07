@@ -13,17 +13,17 @@ namespace RestfulFirebase.Database.Query
 
         Task Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
 
-        void Set(FirebaseProperty property);
+        RealtimeHolder<FirebaseProperty> SetStream(FirebaseProperty property);
 
-        void Set(FirebaseObject obj);
+        RealtimeHolder<FirebaseObject> SetStream(FirebaseObject obj);
 
-        FirebaseProperty GetAsProperty(string path);
+        RealtimeHolder<FirebaseProperty> GetStreamAsProperty(string path);
 
-        FirebaseObject GetAsObject(string path);
+        RealtimeHolder<FirebaseObject> GetStreamAsObject(string path);
 
-        FirebasePropertyGroup GetAsPropertyCollection(string path);
+        RealtimeHolder<FirebasePropertyGroup> GetStreamAsPropertyCollection(string path);
 
-        FirebaseObjectGroup GetAsObjectCollection(string path);
+        RealtimeHolder<FirebaseObjectGroup> GetStreamAsObjectCollection(string path);
 
         void Delete(string path);
 

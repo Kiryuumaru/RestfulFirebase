@@ -11,7 +11,7 @@ namespace RestfulFirebase
     {
         public FirebaseConfig Config { get; }
 
-        public LocalDatabase LocalDatabase { get; }
+        public LocalDatabaseApp LocalDatabase { get; }
 
         public FirebaseAuthApp Auth { get; }
 
@@ -28,7 +28,7 @@ namespace RestfulFirebase
                 Config.DatabaseURL += "/";
             }
 
-            LocalDatabase = new LocalDatabase(this);
+            LocalDatabase = new LocalDatabaseApp(this);
             Auth = new FirebaseAuthApp(this);
             Database = new FirebaseDatabaseApp(this);
             Storage = new FirebaseStorageApp(this);

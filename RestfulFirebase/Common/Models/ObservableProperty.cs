@@ -194,19 +194,6 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void SetDataNull()
-        {
-            try
-            {
-                base.SetDataNull();
-                OnChanged(nameof(Blob));
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
-
         #endregion
     }
 }
