@@ -88,6 +88,7 @@ namespace RestfulFirebase.Database.Models
             BlobFactory = new BlobFactory(
                 blob =>
                 {
+                    if (blob.Value == Blob) return;
                     void put(string blobToPut, string revertBlob)
                     {
                         query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
@@ -99,7 +100,6 @@ namespace RestfulFirebase.Database.Models
                             OnError(ex);
                         });
                     }
-                    if (blob.Value == Blob) return;
                     var newBlob = PrimitiveBlob.CreateFromBlob(blob.Value);
                     if (blob.Tag == RevertTag)
                     {
