@@ -88,16 +88,26 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (blob == Blob) return;
                     var newBlob = PrimitiveBlob.CreateFromBlob(blob);
-                    var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
-                    if (newBlobModified >= Modified)
+                    if (blob == null)
                     {
-                        if (newBlob.Blob == null) query.Put(null, null, ex => OnError(ex));
-                        query.Put(JsonConvert.SerializeObject(newBlob.Blob), null, ex => OnError(ex));
+                        query.Put(null, null, ex => OnError(ex));
+                    }
+                    else
+                    {
+                        var newBlobModified = newBlob.GetAdditional<DateTime>(ModifiedKey);
+                        if (newBlobModified > Modified)
+                        {
+                            query.Put(JsonConvert.SerializeObject(newBlob.Blob), null, ex => OnError(ex));
+                        }
                     }
                     query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
                 },
                 () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
-            if (invokeSetFirst) BlobFactory.Set(oldDataFactory.Get());
+            if (invokeSetFirst)
+            {
+                Modified = DateTime.MinValue;
+                BlobFactory.Set(oldDataFactory.Get());
+            }
             RealtimeSubscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
                 .Subscribe(streamEvent =>
@@ -111,7 +121,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (streamEvent.Data == null)
                             {
-                                var newBlob = new PrimitiveBlob(this);
+                                var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
                                 newBlob.UpdateData(null);
                                 newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
                                 UpdateData(newBlob.Data);
@@ -128,7 +138,7 @@ namespace RestfulFirebase.Database.Models
 
         public new void UpdateData(string data)
         {
-            var newBlob = new PrimitiveBlob(this);
+            var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
             newBlob.UpdateData(data);
             newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
             base.UpdateBlob(newBlob.Blob);

@@ -116,13 +116,13 @@ namespace RestTest
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
-            userNode.Child("propCollection").SetStream(props1).Start();
-            userNode.Child("propCollection").SetStream(props2).Start();
-            userNode.Child("objCollection").SetStream(props31).Start();
-            userNode.Child("objCollection").SetStream(props32).Start();
-            userNode.Child("objCollection").SetStream(props33).Start();
+            //userNode.Child("propCollection").SetStream(props1).Start();
+            //userNode.Child("propCollection").SetStream(props2).Start();
+            //userNode.Child("objCollection").SetStream(props31).Start();
+            //userNode.Child("objCollection").SetStream(props32).Start();
+            //userNode.Child("objCollection").SetStream(props33).Start();
 
-            await Task.Delay(2000);
+            //await Task.Delay(2000);
 
             var ss111 = userNode.Child("propCollection").GetStreamAsProperty(props1.Key);
             //var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
