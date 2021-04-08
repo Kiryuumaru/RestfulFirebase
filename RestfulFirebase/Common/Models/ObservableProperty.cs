@@ -1,6 +1,6 @@
-﻿using RestfulFirebase.Common.Conversions;
-using RestfulFirebase.Common.Conversions.Additionals;
-using RestfulFirebase.Common.Conversions.Primitives;
+﻿using RestfulFirebase.Common.Converters;
+using RestfulFirebase.Common.Converters.Additionals;
+using RestfulFirebase.Common.Converters.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -73,7 +73,7 @@ namespace RestfulFirebase.Common.Models
 
         public static new ObservableProperty CreateFromValue<T>(T value)
         {
-            var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
+            var encoded = DataTypeConverter.GetConverter<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
             return CreateFromBlob(data);
         }

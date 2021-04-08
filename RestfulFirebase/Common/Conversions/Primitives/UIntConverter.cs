@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Converters.Primitives
 {
-    public class ULongDecoder : DataTypeDecoder<ulong>
+    public class UIntConverter : DataTypeConverter<uint>
     {
-        public override string Encode(ulong value)
+        public override string Encode(uint value)
         {
             return value.ToString();
         }
 
-        public override ulong Decode(string data)
+        public override uint Decode(string data)
         {
             if (string.IsNullOrEmpty(data)) return default;
-            if (ulong.TryParse(data, out ulong result)) return result;
+            if (uint.TryParse(data, out uint result)) return result;
             throw new Exception("Parse error");
         }
     }

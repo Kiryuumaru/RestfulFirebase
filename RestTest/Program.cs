@@ -13,7 +13,7 @@ using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using RestfulFirebase.Common.Conversions;
+using RestfulFirebase.Common.Converters;
 
 namespace RestTest
 {
@@ -95,6 +95,9 @@ namespace RestTest
 
         public static async Task Run()
         {
+            var asdasdas1 = DataTypeConverter.GetConverter<IEnumerable<string>>().Encode(new List<string>(){ "one", "two", "three" });
+            var asdasdas2 = DataTypeConverter.GetConverter<IEnumerable<string>>().Decode(asdasdas1);
+
             var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
@@ -154,7 +157,7 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 if (string.IsNullOrEmpty(line)) ss111.Realtime.UpdateData(null);
-                else ss111.Realtime.UpdateData(DataTypeDecoder.GetDecoder<string>().Encode(line));
+                else ss111.Realtime.UpdateData(DataTypeConverter.GetConverter<string>().Encode(line));
             }
         }
     }

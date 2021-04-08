@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Additionals
+namespace RestfulFirebase.Common.Converters.Additionals
 {
-    public class TimeSpanDecoder : DataTypeDecoder<TimeSpan>
+    public class TimeSpanConverter : DataTypeConverter<TimeSpan>
     {
         public override string Encode(TimeSpan value)
         {

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Converters.Primitives
 {
-    public class BoolDecoder : DataTypeDecoder<bool>
+    public class BoolConverter : DataTypeConverter<bool>
     {
         public override string Encode(bool value)
         {

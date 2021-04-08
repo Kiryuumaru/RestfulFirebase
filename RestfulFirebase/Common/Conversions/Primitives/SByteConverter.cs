@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Converters.Primitives
 {
-    public class LongDecoder : DataTypeDecoder<long>
+    public class SByteConverter : DataTypeConverter<sbyte>
     {
-        public override string Encode(long value)
+        public override string Encode(sbyte value)
         {
             return value.ToString();
         }
 
-        public override long Decode(string data)
+        public override sbyte Decode(string data)
         {
             if (string.IsNullOrEmpty(data)) return default;
-            if (long.TryParse(data, out long result)) return result;
+            if (sbyte.TryParse(data, out sbyte result)) return result;
             throw new Exception("Parse error");
         }
     }

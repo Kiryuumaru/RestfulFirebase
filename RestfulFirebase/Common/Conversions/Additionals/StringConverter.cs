@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Additionals
+namespace RestfulFirebase.Common.Converters.Additionals
 {
-    public class StringDecoder : DataTypeDecoder<string>
+    public class StringConverter : DataTypeConverter<string>
     {
         public override string Encode(string value)
         {

@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Common.Conversions;
+﻿using RestfulFirebase.Common.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +67,7 @@ namespace RestfulFirebase.Common.Models
 
         public static PrimitiveBlob CreateFromValue<T>(T value)
         {
-            var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
+            var encoded = DataTypeConverter.GetConverter<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
             return CreateFromBlob(data);
         }
@@ -93,14 +93,14 @@ namespace RestfulFirebase.Common.Models
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
             var data = Helpers.BlobGetValue(deserialized.Skip(1).ToArray(), key);
-            return DataTypeDecoder.GetDecoder<T>().Decode(data);
+            return DataTypeConverter.GetConverter<T>().Decode(data);
         }
 
         public void SetAdditional<T>(string key, T value)
         {
             var deserialized = Helpers.DeserializeString(Blob);
             if (deserialized == null) deserialized = new string[1];
-            var data = DataTypeDecoder.GetDecoder<T>().Encode(value);
+            var data = DataTypeConverter.GetConverter<T>().Encode(value);
             var adsData = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), key, data);
             var newEncodedData = new string[adsData.Length + 1];
             newEncodedData[0] = deserialized[0];
@@ -142,7 +142,7 @@ namespace RestfulFirebase.Common.Models
             if (deserialized == null) return default;
             if (deserialized.Length == 0) return default;
             if (deserialized[0] == null) return default;
-            return DataTypeDecoder.GetDecoder<T>().Decode(deserialized[0]);
+            return DataTypeConverter.GetConverter<T>().Decode(deserialized[0]);
         }
 
         #endregion

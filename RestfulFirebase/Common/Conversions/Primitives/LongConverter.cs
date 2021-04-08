@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Conversions.Primitives
+namespace RestfulFirebase.Common.Converters.Primitives
 {
-    public class FloatDecoder : DataTypeDecoder<float>
+    public class LongConverter : DataTypeConverter<long>
     {
-        public override string Encode(float value)
+        public override string Encode(long value)
         {
             return value.ToString();
         }
 
-        public override float Decode(string data)
+        public override long Decode(string data)
         {
             if (string.IsNullOrEmpty(data)) return default;
-            if (float.TryParse(data, out float result)) return result;
+            if (long.TryParse(data, out long result)) return result;
             throw new Exception("Parse error");
         }
     }
