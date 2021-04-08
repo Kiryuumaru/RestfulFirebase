@@ -24,9 +24,9 @@ namespace RestfulFirebase.Database.Streaming
 
         public void Start()
         {
-            RealtimeModel.StartRealtime(Query, InvokeSetFirst, out Action<StreamEvent> onNext);
+            RealtimeModel.StartRealtime(Query, InvokeSetFirst, out Action<StreamObject> onNext);
             Subscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, Query, (s, e) => RealtimeModel.OnError(e)).Run())
+                .Create<StreamObject>(observer => new NodeStreamer(observer, Query, (s, e) => RealtimeModel.OnError(e)).Run())
                 .Subscribe(onNext);
         }
 

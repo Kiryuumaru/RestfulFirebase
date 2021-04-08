@@ -22,7 +22,7 @@ namespace RestfulFirebase.Database.Models
 
         public bool HasRealtimeWire => RealtimeWire != null;
 
-        public string RealtimeWirePath => RealtimeWire.GetAbsolutePath();
+        public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
 
         public FirebaseQuery RealtimeWire
         {
@@ -167,22 +167,6 @@ namespace RestfulFirebase.Database.Models
                     OnError(ex);
                 }
             });
-        }
-
-        public void ConsumeStream(StreamEvent streamEvent)
-        {
-            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
-            try
-            {
-                if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
         }
 
         public void ModifyData(string data)

@@ -16,7 +16,7 @@ namespace RestfulFirebase.Database.Streaming
 {
     internal class NodeStreamer : IDisposable
     {
-        private readonly IObserver<StreamEvent> observer;
+        private readonly IObserver<StreamObject> observer;
         private readonly CancellationTokenSource cancel;
         private readonly IFirebaseQuery query;
 
@@ -24,7 +24,7 @@ namespace RestfulFirebase.Database.Streaming
 
         private EventHandler<ContinueExceptionEventArgs> exceptionThrown;
 
-        internal NodeStreamer(IObserver<StreamEvent> observer, IFirebaseQuery query, EventHandler<ContinueExceptionEventArgs> exceptionThrown)
+        internal NodeStreamer(IObserver<StreamObject> observer, IFirebaseQuery query, EventHandler<ContinueExceptionEventArgs> exceptionThrown)
         {
             this.observer = observer;
             this.query = query;
@@ -174,11 +174,7 @@ namespace RestfulFirebase.Database.Streaming
                     };
                     if (path != "/") separatedPath.AddRange(path.Split('/').Skip(1));
 
-                    this.observer.OnNext(new StreamEvent(
-                        separatedPath.ToArray(),
-                        data,
-                        string.IsNullOrWhiteSpace(data) ? EventType.Delete : EventType.InsertOrUpdate,
-                        EventSource.OnlineStream));
+                    this.observer.OnNext(new StreamObject(separatedPath.ToArray(), data));
 
                     break;
                 case ServerEventType.KeepAlive:
