@@ -1,6 +1,6 @@
-﻿using RestfulFirebase.Common.Converters;
-using RestfulFirebase.Common.Converters.Additionals;
-using RestfulFirebase.Common.Converters.Primitives;
+﻿using RestfulFirebase.Common.Decoders;
+using RestfulFirebase.Common.Decoders.Additionals;
+using RestfulFirebase.Common.Decoders.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -73,7 +73,7 @@ namespace RestfulFirebase.Common.Models
 
         public static new ObservableProperty CreateFromValue<T>(T value)
         {
-            var encoded = DataTypeConverter.GetConverter<T>().Encode(value);
+            var encoded = DataTypeDecoder.GetDecoder<T>().Encode(value);
             var data = Helpers.SerializeString(encoded, null);
             return CreateFromBlob(data);
         }
@@ -129,12 +129,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void SetAdditional<T>(string key, T value)
+        public new void SetAdditional<T>(string key, T value, string tag = null)
         {
             try
             {
-                base.SetAdditional(key, value);
-                OnChanged(nameof(Blob));
+                if (base.SetAdditional(key, value, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -142,12 +141,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void DeleteAdditional(string key)
+        public new void DeleteAdditional(string key, string tag = null)
         {
             try
             {
-                base.DeleteAdditional(key);
-                OnChanged(nameof(Blob));
+                if (base.DeleteAdditional(key, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -155,12 +153,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void ClearAdditionals()
+        public new void ClearAdditionals(string tag = null)
         {
             try
             {
-                base.ClearAdditionals();
-                OnChanged(nameof(Blob));
+                if (base.ClearAdditionals(tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -168,12 +165,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void UpdateBlob(string blob)
+        public new void UpdateBlob(string blob, string tag = null)
         {
             try
             {
-                base.UpdateBlob(blob);
-                OnChanged(nameof(Blob));
+                if (base.UpdateBlob(blob, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {
@@ -181,12 +177,11 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void UpdateData(string data)
+        public new void UpdateData(string data, string tag = null)
         {
             try
             {
-                base.UpdateData(data);
-                OnChanged(nameof(Blob));
+                if (base.UpdateData(data, tag)) OnChanged(nameof(Blob));
             }
             catch (Exception ex)
             {

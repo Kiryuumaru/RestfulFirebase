@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Models;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -124,8 +125,7 @@ namespace RestfulFirebase.Common
 
         public static string EncodeDateTime(DateTime date)
         {
-            long shortTicks = (date.Ticks - 631139040000000000L) / 10000L;
-            var bytes = ToUnsignedArbitraryBaseSystem((ulong)shortTicks, 64);
+            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.Ticks, 64);
             string base64 = "";
             foreach (var num in bytes)
             {
@@ -152,8 +152,46 @@ namespace RestfulFirebase.Common
                     if (indexOf == -1) throw new Exception("Unknown charset");
                     indexes.Add((uint)indexOf);
                 }
+                var ticks = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+                return new DateTime((long)ticks);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static string EncodeSmallDateTime(SmallDateTime date)
+        {
+            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.GetCompressedTime(), 64);
+            string base64 = "";
+            foreach (var num in bytes)
+            {
+                base64 += Base64Charset[(int)num];
+            }
+            return base64;
+        }
+
+        public static SmallDateTime DecodeSmallDateTime(string encodedTimestamp, SmallDateTime defaultValue)
+        {
+            var dateTime = DecodeSmallDateTime(encodedTimestamp);
+            return dateTime.HasValue ? dateTime.Value : defaultValue;
+        }
+
+        public static SmallDateTime? DecodeSmallDateTime(string encodedTimestamp)
+        {
+            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
+            try
+            {
+                var indexes = new List<uint>();
+                foreach (var num in encodedTimestamp)
+                {
+                    var indexOf = Base64Charset.IndexOf(num);
+                    if (indexOf == -1) throw new Exception("Unknown charset");
+                    indexes.Add((uint)indexOf);
+                }
                 var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-                return new DateTime(((long)unix * 10000L) + 631139040000000000L);
+                return new SmallDateTime((long)unix);
             }
             catch
             {

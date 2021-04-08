@@ -36,11 +36,11 @@ namespace RestfulFirebase.Database.Models
             protected set => SetPersistableProperty(value, "_t");
         }
 
-        public DateTime Modified
+        public SmallDateTime Modified
         {
             get
             {
-                GetPersistableProperty<DateTime>("_m");
+                GetPersistableProperty<string>("_m");
                 var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key == "_m");
                 var prop = (FirebaseProperty)propHolder.Property;
                 return prop.Modified;
@@ -77,9 +77,14 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual DateTime CurrentDateTimeFactory()
+        protected virtual SmallDateTime CurrentDateTimeFactory()
         {
-            return DateTime.UtcNow;
+            return new SmallDateTime(DateTime.UtcNow);
+        }
+
+        public void Delete()
+        {
+
         }
 
         protected override DistinctProperty PropertyFactory<T>(T property)

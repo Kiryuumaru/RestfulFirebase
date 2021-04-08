@@ -59,6 +59,11 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        public void Delete()
+        {
+
+        }
+
         public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWirePath = query.GetAbsolutePath();
