@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Decoders.Additionals
+namespace RestfulFirebase.Common.Converters.Additionals
 {
-    public class SmallDateTimeDecoder : DataTypeDecoder<SmallDateTime>
+    public class SmallDateTimeConverter : DataTypeConverter<SmallDateTime>
     {
         public override string Encode(SmallDateTime value)
         {

@@ -49,6 +49,7 @@ namespace RestfulFirebase.Common.Converters
                 converters.Add(new UShortConverter());
                 converters.Add(new StringConverter());
                 converters.Add(new DateTimeConverter());
+                converters.Add(new SmallDateTimeConverter());
                 converters.Add(new TimeSpanConverter());
             }
         }
@@ -56,32 +57,29 @@ namespace RestfulFirebase.Common.Converters
         public static ConverterHolder<T> GetConverter<T>()
         {
             var type = typeof(T);
-            if (typeof(IEnumerable).IsAssignableFrom(typeof(T)))
+            if (type.IsArray)
             {
-                if (type.IsArray)
+                var arrayType = type.GetElementType();
+                foreach (var conv in converters)
                 {
-                    var arrayType = type.GetElementType();
-                    foreach (var conv in converters)
+                    if (conv.Type == arrayType)
                     {
-                        if (conv.Type == arrayType)
-                        {
-                            return new ConverterHolder<T>(
-                                values => conv.EncodeEnumerableObject(values),
-                                data => (T)conv.DecodeEnumerableObject(data));
-                        }
+                        return new ConverterHolder<T>(
+                            values => conv.EncodeEnumerableObject(values),
+                            data => (T)conv.DecodeEnumerableObject(data));
                     }
                 }
-                else
+            }
+            else if(typeof(IEnumerable).IsAssignableFrom(typeof(T)) && type.GetGenericArguments()?.Length == 1)
+            {
+                var genericType = type.GetGenericArguments()[0];
+                foreach (var conv in converters)
                 {
-                    var genericType = type.GetGenericArguments()[0];
-                    foreach (var conv in converters)
+                    if (conv.Type == genericType)
                     {
-                        if (conv.Type == genericType)
-                        {
-                            return new ConverterHolder<T>(
-                                values => conv.EncodeEnumerableObject(values),
-                                data => (T)conv.DecodeEnumerableObject(data));
-                        }
+                        return new ConverterHolder<T>(
+                            values => conv.EncodeEnumerableObject(values),
+                            data => (T)conv.DecodeEnumerableObject(data));
                     }
                 }
             }

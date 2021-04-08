@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Common;
-using RestfulFirebase.Common.Decoders;
+using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;

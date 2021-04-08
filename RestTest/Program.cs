@@ -47,7 +47,7 @@ namespace RestTest
         {
             return new TestStorable(FirebaseObject.Create())
             {
-                Modified = DateTime.UtcNow
+                Modified = SmallDateTime.UtcNow
             };
         }
 
@@ -55,11 +55,11 @@ namespace RestTest
         {
             return new TestStorable(CreateFromKey(key))
             {
-                Modified = DateTime.UtcNow
+                Modified = SmallDateTime.UtcNow
             };
         }
 
-        public static TestStorable Create(string key, DateTime created, DateTime modified)
+        public static TestStorable Create(string key, DateTime created, SmallDateTime modified)
         {
             return new TestStorable(CreateFromKey(key))
             {
@@ -111,8 +111,8 @@ namespace RestTest
             var props32 = TestStorable.Create();
             var props33 = TestStorable.Create();
 
-            props1.Modified = DateTime.UtcNow;
-            props2.Modified = DateTime.UtcNow;
+            props1.Modified = SmallDateTime.UtcNow;
+            props2.Modified = SmallDateTime.UtcNow;
 
             int x11 = 0;
 
@@ -127,14 +127,14 @@ namespace RestTest
 
             //await Task.Delay(2000);
 
-            var ss111 = userNode.Child("propCollection").GetStreamAsProperty(props1.Key);
+            var ss111 = userNode.Child("propCollection").AsRealtimeProperty(props1.Key);
             //var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
             //var ss1 = userNode.GetAsPropertyCollection("propCollection");
             //var ss2 = userNode.GetAsObjectCollection("objCollection");
 
-            ss111.Realtime.PropertyChanged += (s, e) =>
+            ss111.RealtimeModel.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("s111 blob: " + ss111.Realtime.Blob);
+                Console.WriteLine("s111 blob: " + ss111.RealtimeModel.ParseValue<string>());
             };
             //ss11.PropertyChanged += (s, e) =>
             //{
@@ -156,8 +156,8 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                if (string.IsNullOrEmpty(line)) ss111.Realtime.UpdateData(null);
-                else ss111.Realtime.UpdateData(DataTypeConverter.GetConverter<string>().Encode(line));
+                if (string.IsNullOrEmpty(line)) ss111.RealtimeModel.ModifyData(null);
+                else ss111.RealtimeModel.ModifyData(DataTypeConverter.GetConverter<string>().Encode(line));
             }
         }
     }
