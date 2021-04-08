@@ -20,12 +20,14 @@ namespace RestfulFirebase.Database.Models
         private const string SyncTag = "sync";
         private const string RevertTag = "revert";
 
-        public bool HasRealtimeWire => RealtimeWirePath != null;
+        public bool HasRealtimeWire => RealtimeWire != null;
 
-        public string RealtimeWirePath
+        public string RealtimeWirePath => RealtimeWire.GetAbsolutePath();
+
+        public FirebaseQuery RealtimeWire
         {
-            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseProperty)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseProperty), value);
+            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebaseProperty)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseProperty), value);
         }
 
         public SmallDateTime Modified
@@ -43,12 +45,12 @@ namespace RestfulFirebase.Database.Models
             return new FirebaseProperty(DistinctProperty.CreateFromKey(key));
         }
 
-        public static new FirebaseProperty CreateFromKeyAndValue<T>(string key, T value)
+        public static new FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value)
         {
-            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndValue(key, value));
+            return new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
         }
 
-        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string blob  )
+        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string blob)
         {
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
         }
@@ -73,17 +75,17 @@ namespace RestfulFirebase.Database.Models
             UpdateBlob(null);
         }
 
-        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext)
         {
-            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeWire = query;
             var oldDataFactory = BlobFactory;
             BlobFactory = new BlobFactory(
                 blob =>
                 {
                     if (blob.Value == Blob) return false;
-                    void put(string blobToPut, string revertBlob)
+                    async void put(string blobToPut, string revertBlob)
                     {
-                        query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                        await query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
                         {
                             if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                             {
@@ -128,7 +130,7 @@ namespace RestfulFirebase.Database.Models
                         default:
                             if (blob.Value == null)
                             {
-                                query.Put(null, null, ex => OnError(ex));
+                                put(null, Blob);
                                 query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
                                 return true;
                             }
@@ -150,20 +152,37 @@ namespace RestfulFirebase.Database.Models
             {
                 BlobFactory.Set((oldDataFactory.Get(), null));
             }
-            onNext = new Action<StreamEvent>(streamEvent =>
+            onNext = new Action<StreamObject>(streamObject =>
             {
+                if (!HasRealtimeWire) throw new Exception("Model is not realtime");
                 try
                 {
-                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
+                    if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
                 }
                 catch (Exception ex)
                 {
                     OnError(ex);
                 }
             });
+        }
+
+        public void ConsumeStream(StreamEvent streamEvent)
+        {
+            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
+            try
+            {
+                if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         public void ModifyData(string data)

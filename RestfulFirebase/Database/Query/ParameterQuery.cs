@@ -7,8 +7,8 @@ namespace RestfulFirebase.Database.Query
         private readonly Func<string> parameterFactory;
         private readonly string separator;
 
-        protected ParameterQuery(FirebaseQuery parent, Func<string> parameterFactory, RestfulFirebaseApp app)
-            : base(parent, app)
+        protected ParameterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> parameterFactory)
+            : base(app, parent)
         {
             this.parameterFactory = parameterFactory;
             separator = (Parent is ChildQuery) ? "?" : "&";
@@ -23,62 +23,62 @@ namespace RestfulFirebase.Database.Query
 
         public FilterQuery StartAt(Func<string> valueFactory)
         {
-            return new FilterQuery(this, () => "startAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "startAt", valueFactory);
         }
 
         public FilterQuery EndAt(Func<string> valueFactory)
         {
-            return new FilterQuery(this, () => "endAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "endAt", valueFactory);
         }
 
         public FilterQuery EqualTo(Func<string> valueFactory)
         {
-            return new FilterQuery(this, () => "equalTo", valueFactory, App);
+            return new FilterQuery(App, this, () => "equalTo", valueFactory);
         }
 
         public FilterQuery StartAt(Func<double> valueFactory)
         {
-            return new FilterQuery(this, () => "startAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "startAt", valueFactory);
         }
 
         public FilterQuery EndAt(Func<double> valueFactory)
         {
-            return new FilterQuery(this, () => "endAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "endAt", valueFactory);
         }
 
         public FilterQuery EqualTo(Func<double> valueFactory)
         {
-            return new FilterQuery(this, () => "equalTo", valueFactory, App);
+            return new FilterQuery(App, this, () => "equalTo", valueFactory);
         }
 
         public FilterQuery StartAt(Func<long> valueFactory)
         {
-            return new FilterQuery(this, () => "startAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "startAt", valueFactory);
         }
 
         public FilterQuery EndAt(Func<long> valueFactory)
         {
-            return new FilterQuery(this, () => "endAt", valueFactory, App);
+            return new FilterQuery(App, this, () => "endAt", valueFactory);
         }
 
         public FilterQuery EqualTo(Func<long> valueFactory)
         {
-            return new FilterQuery(this, () => "equalTo", valueFactory, App);
+            return new FilterQuery(App, this, () => "equalTo", valueFactory);
         }
 
         public FilterQuery EqualTo(Func<bool> valueFactory)
         {
-            return new FilterQuery(this, () => "equalTo", valueFactory, App);
+            return new FilterQuery(App, this, () => "equalTo", valueFactory);
         }
 
         public FilterQuery LimitToFirst(Func<int> countFactory)
         {
-            return new FilterQuery(this, () => "limitToFirst", () => countFactory(), App);
+            return new FilterQuery(App, this, () => "limitToFirst", () => countFactory());
         }
 
         public FilterQuery LimitToLast(Func<int> countFactory)
         {
-            return new FilterQuery(this, () => "limitToLast", () => countFactory(), App);
+            return new FilterQuery(App, this, () => "limitToLast", () => countFactory());
         }
 
         public FilterQuery StartAt(string value)

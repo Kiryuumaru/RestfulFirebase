@@ -9,20 +9,20 @@ namespace RestfulFirebase.Database.Query
     {
         private readonly Func<string> pathFactory;
 
-        public ChildQuery(FirebaseQuery parent, Func<string> pathFactory, RestfulFirebaseApp app)
-            : base(parent, app)
+        public ChildQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> pathFactory)
+            : base(app, parent)
         {
             this.pathFactory = pathFactory;
         }
 
-        public ChildQuery(Func<string> pathFactory, RestfulFirebaseApp app)
-            : this(null, pathFactory, app)
+        public ChildQuery(RestfulFirebaseApp app, Func<string> pathFactory)
+            : this(app, null, pathFactory)
         {
         }
 
         public ChildQuery Child(Func<string> pathFactory)
         {
-            return new ChildQuery(this, pathFactory, App);
+            return new ChildQuery(App, this, pathFactory);
         }
 
         public ChildQuery Child(string path)
@@ -32,12 +32,12 @@ namespace RestfulFirebase.Database.Query
 
         public ShallowQuery Shallow()
         {
-            return new ShallowQuery(this, App);
+            return new ShallowQuery(App, this);
         }
 
         public OrderQuery OrderBy(Func<string> propertyNameFactory)
         {
-            return new OrderQuery(this, propertyNameFactory, App);
+            return new OrderQuery(App, this, propertyNameFactory);
         }
 
         public OrderQuery OrderBy(string propertyName)

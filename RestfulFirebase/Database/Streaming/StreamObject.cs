@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
@@ -16,9 +17,9 @@ namespace RestfulFirebase.Database.Streaming
             Data = data;
         }
 
-        public StreamObject Clone()
+        public StreamObject Skip(int count)
         {
-            return new StreamObject(Path, Data);
+            return new StreamObject(Path.Skip(count).ToArray(), Data);
         }
     }
 }

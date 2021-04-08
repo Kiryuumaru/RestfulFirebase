@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
@@ -17,9 +18,9 @@ namespace RestfulFirebase.Database.Streaming
             EventSource = eventSource;
         }
 
-        public new StreamEvent Clone()
+        public new StreamEvent Skip(int count)
         {
-            return new StreamEvent(Path, Data, EventType, EventSource);
+            return new StreamEvent(Path.Skip(count).ToArray(), Data, EventType, EventSource);
         }
     }
 }

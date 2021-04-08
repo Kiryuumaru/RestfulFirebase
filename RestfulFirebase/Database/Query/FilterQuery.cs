@@ -10,26 +10,26 @@ namespace RestfulFirebase.Database.Query
         private readonly Func<long> longValueFactory;
         private readonly Func<bool> boolValueFactory;
 
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<string> valueFactory, RestfulFirebaseApp app)
-            : base(parent, filterFactory, app)
+        public FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<string> valueFactory)
+            : base(app, parent, filterFactory)
         {
             this.valueFactory = valueFactory;
         }
 
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory, RestfulFirebaseApp app)
-            : base(parent, filterFactory, app)
+        public FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory)
+            : base(app, parent, filterFactory)
         {
             doubleValueFactory = valueFactory;
         }
 
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory, RestfulFirebaseApp app)
-            : base(parent, filterFactory, app)
+        public FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory)
+            : base(app, parent, filterFactory)
         {
             longValueFactory = valueFactory;
         }
 
-        public FilterQuery(FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory, RestfulFirebaseApp app)
-            : base(parent, filterFactory, app)
+        public FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory)
+            : base(app, parent, filterFactory)
         {
             boolValueFactory = valueFactory;
         }

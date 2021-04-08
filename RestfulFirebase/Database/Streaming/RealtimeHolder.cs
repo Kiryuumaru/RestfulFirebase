@@ -11,11 +11,11 @@ namespace RestfulFirebase.Database.Streaming
         where T : IRealtimeModel
     {
         public T RealtimeModel { get; private set; }
-        public IFirebaseQuery Query { get; private set; }
+        public FirebaseQuery Query { get; private set; }
         public bool InvokeSetFirst { get; private set; }
         public IDisposable Subscription { get; private set; }
 
-        internal RealtimeHolder(T realtime, IFirebaseQuery query, bool invokeSetFirst)
+        internal RealtimeHolder(T realtime, FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeModel = realtime;
             Query = query;
@@ -24,7 +24,7 @@ namespace RestfulFirebase.Database.Streaming
 
         public void Start()
         {
-            RealtimeModel.SetRealtime(Query, InvokeSetFirst, out Action<StreamEvent> onNext);
+            RealtimeModel.StartRealtime(Query, InvokeSetFirst, out Action<StreamEvent> onNext);
             Subscription = Observable
                 .Create<StreamEvent>(observer => new NodeStreamer(observer, Query, (s, e) => RealtimeModel.OnError(e)).Run())
                 .Subscribe(onNext);

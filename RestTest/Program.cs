@@ -95,9 +95,6 @@ namespace RestTest
 
         public static async Task Run()
         {
-            var asdasdas1 = DataTypeConverter.GetConverter<IEnumerable<string>>().Encode(new List<string>(){ "one", "two", "three" });
-            var asdasdas2 = DataTypeConverter.GetConverter<IEnumerable<string>>().Decode(asdasdas1);
-
             var app = new RestfulFirebaseApp(new FirebaseConfig()
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
@@ -114,33 +111,26 @@ namespace RestTest
             props1.Modified = SmallDateTime.UtcNow;
             props2.Modified = SmallDateTime.UtcNow;
 
-            int x11 = 0;
-
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
-            //await Task.Delay(2000);
-
-            var ss111 = userNode.Child("propCollection").AsRealtimeProperty(props1.Key);
+            userNode.Child("propCollection").AsRealtimeProperty(props1).Start();
             //var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
             //var ss1 = userNode.GetAsPropertyCollection("propCollection");
             //var ss2 = userNode.GetAsObjectCollection("objCollection");
-            var asdasd = ss111.RealtimeModel.ParseModel<string>();
 
-            asdasd.PropertyChanged += (s, e) =>
+            props1.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("Data: " + asdasd.Value);
+                Console.WriteLine("Data: " + props1.Value);
             };
-
-            ss111.Start();
 
             Console.WriteLine("FIN");
 
             while (true)
             {
                 string line = Console.ReadLine();
-                asdasd.Value = string.IsNullOrEmpty(line) ? null : line;
+                props1.Value = string.IsNullOrEmpty(line) ? null : line;
             }
         }
     }

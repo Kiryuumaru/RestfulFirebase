@@ -16,12 +16,14 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public bool HasRealtimeWire => RealtimeWirePath != null;
+        public bool HasRealtimeWire => RealtimeWire != null;
 
-        public string RealtimeWirePath
+        public string RealtimeWirePath => RealtimeWire.GetAbsolutePath();
+
+        public FirebaseQuery RealtimeWire
         {
-            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebaseObject)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseObject), value);
+            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebaseObject)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObject), value);
         }
 
         public string TypeIdentifier
@@ -121,11 +123,13 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
         {
-            RealtimeWirePath = query.GetAbsolutePath();
+            RealtimeWire = query;
+            var subRealtimes = new List<(FirebaseProperty Property, Action<StreamEvent> OnNext)>();
             onNext = new Action<StreamEvent>(streamEvent =>
             {
+                if (!HasRealtimeWire) throw new Exception("Model is not realtime");
                 try
                 {
                     if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
@@ -139,23 +143,16 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                             {
-                                firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, firebaseProperty.Key);
+                                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => firebaseProperty.Key);
+                                firebaseProperty.StartRealtime(childQuery, invokeSetFirst, out Action<StreamEvent> childOnNext);
+                                subRealtimes.Add((firebaseProperty, childOnNext));
                             }
                         });
                     }
                     else if (streamEvent.Path.Length == 2)
                     {
-                        var props = new List<(string Key, string Data)>()
-                            {
-                                (streamEvent.Path[1], streamEvent.Data)
-                            };
-                        UpdateRawProperties(props, perItemFollowup =>
-                        {
-                            if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                            {
-                                firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, firebaseProperty.Key);
-                            }
-                        });
+                        var subRealtime = subRealtimes.FirstOrDefault(i => i.Property.Key == streamEvent.Path[1]);
+                        subRealtime.OnNext(streamEvent.Skip(1));
                     }
                 }
                 catch (Exception ex)

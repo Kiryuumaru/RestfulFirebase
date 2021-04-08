@@ -260,7 +260,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+        public void UpdateRawProperties(IEnumerable<(string Key, string Blob)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             foreach (var property in properties)
             {
@@ -274,7 +274,7 @@ namespace RestfulFirebase.Common.Models
                     {
                         propHolder = new PropertyHolder()
                         {
-                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(property.Key, property.Data)),
+                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(property.Key, property.Blob)),
                             Group = null,
                             PropertyName = null
                         };
@@ -283,9 +283,9 @@ namespace RestfulFirebase.Common.Models
                     }
                     else
                     {
-                        if (propHolder.Property.Blob != property.Data)
+                        if (propHolder.Property.Blob != property.Blob)
                         {
-                            propHolder.Property.UpdateBlob(property.Data);
+                            propHolder.Property.UpdateBlob(property.Blob);
                             hasChanges = true;
                         }
                     }
@@ -300,14 +300,14 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+        public void ReplaceRawProperties(IEnumerable<(string Key, string Blob)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
         {
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
                 bool hasChanges = false;
-                if (propHolder.Property.GetData() != null)
+                if (propHolder.Property.Blob != null)
                 {
-                    propHolder.Property.UpdateData(null);
+                    propHolder.Property.UpdateBlob(null);
                     hasChanges = true;
                 }
                 onInternalSet?.Invoke((hasChanges, propHolder));

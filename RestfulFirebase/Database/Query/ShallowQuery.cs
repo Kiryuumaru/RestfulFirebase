@@ -2,8 +2,8 @@
 {
     public class ShallowQuery : ParameterQuery
     {
-        public ShallowQuery(FirebaseQuery parent, RestfulFirebaseApp app) 
-            : base(parent, () => "shallow", app)
+        public ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
+            : base(app, parent, () => "shallow")
         {
         }
 

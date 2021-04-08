@@ -2,8 +2,8 @@
 {
     public class SilentQuery : ParameterQuery
     {
-        public SilentQuery(FirebaseQuery parent, RestfulFirebaseApp app) 
-            : base(parent, () => "print", app)
+        public SilentQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
+            : base(app, parent, () => "print")
         {
         }
 

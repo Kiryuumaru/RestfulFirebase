@@ -16,12 +16,14 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public bool HasRealtimeWire => RealtimeWirePath != null;
+        public bool HasRealtimeWire => RealtimeWire != null;
 
-        public string RealtimeWirePath
+        public string RealtimeWirePath => RealtimeWire.GetAbsolutePath();
+
+        public FirebaseQuery RealtimeWire
         {
-            get => Holder.GetAttribute<string>(nameof(RealtimeWirePath), nameof(FirebasePropertyGroup)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebasePropertyGroup), value);
+            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebasePropertyGroup)).Value;
+            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebasePropertyGroup), value);
         }
 
         #endregion
@@ -53,10 +55,10 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext)
         {
             RealtimeWirePath = query.GetAbsolutePath();
-            onNext = new Action<StreamEvent>(streamEvent =>
+            onNext = new Action<StreamObject>(streamObject =>
             {
                 try
                 {
@@ -83,6 +85,11 @@ namespace RestfulFirebase.Database.Models
                     OnError(ex);
                 }
             });
+        }
+
+        public void ConsumeStream(StreamEvent streamEvent)
+        {
+            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
         }
 
         protected void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)

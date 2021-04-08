@@ -11,9 +11,10 @@ namespace RestfulFirebase.Database.Models
     {
         bool HasRealtimeWire { get; }
         string RealtimeWirePath { get; }
+        FirebaseQuery RealtimeWire { get; }
         void OnError(Exception exception, bool defaultIgnoreAndContinue = true);
         void OnError(ContinueExceptionEventArgs args);
-        void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext);
+        void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext);
         void Delete();
     }
 }

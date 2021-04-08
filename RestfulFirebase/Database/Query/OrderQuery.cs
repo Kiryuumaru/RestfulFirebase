@@ -6,8 +6,8 @@ namespace RestfulFirebase.Database.Query
     {
         private readonly Func<string> propertyNameFactory;
 
-        public OrderQuery(ChildQuery parent, Func<string> propertyNameFactory, RestfulFirebaseApp app)
-            : base(parent, () => "orderBy", app)
+        public OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
+            : base(app, parent, () => "orderBy")
         {
             this.propertyNameFactory = propertyNameFactory;
         }

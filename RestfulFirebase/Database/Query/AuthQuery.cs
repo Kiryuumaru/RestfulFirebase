@@ -6,7 +6,8 @@ namespace RestfulFirebase.Database.Query
     {
         private readonly Func<string> tokenFactory;
 
-        public AuthQuery(FirebaseQuery parent, Func<string> tokenFactory, RestfulFirebaseApp app) : base(parent, () => app.Config.AsAccessToken ? "access_token" : "auth", app)
+        public AuthQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> tokenFactory)
+            : base(app, parent, () => app.Config.AsAccessToken ? "access_token" : "auth")
         {
             this.tokenFactory = tokenFactory;
         }
