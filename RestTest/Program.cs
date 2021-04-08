@@ -119,11 +119,6 @@ namespace RestTest
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             var userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
-            //userNode.Child("propCollection").SetStream(props1).Start();
-            //userNode.Child("propCollection").SetStream(props2).Start();
-            //userNode.Child("objCollection").SetStream(props31).Start();
-            //userNode.Child("objCollection").SetStream(props32).Start();
-            //userNode.Child("objCollection").SetStream(props33).Start();
 
             //await Task.Delay(2000);
 
@@ -131,23 +126,12 @@ namespace RestTest
             //var ss11 = userNode.Child("objCollection").GetAsObject(props31.Key);
             //var ss1 = userNode.GetAsPropertyCollection("propCollection");
             //var ss2 = userNode.GetAsObjectCollection("objCollection");
+            var asdasd = ss111.RealtimeModel.ParseModel<string>();
 
-            ss111.RealtimeModel.PropertyChanged += (s, e) =>
+            asdasd.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("s111 blob: " + ss111.RealtimeModel.ParseValue<string>());
+                Console.WriteLine("Data: " + asdasd.Value);
             };
-            //ss11.PropertyChanged += (s, e) =>
-            //{
-
-            //};
-            //ss1.CollectionChanged += (s, e) =>
-            //{
-
-            //};
-            //ss2.CollectionChanged += (s, e) =>
-            //{
-
-            //};
 
             ss111.Start();
 
@@ -156,8 +140,7 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                if (string.IsNullOrEmpty(line)) ss111.RealtimeModel.ModifyData(null);
-                else ss111.RealtimeModel.ModifyData(DataTypeConverter.GetConverter<string>().Encode(line));
+                asdasd.Value = string.IsNullOrEmpty(line) ? null : line;
             }
         }
     }

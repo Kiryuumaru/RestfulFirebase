@@ -197,6 +197,31 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        public FirebaseProperty<T> ParseModel<T>()
+        {
+            return new FirebaseProperty<T>(this);
+        }
+
         #endregion
+    }
+
+    public class FirebaseProperty<T> : FirebaseProperty
+    {
+        public T Value
+        {
+            get => DataTypeConverter.GetConverter<T>().Decode(GetData());
+            set => ModifyData(DataTypeConverter.GetConverter<T>().Encode(value));
+        }
+
+        public FirebaseProperty(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
+
+        protected override void OnChanged(string propertyName = "")
+        {
+            base.OnChanged(nameof(Value));
+        }
     }
 }

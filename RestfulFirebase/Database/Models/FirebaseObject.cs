@@ -73,6 +73,11 @@ namespace RestfulFirebase.Database.Models
 
         }
 
+        public void Dispose()
+        {
+            RealtimeSubscription?.Dispose();
+        }
+
         #endregion
 
         #region Methods
@@ -178,9 +183,10 @@ namespace RestfulFirebase.Database.Models
             return GetRawProperties(nameof(FirebaseObject)).Select(i => (FirebaseProperty)i);
         }
 
-        public void Dispose()
+        public T ParseModel<T>()
+            where T : FirebaseObject
         {
-            RealtimeSubscription?.Dispose();
+            return (T)Activator.CreateInstance(typeof(T), this);
         }
 
         #endregion
