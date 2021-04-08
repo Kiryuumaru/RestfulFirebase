@@ -28,12 +28,6 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseProperty), value);
         }
 
-        public IDisposable RealtimeSubscription
-        {
-            get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseProperty)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseProperty), value);
-        }
-
         public SmallDateTime Modified
         {
             get => GetAdditional<SmallDateTime>(ModifiedKey);
@@ -65,14 +59,6 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void Dispose()
-        {
-            RealtimeSubscription?.Dispose();
-            var oldDataFactory = BlobFactory;
-            BlobFactory = null;
-            UpdateBlob(oldDataFactory.Get());
-        }
-
         #endregion
 
         #region Methods
@@ -87,7 +73,7 @@ namespace RestfulFirebase.Database.Models
             UpdateBlob(null);
         }
 
-        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
+        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
         {
             RealtimeWirePath = query.GetAbsolutePath();
             var oldDataFactory = BlobFactory;
@@ -164,22 +150,20 @@ namespace RestfulFirebase.Database.Models
             {
                 BlobFactory.Set((oldDataFactory.Get(), null));
             }
-            RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
-                .Subscribe(streamEvent =>
+            onNext = new Action<StreamEvent>(streamEvent =>
+            {
+                try
                 {
-                    try
-                    {
-                        if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                        else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                        else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
-                    }
-                    catch (Exception ex)
-                    {
-                        OnError(ex);
-                    }
-                });
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1) UpdateBlob(streamEvent.Data, SyncTag);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            });
         }
 
         public void ModifyData(string data)

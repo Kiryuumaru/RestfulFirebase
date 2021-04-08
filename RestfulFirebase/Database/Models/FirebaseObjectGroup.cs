@@ -24,12 +24,6 @@ namespace RestfulFirebase.Database.Models
             internal set => Holder.SetAttribute(nameof(RealtimeWirePath), nameof(FirebaseObjectGroup), value);
         }
 
-        public IDisposable RealtimeSubscription
-        {
-            get => Holder.GetAttribute<IDisposable>(nameof(RealtimeSubscription), nameof(FirebaseObjectGroup)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeSubscription), nameof(FirebaseObjectGroup), value);
-        }
-
         #endregion
 
         #region Initializers
@@ -50,11 +44,6 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void Dispose()
-        {
-            RealtimeSubscription?.Dispose();
-        }
-
         #endregion
 
         #region Methods
@@ -64,33 +53,31 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst)
+        public void SetRealtime(IFirebaseQuery query, bool invokeSetFirst, out Action<StreamEvent> onNext)
         {
             RealtimeWirePath = query.GetAbsolutePath();
-            RealtimeSubscription = Observable
-                .Create<StreamEvent>(observer => new NodeStreamer(observer, query, (s, e) => OnError(e)).Run())
-                .Subscribe(streamEvent =>
+            onNext = new Action<StreamEvent>(streamEvent =>
+            {
+                try
                 {
-                    try
+                    if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
+                    else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                    else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                    else if (streamEvent.Path.Length == 1)
                     {
-                        if (streamEvent.Path == null) throw new Exception("StreamEvent Key null");
-                        else if (streamEvent.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                        else if (streamEvent.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamEvent.Path.Length == 1)
+                        var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
+                        var objs = data.Select(i => (i.Key, i.Value.ToString(), new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
                         {
-                            var data = streamEvent.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamEvent.Data);
-                            var objs = data.Select(i => (i.Key, i.Value.ToString(), new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
+                            if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                             {
-                                if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                                {
-                                    firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, i.Key, firebaseProperty.Key);
-                                }
-                            })));
-                            ReplaceRawObjects(objs);
-                        }
-                        else if (streamEvent.Path.Length == 2)
-                        {
-                            var objs = new List<(string, string, Action<(bool HasChanges, PropertyHolder PropertyHolder)>)>()
+                                firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, i.Key, firebaseProperty.Key);
+                            }
+                        })));
+                        ReplaceRawObjects(objs);
+                    }
+                    else if (streamEvent.Path.Length == 2)
+                    {
+                        var objs = new List<(string, string, Action<(bool HasChanges, PropertyHolder PropertyHolder)>)>()
                             {
                                 (streamEvent.Path[1], streamEvent.Data, new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
                                 {
@@ -100,50 +87,50 @@ namespace RestfulFirebase.Database.Models
                                     }
                                 }))
                             };
-                            UpdateRawObjects(objs);
-                        }
-                        else if (streamEvent.Path.Length == 3)
-                        {
-                            var props = new List<(string Key, string Value)>()
+                        UpdateRawObjects(objs);
+                    }
+                    else if (streamEvent.Path.Length == 3)
+                    {
+                        var props = new List<(string Key, string Value)>()
                             {
                                 (streamEvent.Path[2], streamEvent.Data)
                             };
-                            var obj = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
-                            if (obj == null)
+                        var obj = this.FirstOrDefault(i => i.Key == streamEvent.Path[1]);
+                        if (obj == null)
+                        {
+                            obj = FirebaseObject.CreateFromKey(streamEvent.Path[1]);
+                            obj.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, obj.Key, streamEvent.Path[1]);
+                            obj.ReplaceRawProperties(props, new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
                             {
-                                obj = FirebaseObject.CreateFromKey(streamEvent.Path[1]);
-                                obj.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, obj.Key, streamEvent.Path[1]);
-                                obj.ReplaceRawProperties(props, new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
+                                if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                                 {
-                                    if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                                    {
-                                        firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1], firebaseProperty.Key);
-                                    }
-                                }));
-                                Add(obj);
-                            }
-                            else
+                                    firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1], firebaseProperty.Key);
+                                }
+                            }));
+                            Add(obj);
+                        }
+                        else
+                        {
+                            obj.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1]);
+                            obj.UpdateRawProperties(props, new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
                             {
-                                obj.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1]);
-                                obj.UpdateRawProperties(props, new Action<(bool HasChanges, PropertyHolder PropertyHolder)>(perItemFollowup =>
+                                if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
                                 {
-                                    if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                                    {
-                                        firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1], firebaseProperty.Key);
-                                    }
-                                }));
-                            }
-                            foreach (FirebaseProperty prop in obj.GetRawPersistableProperties())
-                            {
-                                prop.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, prop.Key);
-                            }
+                                    firebaseProperty.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, streamEvent.Path[1], firebaseProperty.Key);
+                                }
+                            }));
+                        }
+                        foreach (FirebaseProperty prop in obj.GetRawPersistableProperties())
+                        {
+                            prop.RealtimeWirePath = Helpers.CombineUrl(RealtimeWirePath, prop.Key);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        OnError(ex);
-                    }
-                });
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            });
         }
 
         public void UpdateRawObjects(IEnumerable<(string Key, string Data, Action<(bool HasChanges, PropertyHolder Property)> perItemFollowup)> objs)
