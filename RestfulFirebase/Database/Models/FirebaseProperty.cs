@@ -75,7 +75,7 @@ namespace RestfulFirebase.Database.Models
             UpdateBlob(null);
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWire = query;
             var oldDataFactory = BlobFactory;
@@ -152,21 +152,22 @@ namespace RestfulFirebase.Database.Models
             {
                 BlobFactory.Set((oldDataFactory.Get(), null));
             }
-            onNext = new Action<StreamObject>(streamObject =>
+        }
+
+        public void ConsumeStream(StreamObject streamObject)
+        {
+            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
+            try
             {
-                if (!HasRealtimeWire) throw new Exception("Model is not realtime");
-                try
-                {
-                    if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            });
+                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         public void ModifyData(string data)

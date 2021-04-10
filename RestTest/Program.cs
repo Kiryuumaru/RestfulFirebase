@@ -39,6 +39,12 @@ namespace RestTest
             set => SetPersistableProperty(value, "premium");
         }
 
+        public List<TimeSpan> Premiums
+        {
+            get => GetPersistableProperty<List<TimeSpan>>("premiums", new List<TimeSpan>());
+            set => SetPersistableProperty(value, "premiums");
+        }
+
         public string Test
         {
             get => GetPersistableProperty<string>("test");
@@ -110,9 +116,9 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
-            userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
+            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            //userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
             ObjectProperty();

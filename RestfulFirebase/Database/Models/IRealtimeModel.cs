@@ -7,14 +7,13 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public interface IRealtimeModel
+    public interface IRealtimeModel : IObservableAttributed
     {
         bool HasRealtimeWire { get; }
         string RealtimeWirePath { get; }
         FirebaseQuery RealtimeWire { get; }
-        void OnError(Exception exception, bool defaultIgnoreAndContinue = true);
-        void OnError(ContinueExceptionEventArgs args);
-        void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext);
+        void StartRealtime(FirebaseQuery query, bool invokeSetFirst);
+        void ConsumeStream(StreamObject streamObject);
         void Delete();
     }
 }

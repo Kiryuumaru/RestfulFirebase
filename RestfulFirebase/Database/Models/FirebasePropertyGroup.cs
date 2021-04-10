@@ -16,6 +16,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
+        private bool realtimeWireInvokeSetFirst;
+
         public bool HasRealtimeWire => RealtimeWire != null;
 
         public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
@@ -55,36 +57,38 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWire = query;
-            onNext = new Action<StreamObject>(streamObject =>
+            realtimeWireInvokeSetFirst = invokeSetFirst;
+        }
+
+        public void ConsumeStream(StreamObject streamObject)
+        {
+            try
             {
-                try
+                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                else if (streamObject.Path.Length == 1)
                 {
-                    if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1)
-                    {
-                        var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                        var props = data.Select(i => (i.Key, i.Value.ToString()));
-                        ReplaceRawProperties(props);
-                    }
-                    else if (streamObject.Path.Length == 2)
-                    {
-                        var props = new List<(string, string)>()
+                    var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
+                    var props = data.Select(i => (i.Key, i.Value.ToString()));
+                    ReplaceRawProperties(props);
+                }
+                else if (streamObject.Path.Length == 2)
+                {
+                    var props = new List<(string, string)>()
                             {
                                 (streamObject.Path[1], streamObject.Data)
                             };
-                        UpdateRawProperties(props);
-                    }
+                    UpdateRawProperties(props);
                 }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            });
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         protected void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)

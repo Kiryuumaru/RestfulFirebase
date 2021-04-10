@@ -6,11 +6,6 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public interface IAttributed
-    {
-        AttributeHolder Holder { get; }
-    }
-
     public class AttributeHolder
     {
         #region Helpers
@@ -40,13 +35,6 @@ namespace RestfulFirebase.Common.Models
         {
             if (attributed == null) throw new Exception("Attributed class is null");
             attributes = derived == null ? new List<Attribute>() : derived.Holder.attributes;
-            foreach (var property in attributed
-                .GetType()
-                .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-                .Where(p => p.GetIndexParameters().Length == 0))
-            {
-                property.GetValue(attributed);
-            }
         }
 
         #endregion
@@ -87,9 +75,7 @@ namespace RestfulFirebase.Common.Models
 
         public void DeleteAttribute(string key, string group)
         {
-            var attribute = attributes.FirstOrDefault(i => i.Key.Equals(key) && i.Group.Equals(group));
-            if (attribute == null) return;
-            attributes.Remove(attribute);
+            attributes.RemoveAll(i => i.Key.Equals(key) && i.Group.Equals(group));
         }
 
         #endregion

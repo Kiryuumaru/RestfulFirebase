@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace RestfulFirebase.Common.Models
 {
-	public class ObservableGroup<T> : ObservableCollection<T>, IAttributed
+	public class ObservableGroup<T> : ObservableCollection<T>, IObservableAttributed
 	{
 		#region Properties
 

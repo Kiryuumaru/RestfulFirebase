@@ -16,6 +16,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
+        private bool realtimeWireInvokeSetFirst;
+
         public bool HasRealtimeWire => RealtimeWire != null;
 
         public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
@@ -85,105 +87,70 @@ namespace RestfulFirebase.Database.Models
 
         protected override DistinctProperty PropertyFactory<T>(T property)
         {
-            return new FirebaseProperty(property);
+            var prop = new FirebaseProperty(property);
+            if (HasRealtimeWire)
+            {
+                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => prop.Key);
+                prop.StartRealtime(childQuery, false);
+            }
+            return prop;
         }
 
         protected void SetPersistableProperty<T>(
             T value,
             string key,
             [CallerMemberName] string propertyName = "",
-            Func<T, T, bool> validateValue = null,
-            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+            Func<T, T, bool> validateValue = null)
         {
-            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue, internalSet =>
-            {
-                if (internalSet.HasChanges)
-                {
-                    var prop = (FirebaseProperty)internalSet.PropertyHolder.Property;
-                    prop.Modified = CurrentDateTimeFactory();
-                }
-                onInternalSet?.Invoke(internalSet);
-            });
+            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue);
         }
 
         protected T GetPersistableProperty<T>(
             string key,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = "",
-            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+            [CallerMemberName] string propertyName = "")
         {
-            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName, internalSet =>
-            {
-                if (internalSet.HasChanges)
-                {
-                    var prop = (FirebaseProperty)internalSet.PropertyHolder.Property;
-                    prop.Modified = CurrentDateTimeFactory();
-                }
-                onInternalSet?.Invoke(internalSet);
-            });
+            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst, out Action<StreamObject> onNext)
+        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWire = query;
-            var subRealtimes = new List<(FirebaseProperty Property, Action<StreamObject> OnNext)>();
+            realtimeWireInvokeSetFirst = invokeSetFirst;
             foreach (var prop in GetRawPersistableProperties())
             {
                 var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => prop.Key);
-                prop.StartRealtime(childQuery, invokeSetFirst, out Action<StreamObject> childOnNext);
-                subRealtimes.Add((prop, childOnNext));
+                prop.StartRealtime(childQuery, realtimeWireInvokeSetFirst);
             }
-            if (invokeSetFirst)
-            {
+        }
 
-            }
-            onNext = new Action<StreamObject>(streamObject =>
+        public void ConsumeStream(StreamObject streamObject)
+        {
+            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
+            try
             {
-                if (!HasRealtimeWire) throw new Exception("Model is not realtime");
-                try
+                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                else if (streamObject.Path.Length == 1)
                 {
-                    if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                    else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1)
-                    {
-                        var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                        var props = data.Select(i => (i.Key, i.Value.ToString()));
-                        ReplaceRawProperties(props, perItemFollowup =>
-                        {
-                            if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                            {
-                                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => firebaseProperty.Key);
-                                firebaseProperty.StartRealtime(childQuery, invokeSetFirst, out Action<StreamObject> childOnNext);
-                                subRealtimes.Add((firebaseProperty, childOnNext));
-                            }
-                        });
-                    }
-                    else if (streamObject.Path.Length == 2)
-                    {
-                        var subRealtime = subRealtimes.FirstOrDefault(i => i.Property.Key == streamObject.Path[1]);
-                        if (subRealtime.Property != null) subRealtime.OnNext(streamObject.Skip(1));
-                        var props = new List<(string Key, string Data)>()
-                        {
-                            (streamObject.Path[1], streamObject.Data)
-                        };
-                        UpdateRawProperties(props, perItemFollowup =>
-                        {
-                            if (perItemFollowup.PropertyHolder.Property is FirebaseProperty firebaseProperty)
-                            {
-                                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => firebaseProperty.Key);
-                                firebaseProperty.StartRealtime(childQuery, invokeSetFirst, out Action<StreamObject> childOnNext);
-                                subRealtimes.Add((firebaseProperty, childOnNext));
-                                childOnNext.Invoke(streamObject.Skip(1));
-                            }
-                        });
-                    }
+                    var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
+                    var props = data.Select(i => (i.Key, i.Value.ToString()));
+                    ReplaceBlobs(props);
                 }
-                catch (Exception ex)
+                else if (streamObject.Path.Length == 2)
                 {
-                    OnError(ex);
+                    var props = new List<(string Key, string Data)>()
+                    {
+                        (streamObject.Path[1], streamObject.Data)
+                    };
+                    UpdateBlobs(props);
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         public IEnumerable<FirebaseProperty> GetRawPersistableProperties()

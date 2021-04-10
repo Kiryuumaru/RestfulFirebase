@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -20,8 +21,7 @@ namespace RestfulFirebase.Common.Models
 
     #endregion
 
-
-    public class ObservableObject : IAttributed, INotifyPropertyChanged
+    public class ObservableObject : IObservableAttributed
     {
         #region Properties
 
@@ -85,21 +85,34 @@ namespace RestfulFirebase.Common.Models
 
         #region Initializers
 
-        public static ObservableObject CreateFromProperties(IEnumerable<(string Key, string Data)> properties)
+        public static ObservableObject CreateFromProperties(IEnumerable<(string Key, string Blob)> properties)
         {
             var obj = new ObservableObject(null);
-            obj.UpdateRawProperties(properties);
+            obj.UpdateBlobs(properties);
             return obj;
         }
 
         public ObservableObject(IAttributed attributed)
         {
             Holder.Initialize(this, attributed);
+            InitializeProperties();
+            var attr = attributed ?? this;
+            foreach (var property in attr
+                .GetType()
+                .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                property.GetValue(attr);
+            }
         }
 
         #endregion
 
         #region Methods
+
+        protected virtual void InitializeProperties()
+        {
+
+        }
 
         protected virtual void OnChanged(
             PropertyHolder propertyHolder,
@@ -135,8 +148,7 @@ namespace RestfulFirebase.Common.Models
             string key,
             string group = null,
             [CallerMemberName] string propertyName = null,
-            Func<T, T, bool> validateValue = null,
-            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+            Func<T, T, bool> validateValue = null)
         {
             PropertyHolder propHolder = null;
             bool hasChanges = false;
@@ -150,13 +162,13 @@ namespace RestfulFirebase.Common.Models
                 {
                     var existingValue = propHolder.Property.ParseValue<T>();
 
-                    if (propHolder.Group != group && group != null)
+                    if (propHolder.Group != group)
                     {
                         propHolder.Group = group;
                         hasChanges = true;
                     }
 
-                    if (propHolder.PropertyName != propertyName && propertyName != null)
+                    if (propHolder.PropertyName != propertyName)
                     {
                         propHolder.PropertyName = propertyName;
                         hasChanges = true;
@@ -165,8 +177,7 @@ namespace RestfulFirebase.Common.Models
                     if (propHolder.Property.Blob != newProperty.Blob ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        propHolder.Property.UpdateBlob(newProperty.Blob);
-                        hasChanges = true;
+                        if (propHolder.Property.UpdateBlob(newProperty.Blob)) hasChanges = true;
                     }
                 }
                 else
@@ -187,7 +198,6 @@ namespace RestfulFirebase.Common.Models
                 return hasChanges;
             }
 
-            onInternalSet?.Invoke((hasChanges, propHolder));
             if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
             return hasChanges;
         }
@@ -196,8 +206,7 @@ namespace RestfulFirebase.Common.Models
             string key,
             string group = null,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = null,
-            Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+            [CallerMemberName] string propertyName = null)
         {
             bool hasChanges = false;
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
@@ -214,53 +223,37 @@ namespace RestfulFirebase.Common.Models
             }
             else
             {
-                if (propertyHolder.Group != group && group != null)
+                if (propertyHolder.Group != group)
                 {
                     propertyHolder.Group = group;
                     hasChanges = true;
                 }
 
-                if (propertyHolder.PropertyName != propertyName && propertyName != null)
+                if (propertyHolder.PropertyName != propertyName)
                 {
                     propertyHolder.PropertyName = propertyName;
                     hasChanges = true;
                 }
             }
 
-            onInternalSet?.Invoke((hasChanges, propertyHolder));
+            if (hasChanges) OnChanged(propertyHolder, PropertyChangeType.Set);
             return propertyHolder.Property.ParseValue<T>();
         }
 
-        protected virtual void DeleteProperty(string key, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+        protected virtual void DeleteProperty(string key)
         {
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null) return;
             bool hasChanges = false;
-            if (propertyHolder.Property.GetData() != null)
+            if (propertyHolder.Property.Blob != null)
             {
-                propertyHolder.Property.UpdateData(null);
+                propertyHolder.Property.UpdateBlob(null);
                 hasChanges = true;
             }
-            onInternalSet?.Invoke((hasChanges, propertyHolder));
-            OnChanged(propertyHolder, PropertyChangeType.Delete);
+            if (hasChanges) OnChanged(propertyHolder, PropertyChangeType.Delete);
         }
 
-        protected virtual void DeleteProperties(string group, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
-        {
-            foreach (var propertyHolder in new List<PropertyHolder>(PropertyHolders.Where(i => i.Group == group)))
-            {
-                bool hasChanges = false;
-                if (propertyHolder.Property.GetData() != null)
-                {
-                    propertyHolder.Property.UpdateData(null);
-                    hasChanges = true;
-                }
-                onInternalSet?.Invoke((hasChanges, propertyHolder));
-                OnChanged(propertyHolder, PropertyChangeType.Delete);
-            }
-        }
-
-        public void UpdateRawProperties(IEnumerable<(string Key, string Blob)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+        public void UpdateBlobs(IEnumerable<(string Key, string Blob)> properties)
         {
             foreach (var property in properties)
             {
@@ -285,12 +278,10 @@ namespace RestfulFirebase.Common.Models
                     {
                         if (propHolder.Property.Blob != property.Blob)
                         {
-                            propHolder.Property.UpdateBlob(property.Blob);
-                            hasChanges = true;
+                            if (propHolder.Property.UpdateBlob(property.Blob)) hasChanges = true;
                         }
                     }
 
-                    onInternalSet?.Invoke((hasChanges, propHolder));
                     if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
                 }
                 catch (Exception ex)
@@ -300,19 +291,18 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public void ReplaceRawProperties(IEnumerable<(string Key, string Blob)> properties, Action<(bool HasChanges, PropertyHolder PropertyHolder)> onInternalSet = null)
+        public void ReplaceBlobs(IEnumerable<(string Key, string Blob)> properties)
         {
             foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
             {
                 bool hasChanges = false;
                 if (propHolder.Property.Blob != null)
                 {
-                    propHolder.Property.UpdateBlob(null);
-                    hasChanges = true;
+                    if (propHolder.Property.UpdateBlob(null)) hasChanges = true;
                 }
-                onInternalSet?.Invoke((hasChanges, propHolder));
+                if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
             }
-            UpdateRawProperties(properties, onInternalSet);
+            UpdateBlobs(properties);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

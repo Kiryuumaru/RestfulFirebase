@@ -10,7 +10,7 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    public class ObservableProperty : PrimitiveBlob, INotifyPropertyChanged
+    public class ObservableProperty : PrimitiveBlob, IObservableAttributed
     {
         #region Properties
 
@@ -129,64 +129,89 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        public new void SetAdditional<T>(string key, T value, string tag = null)
+        public new bool SetAdditional<T>(string key, T value, string tag = null)
         {
             try
             {
-                if (base.SetAdditional(key, value, tag)) OnChanged(nameof(Blob));
+                if (base.SetAdditional(key, value, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+            return false;
         }
 
-        public new void DeleteAdditional(string key, string tag = null)
+        public new bool DeleteAdditional(string key, string tag = null)
         {
             try
             {
-                if (base.DeleteAdditional(key, tag)) OnChanged(nameof(Blob));
+                if (base.DeleteAdditional(key, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+            return false;
         }
 
-        public new void ClearAdditionals(string tag = null)
+        public new bool ClearAdditionals(string tag = null)
         {
             try
             {
-                if (base.ClearAdditionals(tag)) OnChanged(nameof(Blob));
+                if (base.ClearAdditionals(tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+            return false;
         }
 
-        public new void UpdateBlob(string blob, string tag = null)
+        public new bool UpdateBlob(string blob, string tag = null)
         {
             try
             {
-                if (base.UpdateBlob(blob, tag)) OnChanged(nameof(Blob));
+                if (base.UpdateBlob(blob, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+            return false;
         }
 
-        public new void UpdateData(string data, string tag = null)
+        public new bool UpdateData(string data, string tag = null)
         {
             try
             {
-                if (base.UpdateData(data, tag)) OnChanged(nameof(Blob));
+                if (base.UpdateData(data, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+            return false;
         }
 
         #endregion
