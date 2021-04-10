@@ -9,18 +9,6 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
-    #region Helpers
-
-    public class PropertyHolder
-    {
-        public DistinctProperty Property { get; set; }
-        public string Group { get; set; }
-        public string PropertyName { get; set; }
-        internal PropertyHolder() { }
-    }
-
-    #endregion
-
     public class ObservableObject : IObservableAttributed
     {
         #region Properties
@@ -88,14 +76,44 @@ namespace RestfulFirebase.Common.Models
         public static ObservableObject CreateFromProperties(IEnumerable<(string Key, string Blob)> properties)
         {
             var obj = new ObservableObject(null);
-            obj.UpdateBlobs(properties);
+            foreach (var prop in properties)
+            {
+                try
+                {
+                    bool hasChanges = false;
+
+                    var propHolder = obj.PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(prop.Key));
+
+                    if (propHolder == null)
+                    {
+                        propHolder = new PropertyHolder(
+                            obj.PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(prop.Key, prop.Blob)),
+                            null,
+                            null);
+                        obj.PropertyHolders.Add(propHolder);
+                        hasChanges = true;
+                    }
+                    else
+                    {
+                        if (propHolder.Property.Blob != prop.Blob)
+                        {
+                            if (propHolder.Property.UpdateBlob(prop.Blob)) hasChanges = true;
+                        }
+                    }
+
+                    if (hasChanges) obj.OnChanged(propHolder, PropertyChangeType.Set);
+                }
+                catch (Exception ex)
+                {
+                    obj.OnError(ex);
+                }
+            }
             return obj;
         }
 
         public ObservableObject(IAttributed attributed)
         {
             Holder.Initialize(this, attributed);
-            InitializeProperties();
             var attr = attributed ?? this;
             foreach (var property in attr
                 .GetType()
@@ -108,11 +126,6 @@ namespace RestfulFirebase.Common.Models
         #endregion
 
         #region Methods
-
-        protected virtual void InitializeProperties()
-        {
-
-        }
 
         protected virtual void OnChanged(
             PropertyHolder propertyHolder,
@@ -182,12 +195,7 @@ namespace RestfulFirebase.Common.Models
                 }
                 else
                 {
-                    propHolder = new PropertyHolder()
-                    {
-                        Property = newProperty,
-                        Group = group,
-                        PropertyName = propertyName
-                    };
+                    propHolder = new PropertyHolder(newProperty, group, propertyName);
                     PropertyHolders.Add(propHolder);
                     hasChanges = true;
                 }
@@ -212,12 +220,10 @@ namespace RestfulFirebase.Common.Models
             var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
             if (propertyHolder == null)
             {
-                propertyHolder = new PropertyHolder()
-                {
-                    Property = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
-                    Group = group,
-                    PropertyName = propertyName
-                };
+                propertyHolder = new PropertyHolder(
+                    PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
+                    group,
+                    propertyName);
                 PropertyHolders.Add(propertyHolder);
                 hasChanges = true;
             }
@@ -251,58 +257,6 @@ namespace RestfulFirebase.Common.Models
                 hasChanges = true;
             }
             if (hasChanges) OnChanged(propertyHolder, PropertyChangeType.Delete);
-        }
-
-        public void UpdateBlobs(IEnumerable<(string Key, string Blob)> properties)
-        {
-            foreach (var property in properties)
-            {
-                try
-                {
-                    bool hasChanges = false;
-
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(property.Key));
-
-                    if (propHolder == null)
-                    {
-                        propHolder = new PropertyHolder()
-                        {
-                            Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(property.Key, property.Blob)),
-                            Group = null,
-                            PropertyName = null
-                        };
-                        PropertyHolders.Add(propHolder);
-                        hasChanges = true;
-                    }
-                    else
-                    {
-                        if (propHolder.Property.Blob != property.Blob)
-                        {
-                            if (propHolder.Property.UpdateBlob(property.Blob)) hasChanges = true;
-                        }
-                    }
-
-                    if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
-        }
-
-        public void ReplaceBlobs(IEnumerable<(string Key, string Blob)> properties)
-        {
-            foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
-            {
-                bool hasChanges = false;
-                if (propHolder.Property.Blob != null)
-                {
-                    if (propHolder.Property.UpdateBlob(null)) hasChanges = true;
-                }
-                if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
-            }
-            UpdateBlobs(properties);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

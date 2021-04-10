@@ -140,17 +140,67 @@ namespace RestfulFirebase.Database.Models
                 }
                 else if (streamObject.Path.Length == 2)
                 {
-                    var props = new List<(string Key, string Data)>()
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key == streamObject.Path[1]);
+                    if (propHolder == null)
                     {
-                        (streamObject.Path[1], streamObject.Data)
-                    };
-                    UpdateBlobs(props);
+                        propHolder = new PropertyHolder(
+                            PropertyFactory(DistinctProperty.CreateFromKey(streamObject.Path[1])),
+                            null,
+                            null);
+                        PropertyHolders.Add(propHolder);
+                    }
+                    ((FirebaseProperty)propHolder.Property).ConsumeStream(streamObject.Skip(1));
                 }
             }
             catch (Exception ex)
             {
                 OnError(ex);
             }
+        }
+
+        public void UpdateBlobs(IEnumerable<(string Key, string Blob)> blobs)
+        {
+            foreach (var blob in blobs)
+            {
+                try
+                {
+                    bool hasChanges = false;
+
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(blob.Key));
+
+                    if (propHolder == null)
+                    {
+                        propHolder = new PropertyHolder(
+                            PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(blob.Key, blob.Blob)),
+                            null,
+                            null);
+                        PropertyHolders.Add(propHolder);
+                        hasChanges = true;
+                    }
+                    else
+                    {
+                        if (propHolder.Property.Blob != blob.Blob)
+                        {
+                            if (propHolder.Property.UpdateBlob(blob.Blob)) hasChanges = true;
+                        }
+                    }
+
+                    if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            }
+        }
+
+        public void ReplaceBlobs(IEnumerable<(string Key, string Blob)> properties)
+        {
+            foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
+            {
+                DeleteProperty(propHolder.Property.Key);
+            }
+            UpdateBlobs(properties);
         }
 
         public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
