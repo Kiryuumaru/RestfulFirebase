@@ -12,26 +12,19 @@ namespace RestfulFirebase.Common.Models
 
         public AttributeHolder Holder { get; } = new AttributeHolder();
 
-        public BlobFactory BlobFactory
+        protected BlobFactory BlobFactory
         {
-            get
-            {
-                var factory = Holder.GetAttribute<BlobFactory>(nameof(BlobFactory), nameof(PrimitiveBlob)).Value;
-                if (factory == null)
+            get => Holder.GetAttribute<BlobFactory>(nameof(BlobFactory), nameof(PrimitiveBlob), new BlobFactory(
+                value =>
                 {
-                    factory = new BlobFactory(value =>
-                    {
-                        var oldValue = Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
-                        Holder.SetAttribute(nameof(Blob), nameof(PrimitiveBlob), value.Value);
-                        return oldValue != value.Value;
-                    }, delegate
-                    {
-                        return Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
-                    });
-                }
-                return factory;
-            }
-            set => Holder.SetAttribute(nameof(BlobFactory), nameof(PrimitiveBlob), value);
+                    var oldValue = Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
+                    Holder.SetAttribute(nameof(Blob), nameof(PrimitiveBlob), value.Value);
+                    return oldValue != value.Value;
+                }, delegate
+                {
+                    return Holder.GetAttribute<string>(nameof(Blob), nameof(PrimitiveBlob)).Value;
+                })).Value;
+        set => Holder.SetAttribute(nameof(BlobFactory), nameof(PrimitiveBlob), value);
         }
 
         public string Blob

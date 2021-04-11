@@ -27,6 +27,21 @@ namespace RestfulFirebase.Common.Models
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
         }
 
+        protected PropertyHolderFactory PropertyHolderFactory
+        {
+            get => Holder.GetAttribute(nameof(PropertyHolderFactory), nameof(ObservableObject), new PropertyHolderFactory(
+                value =>
+                {
+                    var holder = Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
+                    holder.FirstOrDefault(i => i.Property.Key == value.);
+                }, key =>
+                {
+                    var holder = Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
+                    holder.FirstOrDefault();
+                })).Value;
+            set => Holder.SetAttribute(nameof(PropertyHolderFactory), nameof(ObservableObject), value);
+        }
+
         protected List<PropertyHolder> PropertyHolders
         {
             get => Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
