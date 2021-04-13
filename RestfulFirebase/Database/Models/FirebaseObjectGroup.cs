@@ -16,15 +16,9 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private bool realtimeWireInvokeSetFirst;
-
-        public bool HasRealtimeWire => RealtimeWire != null;
-
-        public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
-
-        public FirebaseQuery RealtimeWire
+        public RealtimeWire RealtimeWire
         {
-            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebaseObjectGroup)).Value;
+            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseObjectGroup)).Value;
             internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObjectGroup), value);
         }
 

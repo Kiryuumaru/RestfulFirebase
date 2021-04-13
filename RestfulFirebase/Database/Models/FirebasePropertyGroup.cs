@@ -16,16 +16,10 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private bool realtimeWireInvokeSetFirst;
-
-        public bool HasRealtimeWire => RealtimeWire != null;
-
-        public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
-
-        public FirebaseQuery RealtimeWire
+        public RealtimeWire RealtimeWire
         {
-            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebasePropertyGroup)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebasePropertyGroup), value);
+            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebasePropertyGroup)).Value;
+            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebasePropertyGroup), value);
         }
 
         #endregion
@@ -59,36 +53,74 @@ namespace RestfulFirebase.Database.Models
 
         public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
-            RealtimeWire = query;
-            realtimeWireInvokeSetFirst = invokeSetFirst;
-        }
+            RealtimeWire = new RealtimeWire(query,
+                () =>
+                {
+                    foreach (var prop in this)
+                    {
+                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                        prop.StartRealtime(childQuery, invokeSetFirst);
+                    }
+                },
+                streamObject =>
+                {
+                    try
+                    {
+                        if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamObject.Path.Length == 1)
+                        {
+                            var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
+                            var props = data.Select(i => (i.Key, i.Value.ToString()));
+                            foreach (var propHolder in this.Where(i => !props.Any(j => j.Key == i.Property.Key)))
+                            {
+                                DeleteProperty(propHolder.Property.Key);
+                            }
+                            foreach (var prop in props)
+                            {
+                                try
+                                {
+                                    bool hasChanges = false;
 
-        public void ConsumeStream(StreamObject streamObject)
-        {
-            try
-            {
-                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                else if (streamObject.Path.Length == 1)
-                {
-                    var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                    var props = data.Select(i => (i.Key, i.Value.ToString()));
-                    ReplaceRawProperties(props);
-                }
-                else if (streamObject.Path.Length == 2)
-                {
-                    var props = new List<(string, string)>()
+                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[0]));
+
+                                    if (propHolder == null)
+                                    {
+                                        propHolder = new PropertyHolder()
+                                        {
+                                            Property = PropertyFactory(DistinctProperty.CreateFromKey(prop.Key)),
+                                            Group = null,
+                                            PropertyName = null
+                                        };
+                                        PropertyHolders.Add(propHolder);
+                                        hasChanges = true;
+                                    }
+
+                                    ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, prop.Item2));
+
+                                    if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                }
+                                catch (Exception ex)
+                                {
+                                    OnError(ex);
+                                }
+                            }
+                        }
+                        else if (streamObject.Path.Length == 2)
+                        {
+                            var props = new List<(string, string)>()
                             {
                                 (streamObject.Path[1], streamObject.Data)
                             };
-                    UpdateRawProperties(props);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
+                            UpdateRawProperties(props);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError(ex);
+                    }
+                });
         }
 
         protected void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)
