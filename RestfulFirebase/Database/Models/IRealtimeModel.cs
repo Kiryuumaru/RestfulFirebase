@@ -9,11 +9,8 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservableAttributed
     {
-        bool HasRealtimeWire { get; }
-        string RealtimeWirePath { get; }
-        FirebaseQuery RealtimeWire { get; }
+        RealtimeWire RealtimeWire { get; }
         void StartRealtime(FirebaseQuery query, bool invokeSetFirst);
-        void ConsumeStream(StreamObject streamObject);
         void Delete();
     }
 }

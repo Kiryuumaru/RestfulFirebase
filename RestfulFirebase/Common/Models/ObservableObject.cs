@@ -9,6 +9,17 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Models
 {
+    #region Helpers
+
+    public class PropertyHolder
+    {
+        public DistinctProperty Property { get; set; }
+        public string Group { get; set; }
+        public string PropertyName { get; set; }
+    }
+
+    #endregion
+
     public class ObservableObject : IObservableAttributed
     {
         #region Properties
@@ -25,21 +36,6 @@ namespace RestfulFirebase.Common.Models
         {
             get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableObject), delegate { }).Value;
             set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableObject), value);
-        }
-
-        protected PropertyHolderFactory PropertyHolderFactory
-        {
-            get => Holder.GetAttribute(nameof(PropertyHolderFactory), nameof(ObservableObject), new PropertyHolderFactory(
-                value =>
-                {
-                    var holder = Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
-                    holder.FirstOrDefault(i => i.Property.Key == value.);
-                }, key =>
-                {
-                    var holder = Holder.GetAttribute(nameof(PropertyHolders), nameof(ObservableObject), new List<PropertyHolder>()).Value;
-                    holder.FirstOrDefault();
-                })).Value;
-            set => Holder.SetAttribute(nameof(PropertyHolderFactory), nameof(ObservableObject), value);
         }
 
         protected List<PropertyHolder> PropertyHolders
@@ -101,10 +97,12 @@ namespace RestfulFirebase.Common.Models
 
                     if (propHolder == null)
                     {
-                        propHolder = new PropertyHolder(
-                            obj.PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(prop.Key, prop.Blob)),
-                            null,
-                            null);
+                        propHolder = new PropertyHolder()
+                        {
+                            Property = obj.PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(prop.Key, prop.Blob)),
+                            Group = null,
+                            PropertyName = null
+                        };
                         obj.PropertyHolders.Add(propHolder);
                         hasChanges = true;
                     }
@@ -116,7 +114,7 @@ namespace RestfulFirebase.Common.Models
                         }
                     }
 
-                    if (hasChanges) obj.OnChanged(propHolder, PropertyChangeType.Set);
+                    if (hasChanges) obj.OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                 }
                 catch (Exception ex)
                 {
@@ -143,8 +141,10 @@ namespace RestfulFirebase.Common.Models
         #region Methods
 
         protected virtual void OnChanged(
-            PropertyHolder propertyHolder,
-            PropertyChangeType type) => PropertyChangedHandler?.Invoke(this, new ObservableObjectInternalChangesEventArgs(propertyHolder, type));
+            PropertyChangeType type,
+            string key,
+            string group,
+            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectInternalChangesEventArgs(type, key, group, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -184,7 +184,7 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-                var newProperty = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, value));
+                var newblob = DataTypeConverter.GetConverter<T>().Encode(value);
 
                 if (propHolder != null)
                 {
@@ -202,15 +202,20 @@ namespace RestfulFirebase.Common.Models
                         hasChanges = true;
                     }
 
-                    if (propHolder.Property.Blob != newProperty.Blob ||
+                    if (propHolder.Property.Blob != newblob ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        if (propHolder.Property.UpdateBlob(newProperty.Blob)) hasChanges = true;
+                        if (propHolder.Property.UpdateBlob(newblob)) hasChanges = true;
                     }
                 }
                 else
                 {
-                    propHolder = new PropertyHolder(newProperty, group, propertyName);
+                    propHolder = new PropertyHolder()
+                    {
+                        Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(key, newblob)),
+                        Group = group,
+                        PropertyName = propertyName
+                    };
                     PropertyHolders.Add(propHolder);
                     hasChanges = true;
                 }
@@ -221,7 +226,7 @@ namespace RestfulFirebase.Common.Models
                 return hasChanges;
             }
 
-            if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
+            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
             return hasChanges;
         }
 
@@ -232,46 +237,48 @@ namespace RestfulFirebase.Common.Models
             [CallerMemberName] string propertyName = null)
         {
             bool hasChanges = false;
-            var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-            if (propertyHolder == null)
+            var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+            if (propHolder == null)
             {
-                propertyHolder = new PropertyHolder(
-                    PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
-                    group,
-                    propertyName);
-                PropertyHolders.Add(propertyHolder);
+                propHolder = new PropertyHolder()
+                {
+                    Property = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
+                    Group = group,
+                    PropertyName = propertyName
+                };
+                PropertyHolders.Add(propHolder);
                 hasChanges = true;
             }
             else
             {
-                if (propertyHolder.Group != group)
+                if (propHolder.Group != group)
                 {
-                    propertyHolder.Group = group;
+                    propHolder.Group = group;
                     hasChanges = true;
                 }
 
-                if (propertyHolder.PropertyName != propertyName)
+                if (propHolder.PropertyName != propertyName)
                 {
-                    propertyHolder.PropertyName = propertyName;
+                    propHolder.PropertyName = propertyName;
                     hasChanges = true;
                 }
             }
 
-            if (hasChanges) OnChanged(propertyHolder, PropertyChangeType.Set);
-            return propertyHolder.Property.ParseValue<T>();
+            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+            return propHolder.Property.ParseValue<T>();
         }
 
         protected virtual void DeleteProperty(string key)
         {
-            var propertyHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-            if (propertyHolder == null) return;
+            var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
+            if (propHolder == null) return;
             bool hasChanges = false;
-            if (propertyHolder.Property.Blob != null)
+            if (propHolder.Property.Blob != null)
             {
-                propertyHolder.Property.UpdateBlob(null);
+                propHolder.Property.UpdateBlob(null);
                 hasChanges = true;
             }
-            if (hasChanges) OnChanged(propertyHolder, PropertyChangeType.Delete);
+            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
         }
 
         public IEnumerable<DistinctProperty> GetRawProperties(string group = null)

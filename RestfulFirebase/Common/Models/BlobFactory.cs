@@ -6,12 +6,23 @@ namespace RestfulFirebase.Common.Models
 {
     public class BlobFactory
     {
-        public Func<(string Value, string Tag), bool> Set { get; private set; }
-        public Func<string> Get { get; private set; }
-        public BlobFactory(Func<(string Value, string Tag), bool> set, Func<string> get)
+        private Func<(string blob, string tag), bool> set;
+        private Func<string, string> get;
+
+        public BlobFactory(Func<(string Blob, string Tag), bool> set, Func<string, string> get)
         {
-            Set = set;
-            Get = get;
+            this.set = set;
+            this.get = get;
+        }
+
+        public bool Set(string blob, string tag = null)
+        {
+            return set.Invoke((blob, tag));
+        }
+
+        public string Get(string tag = null)
+        {
+            return get.Invoke(tag);
         }
     }
 }

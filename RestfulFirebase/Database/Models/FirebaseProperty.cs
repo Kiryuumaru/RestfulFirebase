@@ -20,14 +20,10 @@ namespace RestfulFirebase.Database.Models
         private const string SyncTag = "sync";
         private const string RevertTag = "revert";
 
-        public bool HasRealtimeWire => RealtimeWire != null;
-
-        public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
-
-        public FirebaseQuery RealtimeWire
+        public RealtimeWire RealtimeWire
         {
-            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebaseProperty)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseProperty), value);
+            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseProperty)).Value;
+            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseProperty), value);
         }
 
         public SmallDateTime Modified
@@ -77,97 +73,98 @@ namespace RestfulFirebase.Database.Models
 
         public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
-            RealtimeWire = query;
-            var oldDataFactory = BlobFactory;
-            BlobFactory = new BlobFactory(
-                blob =>
+            RealtimeWire = new RealtimeWire(query,
+                () =>
                 {
-                    if (blob.Value == Blob) return false;
-                    async void put(string blobToPut, string revertBlob)
-                    {
-                        await query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                    var oldDataFactory = BlobFactory;
+                    BlobFactory = new BlobFactory(
+                        args =>
                         {
-                            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                            if (args.Blob == Blob) return false;
+                            async void put(string blobToPut, string revertBlob)
                             {
-                                UpdateBlob(revertBlob, RevertTag);
-                            }
-                            OnError(ex);
-                        });
-                    }
-                    var newBlob = PrimitiveBlob.CreateFromBlob(blob.Value);
-                    switch (blob.Tag)
-                    {
-                        case SyncTag:
-                            if (blob.Value == null)
-                            {
-                                query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
-                                return true;
-                            }
-                            else
-                            {
-                                var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
-                                if (newBlobModified >= Modified)
+                                await RealtimeWire.Query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
                                 {
-                                    query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
+                                    if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                                    {
+                                        UpdateBlob(revertBlob, RevertTag);
+                                    }
+                                    OnError(ex);
+                                });
+                            }
+                            var newBlob = PrimitiveBlob.CreateFromBlob(args.Blob);
+                            switch (args.Tag)
+                            {
+                                case SyncTag:
+                                    if (args.Blob == null)
+                                    {
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        if (newBlobModified >= Modified)
+                                        {
+                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                            return true;
+                                        }
+                                        else
+                                        {
+                                            put(Blob, newBlob.Blob);
+                                            return false;
+                                        }
+                                    }
+                                case RevertTag:
+                                    if (args.Blob == null)
+                                    {
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                    }
+                                    else
+                                    {
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                    }
                                     return true;
-                                }
-                                else
-                                {
-                                    put(Blob, newBlob.Blob);
+                                default:
+                                    if (args.Blob == null)
+                                    {
+                                        put(null, Blob);
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                        return true;
+                                    }
+                                    else
+                                    {
+                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        if (newBlobModified >= Modified)
+                                        {
+                                            put(newBlob.Blob, Blob);
+                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                            return true;
+                                        }
+                                    }
                                     return false;
-                                }
                             }
-                        case RevertTag:
-                            if (blob.Value == null)
-                            {
-                                query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
-                            }
-                            else
-                            {
-                                query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
-                            }
-                            return true;
-                        default:
-                            if (blob.Value == null)
-                            {
-                                put(null, Blob);
-                                query.App.Database.OfflineDatabase.DeleteData(RealtimeWirePath);
-                                return true;
-                            }
-                            else
-                            {
-                                var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
-                                if (newBlobModified >= Modified)
-                                {
-                                    put(newBlob.Blob, Blob);
-                                    query.App.Database.OfflineDatabase.SetData(RealtimeWirePath, newBlob);
-                                    return true;
-                                }
-                            }
-                            return false;
+                        },
+                        args => RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path)?.Blob ?? null);
+                    if (invokeSetFirst)
+                    {
+                        BlobFactory.Set(oldDataFactory.Get());
                     }
                 },
-                () => query.App.Database.OfflineDatabase.GetData(RealtimeWirePath)?.Blob ?? null);
-            if (invokeSetFirst)
-            {
-                BlobFactory.Set((oldDataFactory.Get(), null));
-            }
-        }
-
-        public void ConsumeStream(StreamObject streamObject)
-        {
-            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
-            try
-            {
-                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
+                streamObject =>
+                {
+                    try
+                    {
+                        if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError(ex);
+                    }
+                });
         }
 
         public void ModifyData(string data)

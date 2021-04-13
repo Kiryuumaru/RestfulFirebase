@@ -13,14 +13,18 @@ namespace RestfulFirebase.Common.Models
     public class ObservableObjectInternalChangesEventArgs : PropertyChangedEventArgs
     {
         public PropertyChangeType Type { get; }
-        public PropertyHolder PropertyHolder { get; }
+        public string Key { get; }
+        public string Group { get; }
         public ObservableObjectInternalChangesEventArgs(
-            PropertyHolder propertyHolder,
-            PropertyChangeType type)
-            : base(propertyHolder.PropertyName)
+            PropertyChangeType type,
+            string key,
+            string group,
+            string propertyName)
+            : base(propertyName)
         {
-            PropertyHolder = propertyHolder;
             Type = type;
+            Key = key;
+            Group = group;
         }
     }
 

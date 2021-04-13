@@ -16,16 +16,12 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private bool realtimeWireInvokeSetFirst;
+        private readonly List<(FirebaseProperty Property, Action<StreamObject> OnNext)> onNextLink = new List<(FirebaseProperty Property, Action<StreamObject> OnNext)>();
 
-        public bool HasRealtimeWire => RealtimeWire != null;
-
-        public string RealtimeWirePath => RealtimeWire?.GetAbsolutePath();
-
-        public FirebaseQuery RealtimeWire
+        public RealtimeWire RealtimeWire
         {
-            get => Holder.GetAttribute<FirebaseQuery>(nameof(RealtimeWire), nameof(FirebaseObject)).Value;
-            internal set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObject), value);
+            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseObject)).Value;
+            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObject), value);
         }
 
         public string TypeIdentifier
@@ -75,23 +71,60 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        private void UpdateBlob(StreamObject streamObject)
+        {
+            try
+            {
+                bool hasChanges = false;
+
+                var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[0]));
+
+                if (propHolder == null)
+                {
+                    propHolder = new PropertyHolder()
+                    {
+                        Property = PropertyFactory(DistinctProperty.CreateFromKey(prop.Key)),
+                        Group = null,
+                        PropertyName = null
+                    };
+                    PropertyHolders.Add(propHolder);
+                    hasChanges = true;
+                }
+
+                ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, prop.Item2));
+
+                if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+
+        private void ReplaceBlobs(StreamObject streamObject)
+        {
+            var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
+            var props = data.Select(i => (i.Key, i.Value.ToString()));
+            foreach (var propHolder in PropertyHolders)
+            {
+                var prop = props.FirstOrDefault(i => i.Key == propHolder.Property.Key);
+                if (prop.Key != null) UpdateBlob(new StreamObject(new string[] { prop.Key }, prop.Item2));
+                DeleteProperty(propHolder.Property.Key);
+            }
+        }
+
         protected virtual SmallDateTime CurrentDateTimeFactory()
         {
             return new SmallDateTime(DateTime.UtcNow);
         }
 
-        public void Delete()
-        {
-
-        }
-
         protected override DistinctProperty PropertyFactory<T>(T property)
         {
             var prop = new FirebaseProperty(property);
-            if (HasRealtimeWire)
+            if (RealtimeWire != null)
             {
-                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => prop.Key);
-                prop.StartRealtime(childQuery, false);
+                var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                prop.StartRealtime(childQuery, true);
             }
             return prop;
         }
@@ -115,92 +148,35 @@ namespace RestfulFirebase.Database.Models
 
         public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
         {
-            RealtimeWire = query;
-            realtimeWireInvokeSetFirst = invokeSetFirst;
-            foreach (var prop in GetRawPersistableProperties())
-            {
-                var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => prop.Key);
-                prop.StartRealtime(childQuery, realtimeWireInvokeSetFirst);
-            }
+            RealtimeWire = new RealtimeWire(query, 
+                () =>
+                {
+                    foreach (var prop in GetRawPersistableProperties())
+                    {
+                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                        prop.StartRealtime(childQuery, invokeSetFirst);
+                    }
+                },
+                streamObject =>
+                {
+                    try
+                    {
+                        if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamObject.Path.Length == 1) ReplaceBlobs(streamObject);
+                        else if (streamObject.Path.Length == 2) UpdateBlob(streamObject);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError(ex);
+                    }
+                });
         }
 
-        public void ConsumeStream(StreamObject streamObject)
+        public void Delete()
         {
-            if (!HasRealtimeWire) throw new Exception("Model is not realtime");
-            try
-            {
-                if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                else if (streamObject.Path.Length == 1)
-                {
-                    var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                    var props = data.Select(i => (i.Key, i.Value.ToString()));
-                    ReplaceBlobs(props);
-                }
-                else if (streamObject.Path.Length == 2)
-                {
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key == streamObject.Path[1]);
-                    if (propHolder == null)
-                    {
-                        propHolder = new PropertyHolder(
-                            PropertyFactory(DistinctProperty.CreateFromKey(streamObject.Path[1])),
-                            null,
-                            null);
-                        PropertyHolders.Add(propHolder);
-                    }
-                    ((FirebaseProperty)propHolder.Property).ConsumeStream(streamObject.Skip(1));
-                }
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
 
-        public void UpdateBlobs(IEnumerable<(string Key, string Blob)> blobs)
-        {
-            foreach (var blob in blobs)
-            {
-                try
-                {
-                    bool hasChanges = false;
-
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(blob.Key));
-
-                    if (propHolder == null)
-                    {
-                        propHolder = new PropertyHolder(
-                            PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(blob.Key, blob.Blob)),
-                            null,
-                            null);
-                        PropertyHolders.Add(propHolder);
-                        hasChanges = true;
-                    }
-                    else
-                    {
-                        if (propHolder.Property.Blob != blob.Blob)
-                        {
-                            if (propHolder.Property.UpdateBlob(blob.Blob)) hasChanges = true;
-                        }
-                    }
-
-                    if (hasChanges) OnChanged(propHolder, PropertyChangeType.Set);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
-        }
-
-        public void ReplaceBlobs(IEnumerable<(string Key, string Blob)> properties)
-        {
-            foreach (var propHolder in PropertyHolders.Where(i => !properties.Any(j => j.Key == i.Property.Key)))
-            {
-                DeleteProperty(propHolder.Property.Key);
-            }
-            UpdateBlobs(properties);
         }
 
         public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
