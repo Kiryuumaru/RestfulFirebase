@@ -46,6 +46,11 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        protected virtual SmallDateTime CurrentDateTimeFactory()
+        {
+            return new SmallDateTime(DateTime.UtcNow);
+        }
+
         protected virtual FirebaseProperty PropertyFactory<T>(T property, string tag = null)
             where T : DistinctProperty
         {
@@ -53,7 +58,7 @@ namespace RestfulFirebase.Database.Models
             if (RealtimeWire != null)
             {
                 var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                prop.BuildRealtimeWire(childQuery, true);
+                prop.BuildRealtimeWire(childQuery, tag == null);
                 prop.RealtimeWire.StartRealtime();
             }
             return prop;
