@@ -122,8 +122,8 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestProperty();
-            //TestPropertyGroup();
-            TestObject();
+            TestPropertyGroup();
+            //TestObject();
         }
 
         public static void TestProperty()
@@ -140,12 +140,13 @@ namespace RestTest
 
         public static void TestPropertyGroup()
         {
-            var props = FirebasePropertyGroup.CreateFromKey("propCollection");
+            var props = FirebasePropertyGroup.CreateFromKey("obj");
             props.CollectionChanged += (s, e) => { Console.WriteLine("Count: " + props.Count); };
-            userNode.AsRealtimePropertyGroup(props).Start();
+            userNode.Child("objCollection").AsRealtimePropertyGroup(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
+                props.Add(FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line));
             }
         }
 

@@ -85,13 +85,13 @@ namespace RestfulFirebase.Database.Models
                         args =>
                         {
                             if (args.Blob == Blob) return false;
-                            async void put(string blobToPut, string revertBlob)
+                            void put(string blobToPut, string revertBlob)
                             {
-                                await RealtimeWire.Query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                                RealtimeWire.Query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
                                 {
                                     if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                                     {
-                                        UpdateBlobRevert(revertBlob);
+                                        UpdateBlob(revertBlob, RevertTag);
                                     }
                                     OnError(ex);
                                 });
@@ -169,7 +169,7 @@ namespace RestfulFirebase.Database.Models
                         if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                         else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                         else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamObject.Path.Length == 1) hasChanges = UpdateBlobSync(streamObject.Data);
+                        else if (streamObject.Path.Length == 1) hasChanges = UpdateBlob(streamObject.Data, SyncTag);
                     }
                     catch (Exception ex)
                     {
@@ -192,16 +192,6 @@ namespace RestfulFirebase.Database.Models
                 newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
                 return UpdateBlob(newBlob.Blob);
             }
-        }
-
-        public bool UpdateBlobSync(string data)
-        {
-            return UpdateBlob(data, SyncTag);
-        }
-
-        public bool UpdateBlobRevert(string data)
-        {
-            return UpdateBlob(data, SyncTag);
         }
 
         public FirebaseProperty<T> ParseModel<T>()

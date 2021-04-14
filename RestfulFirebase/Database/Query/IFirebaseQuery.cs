@@ -10,7 +10,7 @@ namespace RestfulFirebase.Database.Query
     public interface IFirebaseQuery
     {
         RestfulFirebaseApp App { get; }
-        Task Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
+        void Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
         RealtimeHolder<FirebaseProperty<T>> AsRealtimeProperty<T>(FirebaseProperty<T> property);
         RealtimeHolder<FirebaseProperty<T>> AsRealtimeProperty<T>(string path);
         RealtimeHolder<FirebaseProperty> AsRealtimeProperty(FirebaseProperty property);

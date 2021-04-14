@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database.Query
             return new SilentQuery(App, this);
         }
 
-        public async Task Put(string jsonData, TimeSpan? timeout = null, Action<FirebaseException> onException = null)
+        public async void Put(string jsonData, TimeSpan? timeout = null, Action<FirebaseException> onException = null)
         {
             string url;
             var responseData = string.Empty;

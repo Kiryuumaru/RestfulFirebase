@@ -172,19 +172,31 @@ namespace RestfulFirebase.Database.Models
 
                                     if (propHolder == null)
                                     {
-                                        propHolder = new PropertyHolder()
+                                        if (invokeSetFirst)
                                         {
-                                            Property = PropertyFactory(DistinctProperty.CreateFromKey(blob.Key)),
-                                            Group = null,
-                                            PropertyName = null
-                                        };
-                                        PropertyHolders.Add(propHolder);
-                                        hasSubChanges = true;
+                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
+                                            childQuery.Put(null, null, ex => OnError(ex));
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            propHolder = new PropertyHolder()
+                                            {
+                                                Property = PropertyFactory(DistinctProperty.CreateFromKey(blob.Key)),
+                                                Group = null,
+                                                PropertyName = null
+                                            };
+                                            ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
+                                            hasSubChanges = true;
+                                            PropertyHolders.Add(propHolder);
+                                        }
                                     }
-
-                                    if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                    else
                                     {
-                                        hasSubChanges = true;
+                                        if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                        {
+                                            hasSubChanges = true;
+                                        }
                                     }
 
                                     if (hasSubChanges)
@@ -209,6 +221,7 @@ namespace RestfulFirebase.Database.Models
 
                                 if (propHolder == null)
                                 {
+                                    if (streamObject.Data == null) return false;
                                     propHolder = new PropertyHolder()
                                     {
                                         Property = PropertyFactory(DistinctProperty.CreateFromKey(streamObject.Path[1])),
