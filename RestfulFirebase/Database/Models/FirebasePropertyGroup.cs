@@ -84,7 +84,7 @@ namespace RestfulFirebase.Database.Models
                             var blobs = data.Select(i => (i.Key, i.Value.ToString()));
                             foreach (var prop in this.Where(i => !blobs.Any(j => j.Key == i.Key)))
                             {
-                                prop.Delete();
+                                if (prop.RealtimeWire.ConsumeStream(new StreamObject(null, prop.Key))) hasChanges = true;
                             }
                             foreach (var blob in blobs)
                             {
@@ -98,12 +98,16 @@ namespace RestfulFirebase.Database.Models
                                         prop = FirebaseProperty.CreateFromKey(blob.Key);
                                         prop.BuildRealtimeWire(childQuery, invokeSetFirst);
                                         prop.RealtimeWire.StartRealtime();
-                                        prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
+                                        prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
                                         this.Add(prop);
+                                        hasChanges = true;
                                     }
                                     else
                                     {
-                                        prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
+                                        if (prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                        {
+                                            hasChanges = true;
+                                        }
                                     }
                                 }
                                 catch (Exception ex)
@@ -124,12 +128,16 @@ namespace RestfulFirebase.Database.Models
                                     prop = FirebaseProperty.CreateFromKey(streamObject.Path[1]);
                                     prop.BuildRealtimeWire(childQuery, invokeSetFirst);
                                     prop.RealtimeWire.StartRealtime();
-                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data));
+                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
                                     this.Add(prop);
+                                    hasChanges = true;
                                 }
                                 else
                                 {
-                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data));
+                                    if (prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
+                                    {
+                                        hasChanges = true;
+                                    }
                                 }
                             }
                             catch (Exception ex)

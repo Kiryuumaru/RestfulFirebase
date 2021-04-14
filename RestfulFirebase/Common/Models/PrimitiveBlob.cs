@@ -72,6 +72,13 @@ namespace RestfulFirebase.Common.Models
 
         #region Methods
 
+        public bool HasAdditional(string key)
+        {
+            var deserialized = Helpers.DeserializeString(Blob);
+            if (deserialized == null) deserialized = new string[1];
+            return Helpers.BlobGetValue(deserialized.Skip(1).ToArray(), key, null) != null;
+        }
+
         public T GetAdditional<T>(string key)
         {
             var deserialized = Helpers.DeserializeString(Blob);

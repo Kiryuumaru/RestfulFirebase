@@ -58,7 +58,7 @@ namespace RestfulFirebase.Database.Models
         public FirebaseProperty(IAttributed attributed)
             : base(attributed)
         {
-
+            if (!HasAdditional(ModifiedKey)) Modified = CurrentDateTimeFactory();
         }
 
         #endregion

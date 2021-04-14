@@ -174,7 +174,7 @@ namespace RestfulFirebase.Database.Streaming
                     };
                     if (path != "/") separatedPath.AddRange(path.Split('/').Skip(1));
 
-                    this.observer.OnNext(new StreamObject(separatedPath.ToArray(), data));
+                    this.observer.OnNext(new StreamObject(data, separatedPath.ToArray()));
 
                     break;
                 case ServerEventType.KeepAlive:

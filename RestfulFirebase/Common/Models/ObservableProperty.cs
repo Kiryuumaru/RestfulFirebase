@@ -117,6 +117,19 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
+        public new bool HasAdditional(string key)
+        {
+            try
+            {
+                return base.HasAdditional(key);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                return default;
+            }
+        }
+
         public new T GetAdditional<T>(string key)
         {
             try

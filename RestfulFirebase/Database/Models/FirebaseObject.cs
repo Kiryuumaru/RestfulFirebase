@@ -126,8 +126,7 @@ namespace RestfulFirebase.Database.Models
             RealtimeWire = new RealtimeWire(query,
                 () =>
                 {
-                    var sss = GetRawPersistableProperties();
-                    foreach (var prop in sss)
+                    foreach (var prop in GetRawPersistableProperties())
                     {
                         var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
                         prop.BuildRealtimeWire(childQuery, invokeSetFirst);
@@ -157,8 +156,11 @@ namespace RestfulFirebase.Database.Models
                             var blobs = data.Select(i => (i.Key, i.Value.ToString()));
                             foreach (var propHolder in PropertyHolders.Where(i => !blobs.Any(j => j.Key == i.Property.Key)))
                             {
-                                if (((FirebaseProperty)propHolder.Property).UpdateBlobSync(null))
+                                if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(null, propHolder.Property.Key)))
+                                {
                                     OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                    hasChanges = true;
+                                }
                             }
                             foreach (var blob in blobs)
                             {
@@ -166,7 +168,7 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     bool hasSubChanges = false;
 
-                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[0]));
+                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(blob.Key));
 
                                     if (propHolder == null)
                                     {
@@ -180,7 +182,7 @@ namespace RestfulFirebase.Database.Models
                                         hasSubChanges = true;
                                     }
 
-                                    if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2)))
+                                    if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
                                     {
                                         hasSubChanges = true;
                                     }
@@ -217,7 +219,7 @@ namespace RestfulFirebase.Database.Models
                                     hasSubChanges = true;
                                 }
 
-                                if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data)))
+                                if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
                                 {
                                     hasSubChanges = true;
                                 }

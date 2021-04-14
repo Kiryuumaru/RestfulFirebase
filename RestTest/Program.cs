@@ -151,7 +151,7 @@ namespace RestTest
 
         public static void TestObject()
         {
-            var obj = TestStorable.Create();
+            var obj = TestStorable.Create("obj");
             obj.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
