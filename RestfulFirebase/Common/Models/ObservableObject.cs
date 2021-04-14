@@ -164,7 +164,7 @@ namespace RestfulFirebase.Common.Models
             }
         }
 
-        protected virtual DistinctProperty PropertyFactory<T>(T property)
+        protected virtual DistinctProperty PropertyFactory<T>(T property, string tag = null)
             where T : DistinctProperty
         {
             return property;

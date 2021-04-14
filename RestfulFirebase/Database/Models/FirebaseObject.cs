@@ -70,15 +70,9 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual SmallDateTime CurrentDateTimeFactory()
-        {
-            return new SmallDateTime(DateTime.UtcNow);
-        }
-
-        protected override DistinctProperty PropertyFactory<T>(T property)
+        protected override DistinctProperty PropertyFactory<T>(T property, string tag = null)
         {
             var prop = new FirebaseProperty(property);
-            prop.Modified = CurrentDateTimeFactory();
             if (RealtimeWire != null)
             {
                 var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);

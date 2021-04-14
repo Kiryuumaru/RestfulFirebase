@@ -46,6 +46,29 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        protected virtual FirebaseProperty PropertyFactory<T>(T property, string tag = null)
+            where T : DistinctProperty
+        {
+            var prop = new FirebaseProperty(property);
+            if (RealtimeWire != null)
+            {
+                var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                prop.BuildRealtimeWire(childQuery, true);
+                prop.RealtimeWire.StartRealtime();
+            }
+            return prop;
+        }
+
+        protected override void InsertItem(int index, FirebaseProperty item)
+        {
+            base.InsertItem(index, PropertyFactory(item));
+        }
+
+        protected override void SetItem(int index, FirebaseProperty item)
+        {
+            base.SetItem(index, PropertyFactory(item));
+        }
+
         public void Delete()
         {
             foreach (var prop in new List<FirebaseProperty>(this))
@@ -107,9 +130,7 @@ namespace RestfulFirebase.Database.Models
                                         else
                                         {
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                            prop = FirebaseProperty.CreateFromKey(blob.Key);
-                                            prop.BuildRealtimeWire(childQuery, invokeSetFirst);
-                                            prop.RealtimeWire.StartRealtime();
+                                            prop = PropertyFactory(DistinctProperty.CreateFromKey(blob.Key));
                                             prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
                                             this.Add(prop);
                                             hasChanges = true;
@@ -139,9 +160,7 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     if (streamObject.Data == null) return false;
                                     var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                    prop = FirebaseProperty.CreateFromKey(streamObject.Path[1]);
-                                    prop.BuildRealtimeWire(childQuery, invokeSetFirst);
-                                    prop.RealtimeWire.StartRealtime();
+                                    prop = PropertyFactory(DistinctProperty.CreateFromKey(streamObject.Path[1]));
                                     prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
                                     this.Add(prop);
                                     hasChanges = true;
