@@ -8,19 +8,14 @@ namespace RestfulFirebase.Database.Models
 {
     public class RealtimeWire
     {
-        public const string ModifiedKey = "_m";
-        public const string RealtimeInitializeTag = "realtime_init";
-        public const string SyncTag = "sync";
-        public const string RevertTag = "revert";
-
         private Action startRealtime;
         private Action stopRealtime;
-        private Action<StreamObject> consumeStream;
+        private Func<StreamObject, bool> consumeStream;
 
         public string Path { get; private set; }
         public FirebaseQuery Query { get; }
 
-        public RealtimeWire(FirebaseQuery query, Action startRealtime, Action stopRealtime, Action<StreamObject> consumeStream)
+        public RealtimeWire(FirebaseQuery query, Action startRealtime, Action stopRealtime, Func<StreamObject, bool> consumeStream)
         {
             Path = query.GetAbsolutePath();
             Query = query;
@@ -39,9 +34,9 @@ namespace RestfulFirebase.Database.Models
             stopRealtime.Invoke();
         }
 
-        public void ConsumeStream(StreamObject streamObject)
+        public bool ConsumeStream(StreamObject streamObject)
         {
-            consumeStream.Invoke(streamObject);
+            return consumeStream.Invoke(streamObject);
         }
     }
 }

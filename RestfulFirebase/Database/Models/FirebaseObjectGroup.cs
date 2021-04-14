@@ -64,6 +64,7 @@ namespace RestfulFirebase.Database.Models
                 },
                 streamObject =>
                 {
+                    bool hasChanges = false;
                     try
                     {
                         if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
@@ -89,6 +90,7 @@ namespace RestfulFirebase.Database.Models
                     {
                         OnError(ex);
                     }
+                    return hasChanges;
                 });
         }
 

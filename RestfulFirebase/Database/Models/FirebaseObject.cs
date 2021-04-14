@@ -145,6 +145,7 @@ namespace RestfulFirebase.Database.Models
                 },
                 streamObject =>
                 {
+                    bool hasChanges = false;
                     try
                     {
                         if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
@@ -156,14 +157,14 @@ namespace RestfulFirebase.Database.Models
                             var blobs = data.Select(i => (i.Key, i.Value.ToString()));
                             foreach (var propHolder in PropertyHolders.Where(i => !blobs.Any(j => j.Key == i.Property.Key)))
                             {
-                                if (propHolder.Property.UpdateBlob(null, RealtimeWire.SyncTag))
+                                if (((FirebaseProperty)propHolder.Property).UpdateBlobSync(null))
                                     OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                             }
                             foreach (var blob in blobs)
                             {
                                 try
                                 {
-                                    bool hasChanges = false;
+                                    bool hasSubChanges = false;
 
                                     var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[0]));
 
@@ -176,12 +177,19 @@ namespace RestfulFirebase.Database.Models
                                             PropertyName = null
                                         };
                                         PropertyHolders.Add(propHolder);
-                                        hasChanges = true;
+                                        hasSubChanges = true;
                                     }
 
-                                    ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
+                                    if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2)))
+                                    {
+                                        hasSubChanges = true;
+                                    }
 
-                                    if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                    if (hasSubChanges)
+                                    {
+                                        OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                        hasChanges = true;
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -193,7 +201,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             try
                             {
-                                bool hasChanges = false;
+                                bool hasSubChanges = false;
 
                                 var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[1]));
 
@@ -206,12 +214,19 @@ namespace RestfulFirebase.Database.Models
                                         PropertyName = null
                                     };
                                     PropertyHolders.Add(propHolder);
-                                    hasChanges = true;
+                                    hasSubChanges = true;
                                 }
 
-                                ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data));
+                                if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data)))
+                                {
+                                    hasSubChanges = true;
+                                }
 
-                                if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                if (hasSubChanges)
+                                {
+                                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                    hasChanges = true;
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -223,6 +238,7 @@ namespace RestfulFirebase.Database.Models
                     {
                         OnError(ex);
                     }
+                    return hasChanges;
                 });
         }
 
