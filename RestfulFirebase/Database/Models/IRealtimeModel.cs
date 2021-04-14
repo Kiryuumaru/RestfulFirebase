@@ -10,7 +10,7 @@ namespace RestfulFirebase.Database.Models
     public interface IRealtimeModel : IObservableAttributed
     {
         RealtimeWire RealtimeWire { get; }
-        void StartRealtime(FirebaseQuery query, bool invokeSetFirst);
+        void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst);
         void Delete();
     }
 }

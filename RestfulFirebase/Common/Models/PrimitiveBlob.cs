@@ -56,6 +56,13 @@ namespace RestfulFirebase.Common.Models
             return obj;
         }
 
+        public static PrimitiveBlob CreateFromData(string data)
+        {
+            var obj = new PrimitiveBlob(null);
+            obj.UpdateData(data);
+            return obj;
+        }
+
         public PrimitiveBlob(IAttributed attributed)
         {
             Holder.Initialize(this, attributed);

@@ -51,7 +51,7 @@ namespace RestfulFirebase.Database.Models
 
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWire = new RealtimeWire(query,
                 () =>
@@ -59,7 +59,15 @@ namespace RestfulFirebase.Database.Models
                     foreach (var prop in this)
                     {
                         var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.StartRealtime(childQuery, invokeSetFirst);
+                        prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                        prop.RealtimeWire.StartRealtime();
+                    }
+                },
+                () =>
+                {
+                    foreach (var prop in this)
+                    {
+                        prop.RealtimeWire?.StopRealtime();
                     }
                 },
                 streamObject =>
@@ -72,34 +80,30 @@ namespace RestfulFirebase.Database.Models
                         else if (streamObject.Path.Length == 1)
                         {
                             var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                            var props = data.Select(i => (i.Key, i.Value.ToString()));
-                            foreach (var propHolder in this.Where(i => !props.Any(j => j.Key == i.Property.Key)))
+                            var blobs = data.Select(i => (i.Key, i.Value.ToString()));
+                            foreach (var prop in this.Where(i => !blobs.Any(j => j.Key == i.Key)))
                             {
-                                DeleteProperty(propHolder.Property.Key);
+                                prop.Delete();
                             }
-                            foreach (var prop in props)
+                            foreach (var blob in blobs)
                             {
                                 try
                                 {
-                                    bool hasChanges = false;
+                                    var prop = this.FirstOrDefault(i => i.Key == blob.Key);
 
-                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[0]));
-
-                                    if (propHolder == null)
+                                    if (prop == null)
                                     {
-                                        propHolder = new PropertyHolder()
-                                        {
-                                            Property = PropertyFactory(DistinctProperty.CreateFromKey(prop.Key)),
-                                            Group = null,
-                                            PropertyName = null
-                                        };
-                                        PropertyHolders.Add(propHolder);
-                                        hasChanges = true;
+                                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                                        prop = FirebaseProperty.CreateFromKey(blob.Key);
+                                        prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                                        prop.RealtimeWire.StartRealtime();
+                                        prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
+                                        this.Add(prop);
                                     }
-
-                                    ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, prop.Item2));
-
-                                    if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
+                                    else
+                                    {
+                                        prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
+                                    }
                                 }
                                 catch (Exception ex)
                                 {
@@ -109,11 +113,28 @@ namespace RestfulFirebase.Database.Models
                         }
                         else if (streamObject.Path.Length == 2)
                         {
-                            var props = new List<(string, string)>()
+                            try
                             {
-                                (streamObject.Path[1], streamObject.Data)
-                            };
-                            UpdateRawProperties(props);
+                                var prop = this.FirstOrDefault(i => i.Key == streamObject.Path[1]);
+
+                                if (prop == null)
+                                {
+                                    var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                                    prop = FirebaseProperty.CreateFromKey(streamObject.Path[1]);
+                                    prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                                    prop.RealtimeWire.StartRealtime();
+                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data));
+                                    this.Add(prop);
+                                }
+                                else
+                                {
+                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, streamObject.Data));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                OnError(ex);
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -121,45 +142,6 @@ namespace RestfulFirebase.Database.Models
                         OnError(ex);
                     }
                 });
-        }
-
-        protected void UpdateRawProperties(IEnumerable<(string Key, string Data)> properties)
-        {
-            foreach (var property in properties)
-            {
-                try
-                {
-                    var childQuery = new ChildQuery(RealtimeWire.App, RealtimeWire, () => property.Key);
-                    var propHolder = this.FirstOrDefault(i => i.Key.Equals(property.Key));
-                    if (propHolder == null)
-                    {
-                        propHolder = FirebaseProperty.CreateFromKeyAndBlob(property.Key, property.Data);
-                        propHolder.RealtimeWire = childQuery;
-                        Add(propHolder);
-                    }
-                    else
-                    {
-                        propHolder.RealtimeWire = childQuery;
-                        if (propHolder.Blob != property.Data)
-                        {
-                            propHolder.UpdateBlob(property.Data);
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                }
-            }
-        }
-
-        protected void ReplaceRawProperties(IEnumerable<(string Key, string Data)> properties)
-        {
-            foreach (var prop in new List<FirebaseProperty>(this.Where(i => !properties.Any(j => j.Key == i.Key))))
-            {
-                Remove(prop);
-            }
-            UpdateRawProperties(properties);
         }
 
         #endregion

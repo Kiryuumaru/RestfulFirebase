@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using RestfulFirebase.Common;
+using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -37,7 +38,7 @@ namespace RestfulFirebase.Database.Models
                 var prop = (FirebaseProperty)propHolder.Property;
                 return prop.Modified;
             }
-            set => SetPersistableProperty<string>(null, "_m");
+            set => SetPersistableProperty<string>("", "_m");
         }
 
         #endregion
@@ -77,10 +78,12 @@ namespace RestfulFirebase.Database.Models
         protected override DistinctProperty PropertyFactory<T>(T property)
         {
             var prop = new FirebaseProperty(property);
+            prop.Modified = CurrentDateTimeFactory();
             if (RealtimeWire != null)
             {
                 var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                prop.StartRealtime(childQuery, true);
+                prop.BuildRealtimeWire(childQuery, true);
+                prop.RealtimeWire.StartRealtime();
             }
             return prop;
         }
@@ -91,7 +94,11 @@ namespace RestfulFirebase.Database.Models
             [CallerMemberName] string propertyName = "",
             Func<T, T, bool> validateValue = null)
         {
-            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue);
+            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue,
+                customValueSetter: args =>
+                {
+                    return ((FirebaseProperty)args.property).ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                });
         }
 
         protected T GetPersistableProperty<T>(
@@ -99,7 +106,11 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = "")
         {
-            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName);
+            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName,
+                customValueSetter: args =>
+                {
+                    return ((FirebaseProperty)args.property).ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                });
         }
 
         public void Delete()
@@ -110,15 +121,26 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
         {
-            RealtimeWire = new RealtimeWire(query, 
+            RealtimeWire = new RealtimeWire(query,
                 () =>
                 {
+                    var sss = GetRawPersistableProperties();
+                    foreach (var prop in sss)
+                    {
+                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                        prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                        prop.RealtimeWire.StartRealtime();
+                    }
+                },
+                () =>
+                {
+                    RealtimeWire = null;
                     foreach (var prop in GetRawPersistableProperties())
                     {
                         var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.StartRealtime(childQuery, invokeSetFirst);
+                        prop.RealtimeWire?.StopRealtime();
                     }
                 },
                 streamObject =>
@@ -131,12 +153,13 @@ namespace RestfulFirebase.Database.Models
                         else if (streamObject.Path.Length == 1)
                         {
                             var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                            var props = data.Select(i => (i.Key, i.Value.ToString()));
-                            foreach (var propHolder in PropertyHolders.Where(i => !props.Any(j => j.Key == i.Property.Key)))
+                            var blobs = data.Select(i => (i.Key, i.Value.ToString()));
+                            foreach (var propHolder in PropertyHolders.Where(i => !blobs.Any(j => j.Key == i.Property.Key)))
                             {
-                                DeleteProperty(propHolder.Property.Key);
+                                if (propHolder.Property.UpdateBlob(null, RealtimeWire.SyncTag))
+                                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                             }
-                            foreach (var prop in props)
+                            foreach (var blob in blobs)
                             {
                                 try
                                 {
@@ -148,7 +171,7 @@ namespace RestfulFirebase.Database.Models
                                     {
                                         propHolder = new PropertyHolder()
                                         {
-                                            Property = PropertyFactory(DistinctProperty.CreateFromKey(prop.Key)),
+                                            Property = PropertyFactory(DistinctProperty.CreateFromKey(blob.Key)),
                                             Group = null,
                                             PropertyName = null
                                         };
@@ -156,7 +179,7 @@ namespace RestfulFirebase.Database.Models
                                         hasChanges = true;
                                     }
 
-                                    ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, prop.Item2));
+                                    ((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Skip(1).Path, blob.Item2));
 
                                     if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
                                 }

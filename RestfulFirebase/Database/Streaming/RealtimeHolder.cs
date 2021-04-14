@@ -24,7 +24,9 @@ namespace RestfulFirebase.Database.Streaming
 
         public void Start()
         {
-            Model.StartRealtime(Query, InvokeSetFirst);
+            if (Model.RealtimeWire != null) return;
+            Model.BuildRealtimeWire(Query, InvokeSetFirst);
+            Model.RealtimeWire.StartRealtime();
             Subscription = Observable
                 .Create<StreamObject>(observer => new NodeStreamer(observer, Query, (s, e) => Model.OnError(e)).Run())
                 .Subscribe(Model.RealtimeWire.ConsumeStream);
@@ -38,6 +40,7 @@ namespace RestfulFirebase.Database.Streaming
         public void Dispose()
         {
             Subscription?.Dispose();
+            Model.RealtimeWire?.StopRealtime();
         }
     }
 }

@@ -15,21 +15,16 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private const string ModifiedKey = "_m";
-        private const string RealtimeInitializeTag = "realtime_init";
-        private const string SyncTag = "sync";
-        private const string RevertTag = "revert";
-
         public RealtimeWire RealtimeWire
         {
-            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseProperty)).Value;
-            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseProperty), value);
+            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseObject)).Value;
+            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObject), value);
         }
 
         public SmallDateTime Modified
         {
-            get => GetAdditional<SmallDateTime>(ModifiedKey);
-            set => SetAdditional(ModifiedKey, value);
+            get => GetAdditional<SmallDateTime>(RealtimeWire.ModifiedKey);
+            set => SetAdditional(RealtimeWire.ModifiedKey, value);
         }
 
         #endregion
@@ -49,6 +44,11 @@ namespace RestfulFirebase.Database.Models
         public static new FirebaseProperty CreateFromKeyAndBlob(string key, string blob)
         {
             return new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
+        }
+
+        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
+        {
+            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
         }
 
         public FirebaseProperty(IAttributed attributed)
@@ -71,7 +71,7 @@ namespace RestfulFirebase.Database.Models
             UpdateBlob(null);
         }
 
-        public void StartRealtime(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
         {
             RealtimeWire = new RealtimeWire(query,
                 () =>
@@ -87,7 +87,7 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                                     {
-                                        UpdateBlob(revertBlob, RevertTag);
+                                        UpdateBlob(revertBlob, RealtimeWire.RevertTag);
                                     }
                                     OnError(ex);
                                 });
@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Models
                             var newBlob = PrimitiveBlob.CreateFromBlob(args.Blob);
                             switch (args.Tag)
                             {
-                                case SyncTag:
+                                case RealtimeWire.SyncTag:
                                     if (args.Blob == null)
                                     {
                                         RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
@@ -103,7 +103,7 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(RealtimeWire.ModifiedKey);
                                         if (newBlobModified >= Modified)
                                         {
                                             RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
@@ -115,7 +115,7 @@ namespace RestfulFirebase.Database.Models
                                             return false;
                                         }
                                     }
-                                case RevertTag:
+                                case RealtimeWire.RevertTag:
                                     if (args.Blob == null)
                                     {
                                         RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
@@ -134,7 +134,7 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(RealtimeWire.ModifiedKey);
                                         if (newBlobModified >= Modified)
                                         {
                                             put(newBlob.Blob, Blob);
@@ -151,6 +151,12 @@ namespace RestfulFirebase.Database.Models
                         BlobFactory.Set(oldDataFactory.Get());
                     }
                 },
+                () =>
+                {
+                    var oldDataFactory = BlobFactory;
+                    BlobFactory = null;
+                    BlobFactory.Set(oldDataFactory.Get());
+                },
                 streamObject =>
                 {
                     try
@@ -158,7 +164,7 @@ namespace RestfulFirebase.Database.Models
                         if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                         else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                         else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, SyncTag);
+                        else if (streamObject.Path.Length == 1) UpdateBlob(streamObject.Data, RealtimeWire.SyncTag);
                     }
                     catch (Exception ex)
                     {
@@ -167,18 +173,18 @@ namespace RestfulFirebase.Database.Models
                 });
         }
 
-        public void ModifyData(string data)
+        public bool ModifyData(string data)
         {
             if (data == null)
             {
-                UpdateBlob(null);
+                return UpdateBlob(null);
             }
             else
             {
                 var newBlob = PrimitiveBlob.CreateFromBlob(Blob);
                 newBlob.UpdateData(data);
-                newBlob.SetAdditional(ModifiedKey, CurrentDateTimeFactory());
-                UpdateBlob(newBlob.Blob);
+                newBlob.SetAdditional(RealtimeWire.ModifiedKey, CurrentDateTimeFactory());
+                return UpdateBlob(newBlob.Blob);
             }
         }
 

@@ -127,12 +127,11 @@ namespace RestfulFirebase.Common.Models
         public ObservableObject(IAttributed attributed)
         {
             Holder.Initialize(this, attributed);
-            var attr = attributed ?? this;
-            foreach (var property in attr
+            foreach (var property in this
                 .GetType()
                 .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                property.GetValue(attr);
+                property.GetValue(this);
             }
         }
 
@@ -176,7 +175,8 @@ namespace RestfulFirebase.Common.Models
             string key,
             string group = null,
             [CallerMemberName] string propertyName = null,
-            Func<T, T, bool> validateValue = null)
+            Func<T, T, bool> validateValue = null,
+            Func<(T value, DistinctProperty property), bool> customValueSetter = null)
         {
             PropertyHolder propHolder = null;
             bool hasChanges = false;
@@ -184,7 +184,7 @@ namespace RestfulFirebase.Common.Models
             try
             {
                 propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
-                var newblob = DataTypeConverter.GetConverter<T>().Encode(value);
+                var newData = DataTypeConverter.GetConverter<T>().Encode(value);
 
                 if (propHolder != null)
                 {
@@ -202,20 +202,29 @@ namespace RestfulFirebase.Common.Models
                         hasChanges = true;
                     }
 
-                    if (propHolder.Property.Blob != newblob ||
+                    if (propHolder.Property.GetData() != newData ||
                         (validateValue?.Invoke(existingValue, value) ?? false))
                     {
-                        if (propHolder.Property.UpdateBlob(newblob)) hasChanges = true;
+                        if (customValueSetter == null)
+                        {
+                            if (propHolder.Property.UpdateData(newData)) hasChanges = true;
+                        }
+                        else
+                        {
+                            if (customValueSetter.Invoke((value, propHolder.Property))) hasChanges = true;
+                        }
                     }
                 }
                 else
                 {
                     propHolder = new PropertyHolder()
                     {
-                        Property = PropertyFactory(DistinctProperty.CreateFromKeyAndBlob(key, newblob)),
+                        Property = PropertyFactory(DistinctProperty.CreateFromKey(key)),
                         Group = group,
                         PropertyName = propertyName
                     };
+                    if (customValueSetter == null) propHolder.Property.UpdateData(newData);
+                    else customValueSetter.Invoke((value, propHolder.Property));
                     PropertyHolders.Add(propHolder);
                     hasChanges = true;
                 }
@@ -234,7 +243,8 @@ namespace RestfulFirebase.Common.Models
             string key,
             string group = null,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Func<(T value, DistinctProperty property), bool> customValueSetter = null)
         {
             bool hasChanges = false;
             var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(key));
@@ -242,10 +252,12 @@ namespace RestfulFirebase.Common.Models
             {
                 propHolder = new PropertyHolder()
                 {
-                    Property = PropertyFactory(DistinctProperty.CreateFromKeyAndValue(key, defaultValue)),
+                    Property = PropertyFactory(DistinctProperty.CreateFromKey(key)),
                     Group = group,
                     PropertyName = propertyName
                 };
+                if (customValueSetter == null) propHolder.Property.UpdateData(DataTypeConverter.GetConverter<T>().Encode(defaultValue));
+                else customValueSetter.Invoke((defaultValue, propHolder.Property));
                 PropertyHolders.Add(propHolder);
                 hasChanges = true;
             }

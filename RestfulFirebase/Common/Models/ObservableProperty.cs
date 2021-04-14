@@ -73,16 +73,17 @@ namespace RestfulFirebase.Common.Models
 
         public static new ObservableProperty CreateFromValue<T>(T value)
         {
-            var encoded = DataTypeConverter.GetConverter<T>().Encode(value);
-            var data = Helpers.SerializeString(encoded, null);
-            return CreateFromBlob(data);
+            return new ObservableProperty(PrimitiveBlob.CreateFromValue(value));
         }
 
         public static new ObservableProperty CreateFromBlob(string blob)
         {
-            var obj = new ObservableProperty(null);
-            obj.UpdateBlob(blob);
-            return obj;
+            return new ObservableProperty(PrimitiveBlob.CreateFromBlob(blob));
+        }
+
+        public static new ObservableProperty CreateFromData(string data)
+        {
+            return new ObservableProperty(PrimitiveBlob.CreateFromData(data));
         }
 
         public ObservableProperty(IAttributed attributed)

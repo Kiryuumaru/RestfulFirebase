@@ -39,9 +39,9 @@ namespace RestTest
             set => SetPersistableProperty(value, "premium");
         }
 
-        public List<TimeSpan> Premiums
+        public IEnumerable<TimeSpan> Premiums
         {
-            get => GetPersistableProperty<List<TimeSpan>>("premiums", new List<TimeSpan>());
+            get => GetPersistableProperty<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
             set => SetPersistableProperty(value, "premiums");
         }
 
@@ -116,19 +116,21 @@ namespace RestTest
                 StorageBucket = "restfulplayground.appspot.com"
             });
 
-            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
-            //userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
+            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
-            ObjectProperty();
+            //TestProperty();
+            //TestPropertyGroup();
+            TestObject();
         }
 
         public static void TestProperty()
         {
             var props = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
-            userNode.Child("propCollection").AsRealtimeProperty(props).Start();
             props.PropertyChanged += (s, e) => { Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName); };
+            userNode.Child("propCollection").AsRealtimeProperty(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -136,11 +138,25 @@ namespace RestTest
             }
         }
 
-        public static void ObjectProperty()
+        public static void TestPropertyGroup()
+        {
+            var props = FirebasePropertyGroup.CreateFromKey("propCollection");
+            props.CollectionChanged += (s, e) => { Console.WriteLine("Count: " + props.Count); };
+            userNode.AsRealtimePropertyGroup(props).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+            }
+        }
+
+        public static void TestObject()
         {
             var obj = TestStorable.Create();
+            obj.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Prop: " + e.PropertyName);
+            };
             userNode.Child("objCollection").AsRealtimeObject<TestStorable>(obj).Start();
-            obj.PropertyChanged += (s, e) => { Console.WriteLine("Prop: " + e.PropertyName); };
             while (true)
             {
                 string line = Console.ReadLine();
