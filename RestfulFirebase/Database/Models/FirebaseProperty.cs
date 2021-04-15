@@ -35,24 +35,32 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public static new FirebaseProperty CreateFromKey(string key)
+        public static FirebaseProperty CreateFromKey(string key, SmallDateTime? modified = null)
         {
-            return new FirebaseProperty(DistinctProperty.CreateFromKey(key));
+            var prop = new FirebaseProperty(DistinctProperty.CreateFromKey(key));
+            if (modified != null) prop.Modified = modified.Value;
+            return prop;
         }
 
-        public static new FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value)
+        public static FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value, SmallDateTime? modified = null)
         {
-            return new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
+            var prop = new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
+            if (modified != null) prop.Modified = modified.Value;
+            return prop;
         }
 
-        public static new FirebaseProperty CreateFromKeyAndBlob(string key, string blob)
+        public static FirebaseProperty CreateFromKeyAndBlob(string key, string blob, SmallDateTime? modified = null)
         {
-            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
+            var prop = new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
+            if (modified != null) prop.Modified = modified.Value;
+            return prop;
         }
 
-        public static new FirebaseProperty CreateFromKeyAndData(string key, string data)
+        public static FirebaseProperty CreateFromKeyAndData(string key, string data, SmallDateTime? modified = null)
         {
-            return new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
+            var prop = new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
+            if (modified != null) prop.Modified = modified.Value;
+            return prop;
         }
 
         public FirebaseProperty(IAttributed attributed)

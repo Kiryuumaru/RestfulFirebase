@@ -141,13 +141,18 @@ namespace RestTest
         public static void TestPropertyGroup()
         {
             //var props = FirebasePropertyGroup.CreateFromKey("obj");
-            //props.CollectionChanged += (s, e) => { Console.WriteLine("Count: " + props.Count); };
             var props = userNode.Child("objCollection").AsRealtimePropertyGroup("obj");
+            props.Model.CollectionChanged += (s, e) => { Console.WriteLine("Count: " + props.Model.Count); };
             props.Start();
             while (true)
             {
                 string line = Console.ReadLine();
-                props.Model.Add(FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line));
+                var prop = FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line);
+                prop.PropertyChanged += (s, e) =>
+                {
+                    Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
+                };
+                props.Model.Add(prop);
             }
         }
 

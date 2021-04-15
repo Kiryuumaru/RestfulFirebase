@@ -54,24 +54,25 @@ namespace RestfulFirebase.Database.Models
         protected virtual FirebaseProperty PropertyFactory<T>(T property, string tag = null)
             where T : DistinctProperty
         {
-            var prop = new FirebaseProperty(property);
-            if (RealtimeWire != null)
-            {
-                var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                prop.BuildRealtimeWire(childQuery, tag == null);
-                prop.RealtimeWire.StartRealtime();
-            }
-            return prop;
+            return new FirebaseProperty(property);
         }
 
         protected override void InsertItem(int index, FirebaseProperty item)
         {
-            base.InsertItem(index, PropertyFactory(item));
+            var prop = PropertyFactory(item);
+            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+            prop.BuildRealtimeWire(childQuery, true);
+            prop.RealtimeWire.StartRealtime();
+            base.InsertItem(index, prop);
         }
 
         protected override void SetItem(int index, FirebaseProperty item)
         {
-            base.SetItem(index, PropertyFactory(item));
+            var prop = PropertyFactory(item);
+            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+            prop.BuildRealtimeWire(childQuery, true);
+            prop.RealtimeWire.StartRealtime();
+            base.SetItem(index, prop);
         }
 
         public void Delete()
@@ -114,8 +115,9 @@ namespace RestfulFirebase.Database.Models
                         {
                             var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
                             var blobs = data.Select(i => (i.Key, i.Value.ToString()));
-                            foreach (var prop in this.Where(i => !blobs.Any(j => j.Key == i.Key)))
+                            foreach (var prop in new List<FirebaseProperty>(this.Where(i => !blobs.Any(j => j.Key == i.Key))))
                             {
+                                this.Remove(prop);
                                 if (prop.RealtimeWire.ConsumeStream(new StreamObject(null, prop.Key))) hasChanges = true;
                             }
                             foreach (var blob in blobs)
@@ -134,9 +136,11 @@ namespace RestfulFirebase.Database.Models
                                         }
                                         else
                                         {
+                                            prop = PropertyFactory(FirebaseProperty.CreateFromKey(blob.Key, SmallDateTime.MinValue));
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                            prop = PropertyFactory(DistinctProperty.CreateFromKey(blob.Key));
+                                            prop.BuildRealtimeWire(childQuery, true);
                                             prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
+                                            prop.RealtimeWire.StartRealtime();
                                             this.Add(prop);
                                             hasChanges = true;
                                         }
@@ -164,14 +168,17 @@ namespace RestfulFirebase.Database.Models
                                 if (prop == null)
                                 {
                                     if (streamObject.Data == null) return false;
+                                    prop = PropertyFactory(FirebaseProperty.CreateFromKey(streamObject.Path[1], SmallDateTime.MinValue));
                                     var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                    prop = PropertyFactory(DistinctProperty.CreateFromKey(streamObject.Path[1]));
+                                    prop.BuildRealtimeWire(childQuery, true);
                                     prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
+                                    prop.RealtimeWire.StartRealtime();
                                     this.Add(prop);
                                     hasChanges = true;
                                 }
                                 else
                                 {
+                                    if (streamObject.Data == null) this.Remove(prop);
                                     if (prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
                                     {
                                         hasChanges = true;
