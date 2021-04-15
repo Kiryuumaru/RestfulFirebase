@@ -16,6 +16,7 @@ namespace RestfulFirebase.Database.Models
         #region Properties
 
         private const string ModifiedKey = "_m";
+        private const string InitTag = "init";
         private const string SyncTag = "sync";
         private const string RevertTag = "revert";
 
@@ -83,7 +84,7 @@ namespace RestfulFirebase.Database.Models
             UpdateBlob(null);
         }
 
-        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query)
         {
             RealtimeWire = new RealtimeWire(query,
                 () =>
@@ -107,6 +108,33 @@ namespace RestfulFirebase.Database.Models
                             var newBlob = PrimitiveBlob.CreateFromBlob(args.Blob);
                             switch (args.Tag)
                             {
+                                case InitTag:
+                                    var offlineData = RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path);
+                                    if (offlineData != null && args.Blob != null)
+                                    {
+                                        var offlineDataModified = offlineData.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                                        if (newBlobModified >= offlineDataModified)
+                                        {
+                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                            return true;
+                                        }
+                                        else
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    else if (offlineData == null && args.Blob != null)
+                                    {
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                        return true;
+                                    }
+                                    else if (offlineData != null && args.Blob == null)
+                                    {
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                        return true;
+                                    }
+                                    return false;
                                 case SyncTag:
                                     if (args.Blob == null)
                                     {
@@ -158,10 +186,7 @@ namespace RestfulFirebase.Database.Models
                             }
                         },
                         args => RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path)?.Blob ?? null);
-                    if (invokeSetFirst)
-                    {
-                        BlobFactory.Set(oldDataFactory.Get());
-                    }
+                    BlobFactory.Set(oldDataFactory.Get(), InitTag);
                 },
                 () =>
                 {

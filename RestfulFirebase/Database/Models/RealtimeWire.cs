@@ -14,6 +14,7 @@ namespace RestfulFirebase.Database.Models
 
         public string Path { get; private set; }
         public FirebaseQuery Query { get; }
+        public bool HasFirstStream { get; private set; } = false;
 
         public RealtimeWire(FirebaseQuery query, Action startRealtime, Action stopRealtime, Func<StreamObject, bool> consumeStream)
         {
@@ -36,7 +37,9 @@ namespace RestfulFirebase.Database.Models
 
         public bool ConsumeStream(StreamObject streamObject)
         {
-            return consumeStream.Invoke(streamObject);
+            var ret = consumeStream.Invoke(streamObject);
+            HasFirstStream = true;
+            return ret;
         }
     }
 }

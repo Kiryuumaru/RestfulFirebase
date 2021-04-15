@@ -113,24 +113,33 @@ namespace RestTest
             {
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
-                StorageBucket = "restfulplayground.appspot.com"
+                StorageBucket = "restfulplayground.appspot.com",
+                LocalDatabase = new Datastore()
             });
 
-            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
-            //TestProperty();
-            TestPropertyGroup();
-            //TestObject();
+            //TestPropertyPut();
+            TestPropertySub();
+            //TestObjectPut();
+            //TestObjectSub();
+            //TestPropertyGroupPut();
+            //TestPropertyGroupSub();
+            //TestObjectGroupPut();
+            //TestObjectGroupSub();
         }
 
-        public static void TestProperty()
+        public static void TestPropertyPut()
         {
-            var props = FirebaseProperty.CreateFromKeyAndValue("keyS", "numba22");
-            props.PropertyChanged += (s, e) => { Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName); };
-            userNode.Child("propCollection").AsRealtimeProperty(props).Start();
+            var props = FirebaseProperty.CreateFromKeyAndValue("test", "numba22");
+            props.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
+            };
+            userNode.Child("testing").Child("mock").AsRealtimeProperty(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -138,11 +147,78 @@ namespace RestTest
             }
         }
 
-        public static void TestPropertyGroup()
+        public static void TestPropertySub()
         {
-            //var props = FirebasePropertyGroup.CreateFromKey("obj");
-            var props = userNode.Child("objCollection").AsRealtimePropertyGroup("obj");
-            props.Model.CollectionChanged += (s, e) => { Console.WriteLine("Count: " + props.Model.Count); };
+            var props = userNode.Child("testing").Child("mock").AsRealtimeProperty<string>("test");
+            props.Model.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Data: " + props.Model.Value + " Prop: " + e.PropertyName);
+            };
+            props.Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                props.Model.Value = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static void TestObjectPut()
+        {
+            var obj = TestStorable.Create("mock");
+            obj.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Prop: " + e.PropertyName);
+            };
+            userNode.Child("testing").AsRealtimeObject<TestStorable>(obj).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                obj.Test = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static void TestObjectSub()
+        {
+            var obj = userNode.Child("testing").AsRealtimeObject<TestStorable>("mock");
+            obj.Model.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Prop: " + e.PropertyName);
+            };
+            obj.Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                obj.Model.Test = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static void TestPropertyGroupPut()
+        {
+            var props = FirebasePropertyGroup.CreateFromKey("mock");
+            props.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + props.Count);
+            };
+            userNode.Child("testing").AsRealtimePropertyGroup(props).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line);
+                prop.PropertyChanged += (s, e) =>
+                {
+                    Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
+                };
+                props.Add(prop);
+            }
+        }
+
+        public static void TestPropertyGroupSub()
+        {
+            var props = userNode.Child("testing").AsRealtimePropertyGroup("mock");
+            props.Model.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + props.Model.Count);
+            };
             props.Start();
             while (true)
             {
@@ -156,18 +232,45 @@ namespace RestTest
             }
         }
 
-        public static void TestObject()
+        public static void TestObjectGroupPut()
         {
-            var obj = TestStorable.Create("obj");
-            obj.PropertyChanged += (s, e) =>
+            var objs = FirebaseObjectGroup.CreateFromKey("testing");
+            objs.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Prop: " + e.PropertyName);
+                Console.WriteLine("Count: " + objs.Count);
             };
-            userNode.Child("objCollection").AsRealtimeObject<TestStorable>(obj).Start();
+            userNode.AsRealtimeObjectGroup(objs).Start();
             while (true)
             {
                 string line = Console.ReadLine();
-                obj.Test = string.IsNullOrEmpty(line) ? null : line;
+                var obj = TestStorable.Create();
+                obj.Test = line;
+                obj.PropertyChanged += (s, e) =>
+                {
+                    Console.WriteLine("Prop: " + e.PropertyName);
+                };
+                objs.Add(obj);
+            }
+        }
+
+        public static void TestObjectGroupSub()
+        {
+            var objs = userNode.AsRealtimeObjectGroup("testing");
+            objs.Model.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + objs.Model.Count);
+            };
+            objs.Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var obj = TestStorable.Create();
+                obj.Test = line;
+                obj.PropertyChanged += (s, e) =>
+                {
+                    Console.WriteLine("Prop: " + e.PropertyName);
+                };
+                objs.Model.Add(obj);
             }
         }
     }

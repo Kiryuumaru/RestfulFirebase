@@ -46,11 +46,6 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual SmallDateTime CurrentDateTimeFactory()
-        {
-            return new SmallDateTime(DateTime.UtcNow);
-        }
-
         protected virtual FirebaseProperty PropertyFactory<T>(T property, string tag = null)
             where T : DistinctProperty
         {
@@ -60,18 +55,24 @@ namespace RestfulFirebase.Database.Models
         protected override void InsertItem(int index, FirebaseProperty item)
         {
             var prop = PropertyFactory(item);
-            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-            prop.BuildRealtimeWire(childQuery, true);
-            prop.RealtimeWire.StartRealtime();
+            if (RealtimeWire != null)
+            {
+                var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                prop.BuildRealtimeWire(childQuery);
+                prop.RealtimeWire.StartRealtime();
+            }
             base.InsertItem(index, prop);
         }
 
         protected override void SetItem(int index, FirebaseProperty item)
         {
             var prop = PropertyFactory(item);
-            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-            prop.BuildRealtimeWire(childQuery, true);
-            prop.RealtimeWire.StartRealtime();
+            if (RealtimeWire != null)
+            {
+                var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                prop.BuildRealtimeWire(childQuery);
+                prop.RealtimeWire.StartRealtime();
+            }
             base.SetItem(index, prop);
         }
 
@@ -84,15 +85,16 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query)
         {
+            bool invokeSetFirst = false;
             RealtimeWire = new RealtimeWire(query,
                 () =>
                 {
                     foreach (var prop in this)
                     {
                         var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                        prop.BuildRealtimeWire(childQuery);
                         prop.RealtimeWire.StartRealtime();
                     }
                 },
@@ -128,7 +130,7 @@ namespace RestfulFirebase.Database.Models
 
                                     if (prop == null)
                                     {
-                                        if (invokeSetFirst)
+                                        if (invokeSetFirst && !RealtimeWire.HasFirstStream)
                                         {
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
                                             childQuery.Put(null, null, ex => OnError(ex));
@@ -138,7 +140,7 @@ namespace RestfulFirebase.Database.Models
                                         {
                                             prop = PropertyFactory(FirebaseProperty.CreateFromKey(blob.Key, SmallDateTime.MinValue));
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                            prop.BuildRealtimeWire(childQuery, true);
+                                            prop.BuildRealtimeWire(childQuery);
                                             prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
                                             prop.RealtimeWire.StartRealtime();
                                             this.Add(prop);
@@ -147,9 +149,18 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        if (prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                        if (invokeSetFirst && prop.Blob == null && !RealtimeWire.HasFirstStream)
                                         {
-                                            hasChanges = true;
+                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
+                                            childQuery.Put(null, null, ex => OnError(ex));
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                            {
+                                                hasChanges = true;
+                                            }
                                         }
                                     }
                                 }
@@ -170,7 +181,7 @@ namespace RestfulFirebase.Database.Models
                                     if (streamObject.Data == null) return false;
                                     prop = PropertyFactory(FirebaseProperty.CreateFromKey(streamObject.Path[1], SmallDateTime.MinValue));
                                     var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                    prop.BuildRealtimeWire(childQuery, true);
+                                    prop.BuildRealtimeWire(childQuery);
                                     prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
                                     prop.RealtimeWire.StartRealtime();
                                     this.Add(prop);

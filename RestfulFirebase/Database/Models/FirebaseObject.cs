@@ -84,11 +84,19 @@ namespace RestfulFirebase.Database.Models
             SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue,
                 customValueSetter: args =>
                 {
+                    bool hasChanges = false;
                     var prop = (FirebaseProperty)args.property;
-                    var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                    prop.BuildRealtimeWire(childQuery, true);
-                    var hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                    prop.RealtimeWire.StartRealtime();
+                    if (RealtimeWire != null)
+                    {
+                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                        prop.BuildRealtimeWire(childQuery);
+                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                        prop.RealtimeWire.StartRealtime();
+                    }
+                    else
+                    {
+                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                    }
                     return hasChanges;
                 });
         }
@@ -101,11 +109,19 @@ namespace RestfulFirebase.Database.Models
             return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName,
                 customValueSetter: args =>
                 {
+                    bool hasChanges = false;
                     var prop = (FirebaseProperty)args.property;
-                    var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                    prop.BuildRealtimeWire(childQuery, true);
-                    var hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                    prop.RealtimeWire.StartRealtime();
+                    if (RealtimeWire != null)
+                    {
+                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
+                        prop.BuildRealtimeWire(childQuery);
+                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                        prop.RealtimeWire.StartRealtime();
+                    }
+                    else
+                    {
+                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
+                    }
                     return hasChanges;
                 });
         }
@@ -118,15 +134,16 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void BuildRealtimeWire(FirebaseQuery query, bool invokeSetFirst)
+        public void BuildRealtimeWire(FirebaseQuery query)
         {
+            bool invokeSetFirst = false;
             RealtimeWire = new RealtimeWire(query,
                 () =>
                 {
                     foreach (var prop in GetRawPersistableProperties())
                     {
                         var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.BuildRealtimeWire(childQuery, invokeSetFirst);
+                        prop.BuildRealtimeWire(childQuery);
                         prop.RealtimeWire.StartRealtime();
                     }
                 },
@@ -169,7 +186,7 @@ namespace RestfulFirebase.Database.Models
 
                                     if (propHolder == null)
                                     {
-                                        if (invokeSetFirst)
+                                        if (invokeSetFirst && !RealtimeWire.HasFirstStream)
                                         {
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
                                             childQuery.Put(null, null, ex => OnError(ex));
@@ -179,7 +196,7 @@ namespace RestfulFirebase.Database.Models
                                         {
                                             var prop = (FirebaseProperty)PropertyFactory(FirebaseProperty.CreateFromKey(blob.Key, SmallDateTime.MinValue));
                                             var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                            prop.BuildRealtimeWire(childQuery, true);
+                                            prop.BuildRealtimeWire(childQuery);
                                             prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
                                             prop.RealtimeWire.StartRealtime();
                                             propHolder = new PropertyHolder()
@@ -194,9 +211,18 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                        if (invokeSetFirst && propHolder.Property.Blob == null && !RealtimeWire.HasFirstStream)
                                         {
-                                            hasSubChanges = true;
+                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
+                                            childQuery.Put(null, null, ex => OnError(ex));
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
+                                            {
+                                                hasSubChanges = true;
+                                            }
                                         }
                                     }
 
@@ -225,7 +251,7 @@ namespace RestfulFirebase.Database.Models
                                     if (streamObject.Data == null) return false;
                                     var prop = (FirebaseProperty)PropertyFactory(FirebaseProperty.CreateFromKey(streamObject.Path[1], SmallDateTime.MinValue));
                                     var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                    prop.BuildRealtimeWire(childQuery, true);
+                                    prop.BuildRealtimeWire(childQuery);
                                     prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
                                     prop.RealtimeWire.StartRealtime();
                                     propHolder = new PropertyHolder()
