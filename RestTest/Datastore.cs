@@ -28,11 +28,16 @@ namespace RestTest
         {
             Task.Run(delegate
             {
+                var dbCopy = new Dictionary<string, string>();
                 lock (db)
+                {
+                    dbCopy = new Dictionary<string, string>(db);
+                }
+                lock (this)
                 {
                     try
                     {
-                        string contentCopy = Helpers.BlobConvert(db);
+                        string contentCopy = Helpers.BlobConvert(dbCopy);
                         File.WriteAllText(filePath, contentCopy);
                         Thread.Sleep(500);
                     }

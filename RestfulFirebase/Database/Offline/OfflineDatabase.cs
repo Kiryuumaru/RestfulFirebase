@@ -32,15 +32,15 @@ namespace RestfulFirebase.Database.Offline
         {
             var local = GetLocalData(path);
             var sync = GetSyncData(path);
-            if (local.PrimitiveBlob != null && sync.PrimitiveBlob != null)
+            if (local != null && sync != null)
             {
-                return local.Modified >= sync.Modified ? local : sync;
+                return local.Modified > sync.Modified ? local : sync;
             }
-            else if (local.PrimitiveBlob == null && sync.PrimitiveBlob != null)
+            else if (local == null && sync != null)
             {
                 return sync;
             }
-            else if(local.PrimitiveBlob != null && sync.PrimitiveBlob == null)
+            else if(local != null && sync == null)
             {
                 return local;
             }
@@ -50,24 +50,26 @@ namespace RestfulFirebase.Database.Offline
         public OfflineData GetLocalData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
+            if (string.IsNullOrEmpty(data)) return null;
             return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
         }
 
         public OfflineData GetSyncData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
+            if (string.IsNullOrEmpty(data)) return null;
             return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
         }
 
-        public void SetLocalData(string path, PrimitiveBlob data)
+        public void SetLocalData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.Blob);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.PrimitiveBlob.Blob);
             LastModified = SmallDateTime.UtcNow;
         }
 
-        public void SetSyncData(string path, PrimitiveBlob data)
+        public void SetSyncData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.Blob);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.PrimitiveBlob.Blob);
             LastModified = SmallDateTime.UtcNow;
         }
 
