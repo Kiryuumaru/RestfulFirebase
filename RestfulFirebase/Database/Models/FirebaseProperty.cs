@@ -98,6 +98,7 @@ namespace RestfulFirebase.Database.Models
                             switch (args.Tag)
                             {
                                 case InitTag:
+                                    if (newBlobModified <= SmallDateTime.MinValue) break;
                                     if (args.Blob == null)
                                     {
                                         RealtimeWire.Query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);

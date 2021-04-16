@@ -6,7 +6,12 @@ namespace RestfulFirebase.Common.Models
 {
     public struct SmallDateTime
     {
-        private DateTime baseDateTime;
+        private DateTime? baseDateTime;
+        private DateTime BaseDateTime
+        {
+            get => (baseDateTime ?? new DateTime(631139040000000000L));
+            set => baseDateTime = value;
+        }
 
         public static readonly SmallDateTime MaxValue = new SmallDateTime(DateTime.MaxValue);
         public static readonly SmallDateTime MinValue = new SmallDateTime(0);
@@ -27,12 +32,12 @@ namespace RestfulFirebase.Common.Models
 
         public DateTime GetBaseDateTime()
         {
-            return baseDateTime;
+            return BaseDateTime;
         }
 
         public long GetCompressedTime()
         {
-            return (baseDateTime.Ticks - 631139040000000000L) / 10000L;
+            return (BaseDateTime.Ticks - 631139040000000000L) / 10000L;
         }
 
         public override bool Equals(object obj)
@@ -43,17 +48,17 @@ namespace RestfulFirebase.Common.Models
 
         public override int GetHashCode()
         {
-            return baseDateTime.GetHashCode();
+            return BaseDateTime.GetHashCode();
         }
 
-        public static SmallDateTime operator +(SmallDateTime d, TimeSpan t) => new SmallDateTime(d.baseDateTime + t);
-        public static TimeSpan operator -(SmallDateTime d1, SmallDateTime d2) => d1.baseDateTime - d2.baseDateTime;
-        public static SmallDateTime operator -(SmallDateTime d, TimeSpan t) => new SmallDateTime(d.baseDateTime - t);
-        public static bool operator ==(SmallDateTime d1, SmallDateTime d2) => d1.baseDateTime == d2.baseDateTime;
-        public static bool operator !=(SmallDateTime d1, SmallDateTime d2) => d1.baseDateTime != d2.baseDateTime;
-        public static bool operator <(SmallDateTime t1, SmallDateTime t2) => t1.baseDateTime < t2.baseDateTime;
-        public static bool operator >(SmallDateTime t1, SmallDateTime t2) => t1.baseDateTime > t2.baseDateTime;
-        public static bool operator <=(SmallDateTime t1, SmallDateTime t2) => t1.baseDateTime <= t2.baseDateTime;
-        public static bool operator >=(SmallDateTime t1, SmallDateTime t2) => t1.baseDateTime >= t2.baseDateTime;
+        public static SmallDateTime operator +(SmallDateTime d, TimeSpan t) => new SmallDateTime(d.BaseDateTime + t);
+        public static TimeSpan operator -(SmallDateTime d1, SmallDateTime d2) => d1.BaseDateTime - d2.BaseDateTime;
+        public static SmallDateTime operator -(SmallDateTime d, TimeSpan t) => new SmallDateTime(d.BaseDateTime - t);
+        public static bool operator ==(SmallDateTime d1, SmallDateTime d2) => d1.BaseDateTime == d2.BaseDateTime;
+        public static bool operator !=(SmallDateTime d1, SmallDateTime d2) => d1.BaseDateTime != d2.BaseDateTime;
+        public static bool operator <(SmallDateTime t1, SmallDateTime t2) => t1.BaseDateTime < t2.BaseDateTime;
+        public static bool operator >(SmallDateTime t1, SmallDateTime t2) => t1.BaseDateTime > t2.BaseDateTime;
+        public static bool operator <=(SmallDateTime t1, SmallDateTime t2) => t1.BaseDateTime <= t2.BaseDateTime;
+        public static bool operator >=(SmallDateTime t1, SmallDateTime t2) => t1.BaseDateTime >= t2.BaseDateTime;
     }
 }
