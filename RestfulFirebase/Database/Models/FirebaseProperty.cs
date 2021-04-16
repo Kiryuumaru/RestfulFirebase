@@ -15,10 +15,10 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private const string ModifiedKey = "_m";
         private const string InitTag = "init";
         private const string SyncTag = "sync";
         private const string RevertTag = "revert";
+        public const string ModifiedKey = "_m";
 
         public RealtimeWire RealtimeWire
         {
@@ -43,31 +43,17 @@ namespace RestfulFirebase.Database.Models
             return prop;
         }
 
-        public static FirebaseProperty<T> CreateFromKeyAndValue<T>(string key, T value, SmallDateTime? modified = null)
+        public static FirebaseProperty<T> CreateFromKey<T>(string key, SmallDateTime? modified = null)
         {
-            var prop = new FirebaseProperty<T>(DistinctProperty.CreateFromKeyAndValue(key, value));
+            var prop = new FirebaseProperty(DistinctProperty.CreateFromKey(key));
             if (modified != null) prop.Modified = modified.Value;
-            return prop;
-        }
-
-        public static FirebaseProperty CreateFromKeyAndBlob(string key, string blob, SmallDateTime? modified = null)
-        {
-            var prop = new FirebaseProperty(DistinctProperty.CreateFromKeyAndBlob(key, blob));
-            if (modified != null) prop.Modified = modified.Value;
-            return prop;
-        }
-
-        public static FirebaseProperty CreateFromKeyAndData(string key, string data, SmallDateTime? modified = null)
-        {
-            var prop = new FirebaseProperty(DistinctProperty.CreateFromKeyAndData(key, data));
-            if (modified != null) prop.Modified = modified.Value;
-            return prop;
+            return prop.ParseModel<T>();
         }
 
         public FirebaseProperty(IAttributed attributed)
             : base(attributed)
         {
-            if (!HasAdditional(ModifiedKey)) Modified = CurrentDateTimeFactory();
+
         }
 
         #endregion
@@ -76,7 +62,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual SmallDateTime CurrentDateTimeFactory()
         {
-            return new SmallDateTime(DateTime.UtcNow);
+            return SmallDateTime.UtcNow;
         }
 
         public void Delete()
@@ -106,86 +92,63 @@ namespace RestfulFirebase.Database.Models
                                 });
                             }
                             var newBlob = PrimitiveBlob.CreateFromBlob(args.Blob);
+                            var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
+                            var localData = RealtimeWire.Query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
+                            var syncData = RealtimeWire.Query.App.Database.OfflineDatabase.GetSyncData(RealtimeWire.Path);
                             switch (args.Tag)
                             {
                                 case InitTag:
-                                    var offlineData = RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path);
-                                    if (offlineData != null && args.Blob != null)
+                                    if (args.Blob == null)
                                     {
-                                        var offlineDataModified = offlineData.GetAdditional<SmallDateTime>(ModifiedKey);
-                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
-                                        if (newBlobModified >= offlineDataModified)
-                                        {
-                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
-                                            return true;
-                                        }
-                                        else
-                                        {
-                                            return false;
-                                        }
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
                                     }
-                                    else if (offlineData == null && args.Blob != null)
+                                    else
                                     {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
-                                        return true;
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newBlob);
                                     }
-                                    else if (offlineData != null && args.Blob == null)
-                                    {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
-                                        return true;
-                                    }
-                                    return false;
+                                    break;
                                 case SyncTag:
                                     if (args.Blob == null)
                                     {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
-                                        return true;
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteSyncData(RealtimeWire.Path);
                                     }
                                     else
                                     {
-                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
-                                        if (newBlobModified >= Modified)
-                                        {
-                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
-                                            return true;
-                                        }
-                                        else
-                                        {
-                                            put(Blob, newBlob.Blob);
-                                            return false;
-                                        }
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newBlob);
                                     }
+                                    if (localData.Modified > syncData.Modified) put(Blob, newBlob.Blob);
+                                    break;
                                 case RevertTag:
                                     if (args.Blob == null)
                                     {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
                                     }
                                     else
                                     {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newBlob);
                                     }
-                                    return true;
+                                    break;
                                 default:
                                     if (args.Blob == null)
                                     {
                                         put(null, Blob);
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteData(RealtimeWire.Path);
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
                                         return true;
                                     }
                                     else
                                     {
-                                        var newBlobModified = newBlob.GetAdditional<SmallDateTime>(ModifiedKey);
                                         if (newBlobModified >= Modified)
                                         {
                                             put(newBlob.Blob, Blob);
-                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetData(RealtimeWire.Path, newBlob);
+                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newBlob);
                                             return true;
                                         }
                                     }
-                                    return false;
+                                    break;
                             }
+                            return args.Blob == RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path)?.PrimitiveBlob.Blob;
                         },
-                        args => RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path)?.Blob ?? null);
+                        args => RealtimeWire.Query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path)?.PrimitiveBlob?.Blob ?? null);
                     BlobFactory.Set(oldDataFactory.Get(), InitTag);
                 },
                 () =>

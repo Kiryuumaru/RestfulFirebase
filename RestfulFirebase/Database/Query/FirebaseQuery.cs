@@ -110,7 +110,7 @@ namespace RestfulFirebase.Database.Query
 
         public RealtimeHolder<FirebaseProperty<T>> AsRealtimeProperty<T>(string path)
         {
-            var prop = FirebaseProperty.CreateFromKey(path, SmallDateTime.MinValue);
+            var prop = FirebaseProperty.CreateFromKey(path);
             var query = new ChildQuery(App, this, () => path);
             return new RealtimeHolder<FirebaseProperty<T>>(prop.ParseModel<T>(), query);
         }
@@ -123,7 +123,7 @@ namespace RestfulFirebase.Database.Query
 
         public RealtimeHolder<FirebaseProperty> AsRealtimeProperty(string path)
         {
-            var prop = FirebaseProperty.CreateFromKey(path, SmallDateTime.MinValue);
+            var prop = FirebaseProperty.CreateFromKey(path);
             var query = new ChildQuery(App, this, () => path);
             return new RealtimeHolder<FirebaseProperty>(prop, query);
         }

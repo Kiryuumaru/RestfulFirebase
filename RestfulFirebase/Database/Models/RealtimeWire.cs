@@ -25,6 +25,11 @@ namespace RestfulFirebase.Database.Models
             this.consumeStream = consumeStream;
         }
 
+        public ChildQuery Child(string path)
+        {
+            return new ChildQuery(Query.App, Query, () => path);
+        }
+
         public void StartRealtime()
         {
             startRealtime.Invoke();

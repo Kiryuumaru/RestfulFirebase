@@ -117,13 +117,13 @@ namespace RestTest
                 LocalDatabase = new Datastore()
             });
 
-            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
             userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
-            //TestPropertyPut();
-            TestPropertySub();
+            TestPropertyPut();
+            //TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyGroupPut();
@@ -134,7 +134,8 @@ namespace RestTest
 
         public static void TestPropertyPut()
         {
-            var props = FirebaseProperty.CreateFromKeyAndValue("test", "numba22");
+            var props = FirebaseProperty.CreateFromKey<string>("test");
+            props.Value = "numba22";
             props.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
@@ -203,7 +204,8 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                var prop = FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line);
+                var prop = FirebaseProperty.CreateFromKey<string>(Helpers.GenerateSafeUID());
+                prop.Value = line;
                 prop.PropertyChanged += (s, e) =>
                 {
                     Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
@@ -223,7 +225,8 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                var prop = FirebaseProperty.CreateFromKeyAndValue(Helpers.GenerateSafeUID(), line);
+                var prop = FirebaseProperty.CreateFromKey<string>(Helpers.GenerateSafeUID());
+                prop.Value = line;
                 prop.PropertyChanged += (s, e) =>
                 {
                     Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
