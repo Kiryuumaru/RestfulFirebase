@@ -4,45 +4,24 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 
-namespace RestfulFirebase.Common.Models
+namespace RestfulFirebase.Common.Observables
 {
-	public class ObservableGroup<T> : ObservableCollection<T>, IObservableAttributed
+	public class ObservableGroup<T> : ObservableCollection<T>, IObservable
 	{
 		#region Properties
 
-		public AttributeHolder Holder { get; } = new AttributeHolder();
-
-		private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
-		{
-			get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(nameof(PropertyErrorHandler), nameof(ObservableGroup<T>), delegate { }).Value;
-			set => Holder.SetAttribute(nameof(PropertyErrorHandler), nameof(ObservableGroup<T>), value);
-		}
+		public event EventHandler<ContinueExceptionEventArgs> PropertyError;
 
 		#endregion
 
 		#region Initializers
 
-		public static ObservableGroup<T> CreateFromEnumerable(IEnumerable<T> collection)
-        {
-			return new ObservableGroup<T>(collection);
-
-		}
-
-		public ObservableGroup(IAttributed attributed)
+		public ObservableGroup() : base()
 		{
-			Holder.Initialize(this, attributed);
-			if (attributed != null)
-            {
-				if (attributed is ObservableCollection<T> collection)
-				{
-					AddArrangeCore(collection);
-					collection.CollectionChanged += (s, e) => OnCollectionChanged(e);
-				}
-            }
+
 		}
 
-		private ObservableGroup(IEnumerable<T> collection)
-			: base(collection)
+		private ObservableGroup(IEnumerable<T> collection) : base(collection)
 		{
 		}
 
@@ -53,7 +32,7 @@ namespace RestfulFirebase.Common.Models
 		public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
 		{
 			var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
-			PropertyErrorHandler?.Invoke(this, args);
+			PropertyError?.Invoke(this, args);
 			if (!args.IgnoreAndContinue)
 			{
 				throw args.Exception;
@@ -62,7 +41,7 @@ namespace RestfulFirebase.Common.Models
 
 		public virtual void OnError(ContinueExceptionEventArgs args)
 		{
-			PropertyErrorHandler?.Invoke(this, args);
+			PropertyError?.Invoke(this, args);
 			if (!args.IgnoreAndContinue)
 			{
 				throw args.Exception;

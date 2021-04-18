@@ -14,20 +14,18 @@ namespace RestfulFirebase.Database.Streaming
         public FirebaseQuery Query { get; private set; }
         public IDisposable Subscription { get; private set; }
 
-        internal RealtimeHolder(T realtime, FirebaseQuery query)
+        internal RealtimeHolder(T model, FirebaseQuery query)
         {
-            Model = realtime;
+            Model = model;
             Query = query;
         }
 
         public void Start()
         {
-            if (Model.RealtimeWire != null) return;
-            Model.BuildRealtimeWire(Query);
-            Model.RealtimeWire.StartRealtime();
+            Model.StartRealtime(Query);
             Subscription = Observable
                 .Create<StreamObject>(observer => new NodeStreamer(observer, Query, (s, e) => Model.OnError(e)).Run())
-                .Subscribe(streamObject => { Model.RealtimeWire.ConsumeStream(streamObject); });
+                .Subscribe(streamObject => { Model.ConsumeStream(streamObject); });
         }
 
         public void Delete()
@@ -38,7 +36,7 @@ namespace RestfulFirebase.Database.Streaming
         public void Dispose()
         {
             Subscription?.Dispose();
-            Model.RealtimeWire?.StopRealtime();
+            Model.StopRealtime();
         }
     }
 }

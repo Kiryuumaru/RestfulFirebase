@@ -130,13 +130,13 @@ namespace RestfulFirebase.Database.Models
                                         }
                                         else if (lastData != null)
                                         {
-                                            if (lastData.Modified > newBlobModified) put(lastData.PrimitiveBlob.Blob, Blob);
+                                            if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
                                         }
                                     }
                                     else
                                     {
-                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newBlob);
-                                        if (lastData != null) if (lastData.Modified > newBlobModified) put(lastData.PrimitiveBlob.Blob, Blob);
+                                        RealtimeWire.Query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newData);
+                                        if (lastData != null) if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
                                     }
                                     break;
                                 default:
@@ -151,10 +151,10 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        if (newBlobModified >= Modified)
+                                        if (newData.Modified >= Modified)
                                         {
-                                            put(newBlob.Blob, Blob);
-                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newBlob);
+                                            put(newData.PrimitiveBlob.Blob, Blob);
+                                            RealtimeWire.Query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
                                         }
                                     }
                                     break;

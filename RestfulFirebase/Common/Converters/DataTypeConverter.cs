@@ -9,19 +9,33 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Converters
 {
-    public class ConverterHolder<T>
+    public class ConverterHolder
     {
-        private Func<T, string> encoder;
-        private Func<string, T> decoder;
+        private Func<object, string> encode;
+        private Func<string, object> decode;
 
-        public ConverterHolder(Func<T, string> encoder, Func<string, T> decoder)
+        public ConverterHolder(Func<object, string> encode, Func<string, object> decode)
         {
-            this.encoder = encoder;
-            this.decoder = decoder;
+            this.encode = encode;
+            this.decode = decode;
         }
 
-        public string Encode(T value) => encoder(value);
-        public T Decode(string data) => decoder(data);
+        public string Encode(object value) => encode(value);
+        public object Decode(string data) => decode(data);
+    }
+
+    public class ConverterHolder<T> : ConverterHolder
+    {
+        public ConverterHolder(Func<T, string> encode, Func<string, T> decode)
+            : base(
+                  new Func<object, string>(obj => encode((T)obj)),
+                  new Func<string, object>(data => decode(data)))
+        {
+
+        }
+
+        public string Encode(T value) => base.Encode(value);
+        public new T Decode(string data) => (T)base.Decode(data);
     }
 
     public abstract class DataTypeConverter
@@ -52,6 +66,50 @@ namespace RestfulFirebase.Common.Converters
                 converters.Add(new SmallDateTimeConverter());
                 converters.Add(new TimeSpanConverter());
             }
+        }
+
+        public static ConverterHolder GetConverter(Type type)
+        {
+            if (type.IsArray)
+            {
+                var arrayType = type.GetElementType();
+                foreach (var conv in converters)
+                {
+                    if (conv.Type == arrayType)
+                    {
+                        return new ConverterHolder(
+                            values => conv.EncodeEnumerableObject(values),
+                            data => conv.DecodeEnumerableObject(data));
+                    }
+                }
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(type) && type.GetGenericArguments()?.Length == 1)
+            {
+                var genericType = type.GetGenericArguments()[0];
+                foreach (var conv in converters)
+                {
+                    if (conv.Type == genericType)
+                    {
+                        return new ConverterHolder(
+                            values => conv.EncodeEnumerableObject(values),
+                            data => conv.DecodeEnumerableObject(data));
+                    }
+                }
+            }
+            else
+            {
+                foreach (var conv in converters)
+                {
+                    if (conv.Type == type)
+                    {
+                        var derivedConv = (DataTypeConverter)conv;
+                        return new ConverterHolder(
+                            conv.EncodeObject,
+                            conv.DecodeObject);
+                    }
+                }
+            }
+            throw new Exception(type.Name + " data type not supported");
         }
 
         public static ConverterHolder<T> GetConverter<T>()

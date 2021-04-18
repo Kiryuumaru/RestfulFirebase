@@ -28,48 +28,29 @@ namespace RestfulFirebase.Database.Offline
             App = app;
         }
 
-        public OfflineData GetData(string path)
-        {
-            var local = GetLocalData(path);
-            var sync = GetSyncData(path);
-            if (local != null && sync != null)
-            {
-                return local.Modified > sync.Modified ? local : sync;
-            }
-            else if (local == null && sync != null)
-            {
-                return sync;
-            }
-            else if(local != null && sync == null)
-            {
-                return local;
-            }
-            return null;
-        }
-
-        public OfflineData GetLocalData(string path)
+        public string GetLocalData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
             if (string.IsNullOrEmpty(data)) return null;
-            return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
+            return data;
         }
 
-        public OfflineData GetSyncData(string path)
+        public string GetSyncData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
             if (string.IsNullOrEmpty(data)) return null;
-            return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
+            return data;
         }
 
-        public void SetLocalData(string path, OfflineData data)
+        public void SetLocalData(string path, string data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.PrimitiveBlob.Blob);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data);
             LastModified = SmallDateTime.UtcNow;
         }
 
-        public void SetSyncData(string path, OfflineData data)
+        public void SetSyncData(string path, string data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.PrimitiveBlob.Blob);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data);
             LastModified = SmallDateTime.UtcNow;
         }
 
@@ -85,33 +66,21 @@ namespace RestfulFirebase.Database.Offline
             LastModified = SmallDateTime.UtcNow;
         }
 
-        public IEnumerable<OfflineData> GetAll(string path)
-        {
-            var all = new List<OfflineData>();
-            var locals = GetAllLocal(path);
-            var syncs = GetAllSync(path);
-            foreach (var data in locals)
-            {
-
-            }
-            return all;
-        }
-
-        public IEnumerable<OfflineData> GetAllLocal(string path)
+        public IEnumerable<string> GetAllLocal(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                yield return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
+                yield return data;
             }
         }
 
-        public IEnumerable<OfflineData> GetAllSync(string path)
+        public IEnumerable<string> GetAllSync(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                yield return new OfflineData(PrimitiveBlob.CreateFromBlob(data));
+                yield return data;
             }
         }
     }

@@ -1,67 +1,201 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RestfulFirebase.Common;
-using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObject : DistinctObject, IRealtimeModel
+    public class FirebaseObject : ObservableObject, IRealtimeModel
     {
         #region Properties
 
-        public RealtimeWire RealtimeWire
-        {
-            get => Holder.GetAttribute<RealtimeWire>(nameof(RealtimeWire), nameof(FirebaseObject)).Value;
-            private set => Holder.SetAttribute(nameof(RealtimeWire), nameof(FirebaseObject), value);
-        }
+        private const string InitTag = "init";
+        private const string SyncTag = "sync";
+        private const string RevertTag = "revert";
 
-        public string TypeIdentifier
-        {
-            get => GetPersistableProperty<string>("_t");
-            protected set => SetPersistableProperty(value, "_t");
-        }
+        public string Key { get; protected set; }
+
+        public string Blob { get; private set; }
 
         public SmallDateTime Modified
         {
             get
             {
-                GetPersistableProperty<string>("_m");
-                var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key == "_m");
-                var prop = (FirebaseProperty)propHolder.Property;
-                return prop.Modified;
+                lock(Blob)
+                {
+                    var datas = Helpers.DeserializeString(Blob);
+                    if (datas == null) return default;
+                    if (datas.Length != 2) return default;
+                    return Helpers.DecodeSmallDateTime(datas[1], default);
+                }
             }
-            set => SetPersistableProperty<string>("", "_m");
+            set
+            {
+                lock (Blob)
+                {
+                    var datas = Helpers.DeserializeString(Blob);
+                    if (datas == null) datas = new string[2];
+                    if (datas.Length != 2) datas = new string[2];
+                    datas[1] = Helpers.EncodeSmallDateTime(value);
+                    Blob = Helpers.SerializeString(datas);
+                }
+            }
         }
 
         #endregion
 
         #region Initializers
 
-        public static new FirebaseObject Create()
+        public FirebaseObject(string key) : base()
         {
-            return new FirebaseObject(DistinctObject.Create());
+            Key = key;
         }
 
-        public static new FirebaseObject CreateFromKey(string key)
+        #endregion
+
+        #region Methods
+
+        public void StartRealtime(FirebaseQuery query)
         {
-            return new FirebaseObject(DistinctObject.CreateFromKey(key));
+            var path = query.GetAbsolutePath();
+            ValueFactory = new ValueFactory(
+                args =>
+                {
+                    void put(string blobToPut, string revertBlob)
+                    {
+                        query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                        {
+                            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                            {
+                                SetValue(revertBlob, RevertTag);
+                            }
+                            OnError(ex);
+                        });
+                    }
+
+                    var newData = args.value;
+                    var localData = query.App.Database.OfflineDatabase.GetLocalData(path);
+                    var syncData = query.App.Database.OfflineDatabase.GetSyncData(path);
+
+                    switch (args.tag)
+                    {
+                        case InitTag:
+                            if (newData.Modified <= SmallDateTime.MinValue) break;
+                            if (args.Blob == null)
+                            {
+                                query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
+                            }
+                            else
+                            {
+                                query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
+                            }
+                            break;
+                        case RevertTag:
+                            if (args.Blob == null)
+                            {
+                                query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
+                            }
+                            else
+                            {
+                                query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
+                            }
+                            break;
+                        case SyncTag:
+                            if (args.Blob == null)
+                            {
+                                var localData = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
+                                var syncData = query.App.Database.OfflineDatabase.GetSyncData(RealtimeWire.Path);
+                                query.App.Database.OfflineDatabase.DeleteSyncData(RealtimeWire.Path);
+                                if (syncData != null)
+                                {
+                                    query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
+                                }
+                                else if (lastData != null)
+                                {
+                                    if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
+                                }
+                            }
+                            else
+                            {
+                                query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newData);
+                                if (lastData != null) if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
+                            }
+                            break;
+                        default:
+                            if (args.Blob == null)
+                            {
+                                put(null, Blob);
+                                var localLast = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
+                                query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
+                                var localCurrent = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
+                                if (localLast == null && localCurrent == null) return false;
+                                return localLast?.PrimitiveBlob.Blob != localCurrent?.PrimitiveBlob.Blob;
+                            }
+                            else
+                            {
+                                if (newData.Modified >= Modified)
+                                {
+                                    put(newData.PrimitiveBlob.Blob, Blob);
+                                    query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
+                                }
+                            }
+                            break;
+                    }
+
+
+
+                    var current = query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path);
+                    if (lastData == null && current == null) return false;
+                    return lastData?.PrimitiveBlob.Blob != current?.PrimitiveBlob.Blob;
+                },
+                args =>
+                {
+                    var type = typeof(args.defaultValue);
+                    var localData = query.App.Database.OfflineDatabase.GetLocalData(path);
+                    var syncData = query.App.Database.OfflineDatabase.GetSyncData(path);
+                    var localDataModified = Helpers.Des
+                });
         }
 
-        public static new FirebaseObject CreateFromKeyAndProperties(string key, IEnumerable<(string Key, string Data)> properties)
+        public void StopRealtime()
         {
-            return new FirebaseObject(DistinctObject.CreateFromKeyAndProperties(key, properties));
+            throw new NotImplementedException();
         }
 
-        public FirebaseObject(IAttributed attributed)
-            : base(attributed)
+        public void ConsumeStream(StreamObject streamObject)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Delete()
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+    }
+
+    public class FirebaseObject<T> : FirebaseObject
+    {
+        #region Properties
+
+        public new T Value
+        {
+            get => base.GetValue<T>();
+            set => base.SetValue(value);
+        }
+
+        #endregion
+
+        #region Initializers
+
+        public FirebaseObject(string key)
+            : base(key)
         {
 
         }
@@ -70,237 +204,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected override DistinctProperty PropertyFactory<T>(T property, string tag = null)
-        {
-            return new FirebaseProperty(property);
-        }
 
-        protected void SetPersistableProperty<T>(
-            T value,
-            string key,
-            [CallerMemberName] string propertyName = "",
-            Func<T, T, bool> validateValue = null)
-        {
-            SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue,
-                customValueSetter: args =>
-                {
-                    bool hasChanges = false;
-                    var prop = (FirebaseProperty)args.property;
-                    if (RealtimeWire != null)
-                    {
-                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.BuildRealtimeWire(childQuery);
-                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                        prop.RealtimeWire.StartRealtime();
-                    }
-                    else
-                    {
-                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                    }
-                    return hasChanges;
-                });
-        }
-
-        protected T GetPersistableProperty<T>(
-            string key,
-            T defaultValue = default,
-            [CallerMemberName] string propertyName = "")
-        {
-            return GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName,
-                customValueSetter: args =>
-                {
-                    bool hasChanges = false;
-                    var prop = (FirebaseProperty)args.property;
-                    if (RealtimeWire != null)
-                    {
-                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.BuildRealtimeWire(childQuery);
-                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                        prop.RealtimeWire.StartRealtime();
-                    }
-                    else
-                    {
-                        hasChanges = prop.ModifyData(DataTypeConverter.GetConverter<T>().Encode(args.value));
-                    }
-                    return hasChanges;
-                });
-        }
-
-        public void Delete()
-        {
-            foreach (var propHolder in PropertyHolders)
-            {
-                DeleteProperty(propHolder.Property.Key);
-            }
-        }
-
-        public void BuildRealtimeWire(FirebaseQuery query)
-        {
-            bool invokeSetFirst = false;
-            RealtimeWire = new RealtimeWire(query,
-                () =>
-                {
-                    foreach (var prop in GetRawPersistableProperties())
-                    {
-                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.BuildRealtimeWire(childQuery);
-                        prop.RealtimeWire.StartRealtime();
-                    }
-                },
-                () =>
-                {
-                    RealtimeWire = null;
-                    foreach (var prop in GetRawPersistableProperties())
-                    {
-                        var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                        prop.RealtimeWire?.StopRealtime();
-                    }
-                },
-                streamObject =>
-                {
-                    bool hasChanges = false;
-                    try
-                    {
-                        if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-                        else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                        else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                        else if (streamObject.Path.Length == 1)
-                        {
-                            var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                            var blobs = data.Select(i => (i.Key, i.Value?.ToString()));
-                            foreach (var propHolder in new List<PropertyHolder>(PropertyHolders.Where(i => !blobs.Any(j => j.Key == i.Property.Key))))
-                            {
-                                if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(null, propHolder.Property.Key)))
-                                {
-                                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
-                                    hasChanges = true;
-                                }
-                            }
-                            foreach (var blob in blobs)
-                            {
-                                try
-                                {
-                                    bool hasSubChanges = false;
-
-                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(blob.Key));
-
-                                    if (propHolder == null)
-                                    {
-                                        if (invokeSetFirst && !RealtimeWire.HasFirstStream)
-                                        {
-                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
-                                            childQuery.Put(null, null, ex => OnError(ex));
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            var prop = (FirebaseProperty)PropertyFactory(FirebaseProperty.CreateFromKey(blob.Key, SmallDateTime.MinValue));
-                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                            prop.BuildRealtimeWire(childQuery);
-                                            prop.RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key));
-                                            prop.RealtimeWire.StartRealtime();
-                                            propHolder = new PropertyHolder()
-                                            {
-                                                Property = prop,
-                                                Group = null,
-                                                PropertyName = null
-                                            };
-                                            PropertyHolders.Add(propHolder);
-                                            hasSubChanges = true;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (invokeSetFirst && propHolder.Property.Blob == null && !RealtimeWire.HasFirstStream)
-                                        {
-                                            var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => blob.Key);
-                                            childQuery.Put(null, null, ex => OnError(ex));
-                                            continue;
-                                        }
-                                        else
-                                        {
-                                            if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(blob.Item2, blob.Key)))
-                                            {
-                                                hasSubChanges = true;
-                                            }
-                                        }
-                                    }
-
-                                    if (hasSubChanges)
-                                    {
-                                        OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
-                                        hasChanges = true;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    OnError(ex);
-                                }
-                            }
-                        }
-                        else if (streamObject.Path.Length == 2)
-                        {
-                            try
-                            {
-                                bool hasSubChanges = false;
-
-                                var propHolder = PropertyHolders.FirstOrDefault(i => i.Property.Key.Equals(streamObject.Path[1]));
-
-                                if (propHolder == null)
-                                {
-                                    if (streamObject.Data == null) return false;
-                                    var prop = (FirebaseProperty)PropertyFactory(FirebaseProperty.CreateFromKey(streamObject.Path[1], SmallDateTime.MinValue));
-                                    var childQuery = new ChildQuery(RealtimeWire.Query.App, RealtimeWire.Query, () => prop.Key);
-                                    prop.BuildRealtimeWire(childQuery);
-                                    prop.RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1]));
-                                    prop.RealtimeWire.StartRealtime();
-                                    propHolder = new PropertyHolder()
-                                    {
-                                        Property = prop,
-                                        Group = null,
-                                        PropertyName = null
-                                    };
-                                    PropertyHolders.Add(propHolder);
-                                    hasSubChanges = true;
-                                }
-                                else
-                                {
-                                    if (((FirebaseProperty)propHolder.Property).RealtimeWire.ConsumeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
-                                    {
-                                        hasSubChanges = true;
-                                    }
-                                }
-
-                                if (hasSubChanges)
-                                {
-                                    OnChanged(PropertyChangeType.Set, propHolder.Property.Key, propHolder.Group, propHolder.PropertyName);
-                                    hasChanges = true;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                OnError(ex);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        OnError(ex);
-                    }
-                    return hasChanges;
-                });
-        }
-
-        public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
-        {
-            return GetRawProperties(nameof(FirebaseObject)).Select(i => (FirebaseProperty)i);
-        }
-
-        public T ParseModel<T>()
-            where T : FirebaseObject
-        {
-            return (T)Activator.CreateInstance(typeof(T), this);
-        }
 
         #endregion
     }

@@ -102,84 +102,10 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public RealtimeHolder<FirebaseProperty<T>> AsRealtimeProperty<T>(FirebaseProperty<T> prop)
+        public RealtimeHolder<T> AsRealtime<T>(T model) where T : IRealtimeModel
         {
-            var query = new ChildQuery(App, this, () => prop.Key);
-            return new RealtimeHolder<FirebaseProperty<T>>(prop, query);
-        }
-
-        public RealtimeHolder<FirebaseProperty<T>> AsRealtimeProperty<T>(string path)
-        {
-            var prop = FirebaseProperty.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<FirebaseProperty<T>>(prop.ParseModel<T>(), query);
-        }
-
-        public RealtimeHolder<FirebaseProperty> AsRealtimeProperty(FirebaseProperty prop)
-        {
-            var query = new ChildQuery(App, this, () => prop.Key);
-            return new RealtimeHolder<FirebaseProperty>(prop, query);
-        }
-
-        public RealtimeHolder<FirebaseProperty> AsRealtimeProperty(string path)
-        {
-            var prop = FirebaseProperty.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<FirebaseProperty>(prop, query);
-        }
-
-        public RealtimeHolder<T> AsRealtimeObject<T>(T obj)
-            where T : FirebaseObject
-        {
-            var query = new ChildQuery(App, this, () => obj.Key);
-            return new RealtimeHolder<T>(obj, query);
-        }
-
-        public RealtimeHolder<T> AsRealtimeObject<T>(string path)
-            where T : FirebaseObject
-        {
-            var obj = FirebaseObject.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<T>(obj.ParseModel<T>(), query);
-        }
-
-        public RealtimeHolder<FirebaseObject> AsRealtimeObject(FirebaseObject obj)
-        {
-            var query = new ChildQuery(App, this, () => obj.Key);
-            return new RealtimeHolder<FirebaseObject>(obj, query);
-        }
-
-        public RealtimeHolder<FirebaseObject> AsRealtimeObject(string path)
-        {
-            var obj = FirebaseObject.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<FirebaseObject>(obj, query);
-        }
-
-        public RealtimeHolder<FirebasePropertyGroup> AsRealtimePropertyGroup(FirebasePropertyGroup group)
-        {
-            var query = new ChildQuery(App, this, () => group.Key);
-            return new RealtimeHolder<FirebasePropertyGroup>(group, query);
-        }
-
-        public RealtimeHolder<FirebasePropertyGroup> AsRealtimePropertyGroup(string path)
-        {
-            var group = FirebasePropertyGroup.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<FirebasePropertyGroup>(group, query);
-        }
-
-        public RealtimeHolder<FirebaseObjectGroup> AsRealtimeObjectGroup(FirebaseObjectGroup group)
-        {
-            var query = new ChildQuery(App, this, () => group.Key);
-            return new RealtimeHolder<FirebaseObjectGroup>(group, query);
-        }
-
-        public RealtimeHolder<FirebaseObjectGroup> AsRealtimeObjectGroup(string path)
-        {
-            var group = FirebaseObjectGroup.CreateFromKey(path);
-            var query = new ChildQuery(App, this, () => path);
-            return new RealtimeHolder<FirebaseObjectGroup>(group, query);
+            var query = new ChildQuery(App, this, () => model.Key);
+            return new RealtimeHolder<T>(model, query);
         }
 
         public async Task<string> BuildUrlAsync()

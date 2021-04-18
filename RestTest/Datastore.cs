@@ -60,6 +60,7 @@ namespace RestTest
         {
             try
             {
+                if (!db.ContainsKey(key)) return null;
                 return db[key];
             }
             catch

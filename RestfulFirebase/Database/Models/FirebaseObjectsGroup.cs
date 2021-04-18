@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObjectGroup : ObservableGroup<ObservableObject>, IRealtimeModel
+    public class FirebaseObjectsGroup : ObservableGroup<ObservableObjects>, IRealtimeModel
     {
         #region Properties
 
@@ -20,7 +20,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public FirebaseObjectGroup(string key) : base()
+        public FirebaseObjectsGroup(string key) : base()
         {
             Key = key;
         }

@@ -3,14 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 
-namespace RestfulFirebase.Common.Models
+namespace RestfulFirebase.Common.Observables
 {
-    public interface IAttributed
-    {
-        AttributeHolder Holder { get; }
-    }
-
-    public interface IObservableAttributed : IAttributed, INotifyPropertyChanged
+    public interface IObservable : INotifyPropertyChanged
     {
         void OnError(Exception exception, bool defaultIgnoreAndContinue = true);
         void OnError(ContinueExceptionEventArgs args);

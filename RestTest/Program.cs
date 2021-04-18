@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using RestfulFirebase.Common;
 using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
@@ -17,6 +16,15 @@ using RestfulFirebase.Common.Converters;
 
 namespace RestTest
 {
+    public class TestObs : RestfulFirebase.Common.Models.ObservableObjects
+    {
+        public string TestProp1
+        {
+            get => GetProperty<string>("test1");
+            set => SetProperty(value, "test1");
+        }
+    }
+
     public class TestStorable : FirebaseObject
     {
         #region Properties
@@ -117,12 +125,13 @@ namespace RestTest
                 LocalDatabase = new Datastore()
             });
 
-            var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
-            var update = await app.Auth.UpdateProfileAsync("disp", "123123");
-            userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
+            //var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
+            //var update = await app.Auth.UpdateProfileAsync("disp", "123123");
+            //userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
-            TestPropertyPut();
+            TestObservable();
+            //TestPropertyPut();
             //TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
@@ -130,6 +139,20 @@ namespace RestTest
             //TestPropertyGroupSub();
             //TestObjectGroupPut();
             //TestObjectGroupSub();
+        }
+
+        public static void TestObservable()
+        {
+            var obs = new TestObs();
+            obs.PropertyChanged += (s, e) =>
+            {
+
+            };
+            obs.TestProp1 = "testtt";
+            obs.TestProp1 = "testtt";
+            obs.TestProp1 = null;
+            obs.TestProp1 = null;
+            var ss = "svsvsvs";
         }
 
         public static void TestPropertyPut()
@@ -204,7 +227,7 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                var prop = FirebaseProperty.CreateFromKey<string>(Helpers.GenerateSafeUID());
+                var prop = FirebaseProperty.CreateFromKey<string>(RestfulFirebase.Common.Helpers.GenerateSafeUID());
                 prop.Value = line;
                 prop.PropertyChanged += (s, e) =>
                 {
@@ -225,7 +248,7 @@ namespace RestTest
             while (true)
             {
                 string line = Console.ReadLine();
-                var prop = FirebaseProperty.CreateFromKey<string>(Helpers.GenerateSafeUID());
+                var prop = FirebaseProperty.CreateFromKey<string>(RestfulFirebase.Common.Helpers.GenerateSafeUID());
                 prop.Value = line;
                 prop.PropertyChanged += (s, e) =>
                 {

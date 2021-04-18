@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Models;
+using RestfulFirebase.Common.Observables;
 
 namespace RestfulFirebase.Database.Streaming
 {
