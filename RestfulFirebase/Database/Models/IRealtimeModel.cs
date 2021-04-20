@@ -12,9 +12,8 @@ namespace RestfulFirebase.Database.Models
     {
         string Key { get; }
         SmallDateTime Modified { get; }
-        void StartRealtime(FirebaseQuery query);
-        void StopRealtime();
-        void ConsumeStream(StreamObject streamObject);
+        RealtimeWire RealtimeWire { get; }
+        void BuildRealtimeWire(FirebaseQuery parent);
         void Delete();
     }
 }

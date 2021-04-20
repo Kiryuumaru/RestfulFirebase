@@ -11,7 +11,7 @@ namespace RestfulFirebase.Database.Offline
     public class OfflineDatabase
     {
         private const string OfflineDatabaseRoot = "offlineDatabase";
-        private readonly string OfflineDatabaseLastModifiedPath = Helpers.CombineUrl(OfflineDatabaseRoot, "modified");
+        private readonly string OfflineDatabaseModifiedPath = Helpers.CombineUrl(OfflineDatabaseRoot, "mod");
         private readonly string OfflineDatabaseLocalDataPath = Helpers.CombineUrl(OfflineDatabaseRoot, "local");
         private readonly string OfflineDatabaseSyncDataPath = Helpers.CombineUrl(OfflineDatabaseRoot, "sync");
 
@@ -19,8 +19,8 @@ namespace RestfulFirebase.Database.Offline
 
         public SmallDateTime LastModified
         {
-            get => Helpers.DecodeSmallDateTime(App.LocalDatabase.Get(OfflineDatabaseLastModifiedPath), SmallDateTime.MinValue);
-            private set => App.LocalDatabase.Set(OfflineDatabaseLastModifiedPath, Helpers.EncodeSmallDateTime(value));
+            get => Helpers.DecodeSmallDateTime(App.LocalDatabase.Get(OfflineDatabaseModifiedPath), SmallDateTime.MinValue);
+            private set => App.LocalDatabase.Set(OfflineDatabaseModifiedPath, Helpers.EncodeSmallDateTime(value));
         }
 
         public OfflineDatabase(RestfulFirebaseApp app)
@@ -28,29 +28,27 @@ namespace RestfulFirebase.Database.Offline
             App = app;
         }
 
-        public string GetLocalData(string path)
+        public OfflineData GetLocalData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            if (string.IsNullOrEmpty(data)) return null;
-            return data;
+            return OfflineData.Parse(data);
         }
 
-        public string GetSyncData(string path)
+        public OfflineData GetSyncData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
-            if (string.IsNullOrEmpty(data)) return null;
-            return data;
+            return OfflineData.Parse(data);
         }
 
-        public void SetLocalData(string path, string data)
+        public void SetLocalData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.ToData());
             LastModified = SmallDateTime.UtcNow;
         }
 
-        public void SetSyncData(string path, string data)
+        public void SetSyncData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data);
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.ToData());
             LastModified = SmallDateTime.UtcNow;
         }
 
@@ -66,21 +64,25 @@ namespace RestfulFirebase.Database.Offline
             LastModified = SmallDateTime.UtcNow;
         }
 
-        public IEnumerable<string> GetAllLocal(string path)
+        public IEnumerable<OfflineData> GetAllLocal(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                yield return data;
+                var offlineData = OfflineData.Parse(data);
+                if (offlineData == null) continue;
+                yield return offlineData;
             }
         }
 
-        public IEnumerable<string> GetAllSync(string path)
+        public IEnumerable<OfflineData> GetAllSync(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                yield return data;
+                var offlineData = OfflineData.Parse(data);
+                if (offlineData == null) continue;
+                yield return offlineData;
             }
         }
     }

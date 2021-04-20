@@ -14,35 +14,36 @@ namespace RestfulFirebase.Common.Observables
     {
         #region Properties
 
-        private ValueFactory valueFactory;
-        public ValueFactory ValueFactory
+        private BlobFactory blobFactory;
+        public BlobFactory BlobFactory
         {
             get
             {
-                if (valueFactory == null)
+                if (blobFactory == null)
                 {
-                    object valueHolder = null;
-                    valueFactory = new ValueFactory(
+                    string blobHolder = null;
+                    blobFactory = new BlobFactory(
                         args =>
                         {
-                            if (valueHolder != args.value)
-                            {
-                                valueHolder = args.value;
-                                return true;
-                            }
-                            return false;
+                            var hasChanges = blobHolder != args.blob;
+                            if (hasChanges) blobHolder = args.blob;
+                            return hasChanges;
                         },
                         args =>
                         {
-                            return valueHolder == null ? args.defaultValue : valueHolder;
+                            return blobHolder == null ? blobHolder : args.defaultBlob;
                         });
                 }
-                return valueFactory;
+                return blobFactory;
             }
-            set => valueFactory = value;
+            protected set => blobFactory = value;
         }
 
-        public object Value { get; private set; }
+        public string Blob
+        {
+            get => BlobFactory.Get();
+            set => BlobFactory.Set(value);
+        }
 
         #endregion
 
@@ -59,17 +60,29 @@ namespace RestfulFirebase.Common.Observables
 
         public virtual bool SetNull(string tag = null)
         {
-            return ValueFactory.Set<object>(null, tag);
+            var hasChanges = BlobFactory.Get() != null;
+            BlobFactory.Set(null, tag);
+            return hasChanges;
         }
 
-        public virtual bool SetValue<T>(T value, string tag = null)
+        public virtual bool SetValue<T>(T value, Func<T, T, bool> comparator, string tag = null)
         {
-            return ValueFactory.Set(value, tag);
+            var converter = DataTypeConverter.GetConverter<T>();
+            if (comparator != null)
+            {
+                var currentBlob = BlobFactory.Get(default, tag);
+                var currentValue = converter.Decode(currentBlob);
+                if (comparator(value, currentValue)) return false;
+            }
+            var newBlob = converter.Encode(value);
+            return BlobFactory.Set(newBlob, tag);
         }
 
         public virtual T GetValue<T>(T defaultValue = default, string tag = null)
         {
-            return ValueFactory.Get(defaultValue, tag);
+            var converter = DataTypeConverter.GetConverter<T>();
+            var defaultBlob = converter.Encode(defaultValue);
+            return converter.Decode(BlobFactory.Get(defaultBlob, tag));
         }
 
         #endregion

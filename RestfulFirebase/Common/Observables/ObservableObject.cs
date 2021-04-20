@@ -14,8 +14,6 @@ namespace RestfulFirebase.Common.Observables
     {
         #region Properties
 
-        public object Value { get; private set; }
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         public event EventHandler<ContinueExceptionEventArgs> PropertyError;
@@ -54,14 +52,13 @@ namespace RestfulFirebase.Common.Observables
             }
         }
 
-        public virtual bool SetNull(string tag = null)
+        public override bool SetNull(string tag = null)
         {
             try
             {
-                if (Value != null)
+                if (base.SetNull(tag))
                 {
-                    Value = null;
-                    OnChanged("Value");
+                    OnChanged(nameof(Blob));
                     return true;
                 }
             }
@@ -72,13 +69,13 @@ namespace RestfulFirebase.Common.Observables
             return false;
         }
 
-        public virtual bool SetValue<T>(T value, string tag = null)
+        public override bool SetValue<T>(T value, Func<T, T, bool> comparator = null, string tag = null)
         {
             try
             {
-                if (Value != (object)value)
+                if (base.SetValue(value, comparator, tag))
                 {
-                    OnChanged(nameof(Value));
+                    OnChanged(nameof(Blob));
                     return true;
                 }
             }
@@ -89,11 +86,11 @@ namespace RestfulFirebase.Common.Observables
             return false;
         }
 
-        public virtual T GetValue<T>(T defaultValue = default, string tag = null)
+        public override T GetValue<T>(T defaultValue = default, string tag = null)
         {
             try
             {
-                return (T)Value;
+                return base.GetValue(defaultValue, tag);
             }
             catch (Exception ex)
             {
@@ -108,7 +105,11 @@ namespace RestfulFirebase.Common.Observables
     {
         #region Properties
 
-
+        public T Value
+        {
+            get => GetValue<T>();
+            set => SetValue(Value);
+        }
 
         #endregion
 
@@ -117,20 +118,6 @@ namespace RestfulFirebase.Common.Observables
         public ObservableObject() : base()
         {
 
-        }
-
-        #endregion
-
-        #region Methods
-
-        public virtual bool SetValue(T value, string tag = null)
-        {
-            return base.SetValue(value, tag);
-        }
-
-        public virtual T GetValue(T defaultValue = default, string tag = null)
-        {
-            return GetValue<T>(defaultValue, tag);
         }
 
         #endregion
