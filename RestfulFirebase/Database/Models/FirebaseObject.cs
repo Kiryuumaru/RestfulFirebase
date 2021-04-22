@@ -128,10 +128,10 @@ namespace RestfulFirebase.Database.Models
                         }
                         break;
                     default:
-                        if (newData.Value == currData.Value) return false;
+                        if (newData.Value == null && currData.Blob == null) return false;
                         if (newData.Modified >= currData.Modified)
                         {
-                            put(newData.GetRawValue() == null ? null : newData.Blob, Blob);
+                            put(newData.Value == null ? null : newData.Blob, Blob);
                             wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                         }
                         break;
@@ -223,10 +223,12 @@ namespace RestfulFirebase.Database.Models
             {
                 var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
                 if (deserialized == null) deserialized = new string[1];
+                var encodedValue = DataTypeConverter.GetConverter<T>().Encode(value);
+                if (encodedValue == deserialized[0]) return false;
                 var encodedModified = DataTypeConverter.GetConverter<SmallDateTime>().Encode(CurrentDateTimeFactory());
                 var adsDatas = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), ModifiedKey, encodedModified);
                 var newEncodedData = new string[adsDatas.Length + 1];
-                newEncodedData[0] = DataTypeConverter.GetConverter<T>().Encode(value);
+                newEncodedData[0] = encodedValue;
                 Array.Copy(adsDatas, 0, newEncodedData, 1, adsDatas.Length);
                 return SetBlob(Helpers.SerializeString(newEncodedData), tag);
             }
