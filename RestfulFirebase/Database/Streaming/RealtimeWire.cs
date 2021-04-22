@@ -27,6 +27,7 @@ namespace RestfulFirebase.Database.Streaming
 
         public async void Put(string json, Action<FirebaseException> onError)
         {
+            if (jsonToPut == json) return;
             jsonToPut = json;
             invokePut = true;
             if (isInvoking) return;
@@ -34,6 +35,7 @@ namespace RestfulFirebase.Database.Streaming
             while (invokePut)
             {
                 invokePut = false;
+                Console.WriteLine("to put: " + jsonToPut);
                 await Query.Put(jsonToPut, null, onError);
             }
             isInvoking = false;

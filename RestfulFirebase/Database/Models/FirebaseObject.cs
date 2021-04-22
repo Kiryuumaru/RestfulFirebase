@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Models
                             {
                                 if (syncData.Modified < localData.Modified)
                                 {
-                                    put(localData.Blob, Blob);
+                                    put(localData.Value == null ? null : localData.Blob, Blob);
                                     Console.WriteLine("1");
                                 }
                                 else
@@ -114,7 +114,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else if (syncData.Value == null && localData.Value != null)
                             {
-                                put(localData.Blob, Blob);
+                                put(localData.Value == null ? null : localData.Blob, Blob);
                                 Console.WriteLine("4");
                             }
                             else
@@ -132,7 +132,7 @@ namespace RestfulFirebase.Database.Models
                             }
                             else
                             {
-                                put(currData.Blob, Blob);
+                                put(currData.Value == null ? null : currData.Blob, Blob);
                                 Console.WriteLine("7");
                             }
                         }
