@@ -10,10 +10,13 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable
     {
-        RealtimeWire RealtimeWire { get; }
+        FirebaseQuery Query { get; }
+        bool HasFirstStream { get; }
         string Key { get; }
         SmallDateTime Modified { get; }
-        void BuildRealtimeWire(FirebaseQuery parent);
+        void StartRealtime(FirebaseQuery parent);
+        void StopRealtime();
+        bool ConsumeStream(StreamObject streamObject);
         void Delete();
     }
 }

@@ -10,10 +10,9 @@ namespace RestfulFirebase.Database.Offline
 {
     public class OfflineData : ValueHolder
     {
-        public SmallDateTime Modified
-        {
-            get => GetAdditional<SmallDateTime>(FirebaseObject.ModifiedKey);
-        }
+        public string Value => GetRawValue();
+
+        public SmallDateTime Modified => GetAdditional<SmallDateTime>(FirebaseObject.ModifiedKey);
 
         public OfflineData(string blob)
         {

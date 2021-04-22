@@ -189,7 +189,7 @@ namespace RestfulFirebase.Common.Observables
         {
             var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
             if (propHolder == null) return;
-            bool hasChanges = propHolder.Property.SetNull();
+            bool hasChanges = propHolder.Property.SetBlob(null);
             if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Key, propHolder.Group, propHolder.PropertyName);
         }
 

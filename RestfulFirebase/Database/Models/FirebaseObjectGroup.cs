@@ -16,6 +16,12 @@ namespace RestfulFirebase.Database.Models
 
         public SmallDateTime Modified => throw new NotImplementedException();
 
+        public RealtimeWire RealtimeWire => throw new NotImplementedException();
+
+        public FirebaseQuery Query => throw new NotImplementedException();
+
+        public bool HasFirstStream => throw new NotImplementedException();
+
         #endregion
 
         #region Initializers
@@ -35,7 +41,7 @@ namespace RestfulFirebase.Database.Models
             throw new NotImplementedException();
         }
 
-        public void ConsumeStream(StreamObject streamObject)
+        public bool ConsumeStream(StreamObject streamObject)
         {
             throw new NotImplementedException();
         }

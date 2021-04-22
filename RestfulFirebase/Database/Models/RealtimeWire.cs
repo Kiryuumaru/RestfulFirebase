@@ -12,14 +12,14 @@ namespace RestfulFirebase.Database.Models
         private Action stopRealtime;
         private Func<StreamObject, bool> consumeStream;
 
-        public string Path { get; private set; }
         public FirebaseQuery Query { get; }
+        public string Path { get; }
         public bool HasFirstStream { get; private set; } = false;
 
         public RealtimeWire(FirebaseQuery query, Action startRealtime, Action stopRealtime, Func<StreamObject, bool> consumeStream)
         {
-            Path = query.GetAbsolutePath();
             Query = query;
+            Path = query.GetAbsolutePath();
             this.startRealtime = startRealtime;
             this.stopRealtime = stopRealtime;
             this.consumeStream = consumeStream;
