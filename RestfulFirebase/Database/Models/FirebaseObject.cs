@@ -89,7 +89,7 @@ namespace RestfulFirebase.Database.Models
                     case SyncTag:
                         if (newData.Blob == null)
                         {
-                            if (syncData.Blob != null && localData.Blob != null)
+                            if (syncData.Value != null && localData.Value != null)
                             {
                                 if (syncData.Modified < localData.Modified)
                                 {
@@ -101,12 +101,12 @@ namespace RestfulFirebase.Database.Models
                                     Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                                 }
                             }
-                            else if (syncData.Blob != null && localData.Blob == null)
+                            else if (syncData.Value != null && localData.Value == null)
                             {
                                 Query.App.Database.OfflineDatabase.DeleteSyncData(path);
                                 Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                             }
-                            else if (syncData.Blob == null && localData.Blob != null)
+                            else if (syncData.Value == null && localData.Value != null)
                             {
                                 put(localData.Blob, Blob);
                             }
