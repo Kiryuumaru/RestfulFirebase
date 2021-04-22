@@ -105,15 +105,27 @@ namespace RestfulFirebase.Database.Models
                             {
                                 Query.App.Database.OfflineDatabase.DeleteSyncData(path);
                                 Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                return false;
                             }
                             else if (syncData.Value == null && localData.Value != null)
                             {
                                 put(localData.Blob, Blob);
                             }
+                            else
+                            {
+                                return false;
+                            }
                         }
                         else
                         {
-                            Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
+                            if (currData.Modified <= newData.Modified)
+                            {
+                                Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
+                            }
+                            else
+                            {
+                                put(currData.Blob, Blob);
+                            }
                         }
                         break;
                     default:
