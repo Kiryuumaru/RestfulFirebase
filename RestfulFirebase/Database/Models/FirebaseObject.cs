@@ -82,16 +82,34 @@ namespace RestfulFirebase.Database.Models
                 {
                     case InitTag:
                         if (newData.Modified <= SmallDateTime.MinValue) return false;
-                        Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
-                        break;
+                        return Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                     case RevertTag:
                         Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                         break;
                     case SyncTag:
                         if (newData.Blob == null)
                         {
-                            Query.App.Database.OfflineDatabase.DeleteSyncData(path);
-                            Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                            if (syncData.Blob != null && localData.Blob != null)
+                            {
+                                if (syncData.Modified < localData.Modified)
+                                {
+                                    put(localData.Blob, Blob);
+                                }
+                                else
+                                {
+                                    Query.App.Database.OfflineDatabase.DeleteSyncData(path);
+                                    Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                }
+                            }
+                            else if (syncData.Blob != null && localData.Blob == null)
+                            {
+                                Query.App.Database.OfflineDatabase.DeleteSyncData(path);
+                                Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                            }
+                            else if (syncData.Blob == null && localData.Blob != null)
+                            {
+                                put(localData.Blob, Blob);
+                            }
                         }
                         else
                         {
