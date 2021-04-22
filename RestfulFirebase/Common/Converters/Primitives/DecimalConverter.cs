@@ -12,11 +12,11 @@ namespace RestfulFirebase.Common.Converters.Primitives
             return value.ToString();
         }
 
-        public override decimal Decode(string data)
+        public override decimal Decode(string data, decimal defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             if (decimal.TryParse(data, out decimal result)) return result;
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }

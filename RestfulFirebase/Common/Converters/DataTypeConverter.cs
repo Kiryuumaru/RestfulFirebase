@@ -12,30 +12,30 @@ namespace RestfulFirebase.Common.Converters
     public class ConverterHolder
     {
         private Func<object, string> encode;
-        private Func<string, object> decode;
+        private Func<string, object, object> decode;
 
-        public ConverterHolder(Func<object, string> encode, Func<string, object> decode)
+        public ConverterHolder(Func<object, string> encode, Func<string, object, object> decode)
         {
             this.encode = encode;
             this.decode = decode;
         }
 
         public string Encode(object value) => encode(value);
-        public object Decode(string data) => decode(data);
+        public object Decode(string data, object defaultValue = default) => decode(data, defaultValue);
     }
 
     public class ConverterHolder<T> : ConverterHolder
     {
-        public ConverterHolder(Func<T, string> encode, Func<string, T> decode)
+        public ConverterHolder(Func<T, string> encode, Func<string, T, T> decode)
             : base(
                   new Func<object, string>(obj => encode((T)obj)),
-                  new Func<string, object>(data => decode(data)))
+                  new Func<string, object, object>((data, defaultValue) => decode(data, (T)defaultValue)))
         {
 
         }
 
         public string Encode(T value) => base.Encode(value);
-        public new T Decode(string data) => (T)base.Decode(data);
+        public T Decode(string data, T defaultValue = default) => (T)base.Decode(data, defaultValue);
     }
 
     public abstract class DataTypeConverter
@@ -79,7 +79,7 @@ namespace RestfulFirebase.Common.Converters
                     {
                         return new ConverterHolder(
                             values => conv.EncodeEnumerableObject(values),
-                            data => conv.DecodeEnumerableObject(data));
+                            (data, defaultValue) => conv.DecodeEnumerableObject(data, defaultValue));
                     }
                 }
             }
@@ -92,7 +92,7 @@ namespace RestfulFirebase.Common.Converters
                     {
                         return new ConverterHolder(
                             values => conv.EncodeEnumerableObject(values),
-                            data => conv.DecodeEnumerableObject(data));
+                            (data, defaultValue) => conv.DecodeEnumerableObject(data, defaultValue));
                     }
                 }
             }
@@ -124,7 +124,7 @@ namespace RestfulFirebase.Common.Converters
                     {
                         return new ConverterHolder<T>(
                             values => conv.EncodeEnumerableObject(values),
-                            data => (T)conv.DecodeEnumerableObject(data));
+                            (data, defaultValue) => (T)conv.DecodeEnumerableObject(data, defaultValue));
                     }
                 }
             }
@@ -137,7 +137,7 @@ namespace RestfulFirebase.Common.Converters
                     {
                         return new ConverterHolder<T>(
                             values => conv.EncodeEnumerableObject(values),
-                            data => (T)conv.DecodeEnumerableObject(data));
+                            (data, defaultValue) => (T)conv.DecodeEnumerableObject(data, defaultValue));
                     }
                 }
             }
@@ -168,11 +168,11 @@ namespace RestfulFirebase.Common.Converters
 
         public abstract string EncodeObject(object value);
 
-        public abstract object DecodeObject(string data);
+        public abstract object DecodeObject(string data, object defaultValue = default);
 
         public abstract string EncodeEnumerableObject(object value);
 
-        public abstract object DecodeEnumerableObject(string data);
+        public abstract object DecodeEnumerableObject(string data, object defaultValue = default);
     }
 
     public abstract class DataTypeConverter<T> : DataTypeConverter
@@ -183,7 +183,7 @@ namespace RestfulFirebase.Common.Converters
 
         public abstract string Encode(T value);
 
-        public abstract T Decode(string data);
+        public abstract T Decode(string data, T defaultValue = default);
 
         public string EncodeEnumerable(IEnumerable<T> values)
         {
@@ -196,9 +196,10 @@ namespace RestfulFirebase.Common.Converters
             return Helpers.SerializeString(encodedValues);
         }
 
-        public IEnumerable<T> DecodeEnumerable(string data)
+        public IEnumerable<T> DecodeEnumerable(string data, IEnumerable<T> defaultValue = default)
         {
             var encodedValues = Helpers.DeserializeString(data);
+            if (encodedValues == null) return defaultValue;
             var decodedValues = new T[encodedValues.Length];
             for (int i = 0; i < encodedValues.Length; i++)
             {
@@ -212,9 +213,9 @@ namespace RestfulFirebase.Common.Converters
             return Encode((T)value);
         }
 
-        public override object DecodeObject(string data)
+        public override object DecodeObject(string data, object defaultValue = default)
         {
-            return Decode(data);
+            return Decode(data, (T)defaultValue);
         }
 
         public override string EncodeEnumerableObject(object value)
@@ -222,9 +223,9 @@ namespace RestfulFirebase.Common.Converters
             return EncodeEnumerable((IEnumerable<T>)value);
         }
 
-        public override object DecodeEnumerableObject(string data)
+        public override object DecodeEnumerableObject(string data, object defaultValue = default)
         {
-            return DecodeEnumerable(data);
+            return DecodeEnumerable(data, (IEnumerable<T>)defaultValue);
         }
 
         #endregion

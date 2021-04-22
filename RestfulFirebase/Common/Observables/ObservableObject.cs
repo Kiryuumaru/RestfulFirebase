@@ -52,6 +52,70 @@ namespace RestfulFirebase.Common.Observables
             }
         }
 
+        public override T GetAdditional<T>(string key, T defaultValue = default, string tag = null)
+        {
+            try
+            {
+                return base.GetAdditional(key, defaultValue, tag);
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return defaultValue;
+        }
+
+        public override bool SetAdditional<T>(string key, T value, string tag = null)
+        {
+            try
+            {
+                if (base.SetAdditional(key, value, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return false;
+        }
+
+        public override bool DeleteAdditional(string key, string tag = null)
+        {
+            try
+            {
+                if (base.DeleteAdditional(key, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return false;
+        }
+
+        public override bool ClearAdditionals(string tag = null)
+        {
+            try
+            {
+                if (base.ClearAdditionals(tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return false;
+        }
+
         public override bool SetNull(string tag = null)
         {
             try
@@ -69,11 +133,28 @@ namespace RestfulFirebase.Common.Observables
             return false;
         }
 
-        public override bool SetValue<T>(T value, Func<T, T, bool> comparator = null, string tag = null)
+        public override bool SetValueNull(string tag = null)
         {
             try
             {
-                if (base.SetValue(value, comparator, tag))
+                if (base.SetValueNull(tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return false;
+        }
+
+        public override bool SetValue<T>(T value, string tag = null)
+        {
+            try
+            {
+                if (base.SetValue(value, tag))
                 {
                     OnChanged(nameof(Blob));
                     return true;
@@ -99,8 +180,26 @@ namespace RestfulFirebase.Common.Observables
             return defaultValue;
         }
 
+        public override bool SetBlob(string blob, string tag = null)
+        {
+            try
+            {
+                if (base.SetBlob(blob, tag))
+                {
+                    OnChanged(nameof(Blob));
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+            return false;
+        }
+
         #endregion
     }
+
     public class ObservableObject<T> : ObservableObject
     {
         #region Properties

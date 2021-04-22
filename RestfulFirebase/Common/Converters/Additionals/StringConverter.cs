@@ -12,7 +12,7 @@ namespace RestfulFirebase.Common.Converters.Additionals
             return value;
         }
 
-        public override string Decode(string data)
+        public override string Decode(string data, string defaultValue = default)
         {
             return data;
         }

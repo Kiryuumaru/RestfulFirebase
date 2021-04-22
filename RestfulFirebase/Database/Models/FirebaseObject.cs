@@ -2,6 +2,7 @@
 using RestfulFirebase.Common;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
+using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
@@ -18,11 +19,17 @@ namespace RestfulFirebase.Database.Models
         private const string SyncTag = "sync";
         private const string RevertTag = "revert";
 
-        public string Key { get; protected set; }
-
-        public SmallDateTime Modified { get; protected set; }
+        public const string ModifiedKey = "m";
 
         public RealtimeWire RealtimeWire { get; protected set; }
+
+        public string Key { get; protected set; }
+
+        public SmallDateTime Modified
+        {
+            get => GetAdditional<SmallDateTime>(ModifiedKey);
+            set => SetAdditional(ModifiedKey, value);
+        }
 
         #endregion
 
@@ -54,6 +61,7 @@ namespace RestfulFirebase.Database.Models
             RealtimeWire = new RealtimeWire(query,
                 delegate
                 {
+                    var oldFactory = BlobFactory;
                     BlobFactory = new BlobFactory(
                         args =>
                         {
@@ -63,95 +71,50 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                                     {
-                                        SetValue(revertBlob, RevertTag);
+                                        SetBlob(revertBlob, RevertTag);
                                     }
                                     OnError(ex);
                                 });
                             }
 
-                            var newData = args.blob;
+                            var newData = new OfflineData(args.blob);
                             var localData = query.App.Database.OfflineDatabase.GetLocalData(path);
                             var syncData = query.App.Database.OfflineDatabase.GetSyncData(path);
 
                             switch (args.tag)
                             {
                                 case InitTag:
-                                    if (newData.Modified <= SmallDateTime.MinValue) break;
-                                    if (args.Blob == null)
-                                    {
-                                        query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
-                                    }
-                                    else
-                                    {
-                                        query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
-                                    }
-                                    break;
+                                    if (newData.Modified <= SmallDateTime.MinValue) return false;
+                                    return query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
                                 case RevertTag:
-                                    if (args.Blob == null)
-                                    {
-                                        query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
-                                    }
-                                    else
-                                    {
-                                        query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
-                                    }
-                                    break;
+                                    return query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
                                 case SyncTag:
-                                    if (args.Blob == null)
+                                    if (newData.Blob == null)
                                     {
-                                        var localData = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
-                                        var syncData = query.App.Database.OfflineDatabase.GetSyncData(RealtimeWire.Path);
-                                        query.App.Database.OfflineDatabase.DeleteSyncData(RealtimeWire.Path);
-                                        if (syncData != null)
-                                        {
-                                            query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
-                                        }
-                                        else if (lastData != null)
-                                        {
-                                            if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
-                                        }
+                                        var sync = query.App.Database.OfflineDatabase.DeleteSyncData(RealtimeWire.Path);
+                                        var local = query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
+                                        return sync || local;
                                     }
                                     else
                                     {
-                                        query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newData);
-                                        if (lastData != null) if (lastData.Modified > newData.Modified) put(lastData.PrimitiveBlob.Blob, Blob);
+                                        return query.App.Database.OfflineDatabase.SetSyncData(RealtimeWire.Path, newData);
                                     }
-                                    break;
                                 default:
-                                    if (args.Blob == null)
+                                    if (newData.Modified >= Modified)
                                     {
-                                        put(null, Blob);
-                                        var localLast = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
-                                        query.App.Database.OfflineDatabase.DeleteLocalData(RealtimeWire.Path);
-                                        var localCurrent = query.App.Database.OfflineDatabase.GetLocalData(RealtimeWire.Path);
-                                        if (localLast == null && localCurrent == null) return false;
-                                        return localLast?.PrimitiveBlob.Blob != localCurrent?.PrimitiveBlob.Blob;
+                                        put(newData.GetValue() == null ? null : newData.Blob, Blob);
+                                        return query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
                                     }
-                                    else
-                                    {
-                                        if (newData.Modified >= Modified)
-                                        {
-                                            put(newData.PrimitiveBlob.Blob, Blob);
-                                            query.App.Database.OfflineDatabase.SetLocalData(RealtimeWire.Path, newData);
-                                        }
-                                    }
-                                    break;
+                                    return false;
                             }
-
-
-
-                            var current = query.App.Database.OfflineDatabase.GetData(RealtimeWire.Path);
-                            if (lastData == null && current == null) return false;
-                            return lastData?.PrimitiveBlob.Blob != current?.PrimitiveBlob.Blob;
                         },
                         args =>
                         {
-                            var type = typeof(args.defaultValue);
                             var localData = query.App.Database.OfflineDatabase.GetLocalData(path);
                             var syncData = query.App.Database.OfflineDatabase.GetSyncData(path);
-                            var localDataModified = Helpers.Des
-        
+                            return localData.Modified > syncData.Modified ? localData.Blob : syncData.Blob;
                         });
+                    BlobFactory.Set(oldFactory.Get(), InitTag);
                 },
                 delegate
                 {
@@ -159,7 +122,19 @@ namespace RestfulFirebase.Database.Models
                 },
                 streamObject =>
                 {
-
+                    bool hasChanges = false;
+                    try
+                    {
+                        if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
+                        else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
+                        else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
+                        else if (streamObject.Path.Length == 1) hasChanges = SetBlob(streamObject.Data, SyncTag);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnError(ex);
+                    }
+                    return hasChanges;
                 });
         }
 
@@ -172,9 +147,13 @@ namespace RestfulFirebase.Database.Models
             return false;
         }
 
-        public FirebaseObject<T> ParseModel<T>()
+        public bool DeleteValue(string tag = null)
         {
-            return new FirebaseObject<T>(this);
+            if (SetValueNull(tag))
+            {
+                Modified = CurrentDateTimeFactory();
+            }
+            return false;
         }
 
         #endregion

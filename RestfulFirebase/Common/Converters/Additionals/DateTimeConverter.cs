@@ -12,12 +12,11 @@ namespace RestfulFirebase.Common.Converters.Additionals
             return Helpers.EncodeDateTime(value);
         }
 
-        public override DateTime Decode(string data)
+        public override DateTime Decode(string data, DateTime defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
-            var dateTime = Helpers.DecodeDateTime(data);
-            if (dateTime.HasValue) return dateTime.Value;
-            throw new Exception("Parse error");
+            if (string.IsNullOrEmpty(data)) return defaultValue;
+            var dateTime = Helpers.DecodeDateTime(data, defaultValue);
+            return defaultValue;
         }
     }
 }

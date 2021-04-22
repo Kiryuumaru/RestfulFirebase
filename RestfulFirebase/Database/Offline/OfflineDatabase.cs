@@ -31,37 +31,45 @@ namespace RestfulFirebase.Database.Offline
         public OfflineData GetLocalData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            return OfflineData.Parse(data);
+            return new OfflineData(data);
         }
 
         public OfflineData GetSyncData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
-            return OfflineData.Parse(data);
+            return new OfflineData(data);
         }
 
-        public void SetLocalData(string path, OfflineData data)
+        public bool SetLocalData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.ToData());
+            var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.Blob);
             LastModified = SmallDateTime.UtcNow;
+            return dataOld != data.Blob;
         }
 
-        public void SetSyncData(string path, OfflineData data)
+        public bool SetSyncData(string path, OfflineData data)
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.ToData());
+            var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.Blob);
             LastModified = SmallDateTime.UtcNow;
+            return dataOld != data.Blob;
         }
 
-        public void DeleteLocalData(string path)
+        public bool DeleteLocalData(string path)
         {
+            var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
             App.LocalDatabase.Delete(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
             LastModified = SmallDateTime.UtcNow;
+            return dataOld != null;
         }
 
-        public void DeleteSyncData(string path)
+        public bool DeleteSyncData(string path)
         {
+            var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
             App.LocalDatabase.Delete(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
             LastModified = SmallDateTime.UtcNow;
+            return dataOld != null;
         }
 
         public IEnumerable<OfflineData> GetAllLocal(string path)
@@ -69,7 +77,7 @@ namespace RestfulFirebase.Database.Offline
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                var offlineData = OfflineData.Parse(data);
+                var offlineData = new OfflineData(data);
                 if (offlineData == null) continue;
                 yield return offlineData;
             }
@@ -80,7 +88,7 @@ namespace RestfulFirebase.Database.Offline
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path)))
             {
                 if (string.IsNullOrEmpty(data)) continue;
-                var offlineData = OfflineData.Parse(data);
+                var offlineData = new OfflineData(data);
                 if (offlineData == null) continue;
                 yield return offlineData;
             }

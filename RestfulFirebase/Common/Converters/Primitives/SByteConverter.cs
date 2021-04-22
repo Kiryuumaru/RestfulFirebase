@@ -12,11 +12,11 @@ namespace RestfulFirebase.Common.Converters.Primitives
             return value.ToString();
         }
 
-        public override sbyte Decode(string data)
+        public override sbyte Decode(string data, sbyte defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             if (sbyte.TryParse(data, out sbyte result)) return result;
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }

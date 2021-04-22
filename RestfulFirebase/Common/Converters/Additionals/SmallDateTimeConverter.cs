@@ -12,12 +12,12 @@ namespace RestfulFirebase.Common.Converters.Additionals
             return Helpers.EncodeSmallDateTime(value);
         }
 
-        public override SmallDateTime Decode(string data)
+        public override SmallDateTime Decode(string data, SmallDateTime defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             var dateTime = Helpers.DecodeSmallDateTime(data);
             if (dateTime.HasValue) return dateTime.Value;
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }

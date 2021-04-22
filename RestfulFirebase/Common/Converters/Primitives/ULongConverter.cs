@@ -12,11 +12,11 @@ namespace RestfulFirebase.Common.Converters.Primitives
             return value.ToString();
         }
 
-        public override ulong Decode(string data)
+        public override ulong Decode(string data, ulong defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             if (ulong.TryParse(data, out ulong result)) return result;
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }

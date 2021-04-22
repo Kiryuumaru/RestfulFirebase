@@ -10,9 +10,9 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable
     {
+        RealtimeWire RealtimeWire { get; }
         string Key { get; }
         SmallDateTime Modified { get; }
-        RealtimeWire RealtimeWire { get; }
         void BuildRealtimeWire(FirebaseQuery parent);
         void Delete();
     }

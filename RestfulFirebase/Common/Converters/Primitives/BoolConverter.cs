@@ -12,9 +12,9 @@ namespace RestfulFirebase.Common.Converters.Primitives
             return value ? "1" : "0";
         }
 
-        public override bool Decode(string data)
+        public override bool Decode(string data, bool defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             return data.Equals("1");
         }
     }

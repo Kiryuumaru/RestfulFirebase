@@ -12,11 +12,11 @@ namespace RestfulFirebase.Common.Converters.Additionals
             return value.TotalHours.ToString();
         }
 
-        public override TimeSpan Decode(string data)
+        public override TimeSpan Decode(string data, TimeSpan defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             if (double.TryParse(data, out double result)) return TimeSpan.FromHours(result);
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }

@@ -12,11 +12,11 @@ namespace RestfulFirebase.Common.Converters.Primitives
             return value.ToString();
         }
 
-        public override short Decode(string data)
+        public override short Decode(string data, short defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data)) return default;
+            if (string.IsNullOrEmpty(data)) return defaultValue;
             if (short.TryParse(data, out short result)) return result;
-            throw new Exception("Parse error");
+            return defaultValue;
         }
     }
 }
