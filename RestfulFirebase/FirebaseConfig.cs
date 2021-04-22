@@ -35,5 +35,7 @@ namespace RestfulFirebase
         public bool StorageThrowOnCancel { get; set; }
 
         public IHttpClientFactory HttpClientFactory { get; set; }
+
+        public bool OfflineMode { get; set; }
     }
 }

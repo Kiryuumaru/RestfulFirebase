@@ -9,6 +9,10 @@ namespace RestfulFirebase.Database.Streaming
 {
     public abstract class RealtimeWire : IDisposable
     {
+        private string jsonToPut;
+        private bool invokePut = false;
+        private bool isInvoking = false;
+
         protected IDisposable Subscription;
 
         public FirebaseQuery Query { get; protected set; }
@@ -20,6 +24,20 @@ namespace RestfulFirebase.Database.Streaming
         protected void InvokeStart() => OnStart?.Invoke();
         protected void InvokeStop() => OnStop?.Invoke();
         protected bool InvokeStream(StreamObject streamObject) => OnStream?.Invoke(streamObject) ?? false;
+
+        public async void Put(string json, Action<FirebaseException> onError)
+        {
+            jsonToPut = json;
+            invokePut = true;
+            if (isInvoking) return;
+            isInvoking = true;
+            while (invokePut)
+            {
+                invokePut = false;
+                await Query.Put(jsonToPut, null, onError);
+            }
+            isInvoking = false;
+        }
 
         public abstract void Start();
 

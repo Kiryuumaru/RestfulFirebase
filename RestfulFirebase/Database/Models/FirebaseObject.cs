@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -62,8 +64,9 @@ namespace RestfulFirebase.Database.Models
 
                 void put(string blobToPut, string revertBlob)
                 {
-                    wire.Query.Put(JsonConvert.SerializeObject(blobToPut), null, ex =>
+                    wire.Put(JsonConvert.SerializeObject(blobToPut), ex =>
                     {
+                        if (wire == null) return;
                         if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
                             SetBlob(revertBlob, RevertTag);
@@ -93,25 +96,30 @@ namespace RestfulFirebase.Database.Models
                                 if (syncData.Modified < localData.Modified)
                                 {
                                     put(localData.Blob, Blob);
+                                    Console.WriteLine("1");
                                 }
                                 else
                                 {
                                     wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
                                     wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                    Console.WriteLine("2");
                                 }
                             }
                             else if (syncData.Value != null && localData.Value == null)
                             {
                                 wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
                                 wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                Console.WriteLine("3");
                                 return false;
                             }
                             else if (syncData.Value == null && localData.Value != null)
                             {
                                 put(localData.Blob, Blob);
+                                Console.WriteLine("4");
                             }
                             else
                             {
+                                Console.WriteLine("5");
                                 return false;
                             }
                         }
@@ -120,10 +128,12 @@ namespace RestfulFirebase.Database.Models
                             if (currData.Modified <= newData.Modified)
                             {
                                 wire.Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
+                                Console.WriteLine("6");
                             }
                             else
                             {
                                 put(currData.Blob, Blob);
+                                Console.WriteLine("7");
                             }
                         }
                         break;

@@ -10,7 +10,7 @@ namespace RestfulFirebase.Database.Query
     public interface IFirebaseQuery
     {
         RestfulFirebaseApp App { get; }
-        void Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
+        Task Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
         RealtimeWire<T> AsRealtime<T>(T model) where T : IRealtimeModel;
         Task<string> BuildUrlAsync();
         string GetAbsolutePath();
