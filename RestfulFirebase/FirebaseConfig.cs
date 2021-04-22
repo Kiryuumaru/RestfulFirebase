@@ -16,7 +16,6 @@ namespace RestfulFirebase
         public FirebaseConfig()
         {
             LocalDatabase = new SimpleLocalDatabase();
-            SyncPeriod = TimeSpan.FromSeconds(10);
             HttpClientFactory = new TransientHttpClientFactory();
         }
 
@@ -27,8 +26,6 @@ namespace RestfulFirebase
         public string StorageBucket { get; set; }
 
         public ILocalDatabase LocalDatabase { get; set; }
-
-        public TimeSpan SyncPeriod { get; set; }
 
         public bool AsAccessToken { get; set; }
 

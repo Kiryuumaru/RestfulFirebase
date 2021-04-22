@@ -7,7 +7,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public abstract class RealtimeWire : IDisposable
+    public class RealtimeWire : IDisposable
     {
         private string jsonToPut;
         private bool invokePut = false;
@@ -15,15 +15,20 @@ namespace RestfulFirebase.Database.Streaming
 
         protected IDisposable Subscription;
 
-        public FirebaseQuery Query { get; protected set; }
+        protected void InvokeStart() => OnStart?.Invoke();
+        protected void InvokeStop() => OnStop?.Invoke();
+        protected bool InvokeStream(StreamObject streamObject) => OnStream?.Invoke(streamObject) ?? false;
+
+        public FirebaseQuery Query { get; private set; }
 
         public event Action OnStart;
         public event Action OnStop;
         public event Func<StreamObject, bool> OnStream;
 
-        protected void InvokeStart() => OnStart?.Invoke();
-        protected void InvokeStop() => OnStop?.Invoke();
-        protected bool InvokeStream(StreamObject streamObject) => OnStream?.Invoke(streamObject) ?? false;
+        internal RealtimeWire(string key, FirebaseQuery parent)
+        {
+            Query = new ChildQuery(parent.App, parent, () => key);
+        }
 
         public async void Put(string json, Action<FirebaseException> onError)
         {
@@ -35,13 +40,15 @@ namespace RestfulFirebase.Database.Streaming
             while (invokePut)
             {
                 invokePut = false;
-                Console.WriteLine("to put: " + jsonToPut);
                 await Query.Put(jsonToPut, null, onError);
             }
             isInvoking = false;
         }
 
-        public abstract void Start();
+        public virtual void Start()
+        {
+            InvokeStart();
+        }
 
         public void Dispose()
         {
@@ -56,9 +63,9 @@ namespace RestfulFirebase.Database.Streaming
         public T Model { get; private set; }
 
         internal RealtimeWire(T model, FirebaseQuery parent)
+            : base (model.Key, parent)
         {
             Model = model;
-            Query = new ChildQuery(parent.App, parent, () => model.Key);
         }
 
         public override void Start()
