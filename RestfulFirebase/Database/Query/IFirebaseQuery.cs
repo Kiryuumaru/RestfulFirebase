@@ -11,7 +11,7 @@ namespace RestfulFirebase.Database.Query
     {
         RestfulFirebaseApp App { get; }
         void Put(string data, TimeSpan? timeout = null, Action<FirebaseException> onException = null);
-        RealtimeHolder<T> AsRealtime<T>(T model) where T : IRealtimeModel;
+        RealtimeWire<T> AsRealtime<T>(T model) where T : IRealtimeModel;
         Task<string> BuildUrlAsync();
         string GetAbsolutePath();
     }

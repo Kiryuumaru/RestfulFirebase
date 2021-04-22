@@ -12,16 +12,18 @@ using RestfulFirebase.Common.Models;
 using System.Linq;
 using RestfulFirebase.Database.Models;
 using System.IO;
+using System.Threading;
 
 namespace RestfulFirebase.Database.Query
 {
     public abstract class FirebaseQuery : IFirebaseQuery, IDisposable
     {
+        private IHttpClientProxy client;
+
         protected readonly TimeSpan DefaultHttpClientTimeout = new TimeSpan(0, 0, 180);
 
         protected readonly FirebaseQuery Parent;
 
-        private IHttpClientProxy client;
 
         protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
         {
@@ -89,6 +91,10 @@ namespace RestfulFirebase.Database.Query
                 {
                     var c = GetClient(timeout);
 
+                    lock (this)
+                    {
+
+                    }
                     await Silent().SendAsync(c, jsonData, HttpMethod.Put);
                 }
                 catch (FirebaseException ex)
@@ -102,10 +108,9 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public RealtimeHolder<T> AsRealtime<T>(T model) where T : IRealtimeModel
+        public RealtimeWire<T> AsRealtime<T>(T model) where T : IRealtimeModel
         {
-            var query = new ChildQuery(App, this, () => model.Key);
-            return new RealtimeHolder<T>(model, query);
+            return new RealtimeWire<T>(model, this);
         }
 
         public async Task<string> BuildUrlAsync()

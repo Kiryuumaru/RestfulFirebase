@@ -17,12 +17,6 @@ namespace RestfulFirebase.Database.Models
 
         public SmallDateTime Modified => throw new NotImplementedException();
 
-        public RealtimeWire RealtimeWire => throw new NotImplementedException();
-
-        public FirebaseQuery Query => throw new NotImplementedException();
-
-        public bool HasFirstStream => throw new NotImplementedException();
-
         #endregion
 
         #region Initializers
@@ -55,17 +49,7 @@ namespace RestfulFirebase.Database.Models
             return base.GetProperty(key, nameof(FirebaseObjects), defaultValue, propertyName, customValueSetter);
         }
 
-        public void StartRealtime(FirebaseQuery query)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void StopRealtime()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool ConsumeStream(StreamObject streamObject)
+        public void MakeRealtime(RealtimeWire wire)
         {
             throw new NotImplementedException();
         }
