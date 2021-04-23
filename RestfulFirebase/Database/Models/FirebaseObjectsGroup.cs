@@ -12,7 +12,11 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public string Key { get; protected set; }
+        public string Key
+        {
+            get => Holder.GetAttribute<string>();
+            set => Holder.SetAttribute(value);
+        }
 
         public SmallDateTime Modified => throw new NotImplementedException();
 
@@ -20,7 +24,14 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public FirebaseObjectsGroup(string key) : base()
+        public FirebaseObjectsGroup(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
+
+        public FirebaseObjectsGroup(string key)
+            : base()
         {
             Key = key;
         }

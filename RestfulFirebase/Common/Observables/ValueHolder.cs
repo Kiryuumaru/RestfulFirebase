@@ -10,11 +10,17 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Observables
 {
-    public class ValueHolder
+    public class ValueHolder : IAttributed
     {
         #region Properties
 
-        private string blobHolder = null;
+        public AttributeHolder Holder { get; } = new AttributeHolder();
+
+        private string BlobHolder
+        {
+            get => Holder.GetAttribute<string>();
+            set => Holder.SetAttribute(value);
+        }
 
         public string Blob
         {
@@ -22,11 +28,18 @@ namespace RestfulFirebase.Common.Observables
             set => SetBlob(value);
         }
 
+
         #endregion
 
         #region Initializers
 
+        public ValueHolder(IAttributed attributed)
+        {
+            Holder.Inherit(attributed);
+        }
+
         public ValueHolder()
+            : this(null)
         {
 
         }
@@ -39,8 +52,8 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                var hasChanges = blobHolder != blob;
-                if (hasChanges) blobHolder = blob;
+                var hasChanges = BlobHolder != blob;
+                if (hasChanges) BlobHolder = blob;
                 return hasChanges;
             }
         }
@@ -49,7 +62,7 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                return blobHolder == null ? defaultValue : blobHolder;
+                return BlobHolder == null ? defaultValue : BlobHolder;
             }
         }
 

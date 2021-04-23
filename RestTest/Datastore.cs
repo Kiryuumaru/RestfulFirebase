@@ -14,18 +14,22 @@ namespace RestTest
     {
         private static string filePath = Path.Combine(Directory.GetCurrentDirectory(), "db.db");
         private static Dictionary<string, string> db;
+        private bool isPersistent;
 
-        public Datastore()
+        public Datastore(bool isPersistent)
         {
+            this.isPersistent = isPersistent;
             if (!Directory.Exists(Path.GetDirectoryName(filePath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             if (!File.Exists(filePath))
                 File.WriteAllText(filePath, "");
-            db = Helpers.BlobConvert(File.ReadAllText(filePath));
+            if (isPersistent) db = Helpers.BlobConvert(File.ReadAllText(filePath));
+            else db = new Dictionary<string, string>();
         }
 
         private void Save()
         {
+            if (!isPersistent) return;
             Task.Run(delegate
             {
                 var dbCopy = new Dictionary<string, string>();

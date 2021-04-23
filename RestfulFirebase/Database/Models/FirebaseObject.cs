@@ -18,17 +18,35 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private string blobHolder = null;
-        private RealtimeWire wire;
-        private OfflineData lastPush;
-
         protected const string InitTag = "init";
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
         public const string ModifiedKey = "m";
 
-        public string Key { get; protected set; }
+        private OfflineData LastPush
+        {
+            get => Holder.GetAttribute<OfflineData>();
+            set => Holder.SetAttribute(value);
+        }
+
+        private string BlobHolder
+        {
+            get => Holder.GetAttribute<string>();
+            set => Holder.SetAttribute(value);
+        }
+
+        public RealtimeWire Wire
+        {
+            get => Holder.GetAttribute<RealtimeWire>();
+            set => Holder.SetAttribute(value);
+        }
+
+        public string Key
+        {
+            get => Holder.GetAttribute<string>();
+            set => Holder.SetAttribute(value);
+        }
 
         public SmallDateTime Modified
         {
@@ -40,6 +58,12 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Initializers
+
+        public FirebaseObject(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
 
         public FirebaseObject(string key)
             : base()
@@ -59,17 +83,17 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetBlob(string blob, string tag = null)
         {
-            if (wire != null)
+            if (Wire != null)
             {
-                var path = wire.Query.GetAbsolutePath();
+                var path = Wire.Query.GetAbsolutePath();
 
                 void put(OfflineData data, string revertBlob)
                 {
-                    if (lastPush != null) if(lastPush.Modified >= data.Modified) return;
-                    lastPush = data;
-                    wire.Put(JsonConvert.SerializeObject(lastPush.Value == null ? null : lastPush.Blob), ex =>
+                    if (LastPush != null) if(LastPush.Modified >= data.Modified) return;
+                    LastPush = data;
+                    Wire.Put(JsonConvert.SerializeObject(LastPush.Value == null ? null : LastPush.Blob), ex =>
                     {
-                        if (wire == null) return;
+                        if (Wire == null) return;
                         if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
                             SetBlob(revertBlob, RevertTag);
@@ -79,17 +103,17 @@ namespace RestfulFirebase.Database.Models
                 }
 
                 var newData = new OfflineData(blob);
-                var localData = wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncData = wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
+                var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
+                var syncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
                 var currData = localData.Modified > syncData.Modified ? localData : syncData;
 
                 switch (tag)
                 {
                     case InitTag:
                         if (newData.Modified <= SmallDateTime.MinValue) return false;
-                        return wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                        return Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                     case RevertTag:
-                        wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                        Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                         break;
                     case SyncTag:
                         if (newData.Blob == null)
@@ -102,14 +126,14 @@ namespace RestfulFirebase.Database.Models
                                 }
                                 else
                                 {
-                                    wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
-                                    wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                    Wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
+                                    Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                                 }
                             }
                             else if (syncData.Value != null && localData.Value == null)
                             {
-                                wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
-                                wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                Wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
+                                Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                                 return false;
                             }
                             else if (syncData.Value == null && localData.Value != null)
@@ -125,7 +149,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (currData.Modified <= newData.Modified)
                             {
-                                wire.Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
+                                Wire.Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
                             }
                             else
                             {
@@ -138,13 +162,13 @@ namespace RestfulFirebase.Database.Models
                         if (newData.Modified >= currData.Modified)
                         {
                             put(newData, currData.Blob);
-                            wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                            Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
                         }
                         break;
                 }
 
-                var newLocalData = wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var newSyncData = wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
+                var newLocalData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
+                var newSyncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
                 var newCurrData = newLocalData.Modified > newSyncData.Modified ? newLocalData : newSyncData;
 
                 var hasBlobChanges = newCurrData.Blob != currData.Blob;
@@ -158,9 +182,9 @@ namespace RestfulFirebase.Database.Models
             else
             {
                 var newData = new OfflineData(blob);
-                var oldData = new OfflineData(blobHolder);
+                var oldData = new OfflineData(BlobHolder);
 
-                blobHolder = blob;
+                BlobHolder = blob;
 
                 var hasBlobChanges = newData.Blob != oldData.Blob;
                 var hasModifiedChanges = newData.Modified != oldData.Modified;
@@ -174,18 +198,18 @@ namespace RestfulFirebase.Database.Models
 
         public override string GetBlob(string defaultValue = null, string tag = null)
         {
-            if (wire != null)
+            if (Wire != null)
             {
-                var path = wire.Query.GetAbsolutePath();
+                var path = Wire.Query.GetAbsolutePath();
 
-                var localData = wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncData = wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
+                var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
+                var syncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
 
                 return localData.Modified > syncData.Modified ? localData.Blob : syncData.Blob;
             }
             else
             {
-                return blobHolder;
+                return BlobHolder;
             }
         }
 
@@ -193,12 +217,12 @@ namespace RestfulFirebase.Database.Models
         {
             wire.OnStart += delegate
             {
-                this.wire = wire;
-                SetBlob(blobHolder, InitTag);
+                Wire = wire;
+                SetBlob(BlobHolder, InitTag);
             };
             wire.OnStop += delegate
             {
-                this.wire = null;
+                Wire = null;
             };
             wire.OnStream += streamObject =>
             {
@@ -256,6 +280,11 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        public FirebaseObject<T> ParseModel<T>()
+        {
+            return new FirebaseObject<T>(this);
+        }
+
         #endregion
     }
 
@@ -272,6 +301,12 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Initializers
+
+        public FirebaseObject(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
 
         public FirebaseObject(string key)
             : base(key)

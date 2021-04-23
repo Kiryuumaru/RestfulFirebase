@@ -14,15 +14,72 @@ namespace RestfulFirebase.Common.Observables
     {
         #region Properties
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        private PropertyChangedEventHandler PropertyChangedHandler
+        {
+            get => Holder.GetAttribute<PropertyChangedEventHandler>(delegate { });
+            set => Holder.SetAttribute(value);
+        }
 
-        public event EventHandler<ContinueExceptionEventArgs> PropertyError;
+        private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
+        {
+            get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(delegate { });
+            set => Holder.SetAttribute(value);
+        }
+
+        protected List<PropertyHolder> PropertyHolders
+        {
+            get => Holder.GetAttribute<List<PropertyHolder>>(new List<PropertyHolder>());
+            set => Holder.SetAttribute(value);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged
+        {
+            add
+            {
+                lock (this)
+                {
+                    PropertyChangedHandler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    PropertyChangedHandler -= value;
+                }
+            }
+        }
+
+        public event EventHandler<ContinueExceptionEventArgs> PropertyError
+        {
+            add
+            {
+                lock (this)
+                {
+                    PropertyErrorHandler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    PropertyErrorHandler -= value;
+                }
+            }
+        }
 
         #endregion
 
         #region Initializers
 
-        public ObservableObject() : base()
+        public ObservableObject(IAttributed attributed)
+            : base (attributed)
+        {
+
+        }
+
+        public ObservableObject()
+            : this(null)
         {
 
         }
@@ -31,12 +88,12 @@ namespace RestfulFirebase.Common.Observables
 
         #region Methods
 
-        public virtual void OnChanged(string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        public virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
             var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
-            PropertyError?.Invoke(this, args);
+            PropertyErrorHandler?.Invoke(this, args);
             if (!args.IgnoreAndContinue)
             {
                 throw args.Exception;
@@ -45,7 +102,7 @@ namespace RestfulFirebase.Common.Observables
 
         public virtual void OnError(ContinueExceptionEventArgs args)
         {
-            PropertyError?.Invoke(this, args);
+            PropertyErrorHandler?.Invoke(this, args);
             if (!args.IgnoreAndContinue)
             {
                 throw args.Exception;

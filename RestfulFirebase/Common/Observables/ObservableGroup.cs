@@ -10,19 +10,60 @@ namespace RestfulFirebase.Common.Observables
 	{
 		#region Properties
 
-		public event EventHandler<ContinueExceptionEventArgs> PropertyError;
+		public AttributeHolder Holder { get; } = new AttributeHolder();
+
+		private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
+		{
+			get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(delegate { });
+			set => Holder.SetAttribute(value);
+		}
+
+		protected List<PropertyHolder> PropertyHolders
+		{
+			get => Holder.GetAttribute<List<PropertyHolder>>(new List<PropertyHolder>());
+			set => Holder.SetAttribute(value);
+		}
+
+		public event EventHandler<ContinueExceptionEventArgs> PropertyError
+		{
+			add
+			{
+				lock (this)
+				{
+					PropertyErrorHandler += value;
+				}
+			}
+			remove
+			{
+				lock (this)
+				{
+					PropertyErrorHandler -= value;
+				}
+			}
+		}
 
 		#endregion
 
 		#region Initializers
 
-		public ObservableGroup() : base()
+		public ObservableGroup(IAttributed attributed)
+			: base()
 		{
-
+			Holder.Inherit(attributed);
+			if (attributed != null)
+			{
+				if (attributed is ObservableCollection<T> collection)
+				{
+					AddArrangeCore(collection);
+					collection.CollectionChanged += (s, e) => OnCollectionChanged(e);
+				}
+			}
 		}
 
-		private ObservableGroup(IEnumerable<T> collection) : base(collection)
+		public ObservableGroup()
+			: this(null)
 		{
+
 		}
 
 		#endregion
@@ -32,7 +73,7 @@ namespace RestfulFirebase.Common.Observables
 		public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
 		{
 			var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
-			PropertyError?.Invoke(this, args);
+			PropertyErrorHandler?.Invoke(this, args);
 			if (!args.IgnoreAndContinue)
 			{
 				throw args.Exception;
@@ -41,7 +82,7 @@ namespace RestfulFirebase.Common.Observables
 
 		public virtual void OnError(ContinueExceptionEventArgs args)
 		{
-			PropertyError?.Invoke(this, args);
+			PropertyErrorHandler?.Invoke(this, args);
 			if (!args.IgnoreAndContinue)
 			{
 				throw args.Exception;

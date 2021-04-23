@@ -19,6 +19,7 @@ namespace RestfulFirebase.Database.Streaming
         protected void InvokeStop() => OnStop?.Invoke();
         protected bool InvokeStream(StreamObject streamObject) => OnStream?.Invoke(streamObject) ?? false;
 
+        public string Key { get; private set; }
         public FirebaseQuery Query { get; private set; }
 
         public event Action OnStart;
@@ -27,6 +28,7 @@ namespace RestfulFirebase.Database.Streaming
 
         internal RealtimeWire(string key, FirebaseQuery parent)
         {
+            Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
         }
 

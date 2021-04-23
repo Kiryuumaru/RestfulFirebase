@@ -13,7 +13,11 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        public string Key { get; protected set; }
+        public string Key
+        {
+            get => Holder.GetAttribute<string>();
+            set => Holder.SetAttribute(value);
+        }
 
         public SmallDateTime Modified => throw new NotImplementedException();
 
@@ -21,7 +25,14 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public FirebaseObjects(string key) : base()
+        public FirebaseObjects(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
+
+        public FirebaseObjects(string key)
+            : base()
         {
             Key = key;
         }
@@ -57,6 +68,12 @@ namespace RestfulFirebase.Database.Models
         public void Delete()
         {
             throw new NotImplementedException();
+        }
+
+        public T ParseModel<T>()
+            where T : FirebaseObjects
+        {
+            return (T)Activator.CreateInstance(typeof(T), this);
         }
 
         #endregion
