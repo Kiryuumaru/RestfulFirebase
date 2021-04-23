@@ -85,7 +85,7 @@ namespace RestTest
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com",
-                LocalDatabase = new Datastore(false)
+                LocalDatabase = new DatastoreJson(false)
             });
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");

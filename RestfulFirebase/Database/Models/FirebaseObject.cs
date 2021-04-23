@@ -22,11 +22,9 @@ namespace RestfulFirebase.Database.Models
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
-        public const string ModifiedKey = "m";
-
-        private OfflineData LastPush
+        private string LastPush
         {
-            get => Holder.GetAttribute<OfflineData>();
+            get => Holder.GetAttribute<string>();
             set => Holder.SetAttribute(value);
         }
 
@@ -48,12 +46,6 @@ namespace RestfulFirebase.Database.Models
             set => Holder.SetAttribute(value);
         }
 
-        public SmallDateTime Modified
-        {
-            get => GetAdditional<SmallDateTime>(ModifiedKey);
-            set => SetAdditional(ModifiedKey, value);
-        }
-
 
         #endregion
 
@@ -69,7 +61,6 @@ namespace RestfulFirebase.Database.Models
             : base()
         {
             Key = key;
-            Modified = SmallDateTime.MinValue;
         }
 
         #endregion
@@ -87,58 +78,46 @@ namespace RestfulFirebase.Database.Models
             {
                 var path = Wire.Query.GetAbsolutePath();
 
-                void put(OfflineData data, string revertBlob)
+                void put(string data)
                 {
-                    if (LastPush != null) if(LastPush.Modified >= data.Modified) return;
+                    if (LastPush == data) return;
                     LastPush = data;
-                    Wire.Put(JsonConvert.SerializeObject(LastPush.Value == null ? null : LastPush.Blob), ex =>
+                    Wire.Put(JsonConvert.SerializeObject(LastPush), ex =>
                     {
                         if (Wire == null) return;
                         if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
-                            SetBlob(revertBlob, RevertTag);
+                            SetBlob(null, RevertTag);
                         }
                         OnError(ex);
                     });
                 }
 
-                var newData = new OfflineData(blob);
+                var newBlob = blob;
                 var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
-                var currData = localData.Modified > syncData.Modified ? localData : syncData;
+                var syncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
+                var currBlob = localData == null ? syncBlob : localData.Blob;
 
                 switch (tag)
                 {
                     case InitTag:
-                        if (newData.Modified <= SmallDateTime.MinValue) return false;
-                        return Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                        if (newBlob == null) return false;
+                        return Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, new OfflineData(newBlob, OfflineChanges.Set));
                     case RevertTag:
-                        Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                        Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                         break;
                     case SyncTag:
-                        if (newData.Blob == null)
+                        if (newBlob == null)
                         {
-                            if (syncData.Value != null && localData.Value != null)
+                            if (syncBlob != null)
                             {
-                                if (syncData.Modified < localData.Modified)
-                                {
-                                    put(localData, currData.Blob);
-                                }
-                                else
-                                {
-                                    Wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
-                                    Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
-                                }
-                            }
-                            else if (syncData.Value != null && localData.Value == null)
-                            {
-                                Wire.Query.App.Database.OfflineDatabase.DeleteSyncData(path);
                                 Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
-                                return false;
+                                Wire.Query.App.Database.OfflineDatabase.DeleteSyncBlob(path);
                             }
-                            else if (syncData.Value == null && localData.Value != null)
+                            else if (localData != null)
                             {
-                                put(localData, currData.Blob);
+                                if (localData.Changes == OfflineChanges.Set) put(localData.Blob);
+                                else put(null);
                             }
                             else
                             {
@@ -147,52 +126,55 @@ namespace RestfulFirebase.Database.Models
                         }
                         else
                         {
-                            if (currData.Modified <= newData.Modified)
+                            if (localData == null)
                             {
-                                Wire.Query.App.Database.OfflineDatabase.SetSyncData(path, newData);
+                                Wire.Query.App.Database.OfflineDatabase.SetSyncBlob(path, newBlob);
+                            }
+                            else if (newBlob == syncBlob && newBlob != localData.Blob)
+                            {
+                                put(localData.Blob);
+                                return false;
                             }
                             else
                             {
-                                put(currData, currData.Blob);
+                                Wire.Query.App.Database.OfflineDatabase.SetSyncBlob(path, newBlob);
+                                Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
                             }
                         }
                         break;
                     default:
-                        if (newData.Value == null && currData.Blob == null) return false;
-                        if (newData.Modified >= currData.Modified)
+                        if (newBlob != syncBlob)
                         {
-                            put(newData, currData.Blob);
-                            Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, newData);
+                            put(newBlob);
+                            Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, new OfflineData(newBlob, newBlob == null ? OfflineChanges.Delete : OfflineChanges.Set));
                         }
                         break;
                 }
 
                 var newLocalData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var newSyncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
-                var newCurrData = newLocalData.Modified > newSyncData.Modified ? newLocalData : newSyncData;
+                var newSyncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
+                var newCurrBlob = localData == null ? syncBlob : localData.Blob;
 
-                var hasBlobChanges = newCurrData.Blob != currData.Blob;
-                var hasModifiedChanges = newCurrData.Modified != currData.Modified;
+                var hasBlobChanges = newCurrBlob != currBlob;
 
                 if (hasBlobChanges) OnChanged(nameof(Blob));
-                if (hasModifiedChanges) OnChanged(nameof(Modified));
 
-                return hasBlobChanges || hasModifiedChanges;
+                return hasBlobChanges;
             }
             else
             {
-                var newData = new OfflineData(blob);
-                var oldData = new OfflineData(BlobHolder);
+                var newData = blob;
+                var oldData = BlobHolder;
 
-                BlobHolder = blob;
+                var hasBlobChanges = newData != oldData;
 
-                var hasBlobChanges = newData.Blob != oldData.Blob;
-                var hasModifiedChanges = newData.Modified != oldData.Modified;
+                if (hasBlobChanges)
+                {
+                    BlobHolder = blob;
+                    OnChanged(nameof(Blob));
+                }
 
-                if (hasBlobChanges) OnChanged(nameof(Blob));
-                if (hasModifiedChanges) OnChanged(nameof(Modified));
-
-                return hasBlobChanges || hasModifiedChanges;
+                return hasBlobChanges;
             }
         }
 
@@ -203,9 +185,9 @@ namespace RestfulFirebase.Database.Models
                 var path = Wire.Query.GetAbsolutePath();
 
                 var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncData = Wire.Query.App.Database.OfflineDatabase.GetSyncData(path);
+                var syncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
 
-                return localData.Modified > syncData.Modified ? localData.Blob : syncData.Blob;
+                return localData == null ? syncBlob : localData.Blob;
             }
             else
             {
@@ -244,40 +226,7 @@ namespace RestfulFirebase.Database.Models
 
         public void Delete()
         {
-            DeleteValue(null);
-        }
-
-        public bool ModifyValue<T>(T value, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                var encodedValue = DataTypeConverter.GetConverter<T>().Encode(value);
-                if (deserialized[0] == encodedValue) return false;
-                var encodedModified = DataTypeConverter.GetConverter<SmallDateTime>().Encode(CurrentDateTimeFactory());
-                var adsDatas = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), ModifiedKey, encodedModified);
-                var newEncodedData = new string[adsDatas.Length + 1];
-                newEncodedData[0] = encodedValue;
-                Array.Copy(adsDatas, 0, newEncodedData, 1, adsDatas.Length);
-                return SetBlob(Helpers.SerializeString(newEncodedData), tag);
-            }
-        }
-
-        public bool DeleteValue(string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                if (deserialized[0] == null) return false;
-                var encodedModified = DataTypeConverter.GetConverter<SmallDateTime>().Encode(CurrentDateTimeFactory());
-                var adsDatas = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), ModifiedKey, encodedModified);
-                var newEncodedData = new string[adsDatas.Length + 1];
-                newEncodedData[0] = null;
-                Array.Copy(adsDatas, 0, newEncodedData, 1, adsDatas.Length);
-                return SetBlob(Helpers.SerializeString(newEncodedData), tag);
-            }
+            SetBlob(null);
         }
 
         public FirebaseObject<T> ParseModel<T>()
@@ -295,7 +244,7 @@ namespace RestfulFirebase.Database.Models
         public T Value
         {
             get => base.GetValue<T>();
-            set => base.ModifyValue(value);
+            set => base.SetValue(value);
         }
 
         #endregion
@@ -320,9 +269,13 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetBlob(string blob, string tag = null)
         {
-            var oldValue = GetRawValue();
+            var oldValue = GetBlob();
             var hasChanges = base.SetBlob(blob, tag);
-            if (oldValue != GetRawValue()) OnChanged(nameof(Value));
+            if (oldValue != GetBlob())
+            {
+                OnChanged(nameof(Value));
+                hasChanges = true;
+            }
             return hasChanges;
         }
 

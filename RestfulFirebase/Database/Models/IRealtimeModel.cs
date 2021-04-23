@@ -11,7 +11,6 @@ namespace RestfulFirebase.Database.Models
     public interface IRealtimeModel : IObservable
     {
         string Key { get; }
-        SmallDateTime Modified { get; }
         void MakeRealtime(RealtimeWire wire);
         void Delete();
     }

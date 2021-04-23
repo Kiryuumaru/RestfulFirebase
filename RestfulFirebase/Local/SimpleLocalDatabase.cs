@@ -7,16 +7,11 @@ namespace RestfulFirebase.Local
 {
     public class SimpleLocalDatabase : ILocalDatabase
     {
-        private ConcurrentDictionary<string, string> db = new ConcurrentDictionary<string, string>();
+        private static Dictionary<string, string> db = new Dictionary<string, string>();
 
         public bool ContainsKey(string key)
         {
             return db.ContainsKey(key);
-        }
-
-        public string Get(string key)
-        {
-            return db.ContainsKey(key) ? db[key] : null;
         }
 
         public IEnumerable<string> GetKeys()
@@ -24,14 +19,34 @@ namespace RestfulFirebase.Local
             return db.Keys;
         }
 
+        public string Get(string key)
+        {
+            try
+            {
+                if (!db.ContainsKey(key)) return null;
+                return db[key];
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public void Set(string key, string value)
         {
-            db[key] = value;
+            lock (db)
+            {
+                if (db.ContainsKey(key)) db[key] = value;
+                else db.Add(key, value);
+            }
         }
 
         public void Delete(string key)
         {
-            if (!db.TryRemove(key, out _)) db[key] = null;
+            lock (db)
+            {
+                db.Remove(key);
+            }
         }
     }
 }

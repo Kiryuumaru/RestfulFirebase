@@ -13,23 +13,9 @@ namespace RestfulFirebase.Common.Observables
 
     public class AttributeHolder
     {
-        #region Helpers
-
-        private abstract class Attribute
-        {
-            public string Key { get; set; }
-        }
-
-        private class Attribute<T> : Attribute
-        {
-            public T Value { get; set; }
-        }
-
-        #endregion
-
         #region Properties
 
-        private List<Attribute> attributes = new List<Attribute>();
+        private Dictionary<string, object> attributes = new Dictionary<string, object>();
 
         #endregion
 
@@ -37,7 +23,10 @@ namespace RestfulFirebase.Common.Observables
 
         public void Inherit(IAttributed attributed)
         {
-            if (attributed != null) attributes = attributed.Holder.attributes;
+            lock (attributes)
+            {
+                if (attributed != null) attributes = attributed.Holder.attributes;
+            }
         }
 
         #endregion
@@ -46,39 +35,28 @@ namespace RestfulFirebase.Common.Observables
 
         public T GetAttribute<T>(T defaultValue = default, [CallerMemberName] string key = null)
         {
-            var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key));
-            if (attribute == null)
+            lock (attributes)
             {
-                attribute = new Attribute<T>()
-                {
-                    Key = key,
-                    Value = defaultValue
-                };
-                attributes.Add(attribute);
+                if (!attributes.ContainsKey(key)) attributes.Add(key, defaultValue);
+                return (T)attributes[key];
             }
-            return attribute.Value;
         }
 
         public void SetAttribute<T>(T value, [CallerMemberName] string key = null)
         {
-            var attribute = (Attribute<T>)attributes.FirstOrDefault(i => i.Key.Equals(key));
-            if (attribute == null)
+            lock (attributes)
             {
-                attribute = new Attribute<T>()
-                {
-                    Key = key,
-                    Value = value
-                };
-                attributes.Add(attribute);
+                if (!attributes.ContainsKey(key)) attributes.Add(key, value);
+                else attributes[key] = value;
             }
-            attribute.Value = value;
         }
 
         public void DeleteAttribute(string key)
         {
-            var attribute = attributes.FirstOrDefault(i => i.Key.Equals(key));
-            if (attribute == null) return;
-            attributes.Remove(attribute);
+            lock (attributes)
+            {
+                attributes.Remove(key);
+            }
         }
 
         #endregion

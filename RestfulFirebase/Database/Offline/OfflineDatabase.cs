@@ -10,87 +10,125 @@ namespace RestfulFirebase.Database.Offline
 {
     public class OfflineDatabase
     {
-        private const string OfflineDatabaseRoot = "offlineDatabase";
-        private readonly string OfflineDatabaseModifiedPath = Helpers.CombineUrl(OfflineDatabaseRoot, "mod");
-        private readonly string OfflineDatabaseLocalDataPath = Helpers.CombineUrl(OfflineDatabaseRoot, "local");
-        private readonly string OfflineDatabaseSyncDataPath = Helpers.CombineUrl(OfflineDatabaseRoot, "sync");
+        private const string Root = "offline_database";
+        private readonly string DataPath = Helpers.CombineUrl(Root, "data");
+        private readonly string ActiveSyncPath = Helpers.CombineUrl(Root, "active_sync");
+        private readonly string PassiveSyncPath = Helpers.CombineUrl(Root, "passive_sync");
 
         public RestfulFirebaseApp App { get; }
-
-        public SmallDateTime LastModified
-        {
-            get => Helpers.DecodeSmallDateTime(App.LocalDatabase.Get(OfflineDatabaseModifiedPath), SmallDateTime.MinValue);
-            private set => App.LocalDatabase.Set(OfflineDatabaseModifiedPath, Helpers.EncodeSmallDateTime(value));
-        }
 
         public OfflineDatabase(RestfulFirebaseApp app)
         {
             App = app;
         }
 
+        public string GetData(params string[] path)
+        {
+            if (path == null) return null;
+            if (path.Length == 0) return null;
+            var data = App.LocalDatabase.Get(Helpers.CombineUrl(DataPath, path[0]));
+            if (data == null) return null;
+            for (int i = 1; i < path.Length; i++)
+            {
+                data = Helpers.BlobGetValue(data, path[i], null);
+                if (data == null) return null;
+            }
+            return data;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         public OfflineData GetLocalData(string path)
         {
             var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
+            if (data == null) return null;
             return new OfflineData(data);
         }
 
-        public OfflineData GetSyncData(string path)
+        public string GetSyncBlob(string path)
         {
-            var data = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
-            return new OfflineData(data);
+            return App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseSyncBlobPath, path));
         }
 
         public bool SetLocalData(string path, OfflineData data)
         {
             var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.Blob);
-            LastModified = SmallDateTime.UtcNow;
-            return dataOld != data.Blob;
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path), data.Data);
+            return dataOld != data.Data;
         }
 
-        public bool SetSyncData(string path, OfflineData data)
+        public bool SetSyncBlob(string path, string blob)
         {
             var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path), data.Blob);
-            LastModified = SmallDateTime.UtcNow;
-            return dataOld != data.Blob;
+            App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabaseSyncBlobPath, path), blob);
+            return dataOld != blob;
         }
 
         public bool DeleteLocalData(string path)
         {
             var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
             App.LocalDatabase.Delete(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            LastModified = SmallDateTime.UtcNow;
             return dataOld != null;
         }
 
-        public bool DeleteSyncData(string path)
+        public bool DeleteSyncBlob(string path)
         {
             var dataOld = App.LocalDatabase.Get(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path));
-            App.LocalDatabase.Delete(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path));
-            LastModified = SmallDateTime.UtcNow;
+            App.LocalDatabase.Delete(Helpers.CombineUrl(OfflineDatabaseSyncBlobPath, path));
             return dataOld != null;
         }
 
-        public IEnumerable<OfflineData> GetAllLocal(string path)
+        public IEnumerable<OfflineData> GetAllLocalData(string path)
         {
             foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseLocalDataPath, path)))
             {
-                if (string.IsNullOrEmpty(data)) continue;
-                var offlineData = new OfflineData(data);
-                if (offlineData == null) continue;
-                yield return offlineData;
+                if (data == null) continue;
+                yield return new OfflineData(data);
             }
         }
 
-        public IEnumerable<OfflineData> GetAllSync(string path)
+        public IEnumerable<string> GetAllSyncBlob(string path)
         {
-            foreach (var data in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseSyncDataPath, path)))
+            foreach (var blob in App.LocalDatabase.GetAll(Helpers.CombineUrl(OfflineDatabaseSyncBlobPath, path)))
             {
-                if (string.IsNullOrEmpty(data)) continue;
-                var offlineData = new OfflineData(data);
-                if (offlineData == null) continue;
-                yield return offlineData;
+                if (blob == null) continue;
+                yield return blob;
             }
         }
     }

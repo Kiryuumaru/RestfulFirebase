@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace RestTest
 {
-    public class Datastore : ILocalDatabase
+    public class DatastoreBlob : ILocalDatabase
     {
         private static string filePath = Path.Combine(Directory.GetCurrentDirectory(), "db.db");
         private static Dictionary<string, string> db;
         private bool isPersistent;
 
-        public Datastore(bool isPersistent)
+        public DatastoreBlob(bool isPersistent)
         {
             this.isPersistent = isPersistent;
             if (!Directory.Exists(Path.GetDirectoryName(filePath)))

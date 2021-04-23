@@ -70,21 +70,7 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                deserialized[0] = DataTypeConverter.GetConverter<T>().Encode(value);
-                return SetBlob(Helpers.SerializeString(deserialized), tag);
-            }
-        }
-
-        public virtual bool SetRawValue(string value, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                deserialized[0] = value;
-                return SetBlob(Helpers.SerializeString(deserialized), tag);
+                return SetBlob(DataTypeConverter.GetConverter<T>().Encode(value), tag);
             }
         }
 
@@ -92,69 +78,7 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                return DataTypeConverter.GetConverter<T>().Decode(deserialized[0], defaultValue);
-            }
-        }
-
-        public virtual string GetRawValue(string defautlValue = default, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) return defautlValue;
-                return deserialized[0];
-            }
-        }
-
-        public virtual T GetAdditional<T>(string key, T defaultValue = default, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                var data = Helpers.BlobGetValue(deserialized.Skip(1).ToArray(), key);
-                return DataTypeConverter.GetConverter<T>().Decode(data, defaultValue);
-            }
-        }
-
-        public virtual bool SetAdditional<T>(string key, T value, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                var data = DataTypeConverter.GetConverter<T>().Encode(value);
-                var adsData = Helpers.BlobSetValue(deserialized.Skip(1).ToArray(), key, data);
-                var newEncodedData = new string[adsData.Length + 1];
-                newEncodedData[0] = deserialized[0];
-                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-                return SetBlob(Helpers.SerializeString(newEncodedData), tag);
-            }
-        }
-
-        public virtual bool DeleteAdditional(string key, string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                var adsData = Helpers.BlobDeleteValue(deserialized.Skip(1).ToArray(), key);
-                var newEncodedData = new string[adsData.Length + 1];
-                newEncodedData[0] = deserialized[0];
-                Array.Copy(adsData, 0, newEncodedData, 1, adsData.Length);
-                return SetBlob(Helpers.SerializeString(newEncodedData), tag);
-            }
-        }
-
-        public virtual bool ClearAdditionals(string tag = null)
-        {
-            lock (this)
-            {
-                var deserialized = Helpers.DeserializeString(GetBlob(default, tag));
-                if (deserialized == null) deserialized = new string[1];
-                return SetBlob(Helpers.SerializeString(deserialized[0]), tag);
+                return DataTypeConverter.GetConverter<T>().Decode(GetBlob(default, tag), defaultValue);
             }
         }
 

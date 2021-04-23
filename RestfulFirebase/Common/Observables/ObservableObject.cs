@@ -137,19 +137,6 @@ namespace RestfulFirebase.Common.Observables
             return false;
         }
 
-        public override bool SetRawValue(string value, string tag = null)
-        {
-            try
-            {
-                return base.SetRawValue(value, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
-        }
-
         public override T GetValue<T>(T defaultValue = default, string tag = null)
         {
             try
@@ -161,71 +148,6 @@ namespace RestfulFirebase.Common.Observables
                 OnError(ex);
             }
             return defaultValue;
-        }
-
-        public override string GetRawValue(string defaultValue = default, string tag = null)
-        {
-            try
-            {
-                return base.GetRawValue(defaultValue, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return defaultValue;
-        }
-
-        public override T GetAdditional<T>(string key, T defaultValue = default, string tag = null)
-        {
-            try
-            {
-                return base.GetAdditional(key, defaultValue, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return defaultValue;
-        }
-
-        public override bool SetAdditional<T>(string key, T value, string tag = null)
-        {
-            try
-            {
-                return base.SetAdditional(key, value, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
-        }
-
-        public override bool DeleteAdditional(string key, string tag = null)
-        {
-            try
-            {
-                return base.DeleteAdditional(key, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
-        }
-
-        public override bool ClearAdditionals(string tag = null)
-        {
-            try
-            {
-                return base.ClearAdditionals(tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
         }
 
         #endregion
