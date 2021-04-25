@@ -93,21 +93,20 @@ namespace RestfulFirebase.Database.Models
                     });
                 }
 
-                var newBlob = blob;
-                var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
-                var currBlob = localData == null ? syncBlob : localData.Blob;
+                var local = Wire.Query.App.Database.OfflineDatabase.GetData(path);
 
                 switch (tag)
                 {
                     case InitTag:
-                        if (newBlob == null) return false;
-                        return Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, new OfflineData(newBlob, OfflineChanges.Set));
+                        if (blob == null) return false;
+                        local.Create();
+                        local.Blob = blob;
+                        return local.HasChanges;
                     case RevertTag:
-                        Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                        local.Blob = blob;
                         break;
                     case SyncTag:
-                        if (newBlob == null)
+                        if (!local.Exist)
                         {
                             if (syncBlob != null)
                             {
@@ -183,11 +182,7 @@ namespace RestfulFirebase.Database.Models
             if (Wire != null)
             {
                 var path = Wire.Query.GetAbsolutePath();
-
-                var localData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var syncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
-
-                return localData == null ? syncBlob : localData.Blob;
+                return Wire.Query.App.Database.OfflineDatabase.GetData(path).Blob;
             }
             else
             {

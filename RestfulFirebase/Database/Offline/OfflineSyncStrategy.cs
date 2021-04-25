@@ -4,8 +4,8 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public enum OfflineChanges
+    public enum OfflineSyncStrategy
     {
-        Set, Delete, None
+        Active, Passive, None
     }
 }
