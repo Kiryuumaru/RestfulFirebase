@@ -13,8 +13,8 @@ namespace RestfulFirebase.Database.Offline
         private const string Root = "offline_database";
         private static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
         private static readonly string LongPath = Helpers.CombineUrl(Root, "long");
-        private static readonly string BlobPath = Helpers.CombineUrl(Root, "blob");
-        private static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
+        private static readonly string LocalBlobPath = Helpers.CombineUrl(Root, "local_blob");
+        private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "sync_blob");
         private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "sync_strat");
 
         public class Data
@@ -40,12 +40,8 @@ namespace RestfulFirebase.Database.Offline
             {
                 var combined = Helpers.CombineUrl(path);
                 if (App.LocalDatabase.Get(combined) != data) HasChanges = true;
-                App.LocalDatabase.Set(combined, data);
-            }
-
-            private void Delete(params string[] path)
-            {
-                App.LocalDatabase.Delete(Helpers.CombineUrl(path));
+                if (data == null) App.LocalDatabase.Delete(combined);
+                else App.LocalDatabase.Set(combined, data);
             }
 
             public RestfulFirebaseApp App { get; }
@@ -53,6 +49,9 @@ namespace RestfulFirebase.Database.Offline
             public string Path { get; }
 
             public bool HasChanges { get; private set; }
+            public bool HasLocalBlobChanges { get; private set; }
+            public bool HasSyncBlobChanges { get; private set; }
+            public bool HasCurrentBlobChanges { get; private set; }
 
             public bool Exist => Short != null;
 
@@ -64,46 +63,60 @@ namespace RestfulFirebase.Database.Offline
 
             public string Long
             {
-                get => Get(LongPath, Short);
-                private set => Set(value, LongPath, Short);
+                get
+                {
+                    if (!Exist) return null;
+                    return Get(LongPath, Short);
+                }
+                private set
+                {
+                    if (!Exist) Create();
+                    Set(value, LongPath, Short);
+                }
             }
 
-            public string Blob
-            {
-                get => Get(BlobPath, Short);
-                set => Set(value, BlobPath, Short);
-            }
-
-            public OfflineChanges Changes
+            public string LocalBlob
             {
                 get
                 {
-                    if (Short == null) return OfflineChanges.None;
-                    var changes = Get(ChangesPath, Short);
-                    switch (changes)
-                    {
-                        case "1":
-                            return OfflineChanges.Set;
-                        case "2":
-                            return OfflineChanges.Delete;
-                        default:
-                            return OfflineChanges.None;
-                    }
+                    if (!Exist) return null;
+                    return Get(LocalBlobPath, Short);
                 }
                 set
                 {
-                    switch (value)
-                    {
-                        case OfflineChanges.Set:
-                            Set("1", ChangesPath, Short);
-                            break;
-                        case OfflineChanges.Delete:
-                            Set("2", ChangesPath, Short);
-                            break;
-                        default:
-                            Set("0", ChangesPath, Short);
-                            break;
-                    }
+                    if (!Exist) Create();
+                    if (Get(LocalBlobPath, Short) != value) HasLocalBlobChanges = true;
+                    var oldCurr = CurrentBlob;
+                    Set(value, LocalBlobPath, Short);
+                    if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
+                }
+            }
+
+            public string SyncBlob
+            {
+                get
+                {
+                    if (!Exist) return null;
+                    return Get(SyncBlobPath, Short);
+                }
+                set
+                {
+                    if (!Exist) Create();
+                    if (Get(SyncBlobPath, Short) != value) HasSyncBlobChanges = true;
+                    var oldCurr = CurrentBlob;
+                    Set(value, SyncBlobPath, Short);
+                    if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
+                }
+            }
+
+            public string CurrentBlob
+            {
+                get
+                {
+                    if (!Exist) return null;
+                    var local = LocalBlob;
+                    var sync = SyncBlob;
+                    return local == null ? sync : local;
                 }
             }
 
@@ -111,6 +124,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 get
                 {
+                    if (!Exist) return OfflineSyncStrategy.None;
                     var strat = Get(SyncStratPath, Short);
                     switch (strat)
                     {
@@ -124,6 +138,7 @@ namespace RestfulFirebase.Database.Offline
                 }
                 set
                 {
+                    if (!Exist) Create();
                     switch (value)
                     {
                         case OfflineSyncStrategy.Active:
@@ -156,12 +171,14 @@ namespace RestfulFirebase.Database.Offline
             public bool Delete()
             {
                 if (!Exist) return false;
+                var oldCurr = CurrentBlob;
                 var shortPath = Short;
-                Delete(ShortPath, Path);
-                Delete(LongPath, shortPath);
-                Delete(BlobPath, shortPath);
-                Delete(ChangesPath, shortPath);
-                Delete(SyncStratPath, shortPath);
+                Set(null, ShortPath, Path);
+                Set(null, LongPath, shortPath);
+                Set(null, LocalBlobPath, shortPath);
+                Set(null, SyncBlobPath, shortPath);
+                Set(null, SyncStratPath, shortPath);
+                if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
                 return true;
             }
         }

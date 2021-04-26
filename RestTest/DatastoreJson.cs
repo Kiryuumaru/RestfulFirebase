@@ -49,22 +49,27 @@ namespace RestTest
             });
         }
 
-        public bool Contains(params string[] path)
+        public bool ContainsKey(string key)
         {
             throw new NotImplementedException();
         }
 
-        public string Get(params string[] path)
+        public IEnumerable<string> GetKeys()
         {
             throw new NotImplementedException();
         }
 
-        public void Set(string value, params string[] path)
+        public string Get(string key)
         {
             throw new NotImplementedException();
         }
 
-        public void Delete(params string[] path)
+        public void Set(string key, string value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Delete(string key)
         {
             throw new NotImplementedException();
         }

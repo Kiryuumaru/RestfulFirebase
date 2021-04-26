@@ -76,8 +76,6 @@ namespace RestfulFirebase.Database.Models
         {
             if (Wire != null)
             {
-                var path = Wire.Query.GetAbsolutePath();
-
                 void put(string data)
                 {
                     if (LastPush == data) return;
@@ -93,30 +91,28 @@ namespace RestfulFirebase.Database.Models
                     });
                 }
 
+                var path = Wire.Query.GetAbsolutePath();
                 var local = Wire.Query.App.Database.OfflineDatabase.GetData(path);
 
                 switch (tag)
                 {
                     case InitTag:
                         if (blob == null) return false;
-                        local.Create();
-                        local.Blob = blob;
-                        return local.HasChanges;
+                        local.LocalBlob = blob;
+                        return false;
                     case RevertTag:
-                        local.Blob = blob;
+                        local.LocalBlob = blob;
                         break;
                     case SyncTag:
-                        if (!local.Exist)
+                        if (blob == null)
                         {
-                            if (syncBlob != null)
+                            if (local.SyncBlob != null)
                             {
-                                Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
-                                Wire.Query.App.Database.OfflineDatabase.DeleteSyncBlob(path);
+                                local.Delete();
                             }
-                            else if (localData != null)
+                            else if (local.LocalBlob != null)
                             {
-                                if (localData.Changes == OfflineChanges.Set) put(localData.Blob);
-                                else put(null);
+                                put(local.LocalBlob);
                             }
                             else
                             {
@@ -125,40 +121,34 @@ namespace RestfulFirebase.Database.Models
                         }
                         else
                         {
-                            if (localData == null)
+                            if (local.LocalBlob == null)
                             {
-                                Wire.Query.App.Database.OfflineDatabase.SetSyncBlob(path, newBlob);
+                                local.SyncBlob = blob;
                             }
-                            else if (newBlob == syncBlob && newBlob != localData.Blob)
+                            else if (blob == local.SyncBlob && blob != local.LocalBlob)
                             {
-                                put(localData.Blob);
+                                put(local.LocalBlob);
                                 return false;
                             }
                             else
                             {
-                                Wire.Query.App.Database.OfflineDatabase.SetSyncBlob(path, newBlob);
-                                Wire.Query.App.Database.OfflineDatabase.DeleteLocalData(path);
+                                local.SyncBlob = blob;
+                                local.LocalBlob = null;
                             }
                         }
                         break;
                     default:
-                        if (newBlob != syncBlob)
+                        if (local.CurrentBlob != blob)
                         {
-                            put(newBlob);
-                            Wire.Query.App.Database.OfflineDatabase.SetLocalData(path, new OfflineData(newBlob, newBlob == null ? OfflineChanges.Delete : OfflineChanges.Set));
+                            put(blob);
+                            local.LocalBlob = blob;
                         }
                         break;
                 }
 
-                var newLocalData = Wire.Query.App.Database.OfflineDatabase.GetLocalData(path);
-                var newSyncBlob = Wire.Query.App.Database.OfflineDatabase.GetSyncBlob(path);
-                var newCurrBlob = localData == null ? syncBlob : localData.Blob;
+                if (local.HasCurrentBlobChanges) OnChanged(nameof(Blob));
 
-                var hasBlobChanges = newCurrBlob != currBlob;
-
-                if (hasBlobChanges) OnChanged(nameof(Blob));
-
-                return hasBlobChanges;
+                return local.HasCurrentBlobChanges;
             }
             else
             {
@@ -182,7 +172,7 @@ namespace RestfulFirebase.Database.Models
             if (Wire != null)
             {
                 var path = Wire.Query.GetAbsolutePath();
-                return Wire.Query.App.Database.OfflineDatabase.GetData(path).Blob;
+                return Wire.Query.App.Database.OfflineDatabase.GetData(path).CurrentBlob;
             }
             else
             {
@@ -264,13 +254,8 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetBlob(string blob, string tag = null)
         {
-            var oldValue = GetBlob();
             var hasChanges = base.SetBlob(blob, tag);
-            if (oldValue != GetBlob())
-            {
-                OnChanged(nameof(Value));
-                hasChanges = true;
-            }
+            if (hasChanges) OnChanged(nameof(Value));
             return hasChanges;
         }
 
