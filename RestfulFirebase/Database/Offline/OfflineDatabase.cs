@@ -13,9 +13,9 @@ namespace RestfulFirebase.Database.Offline
         private const string Root = "offline_database";
         private static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
         private static readonly string LongPath = Helpers.CombineUrl(Root, "long");
-        private static readonly string LocalBlobPath = Helpers.CombineUrl(Root, "local_blob");
-        private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "sync_blob");
-        private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "sync_strat");
+        private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "blob");
+        private static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
+        private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "strat");
 
         public class Data
         {
@@ -49,9 +49,8 @@ namespace RestfulFirebase.Database.Offline
             public string Path { get; }
 
             public bool HasChanges { get; private set; }
-            public bool HasLocalBlobChanges { get; private set; }
-            public bool HasSyncBlobChanges { get; private set; }
-            public bool HasCurrentBlobChanges { get; private set; }
+            public bool HasBlobChanges { get; private set; }
+            public bool HasLatestBlobChanges { get; private set; }
 
             public bool Exist => Short != null;
 
@@ -75,23 +74,6 @@ namespace RestfulFirebase.Database.Offline
                 }
             }
 
-            public string LocalBlob
-            {
-                get
-                {
-                    if (!Exist) return null;
-                    return Get(LocalBlobPath, Short);
-                }
-                set
-                {
-                    if (!Exist) Create();
-                    if (Get(LocalBlobPath, Short) != value) HasLocalBlobChanges = true;
-                    var oldCurr = CurrentBlob;
-                    Set(value, LocalBlobPath, Short);
-                    if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
-                }
-            }
-
             public string SyncBlob
             {
                 get
@@ -102,21 +84,38 @@ namespace RestfulFirebase.Database.Offline
                 set
                 {
                     if (!Exist) Create();
-                    if (Get(SyncBlobPath, Short) != value) HasSyncBlobChanges = true;
-                    var oldCurr = CurrentBlob;
+                    var oldBlob = SyncBlob;
+                    var oldLatestBlob = LatestBlob;
                     Set(value, SyncBlobPath, Short);
-                    if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
+                    if (oldBlob != SyncBlob) HasBlobChanges = true;
+                    if (oldLatestBlob != LatestBlob) HasLatestBlobChanges = true;
                 }
             }
 
-            public string CurrentBlob
+            public OfflineChanges Changes
             {
                 get
                 {
                     if (!Exist) return null;
-                    var local = LocalBlob;
+                    return OfflineChanges.Parse(Get(ChangesPath, Short));
+                }
+                set
+                {
+                    if (!Exist) Create();
+                    var oldLatestBlob = LatestBlob;
+                    Set(value?.ToData(), ChangesPath, Short);
+                    if (oldLatestBlob != LatestBlob) HasLatestBlobChanges = true;
+                }
+            }
+
+            public string LatestBlob
+            {
+                get
+                {
+                    if (!Exist) return null;
                     var sync = SyncBlob;
-                    return local == null ? sync : local;
+                    var changes = Changes;
+                    return changes == null ? sync : changes.Blob;
                 }
             }
 
@@ -171,14 +170,14 @@ namespace RestfulFirebase.Database.Offline
             public bool Delete()
             {
                 if (!Exist) return false;
-                var oldCurr = CurrentBlob;
+                var oldCurr = LatestBlob;
                 var shortPath = Short;
                 Set(null, ShortPath, Path);
                 Set(null, LongPath, shortPath);
-                Set(null, LocalBlobPath, shortPath);
                 Set(null, SyncBlobPath, shortPath);
+                Set(null, ChangesPath, shortPath);
                 Set(null, SyncStratPath, shortPath);
-                if (oldCurr != CurrentBlob) HasCurrentBlobChanges = true;
+                if (oldCurr != LatestBlob) HasLatestBlobChanges = true;
                 return true;
             }
         }

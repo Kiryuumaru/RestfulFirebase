@@ -22,12 +22,6 @@ namespace RestfulFirebase.Database.Models
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
-        private string LastPush
-        {
-            get => Holder.GetAttribute<string>();
-            set => Holder.SetAttribute(value);
-        }
-
         private string BlobHolder
         {
             get => Holder.GetAttribute<string>();
@@ -78,9 +72,7 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    if (LastPush == data) return;
-                    LastPush = data;
-                    Wire.Put(JsonConvert.SerializeObject(LastPush), ex =>
+                    Wire.Put(JsonConvert.SerializeObject(data), ex =>
                     {
                         if (Wire == null) return;
                         if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -92,63 +84,105 @@ namespace RestfulFirebase.Database.Models
                 }
 
                 var path = Wire.Query.GetAbsolutePath();
-                var local = Wire.Query.App.Database.OfflineDatabase.GetData(path);
+                var offline = Wire.Query.App.Database.OfflineDatabase.GetData(path);
 
                 switch (tag)
                 {
                     case InitTag:
                         if (blob == null) return false;
-                        local.LocalBlob = blob;
+                        if (offline.SyncBlob == null)
+                        {
+                            put(blob);
+                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
+                        }
+                        else if (offline.Changes == null || offline.LatestBlob != blob)
+                        {
+                            put(blob);
+                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
+                        }
                         return false;
                     case RevertTag:
-                        local.LocalBlob = blob;
+                        offline.Changes = null;
                         break;
                     case SyncTag:
-                        if (blob == null)
+                        if (offline.Changes == null)
                         {
-                            if (local.SyncBlob != null)
-                            {
-                                local.Delete();
-                            }
-                            else if (local.LocalBlob != null)
-                            {
-                                put(local.LocalBlob);
-                            }
-                            else
-                            {
-                                return false;
-                            }
+                            if (blob == null) offline.Delete();
+                            else offline.SyncBlob = blob;
                         }
                         else
                         {
-                            if (local.LocalBlob == null)
+                            switch (offline.Changes.ChangesType)
                             {
-                                local.SyncBlob = blob;
-                            }
-                            else if (blob == local.SyncBlob && blob != local.LocalBlob)
-                            {
-                                put(local.LocalBlob);
-                                return false;
-                            }
-                            else
-                            {
-                                local.SyncBlob = blob;
-                                local.LocalBlob = null;
+                                case OfflineChangesType.Create:
+                                    if (blob == null)
+                                    {
+                                        put(offline.Changes.Blob);
+                                        return false;
+                                    }
+                                    else
+                                    {
+                                        offline.SyncBlob = blob;
+                                        offline.Changes = null;
+                                        break;
+                                    }
+                                case OfflineChangesType.Update:
+                                    if (blob == null)
+                                    {
+                                        offline.Delete();
+                                        break;
+                                    }
+                                    else if (offline.SyncBlob == blob)
+                                    {
+                                        put(offline.Changes.Blob);
+                                        return false;
+                                    }
+                                    else
+                                    {
+                                        offline.SyncBlob = blob;
+                                        offline.Changes = null;
+                                        break;
+                                    }
+                                case OfflineChangesType.Delete:
+                                    if (blob == null)
+                                    {
+                                        return false;
+                                    }
+                                    else if (offline.SyncBlob == blob)
+                                    {
+                                        put(null);
+                                        return false;
+                                    }
+                                    else
+                                    {
+                                        offline.SyncBlob = blob;
+                                        offline.Changes = null;
+                                        break;
+                                    }
+                                case OfflineChangesType.None:
+                                    offline.SyncBlob = blob;
+                                    offline.Changes = null;
+                                    break;
                             }
                         }
                         break;
                     default:
-                        if (local.CurrentBlob != blob)
+                        if (offline.SyncBlob == null)
                         {
                             put(blob);
-                            local.LocalBlob = blob;
+                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
+                        }
+                        else if (offline.Changes == null || offline.LatestBlob != blob)
+                        {
+                            put(blob);
+                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
                         }
                         break;
                 }
 
-                if (local.HasCurrentBlobChanges) OnChanged(nameof(Blob));
+                if (offline.HasLatestBlobChanges) OnChanged(nameof(Blob));
 
-                return local.HasCurrentBlobChanges;
+                return offline.HasLatestBlobChanges;
             }
             else
             {
@@ -172,7 +206,7 @@ namespace RestfulFirebase.Database.Models
             if (Wire != null)
             {
                 var path = Wire.Query.GetAbsolutePath();
-                return Wire.Query.App.Database.OfflineDatabase.GetData(path).CurrentBlob;
+                return Wire.Query.App.Database.OfflineDatabase.GetData(path).LatestBlob;
             }
             else
             {
