@@ -12,7 +12,6 @@ namespace RestfulFirebase.Database.Streaming
     public class RealtimeWire : IDisposable
     {
         private string jsonToPut;
-        private bool invokePut = false;
         private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
@@ -24,6 +23,7 @@ namespace RestfulFirebase.Database.Streaming
         public string Key { get; private set; }
         public FirebaseQuery Query { get; private set; }
         public bool IsWritting { get; private set; }
+        public bool HasPendingWrite { get; private set; }
 
         public event Action OnStart;
         public event Action OnStop;
@@ -38,12 +38,12 @@ namespace RestfulFirebase.Database.Streaming
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
         {
             jsonToPut = json;
-            invokePut = true;
+            HasPendingWrite = true;
             if (IsWritting) return;
             IsWritting = true;
-            while (invokePut)
+            while (HasPendingWrite)
             {
-                invokePut = false;
+                HasPendingWrite = false;
                 await Query.Put(() => jsonToPut, null, err =>
                 {
                     if (err.Exception.TaskCancelled)

@@ -69,6 +69,7 @@ namespace RestfulFirebase.Database.Query
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
+                    await Task.Delay(2000);
                     await Put(jsonData, token, onException);
                 }
                 return;
@@ -79,6 +80,7 @@ namespace RestfulFirebase.Database.Query
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
+                    await Task.Delay(2000);
                     await Put(jsonData, token, onException);
                 }
                 return;
@@ -102,6 +104,7 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
+                        await Task.Delay(2000);
                         await Put(jsonData, token, onException);
                     }
                 }
@@ -111,6 +114,7 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
+                        await Task.Delay(2000);
                         await Put(jsonData, token, onException);
                     }
                 }
@@ -128,6 +132,7 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
+                        await Task.Delay(2000);
                         await Put(jsonData, token, onException);
                     }
                 }
@@ -137,6 +142,7 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
+                        await Task.Delay(2000);
                         await Put(jsonData, token, onException);
                     }
                 }
@@ -166,7 +172,7 @@ namespace RestfulFirebase.Database.Query
 
             if (App.Auth.Authenticated && AuthenticateRequests)
             {
-                string run()
+                return await Task.Run(delegate
                 {
                     return WithAuth(() =>
                     {
@@ -174,8 +180,7 @@ namespace RestfulFirebase.Database.Query
                         if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
                         return getTokenResult.Result.Result;
                     }).BuildUrl(null);
-                };
-                return await Task.Run(run, token.Value);
+                }, token.Value);
             }
 
             return BuildUrl(null);

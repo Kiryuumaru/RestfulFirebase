@@ -23,6 +23,8 @@ namespace RestfulFirebase.Database.Models
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
+        private bool isSyncWaiting;
+
         private string BlobHolder
         {
             get => Holder.GetAttribute<string>();
@@ -106,7 +108,7 @@ namespace RestfulFirebase.Database.Models
                         offline.Changes = null;
                         break;
                     case SyncTag:
-                        if (Wire.IsWritting) return false;
+                        if (Wire.IsWritting && Wire.HasPendingWrite) return false;
                         if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
