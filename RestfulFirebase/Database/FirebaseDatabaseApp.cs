@@ -1,8 +1,10 @@
 ﻿using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
+using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Extensions.Http;
 using System;
 using System.Collections.Generic;
+using System.Reactive.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Database

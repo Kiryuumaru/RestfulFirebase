@@ -64,7 +64,7 @@ namespace RestfulFirebase.Auth
         public bool IsExpired()
         {
             // include a small 10s window when the token is technically valid but it's a good idea to refresh it already.
-            return DateTime.Now > Created.AddSeconds(ExpiresIn - 10); 
+            return DateTime.Now > Created.AddSeconds(ExpiresIn - 10);
         }
     }
 }

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database
 {
-    public class FirebaseException : Exception
+    public class FirebaseDatabaseException : Exception
     {
         public string RequestData { get; }
 
@@ -13,7 +14,9 @@ namespace RestfulFirebase.Database
 
         public HttpStatusCode StatusCode { get; }
 
-        public FirebaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode)
+        public bool TaskCancelled { get; }
+
+        public FirebaseDatabaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData))
         {
             RequestUrl = requestUrl;
@@ -22,13 +25,17 @@ namespace RestfulFirebase.Database
             StatusCode = statusCode;
         }
 
-        public FirebaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode, Exception innerException)
+        public FirebaseDatabaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode, Exception innerException)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData), innerException)
         {
             RequestUrl = requestUrl;
             RequestData = requestData;
             ResponseData = responseData;
             StatusCode = statusCode;
+            if (innerException is TaskCanceledException)
+            {
+                TaskCancelled = true;
+            }
         }
 
         private static string GenerateExceptionMessage(string requestUrl, string requestData, string responseData)

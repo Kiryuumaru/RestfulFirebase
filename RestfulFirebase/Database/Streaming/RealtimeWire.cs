@@ -32,7 +32,7 @@ namespace RestfulFirebase.Database.Streaming
             Query = new ChildQuery(parent.App, parent, () => key);
         }
 
-        public async void Put(string json, Action<FirebaseException> onError)
+        public async void Put(string json, TimeSpan? timeout, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
         {
             jsonToPut = json;
             invokePut = true;
@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database.Streaming
             while (invokePut)
             {
                 invokePut = false;
-                await Query.Put(jsonToPut, null, onError);
+                await Query.Put(jsonToPut, timeout, onError);
             }
             isInvoking = false;
         }

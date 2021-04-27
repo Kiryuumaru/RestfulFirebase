@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Auth
@@ -461,7 +462,7 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> RefreshAuthAsync()
+        public async Task<CallResult<FirebaseAuthException>> RefreshAuthAsync(TimeSpan? timeout = null)
         {
             try
             {
@@ -474,7 +475,20 @@ namespace RestfulFirebase.Auth
 
                     try
                     {
-                        var response = await client.PostAsync(new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                        HttpResponseMessage response = null;
+                        if (timeout == null)
+                        {
+                            response = await client.PostAsync(
+                                new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
+                                new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            response = await client.PostAsync(
+                                new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
+                                new StringContent(content, Encoding.UTF8, "Application/json"),
+                                new CancellationTokenSource(timeout.Value).Token).ConfigureAwait(false);
+                        }
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);

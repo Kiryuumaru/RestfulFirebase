@@ -109,7 +109,7 @@ namespace RestfulFirebase.Common.Observables
             PropertyChangeType type,
             string key,
             string group,
-            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectInternalChangesEventArgs(type, key, group, propertyName));
+            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {

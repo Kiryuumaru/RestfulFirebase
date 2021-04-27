@@ -4,6 +4,14 @@ namespace RestfulFirebase.Auth
 {
     public class FirebaseAuthException : Exception
     {
+        public string RequestData { get; }
+
+        public string RequestUrl { get; }
+
+        public string ResponseData { get; }
+
+        public AuthErrorReason Reason { get; }
+
         public FirebaseAuthException(string requestUrl, string requestData, string responseData, Exception innerException, AuthErrorReason reason = AuthErrorReason.Undefined)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData, reason), innerException)
         {
@@ -18,14 +26,6 @@ namespace RestfulFirebase.Auth
         {
             Reason = reason;
         }
-
-        public string RequestData { get; }
-
-        public string RequestUrl { get; }
-
-        public string ResponseData { get; }
-
-        public AuthErrorReason Reason { get; }
 
         private static string GenerateExceptionMessage(string requestUrl, string requestData, string responseData, AuthErrorReason errorReason)
         {

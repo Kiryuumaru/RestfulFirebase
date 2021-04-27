@@ -20,16 +20,19 @@ namespace RestfulFirebase.Database.Streaming
         private readonly IObserver<StreamObject> observer;
         private readonly CancellationTokenSource cancel;
         private readonly IFirebaseQuery query;
-
         private readonly HttpClient http;
 
         private EventHandler<ContinueExceptionEventArgs> exceptionThrown;
 
-        internal NodeStreamer(IObserver<StreamObject> observer, IFirebaseQuery query, EventHandler<ContinueExceptionEventArgs> exceptionThrown)
+        internal NodeStreamer(
+            IObserver<StreamObject> observer,
+            IFirebaseQuery query,
+            EventHandler<ContinueExceptionEventArgs> exceptionThrown)
         {
             this.observer = observer;
             this.query = query;
             this.exceptionThrown = exceptionThrown;
+
             cancel = new CancellationTokenSource();
 
             var handler = new HttpClientHandler
@@ -119,13 +122,13 @@ namespace RestfulFirebase.Database.Streaming
                 }
                 catch (Exception ex)
                 {
-                    var fireEx = new FirebaseException(url, string.Empty, line, statusCode, ex);
+                    var fireEx = new FirebaseDatabaseException(url, string.Empty, line, statusCode, ex);
                     var args = new ContinueExceptionEventArgs(fireEx, statusCode == HttpStatusCode.OK);
                     exceptionThrown?.Invoke(this, args);
 
                     if (!args.IgnoreAndContinue)
                     {
-                        this.observer.OnError(new FirebaseException(url, string.Empty, line, statusCode, ex));
+                        this.observer.OnError(new FirebaseDatabaseException(url, string.Empty, line, statusCode, ex));
                         Dispose();
                         break;
                     }
@@ -181,7 +184,7 @@ namespace RestfulFirebase.Database.Streaming
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
-                    this.observer.OnError(new FirebaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
+                    this.observer.OnError(new FirebaseDatabaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
                     Dispose();
                     break;
             }

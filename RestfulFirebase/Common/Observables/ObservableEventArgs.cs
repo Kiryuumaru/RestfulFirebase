@@ -10,12 +10,12 @@ namespace RestfulFirebase.Common.Observables
         Set, Delete
     }
 
-    public class ObservableObjectInternalChangesEventArgs : PropertyChangedEventArgs
+    public class ObservableObjectChangesEventArgs : PropertyChangedEventArgs
     {
         public PropertyChangeType Type { get; }
         public string Key { get; }
         public string Group { get; }
-        public ObservableObjectInternalChangesEventArgs(
+        public ObservableObjectChangesEventArgs(
             PropertyChangeType type,
             string key,
             string group,

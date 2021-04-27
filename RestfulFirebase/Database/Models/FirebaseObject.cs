@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using RestfulFirebase.Auth;
 using RestfulFirebase.Common;
 using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
@@ -21,6 +22,8 @@ namespace RestfulFirebase.Database.Models
         protected const string InitTag = "init";
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
+
+        protected const int UnauthorizedRetryCount = 3;
 
         private string BlobHolder
         {
@@ -72,14 +75,22 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    Wire.Put(JsonConvert.SerializeObject(data), ex =>
+                    Wire.Put(JsonConvert.SerializeObject(data), TimeSpan.FromSeconds(10), error =>
                     {
                         if (Wire == null) return;
-                        if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        if (error.Exception.TaskCancelled)
+                        {
+                            error.Retry = true;
+                        }
+                        else if (error.Exception.InnerException is FirebaseAuthException)
+                        {
+                            error.Retry = true;
+                        }
+                        else if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
                             SetBlob(null, RevertTag);
                         }
-                        OnError(ex);
+                        OnError(error.Exception);
                     });
                 }
 

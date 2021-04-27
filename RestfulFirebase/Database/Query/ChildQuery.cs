@@ -64,16 +64,21 @@ namespace RestfulFirebase.Database.Query
         {
             var s = pathFactory();
 
-            if (s != string.Empty && !s.EndsWith("/"))
-            {
-                s += '/';
-            }
-
             if (!(child is ChildQuery))
             {
-                return s + ".json";
+                if (s != string.Empty && s.EndsWith("/"))
+                {
+                    s = s.Substring(0, s.Length - 1);
+                }
+                s += ".json";
             }
-
+            else
+            {
+                if (s != string.Empty && !s.EndsWith("/"))
+                {
+                    s += '/';
+                }
+            }
             return s;
         }
     }
