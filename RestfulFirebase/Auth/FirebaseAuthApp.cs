@@ -250,7 +250,10 @@ namespace RestfulFirebase.Auth
 
                 try
                 {
-                    var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                    var response = await client.PostAsync(
+                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     response.EnsureSuccessStatusCode();
@@ -280,7 +283,10 @@ namespace RestfulFirebase.Auth
 
                 try
                 {
-                    var response = await client.PostAsync(new Uri(string.Format(GoogleDeleteUserUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                    var response = await client.PostAsync(
+                        new Uri(string.Format(GoogleDeleteUserUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     response.EnsureSuccessStatusCode();
@@ -307,7 +313,10 @@ namespace RestfulFirebase.Auth
 
                 var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{FirebaseToken}\"}}";
 
-                var response = await client.PostAsync(new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(
+                    new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                    new StringContent(content, Encoding.UTF8, "Application/json"),
+                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
 
@@ -409,7 +418,10 @@ namespace RestfulFirebase.Auth
 
                 try
                 {
-                    var response = await client.PostAsync(new Uri(string.Format(GoogleCreateAuthUrl, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                    var response = await client.PostAsync(
+                        new Uri(string.Format(GoogleCreateAuthUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     response.EnsureSuccessStatusCode();
@@ -440,7 +452,10 @@ namespace RestfulFirebase.Auth
                 var responseData = "N/A";
                 try
                 {
-                    var response = await client.PostAsync(new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                    var response = await client.PostAsync(
+                        new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
 
@@ -462,7 +477,7 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> RefreshAuthAsync(TimeSpan? timeout = null)
+        public async Task<CallResult<FirebaseAuthException>> RefreshAuthAsync()
         {
             try
             {
@@ -476,19 +491,10 @@ namespace RestfulFirebase.Auth
                     try
                     {
                         HttpResponseMessage response = null;
-                        if (timeout == null)
-                        {
-                            response = await client.PostAsync(
-                                new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
-                                new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            response = await client.PostAsync(
-                                new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
-                                new StringContent(content, Encoding.UTF8, "Application/json"),
-                                new CancellationTokenSource(timeout.Value).Token).ConfigureAwait(false);
-                        }
+                        response = await client.PostAsync(
+                            new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
+                            new StringContent(content, Encoding.UTF8, "Application/json"),
+                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
@@ -530,7 +536,10 @@ namespace RestfulFirebase.Auth
 
                     try
                     {
-                        var response = await client.PostAsync(new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)), new StringContent(content, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                        var response = await client.PostAsync(
+                            new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
+                            new StringContent(content, Encoding.UTF8, "Application/json"),
+                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                         var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
@@ -629,7 +638,10 @@ namespace RestfulFirebase.Auth
 
             try
             {
-                var response = await client.PostAsync(new Uri(string.Format(googleUrl, App.Config.ApiKey)), new StringContent(postContent, Encoding.UTF8, "Application/json")).ConfigureAwait(false);
+                var response = await client.PostAsync(
+                    new Uri(string.Format(googleUrl, App.Config.ApiKey)),
+                    new StringContent(postContent, Encoding.UTF8, "Application/json"),
+                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();

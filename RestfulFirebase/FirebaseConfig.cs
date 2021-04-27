@@ -17,6 +17,9 @@ namespace RestfulFirebase
         {
             LocalDatabase = new SimpleLocalDatabase();
             HttpClientFactory = new TransientHttpClientFactory();
+            AuthRequestTimeout = TimeSpan.FromMinutes(1);
+            DatabaseRequestTimeout = TimeSpan.FromMinutes(2);
+            StorageRequestTimeout = TimeSpan.FromMinutes(2);
         }
 
         public string ApiKey { get; set; }
@@ -25,6 +28,12 @@ namespace RestfulFirebase
 
         public string StorageBucket { get; set; }
 
+        public TimeSpan AuthRequestTimeout { get; set; }
+
+        public TimeSpan DatabaseRequestTimeout { get; set; }
+
+        public TimeSpan StorageRequestTimeout { get; set; }
+
         public ILocalDatabase LocalDatabase { get; set; }
 
         public bool AsAccessToken { get; set; }
@@ -32,7 +41,5 @@ namespace RestfulFirebase
         public bool StorageThrowOnCancel { get; set; }
 
         public IHttpClientFactory HttpClientFactory { get; set; }
-
-        public bool OfflineMode { get; set; }
     }
 }

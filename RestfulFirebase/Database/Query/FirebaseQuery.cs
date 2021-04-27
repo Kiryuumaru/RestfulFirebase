@@ -21,8 +21,6 @@ namespace RestfulFirebase.Database.Query
     {
         private IHttpClientProxy client;
 
-        protected readonly TimeSpan DefaultHttpClientTimeout = new TimeSpan(0, 0, 180);
-
         protected readonly FirebaseQuery Parent;
 
         protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
@@ -46,7 +44,7 @@ namespace RestfulFirebase.Database.Query
 
         public RestfulFirebaseApp App { get; }
 
-        public async Task Put(string jsonData, TimeSpan? timeout = null, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onException = null)
+        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onException = null)
         {
             string url;
             var responseData = string.Empty;
@@ -54,45 +52,46 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
-                if (App.Auth.Authenticated && AuthenticateRequests)
-                {
-                    var refresh =  await App.Auth.RefreshAuthAsync(timeout);
-                    if (!refresh.IsSuccess)
-                    {
-                        await Task.Delay(2000);
-                        throw refresh.Exception;
-                    }
-                }
-                url = await BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync(token).ConfigureAwait(false);
             }
             catch (FirebaseDatabaseException ex)
             {
+                await Task.Delay(2000);
                 var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
-                    await Put(jsonData, timeout, onException);
+                    await Put(jsonData, token, onException);
                 }
                 return;
             }
             catch (Exception ex)
             {
+                await Task.Delay(2000);
                 var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
-                    await Put(jsonData, timeout, onException);
+                    await Put(jsonData, token, onException);
                 }
                 return;
             }
 
             if (jsonData == null)
             {
-                var c = GetClient(timeout);
+                var c = GetClient();
 
                 try
                 {
-                    var result = await c.DeleteAsync(url).ConfigureAwait(false);
+                    HttpResponseMessage result = null;
+                    if (token == null)
+                    {
+                        result = await c.DeleteAsync(url).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        result = await c.DeleteAsync(url, token.Value).ConfigureAwait(false);
+                    }
                     statusCode = result.StatusCode;
                     responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -100,20 +99,22 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (FirebaseDatabaseException ex)
                 {
+                    await Task.Delay(2000);
                     var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Put(jsonData, timeout, onException);
+                        await Put(jsonData, token, onException);
                     }
                 }
                 catch (Exception ex)
                 {
+                    await Task.Delay(2000);
                     var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException(url, string.Empty, responseData, statusCode, ex));
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Put(jsonData, timeout, onException);
+                        await Put(jsonData, token, onException);
                     }
                 }
             }
@@ -121,25 +122,27 @@ namespace RestfulFirebase.Database.Query
             {
                 try
                 {
-                    var c = GetClient(timeout);
-                    await Silent().SendAsync(c, jsonData, HttpMethod.Put);
+                    var c = GetClient();
+                    await Silent().SendAsync(c, jsonData, HttpMethod.Put, token);
                 }
                 catch (FirebaseDatabaseException ex)
                 {
+                    await Task.Delay(2000);
                     var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Put(jsonData, timeout, onException);
+                        await Put(jsonData, token, onException);
                     }
                 }
                 catch (Exception ex)
                 {
+                    await Task.Delay(2000);
                     var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException(url, string.Empty, responseData, statusCode, ex));
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Put(jsonData, timeout, onException);
+                        await Put(jsonData, token, onException);
                     }
                 }
             }
@@ -150,11 +153,11 @@ namespace RestfulFirebase.Database.Query
             return new RealtimeWire<T>(model, this);
         }
 
-        public async Task<string> BuildUrlAsync()
+        public async Task<string> BuildUrlAsync(CancellationToken? token = null)
         {
             if (App.Auth.Authenticated && AuthenticateRequests)
             {
-                return await Task.Run(delegate
+                string run()
                 {
                     return WithAuth(() =>
                     {
@@ -162,7 +165,15 @@ namespace RestfulFirebase.Database.Query
                         if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
                         return getTokenResult.Result.Result;
                     }).BuildUrl(null);
-                });
+                };
+                if (token == null)
+                {
+                    return await Task.Run(run);
+                }
+                else
+                {
+                    return await Task.Run(run, token.Value);
+                }
             }
 
             return BuildUrl(null);
@@ -199,17 +210,17 @@ namespace RestfulFirebase.Database.Query
             return url;
         }
 
-        private HttpClient GetClient(TimeSpan? timeout = null)
+        private HttpClient GetClient()
         {
             if (client == null)
             {
-                client = App.Config.HttpClientFactory.GetHttpClient(timeout ?? DefaultHttpClientTimeout);
+                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.DatabaseRequestTimeout);
             }
 
             return client.GetHttpClient();
         }
 
-        private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method)
+        private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
         {
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
@@ -218,7 +229,7 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
-                url = await BuildUrlAsync().ConfigureAwait(false);
+                url = await BuildUrlAsync(token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -232,7 +243,15 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
-                var result = await client.SendAsync(message).ConfigureAwait(false);
+                HttpResponseMessage result = null;
+                if (token == null)
+                {
+                    result = await client.SendAsync(message).ConfigureAwait(false);
+                }
+                else
+                {
+                    result = await client.SendAsync(message, token.Value).ConfigureAwait(false);
+                }
                 statusCode = result.StatusCode;
                 responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 

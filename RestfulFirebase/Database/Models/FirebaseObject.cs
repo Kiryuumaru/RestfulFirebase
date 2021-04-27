@@ -23,8 +23,6 @@ namespace RestfulFirebase.Database.Models
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
-        protected const int UnauthorizedRetryCount = 3;
-
         private string BlobHolder
         {
             get => Holder.GetAttribute<string>();
@@ -75,7 +73,7 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    Wire.Put(JsonConvert.SerializeObject(data), TimeSpan.FromMinutes(10), error =>
+                    Wire.Put(JsonConvert.SerializeObject(data), error =>
                     {
                         if (Wire == null) return;
                         if (error.Exception.TaskCancelled)

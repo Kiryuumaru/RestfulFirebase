@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Text;
+using System.Threading;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -12,6 +13,7 @@ namespace RestfulFirebase.Database.Streaming
         private string jsonToPut;
         private bool invokePut = false;
         private bool isInvoking = false;
+        private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
 
@@ -32,8 +34,9 @@ namespace RestfulFirebase.Database.Streaming
             Query = new ChildQuery(parent.App, parent, () => key);
         }
 
-        public async void Put(string json, TimeSpan? timeout, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
+        public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
         {
+            //tokenSource?.Cancel();
             jsonToPut = json;
             invokePut = true;
             if (isInvoking) return;
@@ -41,7 +44,7 @@ namespace RestfulFirebase.Database.Streaming
             while (invokePut)
             {
                 invokePut = false;
-                await Query.Put(jsonToPut, timeout, onError);
+                await Query.Put(jsonToPut, null, onError);
             }
             isInvoking = false;
         }
