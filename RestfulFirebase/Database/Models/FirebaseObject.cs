@@ -75,7 +75,7 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    Wire.Put(JsonConvert.SerializeObject(data), TimeSpan.FromSeconds(10), error =>
+                    Wire.Put(JsonConvert.SerializeObject(data), TimeSpan.FromMinutes(10), error =>
                     {
                         if (Wire == null) return;
                         if (error.Exception.TaskCancelled)
