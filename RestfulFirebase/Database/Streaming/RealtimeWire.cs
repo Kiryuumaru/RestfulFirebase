@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Database.Models;
+﻿using RestfulFirebase.Auth;
+using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
@@ -12,7 +13,6 @@ namespace RestfulFirebase.Database.Streaming
     {
         private string jsonToPut;
         private bool invokePut = false;
-        private bool isInvoking = false;
         private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
@@ -23,6 +23,7 @@ namespace RestfulFirebase.Database.Streaming
 
         public string Key { get; private set; }
         public FirebaseQuery Query { get; private set; }
+        public bool IsWritting { get; private set; }
 
         public event Action OnStart;
         public event Action OnStop;
@@ -36,17 +37,30 @@ namespace RestfulFirebase.Database.Streaming
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
         {
-            //tokenSource?.Cancel();
             jsonToPut = json;
             invokePut = true;
-            if (isInvoking) return;
-            isInvoking = true;
+            if (IsWritting) return;
+            IsWritting = true;
             while (invokePut)
             {
                 invokePut = false;
-                await Query.Put(jsonToPut, null, onError);
+                await Query.Put(() => jsonToPut, null, err =>
+                {
+                    if (err.Exception.TaskCancelled)
+                    {
+                        err.Retry = true;
+                    }
+                    else if (err.Exception.InnerException is FirebaseAuthException)
+                    {
+                        err.Retry = true;
+                    }
+                    else
+                    {
+                        onError(err);
+                    }
+                });
             }
-            isInvoking = false;
+            IsWritting = false;
         }
 
         public virtual void Start()

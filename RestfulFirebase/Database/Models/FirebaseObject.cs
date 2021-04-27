@@ -76,15 +76,7 @@ namespace RestfulFirebase.Database.Models
                     Wire.Put(JsonConvert.SerializeObject(data), error =>
                     {
                         if (Wire == null) return;
-                        if (error.Exception.TaskCancelled)
-                        {
-                            error.Retry = true;
-                        }
-                        else if (error.Exception.InnerException is FirebaseAuthException)
-                        {
-                            error.Retry = true;
-                        }
-                        else if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                         {
                             SetBlob(null, RevertTag);
                         }
@@ -114,6 +106,7 @@ namespace RestfulFirebase.Database.Models
                         offline.Changes = null;
                         break;
                     case SyncTag:
+                        if (Wire.IsWritting) return false;
                         if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
