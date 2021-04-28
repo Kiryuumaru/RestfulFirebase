@@ -89,11 +89,6 @@ namespace RestfulFirebase.Database.Models
             return GetRawProperties(nameof(FirebaseObjects)).Select(i => (FirebaseObject)i);
         }
 
-        public void SetBlobs(IEnumerable<(string key, string blob)> blobs, bool replace = false)
-        {
-
-        }
-
         public void MakeRealtime(RealtimeWire wire)
         {
             wire.OnStart += delegate
