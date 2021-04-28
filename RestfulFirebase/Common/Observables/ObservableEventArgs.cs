@@ -5,24 +5,16 @@ using System.Text;
 
 namespace RestfulFirebase.Common.Observables
 {
-    public enum PropertyChangeType
-    {
-        Set, Delete
-    }
-
     public class ObservableObjectChangesEventArgs : PropertyChangedEventArgs
     {
-        public PropertyChangeType Type { get; }
         public string Key { get; }
         public string Group { get; }
         public ObservableObjectChangesEventArgs(
-            PropertyChangeType type,
             string key,
             string group,
             string propertyName)
             : base(propertyName)
         {
-            Type = type;
             Key = key;
             Group = group;
         }

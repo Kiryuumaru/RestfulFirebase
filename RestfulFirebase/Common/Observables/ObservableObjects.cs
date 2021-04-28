@@ -105,29 +105,15 @@ namespace RestfulFirebase.Common.Observables
 
         #region Methods
 
-        public virtual void OnChanged(
-            PropertyChangeType type,
-            string key,
-            string group,
-            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(type, key, group, propertyName));
-
-        public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
+        protected virtual PropertyHolder PropertyFactory(string key, string group, string propertyName)
         {
-            var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
-            PropertyErrorHandler?.Invoke(this, args);
-            if (!args.IgnoreAndContinue)
+            return new PropertyHolder()
             {
-                throw args.Exception;
-            }
-        }
-
-        public virtual void OnError(ContinueExceptionEventArgs args)
-        {
-            PropertyErrorHandler?.Invoke(this, args);
-            if (!args.IgnoreAndContinue)
-            {
-                throw args.Exception;
-            }
+                Property = new ObservableObject(),
+                Key = key,
+                Group = group,
+                PropertyName = propertyName
+            };
         }
 
         protected virtual bool SetProperty<T>(
@@ -175,13 +161,7 @@ namespace RestfulFirebase.Common.Observables
                 }
                 else
                 {
-                    propHolder = new PropertyHolder()
-                    {
-                        Property = new ObservableObject<T>(),
-                        Key = key,
-                        Group = group,
-                        PropertyName = propertyName
-                    };
+                    propHolder = PropertyFactory(key, group, propertyName);
                     if (customValueSetter == null) propHolder.Property.SetValue(value);
                     else customValueSetter.Invoke((value, propHolder.Property));
                     PropertyHolders.Add(propHolder);
@@ -194,7 +174,7 @@ namespace RestfulFirebase.Common.Observables
                 return hasChanges;
             }
 
-            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
             return hasChanges;
         }
 
@@ -210,13 +190,7 @@ namespace RestfulFirebase.Common.Observables
 
             if (propHolder == null)
             {
-                propHolder = new PropertyHolder()
-                {
-                    Property = new ObservableObject<T>(),
-                    Key = key,
-                    Group = group,
-                    PropertyName = propertyName
-                };
+                propHolder = PropertyFactory(key, group, propertyName);
                 if (customValueSetter == null) propHolder.Property.SetValue(defaultValue);
                 else customValueSetter.Invoke((defaultValue, propHolder.Property));
                 PropertyHolders.Add(propHolder);
@@ -237,7 +211,7 @@ namespace RestfulFirebase.Common.Observables
                 }
             }
 
-            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
             return propHolder.Property.GetValue<T>();
         }
 
@@ -246,7 +220,7 @@ namespace RestfulFirebase.Common.Observables
             var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
             if (propHolder == null) return;
             bool hasChanges = propHolder.Property.SetBlob(null);
-            if (hasChanges) OnChanged(PropertyChangeType.Set, propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
         }
 
         protected IEnumerable<ObservableObject> GetRawProperties(string group = null)
@@ -257,6 +231,30 @@ namespace RestfulFirebase.Common.Observables
                 PropertyHolders
                     .Where(i => i.Group == group)
                     .Select(i => i.Property);
+        }
+
+        public virtual void OnChanged(
+            string key,
+            string group,
+            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+
+        public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
+        {
+            var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
+        }
+
+        public virtual void OnError(ContinueExceptionEventArgs args)
+        {
+            PropertyErrorHandler?.Invoke(this, args);
+            if (!args.IgnoreAndContinue)
+            {
+                throw args.Exception;
+            }
         }
 
         #endregion

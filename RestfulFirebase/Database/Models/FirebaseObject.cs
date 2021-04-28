@@ -23,8 +23,6 @@ namespace RestfulFirebase.Database.Models
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
-        private bool isSyncWaiting;
-
         private string BlobHolder
         {
             get => Holder.GetAttribute<string>();
@@ -92,7 +90,6 @@ namespace RestfulFirebase.Database.Models
                 switch (tag)
                 {
                     case InitTag:
-                        if (blob == null) return false;
                         if (offline.SyncBlob == null)
                         {
                             put(blob);
@@ -223,7 +220,7 @@ namespace RestfulFirebase.Database.Models
             wire.OnStart += delegate
             {
                 Wire = wire;
-                SetBlob(BlobHolder, InitTag);
+                if (Wire.InvokeSetFirst) SetBlob(BlobHolder, InitTag);
             };
             wire.OnStop += delegate
             {

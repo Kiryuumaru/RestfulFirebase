@@ -16,12 +16,19 @@ namespace RestfulFirebase.Database.Streaming
 
         protected IDisposable Subscription;
 
-        protected void InvokeStart() => OnStart?.Invoke();
-        protected void InvokeStop() => OnStop?.Invoke();
-        protected bool InvokeStream(StreamObject streamObject) => OnStream?.Invoke(streamObject) ?? false;
+        public void InvokeStart() => OnStart?.Invoke();
+        public void InvokeStop() => OnStop?.Invoke();
+        public bool InvokeStream(StreamObject streamObject)
+        {
+            var hasChanges = OnStream?.Invoke(streamObject) ?? false;
+            HasFirstStream = true;
+            return hasChanges;
+        }
 
         public string Key { get; private set; }
         public FirebaseQuery Query { get; private set; }
+        public bool InvokeSetFirst { get; private set; }
+        public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
         public bool HasPendingWrite { get; private set; }
 
@@ -29,10 +36,16 @@ namespace RestfulFirebase.Database.Streaming
         public event Action OnStop;
         public event Func<StreamObject, bool> OnStream;
 
-        internal RealtimeWire(string key, FirebaseQuery parent)
+        internal RealtimeWire(string key, FirebaseQuery parent, bool invokeSetFirst)
         {
             Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
+            InvokeSetFirst = invokeSetFirst;
+        }
+
+        public RealtimeWire Child(string key)
+        {
+            return new RealtimeWire(key, Query, InvokeSetFirst);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
@@ -80,8 +93,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(T model, FirebaseQuery parent)
-            : base (model.Key, parent)
+        internal RealtimeWire(T model, FirebaseQuery parent, bool invokeSetFirst)
+            : base (model.Key, parent, invokeSetFirst)
         {
             Model = model;
         }
