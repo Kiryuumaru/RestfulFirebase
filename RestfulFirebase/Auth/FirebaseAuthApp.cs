@@ -835,7 +835,10 @@ namespace RestfulFirebase.Auth
             ExpiresIn = 0;
             RefreshToken = null;
             FirebaseToken = null;
-            App.LocalDatabase.DeletePath(AuthRoot);
+            foreach (var path in App.LocalDatabase.GetSubPaths(AuthRoot))
+            {
+                App.LocalDatabase.Delete(path);
+            }
         }
     }
 }

@@ -139,9 +139,9 @@ namespace RestfulFirebase.Database.Models
 
                                 if (propHolder == null)
                                 {
-                                    var prop = PropertyFactory(blob.Key, null, null);
-                                    ((FirebaseProperty)prop.Property).Wire.InvokeStart();
-                                    PropertyHolders.Add(prop);
+                                    propHolder = PropertyFactory(blob.Key, null, null);
+                                    ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
+                                    PropertyHolders.Add(propHolder);
                                     hasSubChanges = true;
                                 }
                                 else
@@ -175,9 +175,9 @@ namespace RestfulFirebase.Database.Models
                             if (propHolder == null)
                             {
                                 if (streamObject.Data == null) return false;
-                                var prop = PropertyFactory(streamObject.Path[1], null, null);
-                                ((FirebaseProperty)prop.Property).Wire.InvokeStart();
-                                PropertyHolders.Add(prop);
+                                propHolder = PropertyFactory(streamObject.Path[1], null, null);
+                                ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
+                                PropertyHolders.Add(propHolder);
                                 hasSubChanges = true;
                             }
                             else
