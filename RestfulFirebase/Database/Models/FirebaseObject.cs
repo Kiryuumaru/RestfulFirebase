@@ -1,33 +1,19 @@
 ﻿using Newtonsoft.Json;
-using RestfulFirebase.Auth;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
-using RestfulFirebase.Database.Offline;
+using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
     public class FirebaseObject : ObservableObject, IRealtimeModel
     {
         #region Properties
-
-        protected const string InitTag = "init";
-        protected const string SyncTag = "sync";
-        protected const string RevertTag = "revert";
-
-        private string BlobHolder
-        {
-            get => Holder.GetAttribute<string>();
-            set => Holder.SetAttribute(value);
-        }
 
         public RealtimeWire Wire
         {
@@ -40,7 +26,6 @@ namespace RestfulFirebase.Database.Models
             get => Holder.GetAttribute<string>();
             set => Holder.SetAttribute(value);
         }
-
 
         #endregion
 
@@ -62,157 +47,46 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual SmallDateTime CurrentDateTimeFactory()
+        protected override PropertyHolder PropertyFactory(string key, string group, string propertyName)
         {
-            return SmallDateTime.UtcNow;
-        }
-
-        public override bool SetBlob(string blob, string tag = null)
-        {
+            var newObj = new FirebaseProperty(key);
             if (Wire != null)
             {
-                void put(string data)
-                {
-                    Wire.Put(JsonConvert.SerializeObject(data), error =>
-                    {
-                        if (Wire == null) return;
-                        if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                        {
-                            SetBlob(null, RevertTag);
-                        }
-                        OnError(error.Exception);
-                    });
-                }
-
-                var path = Wire.Query.GetAbsolutePath();
-                var offline = Wire.Query.App.Database.OfflineDatabase.GetData(path);
-
-                switch (tag)
-                {
-                    case InitTag:
-                        if (offline.SyncBlob == null)
-                        {
-                            put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
-                        }
-                        else if (offline.Changes == null || offline.LatestBlob != blob)
-                        {
-                            put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
-                        }
-                        return false;
-                    case RevertTag:
-                        offline.Changes = null;
-                        break;
-                    case SyncTag:
-                        if (Wire.IsWritting && Wire.HasPendingWrite) return false;
-                        if (offline.Changes == null)
-                        {
-                            if (blob == null) offline.Delete();
-                            else offline.SyncBlob = blob;
-                        }
-                        else
-                        {
-                            switch (offline.Changes.ChangesType)
-                            {
-                                case OfflineChangesType.Create:
-                                    if (blob == null)
-                                    {
-                                        put(offline.Changes.Blob);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.SyncBlob = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case OfflineChangesType.Update:
-                                    if (blob == null)
-                                    {
-                                        offline.Delete();
-                                        break;
-                                    }
-                                    else if (offline.SyncBlob == blob)
-                                    {
-                                        put(offline.Changes.Blob);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.SyncBlob = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case OfflineChangesType.Delete:
-                                    if (blob == null)
-                                    {
-                                        return false;
-                                    }
-                                    else if (offline.SyncBlob == blob)
-                                    {
-                                        put(null);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.SyncBlob = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case OfflineChangesType.None:
-                                    offline.SyncBlob = blob;
-                                    offline.Changes = null;
-                                    break;
-                            }
-                        }
-                        break;
-                    default:
-                        if (offline.SyncBlob == null)
-                        {
-                            put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
-                        }
-                        else if (offline.Changes == null || offline.LatestBlob != blob)
-                        {
-                            put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
-                        }
-                        break;
-                }
-
-                if (offline.HasLatestBlobChanges) OnChanged(nameof(Blob));
-
-                return offline.HasLatestBlobChanges;
+                var subWire = Wire.Child(newObj.Key);
+                newObj.MakeRealtime(subWire);
+                subWire.InvokeStart();
             }
-            else
+            return new PropertyHolder()
             {
-                var newData = blob;
-                var oldData = BlobHolder;
-
-                var hasBlobChanges = newData != oldData;
-
-                if (hasBlobChanges)
-                {
-                    BlobHolder = blob;
-                    OnChanged(nameof(Blob));
-                }
-
-                return hasBlobChanges;
-            }
+                Property = newObj,
+                Key = newObj.Key,
+                Group = group,
+                PropertyName = propertyName
+            };
         }
 
-        public override string GetBlob(string defaultValue = null, string tag = null)
+        public void SetPersistableProperty<T>(
+            T value,
+            string key,
+            [CallerMemberName] string propertyName = null,
+            Func<T, T, bool> validateValue = null,
+            Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            if (Wire != null)
-            {
-                var path = Wire.Query.GetAbsolutePath();
-                return Wire.Query.App.Database.OfflineDatabase.GetData(path).LatestBlob;
-            }
-            else
-            {
-                return BlobHolder;
-            }
+            base.SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue, customValueSetter);
+        }
+
+        public T GetPersistableProperty<T>(
+            string key,
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = null,
+            Func<(T value, ObservableProperty property), bool> customValueSetter = null)
+        {
+            return base.GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName, customValueSetter);
+        }
+
+        public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
+        {
+            return GetRawProperties(nameof(FirebaseObject)).Select(i => (FirebaseProperty)i);
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -220,11 +94,20 @@ namespace RestfulFirebase.Database.Models
             wire.OnStart += delegate
             {
                 Wire = wire;
-                if (Wire.InvokeSetFirst) SetBlob(BlobHolder, InitTag);
+                foreach (var prop in GetRawPersistableProperties())
+                {
+                    var subWire = Wire.Child(prop.Key);
+                    prop.MakeRealtime(subWire);
+                    subWire.InvokeStart();
+                }
             };
             wire.OnStop += delegate
             {
                 Wire = null;
+                foreach (var prop in GetRawPersistableProperties())
+                {
+                    prop.Wire.InvokeStop();
+                }
             };
             wire.OnStream += streamObject =>
             {
@@ -234,7 +117,88 @@ namespace RestfulFirebase.Database.Models
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1) hasChanges = SetBlob(streamObject.Data, SyncTag);
+                    else if (streamObject.Path.Length == 1)
+                    {
+                        var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
+                        var blobs = data.Select(i => (i.Key, i.Value?.ToString()));
+                        foreach (var propHolder in new List<PropertyHolder>(PropertyHolders.Where(i => !blobs.Any(j => j.Key == i.Key))))
+                        {
+                            if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(null, propHolder.Key)))
+                            {
+                                OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                                hasChanges = true;
+                            }
+                        }
+                        foreach (var blob in blobs)
+                        {
+                            try
+                            {
+                                bool hasSubChanges = false;
+
+                                var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(blob.Key));
+
+                                if (propHolder == null)
+                                {
+                                    var prop = PropertyFactory(blob.Key, null, null);
+                                    ((FirebaseProperty)prop.Property).Wire.InvokeStart();
+                                    PropertyHolders.Add(prop);
+                                    hasSubChanges = true;
+                                }
+                                else
+                                {
+                                    if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(blob.Item2, blob.Key)))
+                                    {
+                                        hasSubChanges = true;
+                                    }
+                                }
+
+                                if (hasSubChanges)
+                                {
+                                    OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                                    hasChanges = true;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                OnError(ex);
+                            }
+                        }
+                    }
+                    else if (streamObject.Path.Length == 2)
+                    {
+                        try
+                        {
+                            bool hasSubChanges = false;
+
+                            var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(streamObject.Path[1]));
+
+                            if (propHolder == null)
+                            {
+                                if (streamObject.Data == null) return false;
+                                var prop = PropertyFactory(streamObject.Path[1], null, null);
+                                ((FirebaseProperty)prop.Property).Wire.InvokeStart();
+                                PropertyHolders.Add(prop);
+                                hasSubChanges = true;
+                            }
+                            else
+                            {
+                                if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
+                                {
+                                    hasSubChanges = true;
+                                }
+                            }
+
+                            if (hasSubChanges)
+                            {
+                                OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                                hasChanges = true;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            OnError(ex);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -246,52 +210,16 @@ namespace RestfulFirebase.Database.Models
 
         public void Delete()
         {
-            SetBlob(null);
+            foreach (var propHolder in PropertyHolders)
+            {
+                DeleteProperty(propHolder.Key);
+            }
         }
 
-        public FirebaseObject<T> ParseModel<T>()
+        public T ParseModel<T>()
+            where T : FirebaseObject
         {
-            return new FirebaseObject<T>(this);
-        }
-
-        #endregion
-    }
-
-    public class FirebaseObject<T> : FirebaseObject
-    {
-        #region Properties
-
-        public T Value
-        {
-            get => base.GetValue<T>();
-            set => base.SetValue(value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public FirebaseObject(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseObject(string key)
-            : base(key)
-        {
-
-        }
-
-        #endregion
-
-        #region Methods
-
-        public override bool SetBlob(string blob, string tag = null)
-        {
-            var hasChanges = base.SetBlob(blob, tag);
-            if (hasChanges) OnChanged(nameof(Value));
-            return hasChanges;
+            return (T)Activator.CreateInstance(typeof(T), this);
         }
 
         #endregion

@@ -1,18 +1,31 @@
 ﻿using RestfulFirebase.Common.Converters;
-using RestfulFirebase.Common.Converters.Additionals;
-using RestfulFirebase.Common.Converters.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace RestfulFirebase.Common.Observables
 {
-    public class ObservableObject : ValueHolder, IObservable
+    #region Helpers
+
+    public class PropertyHolder
+    {
+        public ObservableProperty Property { get; set; }
+        public string Key { get; set; }
+        public string Group { get; set; }
+        public string PropertyName { get; set; }
+    }
+
+    #endregion
+
+    public class ObservableObject : IObservable
     {
         #region Properties
+
+        public AttributeHolder Holder { get; } = new AttributeHolder();
 
         private PropertyChangedEventHandler PropertyChangedHandler
         {
@@ -73,22 +86,157 @@ namespace RestfulFirebase.Common.Observables
         #region Initializers
 
         public ObservableObject(IAttributed attributed)
-            : base (attributed)
         {
-
+            Holder.Inherit(attributed);
         }
 
         public ObservableObject()
             : this(null)
         {
-
+            foreach (var property in this
+                .GetType()
+                .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                property.GetValue(this);
+            }
         }
 
         #endregion
 
         #region Methods
 
-        public virtual void OnChanged(string propertyName = "") => PropertyChangedHandler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        protected virtual PropertyHolder PropertyFactory(string key, string group, string propertyName)
+        {
+            return new PropertyHolder()
+            {
+                Property = new ObservableProperty(),
+                Key = key,
+                Group = group,
+                PropertyName = propertyName
+            };
+        }
+
+        protected virtual bool SetProperty<T>(
+            T value,
+            string key,
+            string group = null,
+            [CallerMemberName] string propertyName = null,
+            Func<T, T, bool> validateValue = null,
+            Func<(T value, ObservableProperty property), bool> customValueSetter = null)
+        {
+            PropertyHolder propHolder = null;
+            bool hasChanges = false;
+
+            try
+            {
+                propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+
+                if (propHolder != null)
+                {
+                    var existingValue = propHolder.Property.GetValue<T>();
+
+                    if (propHolder.Group != group)
+                    {
+                        propHolder.Group = group;
+                        hasChanges = true;
+                    }
+
+                    if (propHolder.PropertyName != propertyName)
+                    {
+                        propHolder.PropertyName = propertyName;
+                        hasChanges = true;
+                    }
+
+                    if (validateValue?.Invoke(existingValue, value) ?? true)
+                    {
+                        if (customValueSetter == null)
+                        {
+                            if (propHolder.Property.SetValue(value)) hasChanges = true;
+                        }
+                        else
+                        {
+                            if (customValueSetter.Invoke((value, propHolder.Property))) hasChanges = true;
+                        }
+                    }
+                }
+                else
+                {
+                    propHolder = PropertyFactory(key, group, propertyName);
+                    if (customValueSetter == null) propHolder.Property.SetValue(value);
+                    else customValueSetter.Invoke((value, propHolder.Property));
+                    PropertyHolders.Add(propHolder);
+                    hasChanges = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                return hasChanges;
+            }
+
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            return hasChanges;
+        }
+
+        protected virtual T GetProperty<T>(
+            string key,
+            string group = null,
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = null,
+            Func<(T value, ObservableProperty property), bool> customValueSetter = null)
+        {
+            bool hasChanges = false;
+            var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+
+            if (propHolder == null)
+            {
+                propHolder = PropertyFactory(key, group, propertyName);
+                if (customValueSetter == null) propHolder.Property.SetValue(defaultValue);
+                else customValueSetter.Invoke((defaultValue, propHolder.Property));
+                PropertyHolders.Add(propHolder);
+                hasChanges = true;
+            }
+            else
+            {
+                if (propHolder.Group != group)
+                {
+                    propHolder.Group = group;
+                    hasChanges = true;
+                }
+
+                if (propHolder.PropertyName != propertyName)
+                {
+                    propHolder.PropertyName = propertyName;
+                    hasChanges = true;
+                }
+            }
+
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            return propHolder.Property.GetValue<T>();
+        }
+
+        protected virtual void DeleteProperty(string key)
+        {
+            var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+            if (propHolder == null) return;
+            bool hasChanges = propHolder.Property.SetBlob(null);
+            if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+        }
+
+        protected IEnumerable<ObservableProperty> GetRawProperties(string group = null)
+        {
+            return group == null ?
+                PropertyHolders
+                    .Select(i => i.Property) :
+                PropertyHolders
+                    .Where(i => i.Group == group)
+                    .Select(i => i.Property);
+        }
+
+        public virtual void OnChanged(
+            string key,
+            string group,
+            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
@@ -107,69 +255,6 @@ namespace RestfulFirebase.Common.Observables
             {
                 throw args.Exception;
             }
-        }
-
-        public override bool SetBlob(string blob, string tag = null)
-        {
-            if (base.SetBlob(blob, tag))
-            {
-                OnChanged(nameof(Blob));
-                return true;
-            }
-            return false;
-        }
-
-        public override string GetBlob(string defaultValue = null, string tag = null)
-        {
-            return base.GetBlob(defaultValue, tag);
-        }
-
-        public override bool SetValue<T>(T value, string tag = null)
-        {
-            try
-            {
-                return base.SetValue(value, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
-        }
-
-        public override T GetValue<T>(T defaultValue = default, string tag = null)
-        {
-            try
-            {
-                return base.GetValue(defaultValue, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return defaultValue;
-        }
-
-        #endregion
-    }
-
-    public class ObservableObject<T> : ObservableObject
-    {
-        #region Properties
-
-        public T Value
-        {
-            get => GetValue<T>();
-            set => SetValue(Value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public ObservableObject() : base()
-        {
-
         }
 
         #endregion

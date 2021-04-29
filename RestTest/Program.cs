@@ -16,7 +16,7 @@ using RestfulFirebase.Common.Converters;
 
 namespace RestTest
 {
-    public class TestStorable : FirebaseObjects
+    public class TestStorable : FirebaseObject
     {
         #region Properties
 
