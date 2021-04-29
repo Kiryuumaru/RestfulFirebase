@@ -809,23 +809,23 @@ namespace RestfulFirebase.Auth
 
         private void SavePropertiesLocally()
         {
-            App.LocalDatabase.Set(Path.Combine(AuthRoot, "user"), JsonConvert.SerializeObject(User));
-            App.LocalDatabase.Set(Path.Combine(AuthRoot, "created"), Helpers.EncodeDateTime(Created));
-            App.LocalDatabase.Set(Path.Combine(AuthRoot, "expiresIn"), ExpiresIn.ToString());
-            App.LocalDatabase.Set(Path.Combine(AuthRoot, "refreshToken"), RefreshToken);
-            App.LocalDatabase.Set(Path.Combine(AuthRoot, "firebaseToken"), FirebaseToken);
+            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "user"), Helpers.BlobConvert(JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(User))));
+            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "created"), Helpers.EncodeDateTime(Created));
+            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "expiresIn"), ExpiresIn.ToString());
+            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "refreshToken"), RefreshToken);
+            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "firebaseToken"), FirebaseToken);
         }
 
         private void RetainPropertiesLocally()
         {
-            var rawUser = App.LocalDatabase.Get(Path.Combine(AuthRoot, "user"));
-            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(rawUser);
-            var rawCreated = App.LocalDatabase.Get(Path.Combine(AuthRoot, "created"));
+            var rawUser = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "user"));
+            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(JsonConvert.SerializeObject(Helpers.BlobConvert(rawUser)));
+            var rawCreated = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "created"));
             Created = rawCreated == null ? default : Helpers.DecodeDateTime(rawCreated, default);
-            var rawExpiredIn = App.LocalDatabase.Get(Path.Combine(AuthRoot, "expiresIn"));
-            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Path.Combine(AuthRoot, "expiresIn")));
-            RefreshToken = App.LocalDatabase.Get(Path.Combine(AuthRoot, "refreshToken"));
-            FirebaseToken = App.LocalDatabase.Get(Path.Combine(AuthRoot, "firebaseToken"));
+            var rawExpiredIn = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "expiresIn"));
+            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "expiresIn")));
+            RefreshToken = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "refreshToken"));
+            FirebaseToken = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "firebaseToken"));
         }
 
         private void PurgePropertiesLocally()

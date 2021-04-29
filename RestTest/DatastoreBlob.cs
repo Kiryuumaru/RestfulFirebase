@@ -55,9 +55,9 @@ namespace RestTest
             return db.ContainsKey(key);
         }
 
-        public IEnumerable<string> GetKeys()
+        public IEnumerable<string> KeysStartsWith(string key)
         {
-            return db.Keys;
+            return db.Keys.Where(i => i.StartsWith(key));
         }
 
         public string Get(string key)

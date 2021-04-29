@@ -10,10 +10,9 @@ namespace RestfulFirebase.Database.Offline
 {
     public class OfflineDatabase
     {
-        private const string Root = "offline_database";
+        private const string Root = "offdb";
         private static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
         private static readonly string LongPath = Helpers.CombineUrl(Root, "long");
-        private static readonly string ChildrenPath = Helpers.CombineUrl(Root, "child");
         private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "blob");
         private static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
         private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "strat");
@@ -25,7 +24,7 @@ namespace RestfulFirebase.Database.Offline
                 string uid = null;
                 while (uid == null)
                 {
-                    uid = Helpers.GenerateUID();
+                    uid = Helpers.GenerateUID(5, Helpers.Base64Charset);
                     var path = Get(LongPath, uid);
                     if (path != null) uid = null;
                 }
@@ -50,7 +49,9 @@ namespace RestfulFirebase.Database.Offline
             public string Path { get; }
 
             public bool HasChanges { get; private set; }
+
             public bool HasBlobChanges { get; private set; }
+
             public bool HasLatestBlobChanges { get; private set; }
 
             public bool Exist => Short != null;
@@ -72,30 +73,6 @@ namespace RestfulFirebase.Database.Offline
                 {
                     if (!Exist) Create();
                     Set(value, LongPath, Short);
-                }
-            }
-
-            public IEnumerable<Data> Children
-            {
-                get
-                {
-                    if (!Exist) return null;
-                    var data = Get(ChildrenPath, Short);
-                    var deserialized = Helpers.DeserializeString(data);
-                    var shorts = deserialized == null ? new List<string>() : new List<string>(deserialized);
-                    var datas = new List<Data>();
-                    foreach (var shortPath in shorts)
-                    {
-                        var longPath = Get(LongPath, shortPath);
-                        if (longPath != null) datas.Add(new Data(App, longPath));
-                    }
-                    return datas;
-                }
-                private set
-                {
-                    if (!Exist) Create();
-                    if (value == null) Set(null, ChildrenPath, Short);
-                    else Set(Helpers.SerializeString(value.Select(i => i.Short).ToArray()), ChildrenPath, Short);
                 }
             }
 
@@ -199,35 +176,11 @@ namespace RestfulFirebase.Database.Offline
                 var shortPath = Short;
                 Set(null, ShortPath, Path);
                 Set(null, LongPath, shortPath);
-                Set(null, ChildrenPath, shortPath);
                 Set(null, SyncBlobPath, shortPath);
                 Set(null, ChangesPath, shortPath);
                 Set(null, SyncStratPath, shortPath);
                 if (oldCurr != LatestBlob) HasLatestBlobChanges = true;
                 return true;
-            }
-
-            public void AddChild(string key)
-            {
-                if (!Exist) Create();
-                var path = Helpers.CombineUrl(Path, key);
-                var value = new List<Data>(Children);
-                var data = new Data(App, path);
-                data.Create();
-                value.Add(data);
-                Children = value;
-            }
-
-            public void DeleteChild(string key)
-            {
-                if (!Exist) Create();
-                var path = Helpers.CombineUrl(Path, key);
-                var value = new List<Data>(Children);
-                if (value.Any(i => i.Path == path))
-                {
-                    value.RemoveAll(i => i.Path == path);
-                    Children = value;
-                }
             }
         }
 
@@ -241,6 +194,14 @@ namespace RestfulFirebase.Database.Offline
         public Data GetData(string path)
         {
             return new Data(App, path);
+        }
+
+        public void Flush()
+        {
+            foreach (var path in App.LocalDatabase.GetSubPaths(Root))
+            {
+                App.LocalDatabase.Delete(path);
+            }
         }
     }
 }

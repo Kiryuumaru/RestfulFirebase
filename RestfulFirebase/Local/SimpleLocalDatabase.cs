@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace RestfulFirebase.Local
@@ -14,9 +15,9 @@ namespace RestfulFirebase.Local
             return db.ContainsKey(key);
         }
 
-        public IEnumerable<string> GetKeys()
+        public IEnumerable<string> KeysStartsWith(string key)
         {
-            return db.Keys;
+            return db.Keys.Where(i => i.StartsWith(key));
         }
 
         public string Get(string key)

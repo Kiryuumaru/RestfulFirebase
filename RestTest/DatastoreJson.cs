@@ -54,7 +54,7 @@ namespace RestTest
             throw new NotImplementedException();
         }
 
-        public IEnumerable<string> GetKeys()
+        public IEnumerable<string> KeysStartsWith(string key)
         {
             throw new NotImplementedException();
         }

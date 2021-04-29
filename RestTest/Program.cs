@@ -85,7 +85,7 @@ namespace RestTest
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com",
-                LocalDatabase = new DatastoreBlob(false)
+                LocalDatabase = new DatastoreBlob(true)
             });
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
@@ -96,27 +96,12 @@ namespace RestTest
             //TestObservableObject();
             //TestPropertyPut();
             //TestPropertySub();
-            //TestObjectPut();
-            TestObjectSub();
+            TestObjectPut();
+            //TestObjectSub();
             //TestPropertyGroupPut();
             //TestPropertyGroupSub();
             //TestObjectGroupPut();
             //TestObjectGroupSub();
-        }
-
-        public static void TestObservableObject()
-        {
-            var props = new FirebaseObject<string>("test");
-            props.PropertyChanged += (s, e) =>
-            {
-                Console.WriteLine("Data: " + props.Blob + " Prop: " + e.PropertyName);
-            };
-            props.Value = "numba22";
-            while (true)
-            {
-                string line = Console.ReadLine();
-                props.Value = string.IsNullOrEmpty(line) ? null : line;
-            }
         }
 
         public static void TestPropertyPut()

@@ -13,16 +13,11 @@ namespace RestfulFirebase.Common
     public static class Helpers
     {
         #region Properties
-
-        // Modeled after base64 web-safe chars, but ordered by ASCII.
-        private const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-        private const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        private const string AlphanumericNonCaseSensitive = "0123456789abcdefghijklmnopqrstuvwxyz";
         private const string NullIdentifier = "-";
         private const string EmptyIdentifier = "_";
+
         private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Base64Charset));
         private static readonly DateTimeOffset Epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
-
         private static readonly Random random = new Random();
         private static readonly byte[] lastRandChars = new byte[12];
 
@@ -34,18 +29,22 @@ namespace RestfulFirebase.Common
         private const int Day = 24 * Hour;
         private const int Month = 30 * Day;
 
+        public const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+        public const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        public const string Base38Charset = "-0123456789_abcdefghijklmnopqrstuvwxyz";
+        public const string Base36Charset = "0123456789abcdefghijklmnopqrstuvwxyz";
+        public const string Base32Charset = "2345678abcdefghijklmnpqrstuvwxyz"; // Excluded 0, 1, 9, o
+
         #endregion
 
         #region UIDGenerator
 
-        public static string GenerateUID(int length = 10, bool isCaseSensetive = true)
+        public static string GenerateUID(int length = 10, string charset = Base64Charset)
         {
             string id = "";
             for (int i = 0; i < length; i++)
             {
-                id += isCaseSensetive ?
-                    Base62Charset[random.Next(Base62Charset.Length)] :
-                    AlphanumericNonCaseSensitive[random.Next(AlphanumericNonCaseSensitive.Length)];
+                id += charset[random.Next(charset.Length)];
             }
             return id;
         }
