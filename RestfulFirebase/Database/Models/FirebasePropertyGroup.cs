@@ -51,7 +51,7 @@ namespace RestfulFirebase.Database.Models
             var newObj = new FirebaseProperty(key);
             if (Wire != null)
             {
-                var subWire = Wire.Child(newObj.Key);
+                var subWire = Wire.SetChild(newObj.Key);
                 newObj.MakeRealtime(subWire);
                 subWire.InvokeStart();
             }
@@ -65,7 +65,7 @@ namespace RestfulFirebase.Database.Models
                 Wire = wire;
                 foreach (var prop in this)
                 {
-                    var subWire = Wire.Child(prop.Key);
+                    var subWire = Wire.SetChild(prop.Key);
                     prop.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -94,6 +94,8 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (prop.Wire.InvokeStream(new StreamObject(null, prop.Key)))
                             {
+                                Wire.DeleteChild(prop.Key);
+                                prop.Delete();
                                 Remove(prop);
                                 hasChanges = true;
                             }
@@ -165,8 +167,9 @@ namespace RestfulFirebase.Database.Models
         {
             foreach (var prop in new List<FirebaseProperty>(this))
             {
+                if (Wire != null) Wire.DeleteChild(prop.Key);
                 prop.Delete();
-                this.Remove(prop);
+                Remove(prop);
             }
         }
 

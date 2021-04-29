@@ -10,27 +10,7 @@ namespace RestfulFirebase.Database.Offline
 {
     public class OfflineDatabase
     {
-        #region Properties
-
-
-        #endregion
-
-        #region Initializers
-
-
-        #endregion
-
-        #region Methods
-
-
-        #endregion
-        private const string Root = "offdb";
-        private static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
-        private static readonly string LongPath = Helpers.CombineUrl(Root, "long");
-        private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "blob");
-        private static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
-        private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "strat");
-        private static readonly string SubDataPath = Helpers.CombineUrl(Root, "subdata");
+        #region Helper Classes
 
         public class Data
         {
@@ -147,6 +127,30 @@ namespace RestfulFirebase.Database.Offline
                 }
             }
 
+            public IEnumerable<Data> SubDatas
+            {
+                get
+                {
+                    if (!Exist) Create();
+                    var deserialized = Helpers.DeserializeString(Get(SubDataPath, Short));
+                    if (deserialized == null) return new Data[0];
+                    var subDatas = new List<Data>();
+                    foreach (var shortPath in deserialized)
+                    {
+                        var longPath = Get(LongPath, shortPath);
+                        if (longPath == null) continue;
+                        subDatas.Add(new Data(App, longPath));
+                    }
+                    return subDatas;
+                }
+                private set
+                {
+                    if (!Exist) Create();
+                    var serialized = Helpers.SerializeString(value.Select(i => i.Short).ToArray());
+                    Set(serialized, SubDataPath, Short);
+                }
+            }
+
             #endregion
 
             #region Initializers
@@ -204,77 +208,60 @@ namespace RestfulFirebase.Database.Offline
                 Set(null, SyncBlobPath, shortPath);
                 Set(null, ChangesPath, shortPath);
                 Set(null, SyncStratPath, shortPath);
+                Set(null, SubDataPath, shortPath);
                 if (oldCurr != LatestBlob) HasLatestBlobChanges = true;
                 return true;
             }
 
-            #endregion
-        }
-
-        public class DataCollection
-        {
-            #region Properties
-
-            public RestfulFirebaseApp App { get; }
-
-            public string Path { get; }
-
-            public Data this[string key]
+            public void SetSubData(string key)
             {
-                get
-                {
-
-                }
-                set
-                {
-
-                }
+                var subDatas = new List<Data>(SubDatas);
+                if (subDatas.Any(i => Helpers.CombineUrl(i.Path) == Helpers.CombineUrl(Path, key))) subDatas.Add(new Data(App, Helpers.CombineUrl(Path, key)));
+                SubDatas = subDatas;
             }
 
-            #endregion
-
-            #region Initializers
-
-            public DataCollection(RestfulFirebaseApp app, string path)
+            public void DeleteSubData(string key)
             {
-                App = app;
-                Path = path;
-            }
-
-            #endregion
-
-            #region Methods
-
-            public void s()
-            {
-                var datas = new List<Data>();
-                var subDatas = Helpers.DeserializeString(App.LocalDatabase.Get(Helpers.CombineUrl(Path)));
-                foreach (var subData in subDatas)
-                {
-                    var data = new Data(App, subData);
-                    if (data.Exist) datas.Add(data);
-                }
-                return datas;
+                var subDatas = new List<Data>(SubDatas);
+                subDatas.RemoveAll(i => Helpers.CombineUrl(i.Path) == Helpers.CombineUrl(Path, key));
+                SubDatas = subDatas;
             }
 
             #endregion
         }
+
+        #endregion
+
+        #region Properties
+
+        private const string Root = "offdb";
+        private static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
+        private static readonly string LongPath = Helpers.CombineUrl(Root, "long");
+        private static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "blob");
+        private static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
+        private static readonly string SyncStratPath = Helpers.CombineUrl(Root, "strat");
+        private static readonly string SubDataPath = Helpers.CombineUrl(Root, "subdata");
 
         public RestfulFirebaseApp App { get; }
+
+        public event Action<OfflineChanges> OnChanges;
+
+        #endregion
+
+        #region Initializers
 
         public OfflineDatabase(RestfulFirebaseApp app)
         {
             App = app;
         }
 
+        #endregion
+
+        #region Methods
+
         public Data GetData(string path)
         {
             return new Data(App, path);
-        }
-
-        public DataCollection GetDataCollection(string path)
-        {
-            return new DataCollection(App, path);
         }
 
         public void Flush()
@@ -284,5 +271,7 @@ namespace RestfulFirebase.Database.Offline
                 App.LocalDatabase.Delete(path);
             }
         }
+
+        #endregion
     }
 }

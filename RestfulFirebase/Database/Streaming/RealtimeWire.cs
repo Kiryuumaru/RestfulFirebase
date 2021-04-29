@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Models;
+using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
@@ -11,22 +12,18 @@ namespace RestfulFirebase.Database.Streaming
 {
     public class RealtimeWire : IDisposable
     {
+        #region Properties
+
         private string jsonToPut;
         private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
 
-        public void InvokeStart() => OnStart?.Invoke();
-        public void InvokeStop() => OnStop?.Invoke();
-        public bool InvokeStream(StreamObject streamObject)
-        {
-            var hasChanges = OnStream?.Invoke(streamObject) ?? false;
-            HasFirstStream = true;
-            return hasChanges;
-        }
-
-        public string Key { get; private set; }
-        public FirebaseQuery Query { get; private set; }
+        public RestfulFirebaseApp App { get; }
+        public string Key { get; }
+        public FirebaseQuery Query { get; }
+        public OfflineDatabase.Data Data { get; }
+        public int MaxNodeDepth { get; }
         public bool InvokeSetFirst { get; private set; }
         public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
@@ -36,16 +33,46 @@ namespace RestfulFirebase.Database.Streaming
         public event Action OnStop;
         public event Func<StreamObject, bool> OnStream;
 
-        internal RealtimeWire(string key, FirebaseQuery parent, bool invokeSetFirst)
+        #endregion
+
+        #region Initializers
+
+        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, int maxNodeDepth, bool invokeSetFirst)
         {
+            App = app;
             Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
+            Data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+            MaxNodeDepth = maxNodeDepth;
             InvokeSetFirst = invokeSetFirst;
         }
 
-        public RealtimeWire Child(string key)
+        #endregion
+
+        #region Methods
+
+        public void InvokeStart() => OnStart?.Invoke();
+
+        public void InvokeStop() => OnStop?.Invoke();
+
+        public bool InvokeStream(StreamObject streamObject)
         {
-            return new RealtimeWire(key, Query, InvokeSetFirst);
+            var hasChanges = OnStream?.Invoke(streamObject) ?? false;
+            HasFirstStream = true;
+            return hasChanges;
+        }
+
+        public RealtimeWire SetChild(string key)
+        {
+            var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+            data.SetSubData(key);
+            return new RealtimeWire(App, key, Query, MaxNodeDepth - 1, InvokeSetFirst);
+        }
+
+        public void DeleteChild(string key)
+        {
+            var data = Query.App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+            data.DeleteSubData(key);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
@@ -86,6 +113,8 @@ namespace RestfulFirebase.Database.Streaming
             Subscription?.Dispose();
             OnStop?.Invoke();
         }
+
+        #endregion
     }
 
     public class RealtimeWire<T> : RealtimeWire
@@ -93,8 +122,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(T model, FirebaseQuery parent, bool invokeSetFirst)
-            : base (model.Key, parent, invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, T model, FirebaseQuery parent, int maxNodeDepth, bool invokeSetFirst)
+            : base (app, model.Key, parent, maxNodeDepth, invokeSetFirst)
         {
             Model = model;
         }

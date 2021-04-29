@@ -52,7 +52,7 @@ namespace RestfulFirebase.Database.Models
             var newObj = new FirebaseProperty(key);
             if (Wire != null)
             {
-                var subWire = Wire.Child(newObj.Key);
+                var subWire = Wire.SetChild(newObj.Key);
                 newObj.MakeRealtime(subWire);
                 subWire.InvokeStart();
             }
@@ -96,7 +96,7 @@ namespace RestfulFirebase.Database.Models
                 Wire = wire;
                 foreach (var prop in GetRawPersistableProperties())
                 {
-                    var subWire = Wire.Child(prop.Key);
+                    var subWire = Wire.SetChild(prop.Key);
                     prop.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
