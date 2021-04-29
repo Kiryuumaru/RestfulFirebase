@@ -115,6 +115,12 @@ namespace RestTest
             private const string PagesKey = "pages";
             private const int KeysPerPageCount = 10;
 
+            public string Testu
+            {
+                get => GetPersistableProperty<string>("1", "");
+                set => SetPersistableProperty(value, "1");
+            }
+
             public int PageCount
             {
                 get => GetPersistableProperty<int>(PagesKey, 0);
@@ -209,7 +215,7 @@ namespace RestTest
                     keys.Add(line);
                     obj.Keys = keys;
                 }
-                Thread.Sleep(500);
+                Thread.Sleep(100);
             }
         }
 
