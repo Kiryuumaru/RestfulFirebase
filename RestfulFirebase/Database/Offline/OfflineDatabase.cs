@@ -45,11 +45,19 @@ namespace RestfulFirebase.Database.Offline
             return App.LocalDatabase.GetSubPaths(path);
         }
 
-        public void Flush()
+        public void Flush(string path = null)
         {
-            foreach (var path in App.LocalDatabase.GetSubPaths(Root))
+            if (string.IsNullOrEmpty(path))
             {
-                App.LocalDatabase.Delete(path);
+                foreach (var subPath in App.LocalDatabase.GetSubPaths(Root))
+                {
+                    App.LocalDatabase.Delete(subPath);
+                }
+            }
+            else
+            {
+                new BranchNode(App, path).Delete();
+                new EndNode(App, path).Delete();
             }
         }
 

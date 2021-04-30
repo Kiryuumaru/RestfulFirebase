@@ -91,10 +91,6 @@ namespace RestfulFirebase.Database.Offline
             var shortPath = Short;
             Set(null, OfflineDatabase.ShortPath, Path);
             Set(null, OfflineDatabase.LongPath, shortPath);
-            foreach (var path in App.Database.OfflineDatabase.GetSubPaths(Helpers.CombineUrl(Path)))
-            {
-                new DataNode(App, path).Delete();
-            }
             return true;
         }
     }

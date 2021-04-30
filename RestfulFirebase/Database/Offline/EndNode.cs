@@ -13,13 +13,13 @@ namespace RestfulFirebase.Database.Offline
         public string SyncBlob
         {
             get => Get(OfflineDatabase.SyncBlobPath, Short);
-            protected set => Set(value, OfflineDatabase.SyncBlobPath, Short);
+            set => Set(value, OfflineDatabase.SyncBlobPath, Short);
         }
 
         public DataChanges Changes
         {
             get => DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short));
-            protected set => Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
+            set => Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
         }
 
         public string LatestBlob

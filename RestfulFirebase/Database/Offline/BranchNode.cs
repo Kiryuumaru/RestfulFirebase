@@ -42,7 +42,7 @@ namespace RestfulFirebase.Database.Offline
 
         public IEnumerable<DataNode> GetAll()
         {
-            var subPaths = App.Database.OfflineDatabase.GetSubPaths(Helpers.CombineUrl(Path));
+            var subPaths = App.Database.OfflineDatabase.GetSubPaths(Helpers.CombineUrl(OfflineDatabase.ShortPath, Path));
             var subDatas = new List<DataNode>();
             foreach (var path in subPaths)
             {
@@ -56,6 +56,10 @@ namespace RestfulFirebase.Database.Offline
             if (!Exist) return false;
             base.Delete();
             var shortPath = Short;
+            foreach (var node in GetAll())
+            {
+                node.Delete();
+            }
             return true;
         }
 
