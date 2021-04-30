@@ -623,6 +623,13 @@ namespace RestfulFirebase.Common
             return ret.Length == 0 ? "/" : ret;
         }
 
+        public static string[] SeparateUrl(string url)
+        {
+            var split = url.Split('/');
+            if (!string.IsNullOrEmpty(split.Last())) return split;
+            return split.Take(split.Length - 1).ToArray();
+        }
+
         #endregion
     }
 }

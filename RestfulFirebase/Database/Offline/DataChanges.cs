@@ -5,39 +5,39 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public enum OfflineChangesType
+    public enum DataChangesType
     {
         Create, Update, Delete, None
     }
 
-    public class OfflineChanges
+    public class DataChanges
     {
         public string Blob { get; }
-        public OfflineChangesType ChangesType { get; }
+        public DataChangesType ChangesType { get; }
 
-        public static OfflineChanges Parse(string data)
+        public static DataChanges Parse(string data)
         {
             if (string.IsNullOrEmpty(data)) return null;
             var deserialized = Helpers.DeserializeString(data);
             if (deserialized == null) return null;
             if (deserialized.Length != 2) return null;
-            var changesType = OfflineChangesType.None;
+            var changesType = DataChangesType.None;
             switch (deserialized[1])
             {
                 case "1":
-                    changesType = OfflineChangesType.Create;
+                    changesType = DataChangesType.Create;
                     break;
                 case "2":
-                    changesType = OfflineChangesType.Update;
+                    changesType = DataChangesType.Update;
                     break;
                 case "3":
-                    changesType = OfflineChangesType.Delete;
+                    changesType = DataChangesType.Delete;
                     break;
             }
-            return new OfflineChanges(deserialized[0], changesType);
+            return new DataChanges(deserialized[0], changesType);
         }
 
-        public OfflineChanges(string blob, OfflineChangesType changesType)
+        public DataChanges(string blob, DataChangesType changesType)
         {
             Blob = blob;
             ChangesType = changesType;
@@ -48,13 +48,13 @@ namespace RestfulFirebase.Database.Offline
             var changesType = "0";
             switch (ChangesType)
             {
-                case OfflineChangesType.Create:
+                case DataChangesType.Create:
                     changesType = "1";
                     break;
-                case OfflineChangesType.Update:
+                case DataChangesType.Update:
                     changesType = "2";
                     break;
-                case OfflineChangesType.Delete:
+                case DataChangesType.Delete:
                     changesType = "3";
                     break;
             }
