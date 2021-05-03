@@ -49,12 +49,12 @@ namespace RestTest
             });
         }
 
-        public bool ContainsKey(string key)
+        public IEnumerable<string> GetKeys()
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<string> KeysStartsWith(string key)
+        public bool ContainsKey(string key)
         {
             throw new NotImplementedException();
         }

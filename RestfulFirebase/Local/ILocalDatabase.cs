@@ -6,8 +6,8 @@ namespace RestfulFirebase.Local
 {
     public interface ILocalDatabase
     {
+        IEnumerable<string> GetKeys();
         bool ContainsKey(string key);
-        IEnumerable<string> KeysStartsWith(string key);
         string Get(string key);
         void Set(string key, string value);
         void Delete(string key);

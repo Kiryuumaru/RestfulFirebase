@@ -170,7 +170,7 @@ namespace RestfulFirebase.Database.Realtime
             else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
             else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
 
-            App.Database.OfflineDatabase.GetSubPaths();
+            //App.Database.OfflineDatabase.GetSubPaths();
 
             if (streamObject.Path.Length == 1) ConsumeEndNodeStream(streamObject);
             else

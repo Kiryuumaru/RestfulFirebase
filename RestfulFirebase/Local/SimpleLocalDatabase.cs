@@ -10,14 +10,14 @@ namespace RestfulFirebase.Local
     {
         private static Dictionary<string, string> db = new Dictionary<string, string>();
 
+        public IEnumerable<string> GetKeys()
+        {
+            return db.Keys;
+        }
+
         public bool ContainsKey(string key)
         {
             return db.ContainsKey(key);
-        }
-
-        public IEnumerable<string> KeysStartsWith(string key)
-        {
-            return db.Keys.Where(i => i.StartsWith(key));
         }
 
         public string Get(string key)

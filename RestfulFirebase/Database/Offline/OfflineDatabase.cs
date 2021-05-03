@@ -40,9 +40,14 @@ namespace RestfulFirebase.Database.Offline
             return new DataNode(App, path);
         }
 
-        public IEnumerable<string> GetSubPaths(string path)
+        public IEnumerable<DataNode> GetDatas(string path)
         {
-            return App.LocalDatabase.GetSubPaths(path);
+            var datas = new List<DataNode>();
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(Helpers.CombineUrl(ShortPath, path)))
+            {
+                datas.Add(new DataNode(App, subPath));
+            }
+            return datas;
         }
 
         public void Flush(string path = null)
@@ -56,8 +61,10 @@ namespace RestfulFirebase.Database.Offline
             }
             else
             {
-                new BranchNode(App, path).Delete();
-                new EndNode(App, path).Delete();
+                foreach (var subPath in App.LocalDatabase.GetSubPaths(Helpers.CombineUrl(ShortPath, path)))
+                {
+                    App.LocalDatabase.Delete(subPath); 
+                }
             }
         }
 

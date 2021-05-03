@@ -15,14 +15,12 @@ namespace RestfulFirebase.Database.Streaming
         #region Properties
 
         private string jsonToPut;
-        private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
 
         public RestfulFirebaseApp App { get; }
         public string Key { get; }
         public FirebaseQuery Query { get; }
-        public int MaxNodeDepth { get; }
         public bool InvokeSetFirst { get; private set; }
         public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
@@ -36,12 +34,11 @@ namespace RestfulFirebase.Database.Streaming
 
         #region Initializers
 
-        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, int maxNodeDepth, bool invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, bool invokeSetFirst)
         {
             App = app;
             Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
-            MaxNodeDepth = maxNodeDepth;
             InvokeSetFirst = invokeSetFirst;
         }
 
@@ -58,6 +55,19 @@ namespace RestfulFirebase.Database.Streaming
             var hasChanges = OnStream?.Invoke(streamObject) ?? false;
             HasFirstStream = true;
             return hasChanges;
+        }
+
+        public RealtimeWire SetChild(string key)
+        {
+            var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+            data.SetSubData(key);
+            return new RealtimeWire(App, key, Query, InvokeSetFirst);
+        }
+
+        public void DeleteChild(string key)
+        {
+            var data = Query.App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+            data.DeleteSubData(key);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
@@ -107,8 +117,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(RestfulFirebaseApp app, T model, FirebaseQuery parent, int maxNodeDepth, bool invokeSetFirst)
-            : base (app, model.Key, parent, maxNodeDepth, invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, T model, FirebaseQuery parent, bool invokeSetFirst)
+            : base (app, model.Key, parent, invokeSetFirst)
         {
             Model = model;
         }
