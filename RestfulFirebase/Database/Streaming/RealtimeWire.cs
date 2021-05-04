@@ -57,17 +57,9 @@ namespace RestfulFirebase.Database.Streaming
             return hasChanges;
         }
 
-        public RealtimeWire SetChild(string key)
+        public RealtimeWire Child(string key)
         {
-            var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
-            data.SetSubData(key);
             return new RealtimeWire(App, key, Query, InvokeSetFirst);
-        }
-
-        public void DeleteChild(string key)
-        {
-            var data = Query.App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
-            data.DeleteSubData(key);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)

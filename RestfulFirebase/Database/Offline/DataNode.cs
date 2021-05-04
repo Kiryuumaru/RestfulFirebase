@@ -18,6 +18,8 @@ namespace RestfulFirebase.Database.Offline
 
         public bool Exist => Short != null;
 
+        public bool HasBlobChanges { get; private set; }
+
         public DataNode Parent
         {
             get
@@ -40,24 +42,34 @@ namespace RestfulFirebase.Database.Offline
             protected set => Set(value, OfflineDatabase.LongPath, Short);
         }
 
-        public string SyncBlob
+        public string Sync
         {
             get => Get(OfflineDatabase.SyncBlobPath, Short);
-            set => Set(value, OfflineDatabase.SyncBlobPath, Short);
+            set
+            {
+                var oldBlob = Blob;
+                Set(value, OfflineDatabase.SyncBlobPath, Short);
+                if (oldBlob != Blob) HasBlobChanges = true;
+            }
         }
 
         public DataChanges Changes
         {
             get => DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short));
-            set => Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
+            set
+            {
+                var oldBlob = Blob;
+                Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
+                if (oldBlob != Blob) HasBlobChanges = true;
+            }
         }
 
-        public string LatestBlob
+        public string Blob
         {
             get
             {
                 if (!Exist) return null;
-                var sync = SyncBlob;
+                var sync = Sync;
                 var changes = Changes;
                 return changes == null ? sync : changes.Blob;
             }
@@ -143,11 +155,13 @@ namespace RestfulFirebase.Database.Offline
         {
             if (!Exist) return false;
             var shortPath = Short;
+            var oldBlob = Blob;
             Set(null, OfflineDatabase.ShortPath, Path);
             Set(null, OfflineDatabase.LongPath, shortPath);
             Set(null, OfflineDatabase.SyncBlobPath, shortPath);
             Set(null, OfflineDatabase.ChangesPath, shortPath);
             Set(null, OfflineDatabase.SyncStratPath, shortPath);
+            if (oldBlob != Blob) HasBlobChanges = true;
             return true;
         }
     }

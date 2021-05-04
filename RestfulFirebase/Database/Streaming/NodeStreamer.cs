@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
+using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -171,14 +172,13 @@ namespace RestfulFirebase.Database.Streaming
                     var pathToken = result["path"];
                     var dataToken = result["data"];
                     var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
-                    var data = dataToken.Type == JTokenType.Null ? null : dataToken.ToString();
                     List<string> separatedPath = new List<string>()
                     {
                         query.GetAbsolutePath().Split('/').Where(x => !string.IsNullOrWhiteSpace(x)).LastOrDefault()
                     };
                     if (path != "/") separatedPath.AddRange(path.Split('/').Skip(1));
 
-                    this.observer.OnNext(new StreamObject(data, separatedPath.ToArray()));
+                    this.observer.OnNext(new StreamObject(Convert(dataToken), separatedPath.ToArray()));
 
                     break;
                 case ServerEventType.KeepAlive:
@@ -187,6 +187,32 @@ namespace RestfulFirebase.Database.Streaming
                     this.observer.OnError(new FirebaseDatabaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
                     Dispose();
                     break;
+            }
+        }
+
+        private StreamData Convert(JToken token)
+        {
+            if (token is JArray array)
+            {
+                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(array.ToString());
+                var subDatas = new Dictionary<string, StreamData>();
+                foreach (KeyValuePair<string, object> entry in datas)
+                {
+                    subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
+                }
+                return new MultiStreamData(
+                    token.Type == JTokenType.Null ?
+                    null : subDatas);
+            }
+            else if (token is JObject obj)
+            {
+                return new SingleStreamData(
+                    obj.Type == JTokenType.Null ?
+                    null : JsonConvert.DeserializeObject<object>(obj.ToString()).ToString());
+            }
+            else
+            {
+                throw new Exception("Unknown stream data type");
             }
         }
     }

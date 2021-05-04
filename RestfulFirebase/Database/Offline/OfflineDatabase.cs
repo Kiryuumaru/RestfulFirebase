@@ -40,7 +40,7 @@ namespace RestfulFirebase.Database.Offline
             return new DataNode(App, path);
         }
 
-        public IEnumerable<DataNode> GetDatas(string path)
+        public IEnumerable<DataNode> GetSubDatas(string path)
         {
             var datas = new List<DataNode>();
             foreach (var subPath in App.LocalDatabase.GetSubPaths(Helpers.CombineUrl(ShortPath, path)))

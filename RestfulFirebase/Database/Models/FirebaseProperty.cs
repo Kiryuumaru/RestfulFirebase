@@ -90,15 +90,15 @@ namespace RestfulFirebase.Database.Models
                 switch (tag)
                 {
                     case InitTag:
-                        if (offline.SyncBlob == null)
+                        if (offline.Sync == null)
                         {
                             put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
+                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
                         }
-                        else if (offline.Changes == null || offline.LatestBlob != blob)
+                        else if (offline.Changes == null || offline.Blob != blob)
                         {
                             put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
+                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
                         }
                         return false;
                     case RevertTag:
@@ -109,13 +109,13 @@ namespace RestfulFirebase.Database.Models
                         if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
-                            else offline.SyncBlob = blob;
+                            else offline.Sync = blob;
                         }
                         else
                         {
                             switch (offline.Changes.ChangesType)
                             {
-                                case OfflineChangesType.Create:
+                                case DataChangesType.Create:
                                     if (blob == null)
                                     {
                                         put(offline.Changes.Blob);
@@ -123,67 +123,67 @@ namespace RestfulFirebase.Database.Models
                                     }
                                     else
                                     {
-                                        offline.SyncBlob = blob;
+                                        offline.Sync = blob;
                                         offline.Changes = null;
                                         break;
                                     }
-                                case OfflineChangesType.Update:
+                                case DataChangesType.Update:
                                     if (blob == null)
                                     {
                                         offline.Delete();
                                         break;
                                     }
-                                    else if (offline.SyncBlob == blob)
+                                    else if (offline.Sync == blob)
                                     {
                                         put(offline.Changes.Blob);
                                         return false;
                                     }
                                     else
                                     {
-                                        offline.SyncBlob = blob;
+                                        offline.Sync = blob;
                                         offline.Changes = null;
                                         break;
                                     }
-                                case OfflineChangesType.Delete:
+                                case DataChangesType.Delete:
                                     if (blob == null)
                                     {
                                         return false;
                                     }
-                                    else if (offline.SyncBlob == blob)
+                                    else if (offline.Sync == blob)
                                     {
                                         put(null);
                                         return false;
                                     }
                                     else
                                     {
-                                        offline.SyncBlob = blob;
+                                        offline.Sync = blob;
                                         offline.Changes = null;
                                         break;
                                     }
-                                case OfflineChangesType.None:
-                                    offline.SyncBlob = blob;
+                                case DataChangesType.None:
+                                    offline.Sync = blob;
                                     offline.Changes = null;
                                     break;
                             }
                         }
                         break;
                     default:
-                        if (offline.SyncBlob == null)
+                        if (offline.Sync == null)
                         {
                             put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.None : OfflineChangesType.Create);
+                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
                         }
-                        else if (offline.Changes == null || offline.LatestBlob != blob)
+                        else if (offline.Changes == null || offline.Blob != blob)
                         {
                             put(blob);
-                            offline.Changes = new OfflineChanges(blob, blob == null ? OfflineChangesType.Delete : OfflineChangesType.Update);
+                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
                         }
                         break;
                 }
 
-                if (offline.HasLatestBlobChanges) OnChanged(nameof(Blob));
+                if (offline.HasBlobChanges) OnChanged(nameof(Blob));
 
-                return offline.HasLatestBlobChanges;
+                return offline.HasBlobChanges;
             }
             else
             {
@@ -207,7 +207,7 @@ namespace RestfulFirebase.Database.Models
             if (Wire != null)
             {
                 var path = Wire.Query.GetAbsolutePath();
-                return Wire.Query.App.Database.OfflineDatabase.GetData(path).LatestBlob;
+                return Wire.Query.App.Database.OfflineDatabase.GetData(path).Blob;
             }
             else
             {
@@ -234,7 +234,10 @@ namespace RestfulFirebase.Database.Models
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1) hasChanges = SetBlob(streamObject.Data, SyncTag);
+                    else if (streamObject.Path.Length == 1 && streamObject.Object is SingleStreamData obj)
+                    {
+                        hasChanges = SetBlob(obj.Data, SyncTag);
+                    }
                 }
                 catch (Exception ex)
                 {

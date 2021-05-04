@@ -17,7 +17,6 @@ namespace RestfulFirebase.Database.Realtime
         #region Properties
 
         private string jsonToPut;
-        private CancellationTokenSource tokenSource;
 
         protected IDisposable Subscription;
 
@@ -50,7 +49,7 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
-        private async void Put(string data, EndNode node)
+        private async void Put(string data, DataNode node)
         {
             jsonToPut = JsonConvert.SerializeObject(data);
             HasPendingWrite = true;
@@ -82,82 +81,9 @@ namespace RestfulFirebase.Database.Realtime
             IsWritting = false;
         }
 
-        private void ConsumeEndNodeStream(StreamObject streamObject)
+        private void ConsumeNodeStream(StreamObject streamObject)
         {
-            if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
-            else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-            else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-            else if (streamObject.Path.Length == 1)
-            {
-                var blob = streamObject.Data;
-                var path = Query.GetAbsolutePath();
-                var offline = new EndNode(App, path);
-                var latestBlob = offline.LatestBlob;
 
-                if (IsWritting && HasPendingWrite) return;
-                if (offline.Changes == null)
-                {
-                    if (blob == null) offline.Delete();
-                    else offline.SyncBlob = blob;
-                }
-                else
-                {
-                    switch (offline.Changes.ChangesType)
-                    {
-                        case DataChangesType.Create:
-                            if (blob == null)
-                            {
-                                Put(offline.Changes.Blob, offline);
-                                return;
-                            }
-                            else
-                            {
-                                offline.SyncBlob = blob;
-                                offline.Changes = null;
-                                break;
-                            }
-                        case DataChangesType.Update:
-                            if (blob == null)
-                            {
-                                offline.Delete();
-                                break;
-                            }
-                            else if (offline.SyncBlob == blob)
-                            {
-                                Put(offline.Changes.Blob, offline);
-                                return;
-                            }
-                            else
-                            {
-                                offline.SyncBlob = blob;
-                                offline.Changes = null;
-                                break;
-                            }
-                        case DataChangesType.Delete:
-                            if (blob == null)
-                            {
-                                return;
-                            }
-                            else if (offline.SyncBlob == blob)
-                            {
-                                Put(null, offline);
-                                return;
-                            }
-                            else
-                            {
-                                offline.SyncBlob = blob;
-                                offline.Changes = null;
-                                break;
-                            }
-                        case DataChangesType.None:
-                            offline.SyncBlob = blob;
-                            offline.Changes = null;
-                            break;
-                    }
-
-                    if (latestBlob != offline.LatestBlob) OnChanges.Invoke(this, new WireChangesEventArgs(streamObject.Path));
-                }
-            }
         }
 
         public void InvokeStart() => OnStart?.Invoke();
@@ -172,7 +98,7 @@ namespace RestfulFirebase.Database.Realtime
 
             //App.Database.OfflineDatabase.GetSubPaths();
 
-            if (streamObject.Path.Length == 1) ConsumeEndNodeStream(streamObject);
+            if (streamObject.Path.Length == 1) ConsumeNodeStream(streamObject);
             else
             {
 
@@ -183,21 +109,7 @@ namespace RestfulFirebase.Database.Realtime
 
         public void InvokeLocalChanges(StreamObject streamObject)
         {
-            var blob = streamObject.Data;
-            var path = Query.GetAbsolutePath();
-            var offline = new EndNode(App, path);
-            var latestBlob = offline.LatestBlob;
 
-            if (offline.SyncBlob == null)
-            {
-                Put(blob, offline);
-                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
-            }
-            else if (offline.Changes == null || offline.LatestBlob != blob)
-            {
-                Put(blob, offline);
-                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
-            }
         }
 
         public virtual void Start()

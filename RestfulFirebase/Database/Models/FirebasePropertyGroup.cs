@@ -51,7 +51,7 @@ namespace RestfulFirebase.Database.Models
             var newObj = new FirebaseProperty(key);
             if (Wire != null)
             {
-                var subWire = Wire.SetChild(newObj.Key);
+                var subWire = Wire.Child(newObj.Key);
                 newObj.MakeRealtime(subWire);
                 subWire.InvokeStart();
             }
@@ -65,7 +65,7 @@ namespace RestfulFirebase.Database.Models
                 Wire = wire;
                 foreach (var prop in this)
                 {
-                    var subWire = Wire.SetChild(prop.Key);
+                    var subWire = Wire.Child(prop.Key);
                     prop.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -86,36 +86,33 @@ namespace RestfulFirebase.Database.Models
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1)
+                    else if (streamObject.Path.Length == 1 && streamObject.Object is MultiStreamData multi)
                     {
-                        var data = streamObject.Data == null ? new Dictionary<string, object>() : JsonConvert.DeserializeObject<Dictionary<string, object>>(streamObject.Data);
-                        var blobs = data.Select(i => (i.Key, i.Value?.ToString()));
-                        foreach (var prop in new List<FirebaseProperty>(this.Where(i => !blobs.Any(j => j.Key == i.Key))))
+                        foreach (var prop in new List<FirebaseProperty>(this.Where(i => !multi.Data.Any(j => j.Key == i.Key))))
                         {
                             if (prop.Wire.InvokeStream(new StreamObject(null, prop.Key)))
                             {
-                                Wire.DeleteChild(prop.Key);
                                 prop.Delete();
                                 Remove(prop);
                                 hasChanges = true;
                             }
                         }
-                        foreach (var blob in blobs)
+                        foreach (var data in multi.Data)
                         {
                             try
                             {
-                                var prop = this.FirstOrDefault(i => i.Key.Equals(blob.Key));
+                                var prop = this.FirstOrDefault(i => i.Key.Equals(data.Key));
 
                                 if (prop == null)
                                 {
-                                    prop = PropertyFactory(blob.Key);
+                                    prop = PropertyFactory(data.Key);
                                     prop.Wire.InvokeStart();
                                     Add(prop);
                                     hasChanges = true;
                                 }
                                 else
                                 {
-                                    if (prop.Wire.InvokeStream(new StreamObject(blob.Item2, blob.Key)))
+                                    if (prop.Wire.InvokeStream(new StreamObject(data.Value, data.Key)))
                                     {
                                         hasChanges = true;
                                     }
@@ -127,23 +124,24 @@ namespace RestfulFirebase.Database.Models
                             }
                         }
                     }
-                    else if (streamObject.Path.Length == 2)
+                    else if (streamObject.Path.Length == 2 && streamObject.Object is SingleStreamData single)
                     {
+                        var key = streamObject.Path[1];
                         try
                         {
-                            var prop = this.FirstOrDefault(i => i.Key.Equals(streamObject.Path[1]));
+                            var prop = this.FirstOrDefault(i => i.Key.Equals(key));
 
                             if (prop == null)
                             {
-                                if (streamObject.Data == null) return false;
-                                prop = PropertyFactory(streamObject.Path[1]);
+                                if (single == null) return false;
+                                prop = PropertyFactory(key);
                                 prop.Wire.InvokeStart();
                                 Add(prop);
                                 hasChanges = true;
                             }
                             else
                             {
-                                if (prop.Wire.InvokeStream(new StreamObject(streamObject.Data, streamObject.Path[1])))
+                                if (prop.Wire.InvokeStream(new StreamObject(streamObject.Object, key)))
                                 {
                                     hasChanges = true;
                                 }
@@ -167,7 +165,6 @@ namespace RestfulFirebase.Database.Models
         {
             foreach (var prop in new List<FirebaseProperty>(this))
             {
-                if (Wire != null) Wire.DeleteChild(prop.Key);
                 prop.Delete();
                 Remove(prop);
             }
