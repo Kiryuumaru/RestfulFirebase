@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Auth;
+﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
@@ -51,7 +50,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private async void Put(string data, DataNode node)
         {
-            jsonToPut = JsonConvert.SerializeObject(data);
+            //jsonToPut = JsonConvert.SerializeObject(data);
             HasPendingWrite = true;
             if (IsWritting) return;
             IsWritting = true;

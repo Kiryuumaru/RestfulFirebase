@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Auth;
+﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Common;
 using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
@@ -73,7 +72,7 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    Wire.Put(JsonConvert.SerializeObject(data), error =>
+                    Wire.Put("\"" + data + "\"", error =>
                     {
                         if (Wire == null) return;
                         if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -234,9 +233,16 @@ namespace RestfulFirebase.Database.Models
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1 && streamObject.Object is SingleStreamData obj)
+                    else if (streamObject.Path.Length == 1)
                     {
-                        hasChanges = SetBlob(obj.Data, SyncTag);
+                        if (streamObject.Object is SingleStreamData obj)
+                        {
+                            hasChanges = SetBlob(obj.Data, SyncTag);
+                        }
+                        else if (streamObject.Object is null)
+                        {
+                            hasChanges = SetBlob(null, SyncTag);
+                        }
                     }
                 }
                 catch (Exception ex)

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Common.Models;
+﻿using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -86,33 +85,71 @@ namespace RestfulFirebase.Database.Models
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
-                    else if (streamObject.Path.Length == 1 && streamObject.Object is MultiStreamData multi)
+                    else if (streamObject.Path.Length == 1)
                     {
-                        foreach (var prop in new List<FirebaseProperty>(this.Where(i => !multi.Data.Any(j => j.Key == i.Key))))
+                        if (streamObject.Object is MultiStreamData multi)
                         {
-                            if (prop.Wire.InvokeStream(new StreamObject(null, prop.Key)))
+                            foreach (var prop in new List<FirebaseProperty>(this.Where(i => !multi.Data.Any(j => j.Key == i.Key))))
                             {
-                                prop.Delete();
-                                Remove(prop);
-                                hasChanges = true;
+                                if (prop.Wire.InvokeStream(new StreamObject(new SingleStreamData(null), prop.Key)))
+                                {
+                                    prop.Delete();
+                                    Remove(prop);
+                                    hasChanges = true;
+                                }
+                            }
+                            foreach (var data in multi.Data)
+                            {
+                                try
+                                {
+                                    var prop = this.FirstOrDefault(i => i.Key.Equals(data.Key));
+
+                                    if (prop == null)
+                                    {
+                                        prop = PropertyFactory(data.Key);
+                                        prop.Wire.InvokeStart();
+                                        Add(prop);
+                                        hasChanges = true;
+                                    }
+                                    else
+                                    {
+                                        if (prop.Wire.InvokeStream(new StreamObject(data.Value, data.Key)))
+                                        {
+                                            hasChanges = true;
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    OnError(ex);
+                                }
                             }
                         }
-                        foreach (var data in multi.Data)
+                        else if (streamObject.Object is null)
+                        {
+                            Delete();
+                        }
+                    }
+                    else if (streamObject.Path.Length == 2)
+                    {
+                        var key = streamObject.Path[1];
+                        if (streamObject.Object is SingleStreamData single)
                         {
                             try
                             {
-                                var prop = this.FirstOrDefault(i => i.Key.Equals(data.Key));
+                                var prop = this.FirstOrDefault(i => i.Key.Equals(key));
 
                                 if (prop == null)
                                 {
-                                    prop = PropertyFactory(data.Key);
+                                    if (single == null) return false;
+                                    prop = PropertyFactory(key);
                                     prop.Wire.InvokeStart();
                                     Add(prop);
                                     hasChanges = true;
                                 }
                                 else
                                 {
-                                    if (prop.Wire.InvokeStream(new StreamObject(data.Value, data.Key)))
+                                    if (prop.Wire.InvokeStream(new StreamObject(streamObject.Object, key)))
                                     {
                                         hasChanges = true;
                                     }
@@ -123,33 +160,18 @@ namespace RestfulFirebase.Database.Models
                                 OnError(ex);
                             }
                         }
-                    }
-                    else if (streamObject.Path.Length == 2 && streamObject.Object is SingleStreamData single)
-                    {
-                        var key = streamObject.Path[1];
-                        try
+                        else if (streamObject.Object is null)
                         {
                             var prop = this.FirstOrDefault(i => i.Key.Equals(key));
 
-                            if (prop == null)
-                            {
-                                if (single == null) return false;
-                                prop = PropertyFactory(key);
-                                prop.Wire.InvokeStart();
-                                Add(prop);
-                                hasChanges = true;
-                            }
+                            if (prop == null) return false;
                             else
                             {
-                                if (prop.Wire.InvokeStream(new StreamObject(streamObject.Object, key)))
+                                if (prop.Wire.InvokeStream(new StreamObject(null, key)))
                                 {
                                     hasChanges = true;
                                 }
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            OnError(ex);
                         }
                     }
                 }

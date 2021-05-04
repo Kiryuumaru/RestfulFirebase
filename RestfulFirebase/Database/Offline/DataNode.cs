@@ -16,7 +16,7 @@ namespace RestfulFirebase.Database.Offline
 
         public string Key => Helpers.SeparateUrl(Path).Last();
 
-        public bool Exist => Short != null;
+        public bool Exist => Get(OfflineDatabase.ShortPath, Path) != null;
 
         public bool HasBlobChanges { get; private set; }
 
@@ -32,7 +32,17 @@ namespace RestfulFirebase.Database.Offline
 
         public string Short
         {
-            get => Get(OfflineDatabase.ShortPath, Path);
+            get
+            {
+                var shortPath = Get(OfflineDatabase.ShortPath, Path);
+                if (shortPath == null)
+                {
+                    shortPath = GetUniqueShort();
+                    App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabase.ShortPath, Path), shortPath);
+                    App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabase.LongPath, shortPath), Path);
+                }
+                return shortPath;
+            }
             protected set => Set(value, OfflineDatabase.ShortPath, Path);
         }
 
@@ -132,23 +142,15 @@ namespace RestfulFirebase.Database.Offline
 
         protected string Get(params string[] path)
         {
+            if (path.Any(i => i is null)) return null;
             return App.LocalDatabase.Get(Helpers.CombineUrl(path));
         }
 
         protected void Set(string data, params string[] path)
         {
-            if (!Exist) Create();
             var combined = Helpers.CombineUrl(path);
             if (data == null) App.LocalDatabase.Delete(combined);
             else App.LocalDatabase.Set(combined, data);
-        }
-
-        public virtual bool Create()
-        {
-            if (Exist) return false;
-            Short = GetUniqueShort();
-            Long = Path;
-            return true;
         }
 
         public virtual bool Delete()

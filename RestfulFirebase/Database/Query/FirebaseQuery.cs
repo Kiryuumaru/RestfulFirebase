@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Streaming;
-using Newtonsoft.Json;
 using System.Net;
 using RestfulFirebase.Extensions.Http;
 using RestfulFirebase.Common;

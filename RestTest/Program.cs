@@ -96,9 +96,8 @@ namespace RestTest
             userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
-            ExperimentList();
             //TestObservableObject();
-            //TestPropertyPut();
+            TestPropertyPut();
             //TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
@@ -106,117 +105,9 @@ namespace RestTest
             //TestPropertyGroupSub();
             //TestObjectGroupPut();
             //TestObjectGroupSub();
+            //ExperimentList();
 
 
-        }
-
-        public class Pager : FirebaseObject
-        {
-            private const string PagesKey = "pages";
-            private const int KeysPerPageCount = 10;
-
-            public string Testu
-            {
-                get => GetPersistableProperty<string>("1", "");
-                set => SetPersistableProperty(value, "1");
-            }
-
-            public int PageCount
-            {
-                get => GetPersistableProperty<int>(PagesKey, 0);
-                set => SetPersistableProperty(value, PagesKey);
-            }
-
-            public List<string> Keys
-            {
-                get
-                {
-                    var count = PageCount;
-                    var keys = new List<string>();
-                    for (int i = 0; i < count; i++)
-                    {
-                        var data = GetPersistableProperty<string>(PagesKey + i.ToString());
-                        var deserialized = Helpers.DeserializeString(data);
-                        if (deserialized == null) continue;
-                        keys.AddRange(deserialized);
-                    }
-                    return keys;
-                }
-                set
-                {
-                    if (value == null)
-                    {
-                        var count = PageCount;
-                        var keys = new List<string>();
-                        SetPersistableProperty(0, PagesKey);
-                        for (int i = 0; i < count; i++)
-                        {
-                            DeleteProperty(PagesKey + i.ToString());
-                        }
-                    }
-                    else
-                    {
-                        var iterations = (value.Count + (KeysPerPageCount - 1)) / KeysPerPageCount;
-                        var index = 0;
-                        var count = PageCount;
-                        var keys = new List<string>();
-                        for (int i = 0; i < iterations; i++)
-                        {
-                            var pageKeys = new List<string>();
-                            for (int j = 0; j < KeysPerPageCount; j++)
-                            {
-                                if (value.Count <= index) break;
-                                pageKeys.Add(value[index]);
-                                index++;
-                            }
-                            var page = Helpers.SerializeString(pageKeys.ToArray());
-                            SetPersistableProperty(page, (PagesKey + i.ToString()));
-                        }
-                        SetPersistableProperty(iterations, PagesKey);
-                    }
-                }
-            }
-
-            public Pager(IAttributed attributed)
-                : base(attributed)
-            {
-
-            }
-
-            public Pager(string key)
-                : base(key)
-            {
-
-            }
-        }
-
-        public static void ExperimentList()
-        {
-            var obj = new Pager("testPager");
-            obj.PropertyChanged += (s, e) =>
-            {
-                Console.WriteLine("Prop: " + e.PropertyName);
-            };
-            userNode.Child("testing").AsRealtime(obj).Start();
-            var index = 0;
-            while (true)
-            {
-                //string line = Console.ReadLine();
-                if (index == 10) index = 0;
-                string line = (index++).ToString();
-                if (string.IsNullOrEmpty(line))
-                {
-                    obj.Keys = null;
-                }
-                else
-                {
-                    var keys = obj.Keys;
-                    //keys.Insert(0, line);
-                    keys.Add(line);
-                    obj.Keys = keys;
-                }
-                Thread.Sleep(100);
-            }
         }
 
         public static void TestPropertyPut()
@@ -227,7 +118,7 @@ namespace RestTest
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba22";
-            userNode.Child("testing").Child("mock").AsRealtime(props).Start();
+            userNode.Child("testing").Child("mock").PutAsRealtime(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -237,7 +128,7 @@ namespace RestTest
 
         public static void TestPropertySub()
         {
-            var sub = userNode.Child("testing").Child("mock").AsRealtime<FirebaseObject<string>>("test");
+            var sub = userNode.Child("testing").Child("mock").SubAsRealtime<FirebaseObject<string>>("test");
             var props = sub.Model;
             props.PropertyChanged += (s, e) =>
             {
@@ -258,7 +149,7 @@ namespace RestTest
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
             };
-            userNode.Child("testing").AsRealtime(obj).Start();
+            userNode.Child("testing").PutAsRealtime(obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -268,7 +159,7 @@ namespace RestTest
 
         public static void TestObjectSub()
         {
-            var sub = userNode.Child("testing").AsRealtime<TestStorable>("mock");
+            var sub = userNode.Child("testing").SubAsRealtime<TestStorable>("mock");
             var obj = sub.Model;
             obj.PropertyChanged += (s, e) =>
             {
@@ -365,5 +256,114 @@ namespace RestTest
         //        objs.Model.Add(obj);
         //    }
         //}
+
+        public class Pager : FirebaseObject
+        {
+            private const string PagesKey = "pages";
+            private const int KeysPerPageCount = 10;
+
+            public string Testu
+            {
+                get => GetPersistableProperty<string>("1", "");
+                set => SetPersistableProperty(value, "1");
+            }
+
+            public int PageCount
+            {
+                get => GetPersistableProperty<int>(PagesKey, 0);
+                set => SetPersistableProperty(value, PagesKey);
+            }
+
+            public List<string> Keys
+            {
+                get
+                {
+                    var count = PageCount;
+                    var keys = new List<string>();
+                    for (int i = 0; i < count; i++)
+                    {
+                        var data = GetPersistableProperty<string>(PagesKey + i.ToString());
+                        var deserialized = Helpers.DeserializeString(data);
+                        if (deserialized == null) continue;
+                        keys.AddRange(deserialized);
+                    }
+                    return keys;
+                }
+                set
+                {
+                    if (value == null)
+                    {
+                        var count = PageCount;
+                        var keys = new List<string>();
+                        SetPersistableProperty(0, PagesKey);
+                        for (int i = 0; i < count; i++)
+                        {
+                            DeleteProperty(PagesKey + i.ToString());
+                        }
+                    }
+                    else
+                    {
+                        var iterations = (value.Count + (KeysPerPageCount - 1)) / KeysPerPageCount;
+                        var index = 0;
+                        var count = PageCount;
+                        var keys = new List<string>();
+                        for (int i = 0; i < iterations; i++)
+                        {
+                            var pageKeys = new List<string>();
+                            for (int j = 0; j < KeysPerPageCount; j++)
+                            {
+                                if (value.Count <= index) break;
+                                pageKeys.Add(value[index]);
+                                index++;
+                            }
+                            var page = Helpers.SerializeString(pageKeys.ToArray());
+                            SetPersistableProperty(page, (PagesKey + i.ToString()));
+                        }
+                        SetPersistableProperty(iterations, PagesKey);
+                    }
+                }
+            }
+
+            public Pager(IAttributed attributed)
+                : base(attributed)
+            {
+
+            }
+
+            public Pager(string key)
+                : base(key)
+            {
+
+            }
+        }
+
+        public static void ExperimentList()
+        {
+            var obj = new Pager("testPager");
+            obj.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Prop: " + e.PropertyName);
+            };
+            userNode.Child("testing").PutAsRealtime(obj).Start();
+            var index = 0;
+            while (true)
+            {
+                //string line = Console.ReadLine();
+                if (index == 10) index = 0;
+                string line = (index++).ToString();
+                if (string.IsNullOrEmpty(line))
+                {
+                    obj.Keys = null;
+                }
+                else
+                {
+                    var keys = obj.Keys;
+                    //keys.Insert(0, line);
+                    keys.Add(line);
+                    obj.Keys = keys;
+                }
+                Thread.Sleep(100);
+            }
+        }
     }
 }
