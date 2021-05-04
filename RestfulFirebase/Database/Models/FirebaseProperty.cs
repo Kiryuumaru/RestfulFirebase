@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Auth;
+﻿using Newtonsoft.Json;
+using RestfulFirebase.Auth;
 using RestfulFirebase.Common;
 using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Models;
@@ -72,7 +73,8 @@ namespace RestfulFirebase.Database.Models
             {
                 void put(string data)
                 {
-                    Wire.Put("\"" + data + "\"", error =>
+                    //Wire.Put("\"" + data + "\"", error =>
+                    Wire.Put(JsonConvert.SerializeObject(data), error =>
                     {
                         if (Wire == null) return;
                         if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)

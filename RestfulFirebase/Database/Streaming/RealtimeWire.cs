@@ -4,7 +4,6 @@ using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
-using System.Reactive.Linq;
 using System.Text;
 using System.Threading;
 

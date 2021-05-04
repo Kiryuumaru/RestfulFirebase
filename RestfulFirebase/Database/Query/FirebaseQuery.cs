@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Streaming;
 using System.Net;
