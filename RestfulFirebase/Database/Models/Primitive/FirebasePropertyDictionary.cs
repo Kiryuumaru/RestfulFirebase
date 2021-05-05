@@ -22,10 +22,32 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Initializers
 
+        public FirebasePropertyDictionary(IAttributed attributed)
+            : base(attributed)
+        {
+
+        }
+
+        public FirebasePropertyDictionary()
+            : base(null)
+        {
+
+        }
 
         #endregion
 
         #region Methods
+
+        protected override (string key, FirebaseProperty value) ValueFactory(string key, FirebaseProperty value)
+        {
+            if (Wire != null)
+            {
+                var subWire = Wire.Child(key, true);
+                value.MakeRealtime(subWire);
+                subWire.InvokeStart();
+            }
+            return (key, value);
+        }
 
         protected FirebaseProperty PropertyFactory()
         {
@@ -67,13 +89,13 @@ namespace RestfulFirebase.Database.Models.Primitive
                         else if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[0];
 
-                        //var hasSubChanges = ReplaceProperties(props,
-                        //    args =>
-                        //    {
-                        //        var subStreamObject = new StreamObject(args.value, args.property.Key);
-                        //        return args.property.Wire.InvokeStream(subStreamObject);
-                        //    });
-                        //if (hasSubChanges) hasChanges = true;
+                        var hasSubChanges = ReplaceProperties(props,
+                            args =>
+                            {
+                                var subStreamObject = new StreamObject(args.value, args.key);
+                                return args.property.Wire.InvokeStream(subStreamObject);
+                            });
+                        if (hasSubChanges) hasChanges = true;
                     }
                     else if (streamObject.Path.Length == 2)
                     {
@@ -83,13 +105,13 @@ namespace RestfulFirebase.Database.Models.Primitive
                         else if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
-                        //var hasSubChanges = UpdateProperties(props,
-                        //    args =>
-                        //    {
-                        //        var subStreamObject = new StreamObject(args.value, args.property.Key);
-                        //        return args.property.Wire.InvokeStream(subStreamObject);
-                        //    });
-                        //if (hasSubChanges) hasChanges = true;
+                        var hasSubChanges = UpdateProperties(props,
+                            args =>
+                            {
+                                var subStreamObject = new StreamObject(args.value, args.key);
+                                return args.property.Wire.InvokeStream(subStreamObject);
+                            });
+                        if (hasSubChanges) hasChanges = true;
                     }
                 }
                 catch (Exception ex)
@@ -100,13 +122,89 @@ namespace RestfulFirebase.Database.Models.Primitive
             };
         }
 
+        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        {
+            bool hasChanges = false;
+
+            foreach (var data in properties)
+            {
+                try
+                {
+                    TryGetValue(data.key, out FirebaseProperty prop);
+
+                    if (prop == null)
+                    {
+                        if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
+                        {
+                            prop = PropertyFactory();
+
+                            if (Wire != null)
+                            {
+                                var subWire = Wire.Child(data.key, false);
+                                prop.MakeRealtime(subWire);
+                                subWire.InvokeStart();
+                            }
+
+                            setter.Invoke((data.key, prop, data.value));
+
+                            Add(data.key, prop);
+
+                            hasChanges = true;
+                        }
+                    }
+                    else
+                    {
+                        if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
+                        {
+                            if (setter.Invoke((data.key, prop, data.value)))
+                            {
+                                hasChanges = true;
+                            }
+                        }
+                        else
+                        {
+                            Remove(data.key);
+                            hasChanges = true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            }
+
+            return hasChanges;
+        }
+
+        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        {
+            bool hasChanges = false;
+
+            var excluded = new List<KeyValuePair<string, FirebaseProperty>>(this.Where(i => !properties.Any(j => j.key == i.Key)));
+
+            foreach (var prop in excluded)
+            {
+                if (setter.Invoke((prop.Key, prop.Value, default)))
+                {
+                    Remove(prop.Key);
+                    hasChanges = true;
+                }
+            }
+
+            if (UpdateProperties(properties, setter)) hasChanges = true;
+
+            return hasChanges;
+        }
+
         public bool Delete()
         {
             var hasChanges = false;
             foreach (var prop in new Dictionary<string, FirebaseProperty>(this))
             {
-                if (prop.Value.Delete()) hasChanges = true;
+                prop.Value.Delete();
                 Remove(prop.Key);
+                hasChanges = true;
             }
             return hasChanges;
         }

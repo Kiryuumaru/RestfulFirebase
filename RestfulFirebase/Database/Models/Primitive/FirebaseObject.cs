@@ -148,17 +148,17 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             bool hasChanges = false;
 
-            foreach (var prop in properties)
+            foreach (var data in properties)
             {
                 try
                 {
                     bool hasSubChanges = false;
 
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(prop.key));
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(data.key));
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(prop.key, null, null);
+                        propHolder = PropertyFactory(data.key, null, null);
 
                         if (Wire != null)
                         {
@@ -167,7 +167,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                             subWire.InvokeStart();
                         }
 
-                        setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, prop.value));
+                        setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, data.value));
 
                         PropertyHolders.Add(propHolder);
 
@@ -175,7 +175,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     }
                     else
                     {
-                        if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, prop.value)))
+                        if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, data.value)))
                         {
                             hasSubChanges = true;
                         }

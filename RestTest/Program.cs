@@ -93,9 +93,13 @@ namespace RestTest
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            TestPropertySub();
+            //TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
+            TestPropertyDictionaryPut();
+            //TestPropertyDictionarySub();
+            //TestObjectDictionaryPut();
+            //TestObjectDictionarySub();
             //ExperimentList();
         }
 
@@ -166,6 +170,29 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 obj.Test = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static void TestPropertyDictionaryPut()
+        {
+            var dict = new FirebasePropertyDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            var prop1 = new FirebaseProperty();
+            prop1.SetValue("111");
+            dict.Add("aaa", prop1);
+            var prop2 = new FirebaseProperty();
+            prop2.SetValue("222");
+            dict.Add("bbb", prop2);
+            userNode.Child("testing").PutAsRealtime("mock", dict).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
+                dict.Add(Helpers.GenerateSafeUID(), prop);
             }
         }
 

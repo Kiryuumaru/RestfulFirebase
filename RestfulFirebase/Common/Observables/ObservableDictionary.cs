@@ -101,6 +101,22 @@ namespace RestfulFirebase.Common.Observables
             }
         }
 
+        public ICollection<TKey> Keys
+        {
+            get => Dictionary.Keys;
+        }
+
+        public ICollection<TValue> Values
+        {
+            get => Dictionary.Values;
+        }
+
+        public TValue this[TKey key]
+        {
+            get => Dictionary[key];
+            set => UpdateWithNotification(key, value);
+        }
+
         #endregion
 
         #region Initializers
@@ -148,7 +164,7 @@ namespace RestfulFirebase.Common.Observables
 
         private bool TryAddWithNotification(TKey key, TValue value)
         {
-            bool result = Dictionary.TryAdd(key, value);
+            bool result = Dictionary.TryAdd(key, ValueFactory(key, value).value);
             if (result) NotifyObserversOfChange();
             return result;
         }
@@ -162,8 +178,13 @@ namespace RestfulFirebase.Common.Observables
 
         private void UpdateWithNotification(TKey key, TValue value)
         {
-            Dictionary[key] = value;
+            Dictionary[key] = ValueFactory(key, value).value;
             NotifyObserversOfChange();
+        }
+
+        protected virtual (TKey key, TValue value) ValueFactory(TKey key, TValue value)
+        {
+            return (key, value);
         }
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
@@ -183,6 +204,27 @@ namespace RestfulFirebase.Common.Observables
             {
                 throw args.Exception;
             }
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            TryAddWithNotification(key, value);
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return Dictionary.ContainsKey(key);
+        }
+
+        public bool Remove(TKey key)
+        {
+            TValue temp;
+            return TryRemoveWithNotification(key, out temp);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return Dictionary.TryGetValue(key, out value);
         }
 
         void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
@@ -230,43 +272,6 @@ namespace RestfulFirebase.Common.Observables
         IEnumerator IEnumerable.GetEnumerator()
         {
             return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).GetEnumerator();
-        }
-
-        public void Add(TKey key, TValue value)
-        {
-            TryAddWithNotification(key, value);
-        }
-
-        public bool ContainsKey(TKey key)
-        {
-            return Dictionary.ContainsKey(key);
-        }
-
-        public ICollection<TKey> Keys
-        {
-            get { return Dictionary.Keys; }
-        }
-
-        public bool Remove(TKey key)
-        {
-            TValue temp;
-            return TryRemoveWithNotification(key, out temp);
-        }
-
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            return Dictionary.TryGetValue(key, out value);
-        }
-
-        public ICollection<TValue> Values
-        {
-            get { return Dictionary.Values; }
-        }
-
-        public TValue this[TKey key]
-        {
-            get { return Dictionary[key]; }
-            set { UpdateWithNotification(key, value); }
         }
 
         #endregion
