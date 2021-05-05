@@ -8,7 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace RestfulFirebase.Database.Models
+namespace RestfulFirebase.Database.Models.Primitive
 {
     public class FirebaseObject : ObservableObject, IRealtimeModel
     {

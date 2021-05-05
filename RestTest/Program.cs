@@ -16,6 +16,7 @@ using RestfulFirebase.Common.Converters;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Common;
 using System.Threading;
+using RestfulFirebase.Database.Models.Primitive;
 
 namespace RestTest
 {
@@ -91,11 +92,11 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestObservableObject();
-            TestPropertyPut();
+            //TestPropertyPut();
             //TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
-            //ExperimentList();
+            ExperimentList();
         }
 
         public static void TestPropertyPut()

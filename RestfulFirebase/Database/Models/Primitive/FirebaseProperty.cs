@@ -13,7 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Database.Models
+namespace RestfulFirebase.Database.Models.Primitive
 {
     public class FirebaseProperty : ObservableProperty, IRealtimeModel
     {
