@@ -35,13 +35,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             set => Holder.SetAttribute(value);
         }
 
-        public string Key
-        {
-            get => Holder.GetAttribute<string>();
-            set => Holder.SetAttribute(value);
-        }
-
-
         #endregion
 
         #region Initializers
@@ -52,10 +45,10 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         }
 
-        public FirebaseProperty(string key)
-            : base()
+        public FirebaseProperty()
+            : base(null)
         {
-            Key = key;
+
         }
 
         #endregion
@@ -236,7 +229,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                 {
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                     else if (streamObject.Path.Length == 1)
                     {
                         if (streamObject.Object is SingleStreamData obj)
@@ -290,8 +282,8 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         }
 
-        public FirebaseProperty(string key)
-            : base(key)
+        public FirebaseProperty()
+            : base(null)
         {
 
         }

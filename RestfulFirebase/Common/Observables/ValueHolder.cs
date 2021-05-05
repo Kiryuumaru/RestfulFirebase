@@ -39,9 +39,8 @@ namespace RestfulFirebase.Common.Observables
         }
 
         public ValueHolder()
-            : this(null)
         {
-
+            Holder.Inherit(null);
         }
 
         #endregion

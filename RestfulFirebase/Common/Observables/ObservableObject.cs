@@ -88,11 +88,17 @@ namespace RestfulFirebase.Common.Observables
         public ObservableObject(IAttributed attributed)
         {
             Holder.Inherit(attributed);
+            foreach (var property in this
+                .GetType()
+                .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                property.GetValue(this);
+            }
         }
 
         public ObservableObject()
-            : this(null)
         {
+            Holder.Inherit(null);
             foreach (var property in this
                 .GetType()
                 .GetProperties(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
@@ -224,14 +230,9 @@ namespace RestfulFirebase.Common.Observables
             return hasChanges;
         }
 
-        protected IEnumerable<ObservableProperty> GetRawProperties(string group = null)
+        protected IEnumerable<PropertyHolder> GetRawProperties(string group = null)
         {
-            return group == null ?
-                PropertyHolders
-                    .Select(i => i.Property) :
-                PropertyHolders
-                    .Where(i => i.Group == group)
-                    .Select(i => i.Property);
+            return group == null ? PropertyHolders : PropertyHolders.Where(i => i.Group == group);
         }
 
         public virtual void OnChanged(

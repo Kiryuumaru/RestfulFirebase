@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database.Streaming
         #region Properties
 
         private string jsonToPut;
-        private bool isStreamWaiting;
+        //private bool isStreamWaiting;
         private StreamObject streamObjectBuffer;
 
         protected IDisposable Subscription;
@@ -120,8 +120,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(RestfulFirebaseApp app, T model, FirebaseQuery parent, bool invokeSetFirst)
-            : base (app, model.Key, parent, invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, T model, FirebaseQuery parent, bool invokeSetFirst)
+            : base (app, key, parent, invokeSetFirst)
         {
             Model = model;
         }

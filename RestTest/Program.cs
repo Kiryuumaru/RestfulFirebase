@@ -52,8 +52,8 @@ namespace RestTest
 
         #region Initializers
 
-        public TestStorable(string key)
-            : base(key)
+        public TestStorable()
+            : base()
         {
 
         }
@@ -93,21 +93,21 @@ namespace RestTest
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            //TestPropertySub();
+            TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
-            ExperimentList();
+            //ExperimentList();
         }
 
         public static void TestPropertyPut()
         {
-            var props = new FirebaseProperty<string>("test");
+            var props = new FirebaseProperty<string>();
             props.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba22";
-            userNode.Child("testing").Child("mock").PutAsRealtime(props).Start();
+            userNode.Child("testing").Child("mock").PutAsRealtime("test", props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -117,13 +117,13 @@ namespace RestTest
 
         public static void TestPropertySub()
         {
-            var props = new FirebaseProperty<string>("test");
+            var props = new FirebaseProperty<string>();
             props.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba11";
-            userNode.Child("testing").Child("mock").SubAsRealtime(props).Start();
+            userNode.Child("testing").Child("mock").SubAsRealtime("test", props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -133,7 +133,7 @@ namespace RestTest
 
         public static void TestObjectPut()
         {
-            var obj = new TestStorable("mock");
+            var obj = new TestStorable();
             obj.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
@@ -142,7 +142,7 @@ namespace RestTest
             obj.Premium = TimeSpan.FromSeconds(60);
             obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
             obj.Test = "testuuuuu";
-            userNode.Child("testing").PutAsRealtime(obj).Start();
+            userNode.Child("testing").PutAsRealtime("mock", obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -152,7 +152,7 @@ namespace RestTest
 
         public static void TestObjectSub()
         {
-            var obj = new TestStorable("mock");
+            var obj = new TestStorable();
             obj.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
@@ -161,7 +161,7 @@ namespace RestTest
             //obj.Premium = TimeSpan.FromSeconds(60);
             //obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
             //obj.Test = "testuuuuu";
-            userNode.Child("testing").SubAsRealtime(obj).Start();
+            userNode.Child("testing").SubAsRealtime("mock", obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -242,8 +242,8 @@ namespace RestTest
 
             }
 
-            public Pager(string key)
-                : base(key)
+            public Pager()
+                : base(null)
             {
 
             }
@@ -251,12 +251,12 @@ namespace RestTest
 
         public static void ExperimentList()
         {
-            var obj = new Pager("testPager");
+            var obj = new Pager();
             obj.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
             };
-            userNode.Child("testing").PutAsRealtime(obj).Start();
+            userNode.Child("testing").PutAsRealtime("testPager", obj).Start();
             var index = 0;
             while (true)
             {

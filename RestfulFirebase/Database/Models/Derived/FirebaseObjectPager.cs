@@ -80,8 +80,8 @@ namespace RestfulFirebase.Database.Models.Derived
 
         }
 
-        public FirebaseObjectPager(string key)
-            : base(key)
+        public FirebaseObjectPager()
+            : base(null)
         {
 
         }

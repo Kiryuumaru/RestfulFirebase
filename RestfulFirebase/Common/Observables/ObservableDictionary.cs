@@ -15,21 +15,104 @@ namespace RestfulFirebase.Common.Observables
     {
         #region Properties
 
-        private readonly SynchronizationContext context;
-        private readonly ConcurrentDictionary<TKey, TValue> dictionary;
+        public AttributeHolder Holder { get; } = new AttributeHolder();
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
-        public event PropertyChangedEventHandler PropertyChanged;
-        public event EventHandler<ContinueExceptionEventArgs> PropertyError;
+        private SynchronizationContext Context
+        {
+            get => Holder.GetAttribute<SynchronizationContext>(AsyncOperationManager.SynchronizationContext);
+            set => Holder.SetAttribute(value);
+        }
+
+        private ConcurrentDictionary<TKey, TValue> Dictionary
+        {
+            get => Holder.GetAttribute<ConcurrentDictionary<TKey, TValue>>(new ConcurrentDictionary<TKey, TValue>());
+            set => Holder.SetAttribute(value);
+        }
+
+        private PropertyChangedEventHandler PropertyChangedHandler
+        {
+            get => Holder.GetAttribute<PropertyChangedEventHandler>(delegate { });
+            set => Holder.SetAttribute(value);
+        }
+
+        private NotifyCollectionChangedEventHandler CollectionChangedHandler
+        {
+            get => Holder.GetAttribute<NotifyCollectionChangedEventHandler>(delegate { });
+            set => Holder.SetAttribute(value);
+        }
+
+        private EventHandler<ContinueExceptionEventArgs> PropertyErrorHandler
+        {
+            get => Holder.GetAttribute<EventHandler<ContinueExceptionEventArgs>>(delegate { });
+            set => Holder.SetAttribute(value);
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged
+        {
+            add
+            {
+                lock (this)
+                {
+                    PropertyChangedHandler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    PropertyChangedHandler -= value;
+                }
+            }
+        }
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged
+        {
+            add
+            {
+                lock (this)
+                {
+                    CollectionChangedHandler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    CollectionChangedHandler -= value;
+                }
+            }
+        }
+
+        public event EventHandler<ContinueExceptionEventArgs> PropertyError
+        {
+            add
+            {
+                lock (this)
+                {
+                    PropertyErrorHandler += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    PropertyErrorHandler -= value;
+                }
+            }
+        }
 
         #endregion
 
         #region Initializers
 
+        public ObservableDictionary(IAttributed attributed)
+        {
+            Holder.Inherit(attributed);
+        }
+
         public ObservableDictionary()
         {
-            context = AsyncOperationManager.SynchronizationContext;
-            dictionary = new ConcurrentDictionary<TKey, TValue>();
+            Holder.Inherit(null);
         }
 
         #endregion
@@ -38,11 +121,11 @@ namespace RestfulFirebase.Common.Observables
 
         private void NotifyObserversOfChange()
         {
-            var collectionHandler = CollectionChanged;
-            var propertyHandler = PropertyChanged;
+            var collectionHandler = CollectionChangedHandler;
+            var propertyHandler = PropertyChangedHandler;
             if (collectionHandler != null || propertyHandler != null)
             {
-                context.Post(s =>
+                Context.Post(s =>
                 {
                     if (collectionHandler != null)
                     {
@@ -58,50 +141,35 @@ namespace RestfulFirebase.Common.Observables
             }
         }
 
-        /// <summary>Attempts to add an item to the dictionary, notifying observers of any changes.</summary>
-        /// <param name="item">The item to be added.</param>
-        /// <returns>Whether the add was successful.</returns>
         private bool TryAddWithNotification(KeyValuePair<TKey, TValue> item)
         {
             return TryAddWithNotification(item.Key, item.Value);
         }
 
-        /// <summary>Attempts to add an item to the dictionary, notifying observers of any changes.</summary>
-        /// <param name="key">The key of the item to be added.</param>
-        /// <param name="value">The value of the item to be added.</param>
-        /// <returns>Whether the add was successful.</returns>
         private bool TryAddWithNotification(TKey key, TValue value)
         {
-            bool result = dictionary.TryAdd(key, value);
+            bool result = Dictionary.TryAdd(key, value);
             if (result) NotifyObserversOfChange();
             return result;
         }
 
-        /// <summary>Attempts to remove an item from the dictionary, notifying observers of any changes.</summary>
-        /// <param name="key">The key of the item to be removed.</param>
-        /// <param name="value">The value of the item removed.</param>
-        /// <returns>Whether the removal was successful.</returns>
         private bool TryRemoveWithNotification(TKey key, out TValue value)
         {
-            bool result = dictionary.TryRemove(key, out value);
+            bool result = Dictionary.TryRemove(key, out value);
             if (result) NotifyObserversOfChange();
             return result;
         }
 
-        /// <summary>Attempts to add or update an item in the dictionary, notifying observers of any changes.</summary>
-        /// <param name="key">The key of the item to be updated.</param>
-        /// <param name="value">The new value to set for the item.</param>
-        /// <returns>Whether the update was successful.</returns>
         private void UpdateWithNotification(TKey key, TValue value)
         {
-            dictionary[key] = value;
+            Dictionary[key] = value;
             NotifyObserversOfChange();
         }
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {
             var args = new ContinueExceptionEventArgs(exception, defaultIgnoreAndContinue);
-            PropertyError?.Invoke(this, args);
+            PropertyErrorHandler?.Invoke(this, args);
             if (!args.IgnoreAndContinue)
             {
                 throw args.Exception;
@@ -110,7 +178,7 @@ namespace RestfulFirebase.Common.Observables
 
         public virtual void OnError(ContinueExceptionEventArgs args)
         {
-            PropertyError?.Invoke(this, args);
+            PropertyErrorHandler?.Invoke(this, args);
             if (!args.IgnoreAndContinue)
             {
                 throw args.Exception;
@@ -124,28 +192,28 @@ namespace RestfulFirebase.Common.Observables
 
         void ICollection<KeyValuePair<TKey, TValue>>.Clear()
         {
-            ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).Clear();
+            ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Clear();
             NotifyObserversOfChange();
         }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
         {
-            return ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).Contains(item);
+            return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Contains(item);
         }
 
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).CopyTo(array, arrayIndex);
+            ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).CopyTo(array, arrayIndex);
         }
 
         int ICollection<KeyValuePair<TKey, TValue>>.Count
         {
-            get { return ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).Count; }
+            get { return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Count; }
         }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
         {
-            get { return ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).IsReadOnly; }
+            get { return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).IsReadOnly; }
         }
 
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
@@ -156,12 +224,12 @@ namespace RestfulFirebase.Common.Observables
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         {
-            return ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).GetEnumerator();
+            return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((ICollection<KeyValuePair<TKey, TValue>>)dictionary).GetEnumerator();
+            return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).GetEnumerator();
         }
 
         public void Add(TKey key, TValue value)
@@ -171,12 +239,12 @@ namespace RestfulFirebase.Common.Observables
 
         public bool ContainsKey(TKey key)
         {
-            return dictionary.ContainsKey(key);
+            return Dictionary.ContainsKey(key);
         }
 
         public ICollection<TKey> Keys
         {
-            get { return dictionary.Keys; }
+            get { return Dictionary.Keys; }
         }
 
         public bool Remove(TKey key)
@@ -187,17 +255,17 @@ namespace RestfulFirebase.Common.Observables
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return dictionary.TryGetValue(key, out value);
+            return Dictionary.TryGetValue(key, out value);
         }
 
         public ICollection<TValue> Values
         {
-            get { return dictionary.Values; }
+            get { return Dictionary.Values; }
         }
 
         public TValue this[TKey key]
         {
-            get { return dictionary[key]; }
+            get { return Dictionary[key]; }
             set { UpdateWithNotification(key, value); }
         }
 

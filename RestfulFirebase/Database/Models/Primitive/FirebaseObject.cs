@@ -20,12 +20,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             set => Holder.SetAttribute(value);
         }
 
-        public string Key
-        {
-            get => Holder.GetAttribute<string>();
-            set => Holder.SetAttribute(value);
-        }
-
         #endregion
 
         #region Initializers
@@ -36,10 +30,10 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         }
 
-        public FirebaseObject(string key)
-            : base()
+        public FirebaseObject()
+            : base(null)
         {
-            Key = key;
+
         }
 
         #endregion
@@ -48,11 +42,11 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         protected override PropertyHolder PropertyFactory(string key, string group, string propertyName)
         {
-            var newObj = new FirebaseProperty(key);
+            var newObj = new FirebaseProperty();
             return new PropertyHolder()
             {
                 Property = newObj,
-                Key = newObj.Key,
+                Key = key,
                 Group = group,
                 PropertyName = propertyName
             };
@@ -77,9 +71,9 @@ namespace RestfulFirebase.Database.Models.Primitive
             return base.GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName, customValueSetter);
         }
 
-        public IEnumerable<FirebaseProperty> GetRawPersistableProperties()
+        public IEnumerable<PropertyHolder> GetRawPersistableProperties()
         {
-            return GetRawProperties(nameof(FirebaseObject)).Select(i => (FirebaseProperty)i);
+            return GetRawProperties(nameof(FirebaseObject));
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -90,7 +84,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                 foreach (var prop in GetRawPersistableProperties())
                 {
                     var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
-                    prop.MakeRealtime(subWire);
+                    ((FirebaseProperty)prop.Property).MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
             };
@@ -99,7 +93,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                 Wire = null;
                 foreach (var prop in GetRawPersistableProperties())
                 {
-                    prop.Wire.InvokeStop();
+                    ((FirebaseProperty)prop.Property).Wire.InvokeStop();
                 }
             };
             wire.OnStream += streamObject =>
@@ -109,7 +103,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                 {
                     if (streamObject.Path == null) throw new Exception("StreamEvent Key null");
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
-                    else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                     else if (streamObject.Path.Length == 1)
                     {
                         var props = new (string, StreamData)[0];
@@ -121,7 +114,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                         var hasSubChanges = ReplaceProperties(props,
                             args =>
                             {
-                                var subStreamObject = new StreamObject(args.value, args.property.Key);
+                                var subStreamObject = new StreamObject(args.value, args.key);
                                 return args.property.Wire.InvokeStream(subStreamObject);
                             });
                         if (hasSubChanges) hasChanges = true;
@@ -137,7 +130,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                         var hasSubChanges = UpdateProperties(props,
                             args =>
                             {
-                                var subStreamObject = new StreamObject(args.value, args.property.Key);
+                                var subStreamObject = new StreamObject(args.value, args.key);
                                 return args.property.Wire.InvokeStream(subStreamObject);
                             });
                         if (hasSubChanges) hasChanges = true;
@@ -151,7 +144,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             };
         }
 
-        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(FirebaseProperty property, T value), bool> setter)
+        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
         {
             bool hasChanges = false;
 
@@ -174,7 +167,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                             subWire.InvokeStart();
                         }
 
-                        setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value));
+                        setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, prop.value));
 
                         PropertyHolders.Add(propHolder);
 
@@ -182,7 +175,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     }
                     else
                     {
-                        if (setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value)))
+                        if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, prop.value)))
                         {
                             hasSubChanges = true;
                         }
@@ -203,7 +196,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             return hasChanges;
         }
 
-        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(FirebaseProperty property, T value), bool> setter)
+        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
         {
             bool hasChanges = false;
 
@@ -211,7 +204,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
             foreach (var propHolder in excluded)
             {
-                if (setter.Invoke(((FirebaseProperty)propHolder.Property, default)))
+                if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, default)))
                 {
                     OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
                     hasChanges = true;
