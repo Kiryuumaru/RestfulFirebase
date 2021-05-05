@@ -4,6 +4,7 @@ using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -14,6 +15,8 @@ namespace RestfulFirebase.Database.Streaming
         #region Properties
 
         private string jsonToPut;
+        private bool isStreamWaiting;
+        private StreamObject streamObjectBuffer;
 
         protected IDisposable Subscription;
 
@@ -51,7 +54,16 @@ namespace RestfulFirebase.Database.Streaming
 
         public bool InvokeStream(StreamObject streamObject)
         {
-            var hasChanges = OnStream?.Invoke(streamObject) ?? false;
+            streamObjectBuffer = streamObject;
+            // FIX LATER
+            //if (IsWritting && HasPendingWrite) return false;
+            //{
+            //    if (isStreamWaiting) return false;
+            //    isStreamWaiting = true;
+            //    while (IsWritting && HasPendingWrite) { }
+            //    isStreamWaiting = false;
+            //}
+            var hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
             HasFirstStream = true;
             return hasChanges;
         }

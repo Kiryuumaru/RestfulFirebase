@@ -23,12 +23,6 @@ namespace RestTest
     {
         #region Properties
 
-        private DateTime SSS
-        {
-            get => GetPersistableProperty<DateTime>("ss");
-            set => SetPersistableProperty(value, "ss");
-        }
-
         public bool IsOk
         {
             get => GetPersistableProperty<bool>("isOk");
@@ -97,22 +91,16 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestObservableObject();
-            //TestPropertyPut();
+            TestPropertyPut();
             //TestPropertySub();
-            TestObjectPut();
+            //TestObjectPut();
             //TestObjectSub();
-            //TestPropertyGroupPut();
-            //TestPropertyGroupSub();
-            //TestObjectGroupPut();
-            //TestObjectGroupSub();
             //ExperimentList();
-
-
         }
 
         public static void TestPropertyPut()
         {
-            var props = new FirebaseObject<string>("test");
+            var props = new FirebaseProperty<string>("test");
             props.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
@@ -128,13 +116,13 @@ namespace RestTest
 
         public static void TestPropertySub()
         {
-            var sub = userNode.Child("testing").Child("mock").SubAsRealtime<FirebaseObject<string>>("test");
-            var props = sub.Model;
+            var props = new FirebaseProperty<string>("test");
             props.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
-            sub.Start();
+            props.Value = "numba11";
+            userNode.Child("testing").Child("mock").SubAsRealtime(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -149,6 +137,10 @@ namespace RestTest
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
             };
+            obj.IsOk = true;
+            obj.Premium = TimeSpan.FromSeconds(60);
+            obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+            obj.Test = "testuuuuu";
             userNode.Child("testing").PutAsRealtime(obj).Start();
             while (true)
             {
@@ -159,103 +151,22 @@ namespace RestTest
 
         public static void TestObjectSub()
         {
-            var sub = userNode.Child("testing").SubAsRealtime<TestStorable>("mock");
-            var obj = sub.Model;
+            var obj = new TestStorable("mock");
             obj.PropertyChanged += (s, e) =>
             {
                 Console.WriteLine("Prop: " + e.PropertyName);
             };
-            sub.Start();
+            //obj.IsOk = true;
+            //obj.Premium = TimeSpan.FromSeconds(60);
+            //obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+            //obj.Test = "testuuuuu";
+            userNode.Child("testing").SubAsRealtime(obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
                 obj.Test = string.IsNullOrEmpty(line) ? null : line;
             }
         }
-
-        //public static void TestPropertyGroupPut()
-        //{
-        //    var props = FirebasePropertyGroup.CreateFromKey("mock");
-        //    props.CollectionChanged += (s, e) =>
-        //    {
-        //        Console.WriteLine("Count: " + props.Count);
-        //    };
-        //    userNode.Child("testing").AsRealtimePropertyGroup(props).Start();
-        //    while (true)
-        //    {
-        //        string line = Console.ReadLine();
-        //        var prop = FirebaseProperty.CreateFromKey<string>(RestfulFirebase.Common.Helpers.GenerateSafeUID());
-        //        prop.Value = line;
-        //        prop.PropertyChanged += (s, e) =>
-        //        {
-        //            Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
-        //        };
-        //        props.Add(prop);
-        //    }
-        //}
-
-        //public static void TestPropertyGroupSub()
-        //{
-        //    var props = userNode.Child("testing").AsRealtimePropertyGroup("mock");
-        //    props.Model.CollectionChanged += (s, e) =>
-        //    {
-        //        Console.WriteLine("Count: " + props.Model.Count);
-        //    };
-        //    props.Start();
-        //    while (true)
-        //    {
-        //        string line = Console.ReadLine();
-        //        var prop = FirebaseProperty.CreateFromKey<string>(RestfulFirebase.Common.Helpers.GenerateSafeUID());
-        //        prop.Value = line;
-        //        prop.PropertyChanged += (s, e) =>
-        //        {
-        //            Console.WriteLine("Prop: " + e.PropertyName + " Data: " + prop.Blob);
-        //        };
-        //        props.Model.Add(prop);
-        //    }
-        //}
-
-        //public static void TestObjectGroupPut()
-        //{
-        //    var objs = FirebaseObjectGroup.CreateFromKey("testing");
-        //    objs.CollectionChanged += (s, e) =>
-        //    {
-        //        Console.WriteLine("Count: " + objs.Count);
-        //    };
-        //    userNode.AsRealtimeObjectGroup(objs).Start();
-        //    while (true)
-        //    {
-        //        string line = Console.ReadLine();
-        //        var obj = TestStorable.Create();
-        //        obj.Test = line;
-        //        obj.PropertyChanged += (s, e) =>
-        //        {
-        //            Console.WriteLine("Prop: " + e.PropertyName);
-        //        };
-        //        objs.Add(obj);
-        //    }
-        //}
-
-        //public static void TestObjectGroupSub()
-        //{
-        //    var objs = userNode.AsRealtimeObjectGroup("testing");
-        //    objs.Model.CollectionChanged += (s, e) =>
-        //    {
-        //        Console.WriteLine("Count: " + objs.Model.Count);
-        //    };
-        //    objs.Start();
-        //    while (true)
-        //    {
-        //        string line = Console.ReadLine();
-        //        var obj = TestStorable.Create();
-        //        obj.Test = line;
-        //        obj.PropertyChanged += (s, e) =>
-        //        {
-        //            Console.WriteLine("Prop: " + e.PropertyName);
-        //        };
-        //        objs.Model.Add(obj);
-        //    }
-        //}
 
         public class Pager : FirebaseObject
         {

@@ -157,9 +157,8 @@ namespace RestfulFirebase.Database.Query
             return new RealtimeWire<T>(App, model, this, true);
         }
 
-        public RealtimeWire<T> SubAsRealtime<T>(string key) where T : IRealtimeModel
+        public RealtimeWire<T> SubAsRealtime<T>(T model) where T : IRealtimeModel
         {
-            T model = (T)Activator.CreateInstance(typeof(T), key);
             return new RealtimeWire<T>(App, model, this, false);
         }
 

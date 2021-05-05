@@ -100,7 +100,11 @@ namespace RestfulFirebase.Database.Models
                         offline.Changes = null;
                         break;
                     case SyncTag:
-                        if (offline.Changes == null)
+                        if (!Wire.HasFirstStream && Wire.InvokeSetFirst)
+                        {
+                            return false;
+                        }
+                        else if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
                             else offline.Sync = blob;
@@ -227,9 +231,6 @@ namespace RestfulFirebase.Database.Models
             };
             wire.OnStream += streamObject =>
             {
-                //Console.WriteLine("put");
-                //if (Wire.IsWritting && Wire.HasPendingWrite) return false;
-                //Console.WriteLine("done");
                 bool hasChanges = false;
                 try
                 {
@@ -261,15 +262,15 @@ namespace RestfulFirebase.Database.Models
             return SetBlob(null);
         }
 
-        public FirebaseObject<T> ParseModel<T>()
+        public FirebaseProperty<T> ParseModel<T>()
         {
-            return new FirebaseObject<T>(this);
+            return new FirebaseProperty<T>(this);
         }
 
         #endregion
     }
 
-    public class FirebaseObject<T> : FirebaseProperty
+    public class FirebaseProperty<T> : FirebaseProperty
     {
         #region Properties
 
@@ -283,13 +284,13 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializers
 
-        public FirebaseObject(IAttributed attributed)
+        public FirebaseProperty(IAttributed attributed)
             : base(attributed)
         {
 
         }
 
-        public FirebaseObject(string key)
+        public FirebaseProperty(string key)
             : base(key)
         {
 

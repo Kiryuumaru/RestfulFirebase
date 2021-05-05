@@ -118,7 +118,7 @@ namespace RestfulFirebase.Database.Models
                         else if(streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[0];
 
-                        var hasSubChanges = ReplaceProperties(new (string, StreamData)[0],
+                        var hasSubChanges = ReplaceProperties(props,
                             args =>
                             {
                                 var subStreamObject = new StreamObject(args.value, args.property.Key);
@@ -169,17 +169,23 @@ namespace RestfulFirebase.Database.Models
 
                         if (Wire != null)
                         {
-                            ((FirebaseProperty)propHolder.Property).MakeRealtime(Wire.Child(propHolder.Key, false));
-                            ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
+                            var subWire = Wire.Child(propHolder.Key, false);
+                            ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
+                            subWire.InvokeStart();
                         }
 
+                        setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value));
+
                         PropertyHolders.Add(propHolder);
+
                         hasSubChanges = true;
                     }
-
-                    if (setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value)))
+                    else
                     {
-                        hasSubChanges = true;
+                        if (setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value)))
+                        {
+                            hasSubChanges = true;
+                        }
                     }
 
                     if (hasSubChanges)
