@@ -62,18 +62,12 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual SmallDateTime CurrentDateTimeFactory()
-        {
-            return SmallDateTime.UtcNow;
-        }
-
         public override bool SetBlob(string blob, string tag = null)
         {
             if (Wire != null)
             {
                 void put(string data)
                 {
-                    //Wire.Put("\"" + data + "\"", error =>
                     Wire.Put(JsonConvert.SerializeObject(data), error =>
                     {
                         if (Wire == null) return;
@@ -106,11 +100,15 @@ namespace RestfulFirebase.Database.Models
                         offline.Changes = null;
                         break;
                     case SyncTag:
-                        if (Wire.IsWritting && Wire.HasPendingWrite) return false;
                         if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
                             else offline.Sync = blob;
+                        }
+                        else if (offline.Changes.Blob == blob)
+                        {
+                            offline.Sync = blob;
+                            offline.Changes = null;
                         }
                         else
                         {
@@ -229,6 +227,9 @@ namespace RestfulFirebase.Database.Models
             };
             wire.OnStream += streamObject =>
             {
+                //Console.WriteLine("put");
+                //if (Wire.IsWritting && Wire.HasPendingWrite) return false;
+                //Console.WriteLine("done");
                 bool hasChanges = false;
                 try
                 {
@@ -255,9 +256,9 @@ namespace RestfulFirebase.Database.Models
             };
         }
 
-        public void Delete()
+        public bool Delete()
         {
-            SetBlob(null);
+            return SetBlob(null);
         }
 
         public FirebaseObject<T> ParseModel<T>()

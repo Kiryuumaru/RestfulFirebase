@@ -12,4 +12,24 @@ namespace RestfulFirebase.Database.Streaming
 
         }
     }
+
+    public class SingleStreamData : StreamData
+    {
+        public string Data { get; }
+
+        internal SingleStreamData(string data)
+        {
+            Data = data;
+        }
+    }
+
+    public class MultiStreamData : StreamData
+    {
+        public Dictionary<string, StreamData> Data { get; }
+
+        internal MultiStreamData(Dictionary<string, StreamData> data)
+        {
+            Data = data;
+        }
+    }
 }

@@ -47,14 +47,7 @@ namespace RestfulFirebase.Database.Models
 
         protected FirebaseProperty PropertyFactory(string key)
         {
-            var newObj = new FirebaseProperty(key);
-            if (Wire != null)
-            {
-                var subWire = Wire.Child(newObj.Key);
-                newObj.MakeRealtime(subWire);
-                subWire.InvokeStart();
-            }
-            return newObj;
+            return new FirebaseProperty(key);
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -64,7 +57,7 @@ namespace RestfulFirebase.Database.Models
                 Wire = wire;
                 foreach (var prop in this)
                 {
-                    var subWire = Wire.Child(prop.Key);
+                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
                     prop.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -107,7 +100,10 @@ namespace RestfulFirebase.Database.Models
                                     if (prop == null)
                                     {
                                         prop = PropertyFactory(data.Key);
+
+                                        prop.MakeRealtime(Wire.Child(prop.Key, false));
                                         prop.Wire.InvokeStart();
+
                                         Add(prop);
                                         hasChanges = true;
                                     }
@@ -127,7 +123,7 @@ namespace RestfulFirebase.Database.Models
                         }
                         else if (streamObject.Object is null)
                         {
-                            Delete();
+                            if (!Wire.InvokeSetFirst && !Wire.HasFirstStream) Delete();
                         }
                     }
                     else if (streamObject.Path.Length == 2)
@@ -143,7 +139,10 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     if (single == null) return false;
                                     prop = PropertyFactory(key);
+
+                                    prop.MakeRealtime(Wire.Child(prop.Key, false));
                                     prop.Wire.InvokeStart();
+
                                     Add(prop);
                                     hasChanges = true;
                                 }
@@ -167,10 +166,7 @@ namespace RestfulFirebase.Database.Models
                             if (prop == null) return false;
                             else
                             {
-                                if (prop.Wire.InvokeStream(new StreamObject(null, key)))
-                                {
-                                    hasChanges = true;
-                                }
+                                if (prop.Delete()) hasChanges = true;
                             }
                         }
                     }
@@ -183,13 +179,15 @@ namespace RestfulFirebase.Database.Models
             };
         }
 
-        public void Delete()
+        public bool Delete()
         {
+            var hasChanges = false;
             foreach (var prop in new List<FirebaseProperty>(this))
             {
-                prop.Delete();
+                if (prop.Delete()) hasChanges = true;
                 Remove(prop);
             }
+            return hasChanges;
         }
 
 

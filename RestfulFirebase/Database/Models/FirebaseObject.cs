@@ -49,12 +49,6 @@ namespace RestfulFirebase.Database.Models
         protected override PropertyHolder PropertyFactory(string key, string group, string propertyName)
         {
             var newObj = new FirebaseProperty(key);
-            if (Wire != null)
-            {
-                var subWire = Wire.Child(newObj.Key);
-                newObj.MakeRealtime(subWire);
-                subWire.InvokeStart();
-            }
             return new PropertyHolder()
             {
                 Property = newObj,
@@ -95,7 +89,7 @@ namespace RestfulFirebase.Database.Models
                 Wire = wire;
                 foreach (var prop in GetRawPersistableProperties())
                 {
-                    var subWire = Wire.Child(prop.Key);
+                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
                     prop.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -118,98 +112,35 @@ namespace RestfulFirebase.Database.Models
                     else if (streamObject.Path[0] != Key) throw new Exception("StreamEvent Key mismatch");
                     else if (streamObject.Path.Length == 1)
                     {
-                        if (streamObject.Object is MultiStreamData multi)
-                        {
-                            foreach (var propHolder in new List<PropertyHolder>(PropertyHolders.Where(i => !multi.Data.Any(j => j.Key == i.Key))))
+                        var props = new (string, StreamData)[0];
+
+                        if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
+                        else if(streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        else if (streamObject.Object is null) props = new (string, StreamData)[0];
+
+                        var hasSubChanges = ReplaceProperties(new (string, StreamData)[0],
+                            args =>
                             {
-                                if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(new SingleStreamData(null), propHolder.Key)))
-                                {
-                                    OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
-                                    hasChanges = true;
-                                }
-                            }
-                            foreach (var data in multi.Data)
-                            {
-                                try
-                                {
-                                    bool hasSubChanges = false;
-
-                                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(data.Key));
-
-                                    if (propHolder == null)
-                                    {
-                                        propHolder = PropertyFactory(data.Key, null, null);
-                                        ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
-                                        PropertyHolders.Add(propHolder);
-                                        hasSubChanges = true;
-                                    }
-                                    else
-                                    {
-                                        if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(data.Value, data.Key)))
-                                        {
-                                            hasSubChanges = true;
-                                        }
-                                    }
-
-                                    if (hasSubChanges)
-                                    {
-                                        OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
-                                        hasChanges = true;
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    OnError(ex);
-                                }
-                            }
-                        }
-                        else if (streamObject.Object is null)
-                        {
-                            Delete();
-                        }
+                                var subStreamObject = new StreamObject(args.value, args.property.Key);
+                                return args.property.Wire.InvokeStream(subStreamObject);
+                            });
+                        if (hasSubChanges) hasChanges = true;
                     }
                     else if (streamObject.Path.Length == 2)
                     {
-                        var key = streamObject.Path[1];
-                        if (streamObject.Object is SingleStreamData single)
-                        {
-                            try
+                        var props = new (string, StreamData)[0];
+
+                        if (streamObject.Object is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
+                        else if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
+
+                        var hasSubChanges = UpdateProperties(props,
+                            args =>
                             {
-                                bool hasSubChanges = false;
-
-                                var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
-
-                                if (propHolder == null)
-                                {
-                                    if (single == null) return false;
-                                    propHolder = PropertyFactory(key, null, null);
-                                    ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
-                                    PropertyHolders.Add(propHolder);
-                                    hasSubChanges = true;
-                                }
-                                else
-                                {
-                                    if (((FirebaseProperty)propHolder.Property).Wire.InvokeStream(new StreamObject(single, key)))
-                                    {
-                                        hasSubChanges = true;
-                                    }
-                                }
-
-                                if (hasSubChanges)
-                                {
-                                    OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
-                                    hasChanges = true;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                OnError(ex);
-                            }
-                        }
-                        else if (streamObject.Object is null)
-                        {
-                            DeleteProperty(key);
-                        }
+                                var subStreamObject = new StreamObject(args.value, args.property.Key);
+                                return args.property.Wire.InvokeStream(subStreamObject);
+                            });
+                        if (hasSubChanges) hasChanges = true;
                     }
                 }
                 catch (Exception ex)
@@ -220,12 +151,80 @@ namespace RestfulFirebase.Database.Models
             };
         }
 
-        public void Delete()
+        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(FirebaseProperty property, T value), bool> setter)
         {
+            bool hasChanges = false;
+
+            foreach (var prop in properties)
+            {
+                try
+                {
+                    bool hasSubChanges = false;
+
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(prop.key));
+
+                    if (propHolder == null)
+                    {
+                        propHolder = PropertyFactory(prop.key, null, null);
+
+                        if (Wire != null)
+                        {
+                            ((FirebaseProperty)propHolder.Property).MakeRealtime(Wire.Child(propHolder.Key, false));
+                            ((FirebaseProperty)propHolder.Property).Wire.InvokeStart();
+                        }
+
+                        PropertyHolders.Add(propHolder);
+                        hasSubChanges = true;
+                    }
+
+                    if (setter.Invoke(((FirebaseProperty)propHolder.Property, prop.value)))
+                    {
+                        hasSubChanges = true;
+                    }
+
+                    if (hasSubChanges)
+                    {
+                        OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                        hasChanges = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                }
+            }
+
+            return hasChanges;
+        }
+
+        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(FirebaseProperty property, T value), bool> setter)
+        {
+            bool hasChanges = false;
+
+            var excluded = new List<PropertyHolder>(PropertyHolders.Where(i => !properties.Any(j => j.key == i.Key)));
+
+            foreach (var propHolder in excluded)
+            {
+                if (setter.Invoke(((FirebaseProperty)propHolder.Property, default)))
+                {
+                    OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                    hasChanges = true;
+                }
+            }
+
+            if (UpdateProperties(properties, setter)) hasChanges = true;
+
+            return hasChanges;
+        }
+
+        public bool Delete()
+        {
+            var hasChanges = false;
             foreach (var propHolder in PropertyHolders)
             {
-                DeleteProperty(propHolder.Key);
+                if (DeleteProperty(propHolder.Key)) hasChanges = true;
             }
+            return hasChanges;
         }
 
         public T ParseModel<T>()

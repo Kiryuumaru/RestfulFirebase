@@ -56,9 +56,9 @@ namespace RestfulFirebase.Database.Streaming
             return hasChanges;
         }
 
-        public RealtimeWire Child(string key)
+        public RealtimeWire Child(string key, bool invokeSetFirst)
         {
-            return new RealtimeWire(App, key, Query, InvokeSetFirst);
+            return new RealtimeWire(App, key, Query, invokeSetFirst);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)

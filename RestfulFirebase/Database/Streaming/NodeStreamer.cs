@@ -192,23 +192,27 @@ namespace RestfulFirebase.Database.Streaming
 
         private StreamData Convert(JToken token)
         {
-            if (token is JArray array)
+            if (token.Type == JTokenType.Property)
             {
-                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(array.ToString());
+                throw new Exception("Invalid Json");
+            }
+            else if (token.Type == JTokenType.Object)
+            {
+                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
                 var subDatas = new Dictionary<string, StreamData>();
-                foreach (KeyValuePair<string, object> entry in datas)
+                foreach (var entry in datas)
                 {
                     subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
                 }
-                return new MultiStreamData(
-                    token.Type == JTokenType.Null ?
-                    null : subDatas);
+                return new MultiStreamData(subDatas);
             }
-            else if (token is JObject obj)
+            else if (token.Type != JTokenType.Null)
             {
-                return new SingleStreamData(
-                    obj.Type == JTokenType.Null ?
-                    null : JsonConvert.DeserializeObject<object>(obj.ToString()).ToString());
+                return new SingleStreamData(((JValue)token).Value?.ToString());
+            }
+            else if (token.Type == JTokenType.Null)
+            {
+                return null;
             }
             else
             {

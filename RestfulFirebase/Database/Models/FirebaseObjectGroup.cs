@@ -45,7 +45,7 @@ namespace RestfulFirebase.Database.Models
             throw new NotImplementedException();
         }
 
-        public void Delete()
+        public bool Delete()
         {
             throw new NotImplementedException();
         }

@@ -97,9 +97,9 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestObservableObject();
-            TestPropertyPut();
+            //TestPropertyPut();
             //TestPropertySub();
-            //TestObjectPut();
+            TestObjectPut();
             //TestObjectSub();
             //TestPropertyGroupPut();
             //TestPropertyGroupSub();

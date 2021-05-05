@@ -215,12 +215,13 @@ namespace RestfulFirebase.Common.Observables
             return propHolder.Property.GetValue<T>();
         }
 
-        protected virtual void DeleteProperty(string key)
+        protected virtual bool DeleteProperty(string key)
         {
             var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
-            if (propHolder == null) return;
+            if (propHolder == null) return false;
             bool hasChanges = propHolder.Property.SetBlob(null);
             if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+            return hasChanges;
         }
 
         protected IEnumerable<ObservableProperty> GetRawProperties(string group = null)
@@ -237,6 +238,13 @@ namespace RestfulFirebase.Common.Observables
             string key,
             string group,
             string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+
+
+        public virtual void OnChanged(string key)
+        {
+            var propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+            if (propHolder != null) OnChanged(key, propHolder.Group, propHolder.PropertyName);
+        }
 
         public virtual void OnError(Exception exception, bool defaultIgnoreAndContinue = true)
         {

@@ -12,6 +12,6 @@ namespace RestfulFirebase.Database.Models
     {
         string Key { get; }
         void MakeRealtime(RealtimeWire wire);
-        void Delete();
+        bool Delete();
     }
 }
