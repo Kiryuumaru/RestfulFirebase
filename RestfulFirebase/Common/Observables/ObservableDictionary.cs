@@ -6,6 +6,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Observables
 {
@@ -149,23 +150,24 @@ namespace RestfulFirebase.Common.Observables
         {
             var collectionHandler = CollectionChangedHandler;
             var propertyHandler = PropertyChangedHandler;
-            void invoke()
-            {
-                if (collectionHandler != null)
-                {
-                    collectionHandler(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-                }
-                if (propertyHandler != null)
-                {
-                    propertyHandler(this, new PropertyChangedEventArgs("Count"));
-                    propertyHandler(this, new PropertyChangedEventArgs("Keys"));
-                    propertyHandler(this, new PropertyChangedEventArgs("Values"));
-                }
-            }
             if (collectionHandler != null || propertyHandler != null)
             {
-                invoke();
-                //Context.Post(s => invoke(), null);
+                Context.Post(s =>
+                {
+                    lock (this)
+                    {
+                        if (collectionHandler != null)
+                        {
+                            collectionHandler(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+                        }
+                        if (propertyHandler != null)
+                        {
+                            propertyHandler(this, new PropertyChangedEventArgs("Count"));
+                            propertyHandler(this, new PropertyChangedEventArgs("Keys"));
+                            propertyHandler(this, new PropertyChangedEventArgs("Values"));
+                        }
+                    }
+                }, null);
             }
         }
 

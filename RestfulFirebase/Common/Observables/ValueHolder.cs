@@ -69,7 +69,7 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                return SetBlob(Serializer.GetSerializer<T>().Serialize(value), tag);
+                return SetBlob(Serializer.Serialize(value), tag);
             }
         }
 
@@ -77,7 +77,7 @@ namespace RestfulFirebase.Common.Observables
         {
             lock (this)
             {
-                return Serializer.GetSerializer<T>().Deserialize(GetBlob(default, tag), defaultValue);
+                return Serializer.Deserialize(GetBlob(default, tag), defaultValue);
             }
         }
 

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Observables
 {
@@ -92,14 +93,15 @@ namespace RestfulFirebase.Common.Observables
         public virtual void OnChanged(string propertyName = "")
         {
             var propertyHandler = PropertyChangedHandler;
-            void invoke()
-            {
-                propertyHandler(this, new PropertyChangedEventArgs(propertyName));
-            }
             if (propertyHandler != null)
             {
-                invoke();
-                //Context.Post(s => invoke(), null);
+                Context.Post(s =>
+                {
+                    lock (this)
+                    {
+                        propertyHandler(this, new PropertyChangedEventArgs(propertyName));
+                    }
+                }, null);
             }
         }
 

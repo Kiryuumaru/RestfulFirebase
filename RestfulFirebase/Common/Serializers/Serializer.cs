@@ -167,7 +167,7 @@ namespace RestfulFirebase.Common.Serializers
             return GetSerializer<T>().Deserialize(data, defaultValue);
         }
 
-        public static void RegisterSerializer(Serializer serializer)
+        public static void Register(Serializer serializer)
         {
             if (serializers.Any(i => i.Type == serializer.Type)) throw new Exception("Serializer already registered");
             serializers.RemoveAll(i => i.Type == serializer.Type);
@@ -197,6 +197,7 @@ namespace RestfulFirebase.Common.Serializers
 
         public string SerializeEnumerable(IEnumerable<T> values)
         {
+            if (values == null) return null;
             var count = values.Count();
             var encodedValues = new string[count];
             for (int i = 0; i < count; i++)

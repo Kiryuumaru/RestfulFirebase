@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Observables
 {
@@ -255,15 +256,13 @@ namespace RestfulFirebase.Common.Observables
             var propertyHandler = PropertyChangedHandler;
             if (propertyHandler != null)
             {
-                void invoke()
+                Context.Post(s =>
                 {
-                    propertyHandler(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
-                }
-                if (propertyHandler != null)
-                {
-                    invoke();
-                    //Context.Post(s => invoke(), null);
-                }
+                    lock (this)
+                    {
+                        propertyHandler(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+                    }
+                }, null);
             }
         }
 
