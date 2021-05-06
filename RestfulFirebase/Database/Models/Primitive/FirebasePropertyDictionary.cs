@@ -59,15 +59,13 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             wire.OnStart += delegate
             {
-                Wire = wire;
+                if (!wire.InvokeSetFirst) Clear();
 
-                if (!Wire.InvokeSetFirst) Clear();
-
-                var path = Wire.Query.GetAbsolutePath();
+                var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Helpers.SeparateUrl(path);
 
-                var subDatas = Wire.App.Database.OfflineDatabase.GetSubDatas(path);
+                var subDatas = wire.App.Database.OfflineDatabase.GetSubDatas(path);
 
                 foreach (var subData in subDatas)
                 {
@@ -77,22 +75,17 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (prop == null)
                     {
-                        if (Wire.InvokeSetFirst)
-                        {
-                            subData.Delete();
-                        }
-                        else
-                        {
-                            prop = PropertyFactory();
-                            prop.SetBlob(subData.Blob);
-                            Add(key, prop);
-                        }
+                        prop = PropertyFactory();
+                        prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        Add(key, prop);
                     }
                 }
 
+                Wire = wire;
+
                 foreach (var prop in this)
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst, Wire.IgnoreFirstStream);
+                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
                     prop.Value.MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -163,10 +156,14 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (prop == null)
                     {
-                        if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
-                        {
-                            prop = PropertyFactory();
+                        prop = PropertyFactory();
 
+                        if (EqualityComparer<T>.Default.Equals(data.value, default(T)))
+                        {
+                            setter.Invoke((data.key, prop, default));
+                        }
+                        else
+                        {
                             if (Wire != null)
                             {
                                 var subWire = Wire.Child(data.key, false);
@@ -183,17 +180,18 @@ namespace RestfulFirebase.Database.Models.Primitive
                     }
                     else
                     {
-                        if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
+                        if (EqualityComparer<T>.Default.Equals(data.value, default(T)))
+                        {
+                            setter.Invoke((data.key, prop, default));
+                            Remove(data.key);
+                            hasChanges = true;
+                        }
+                        else
                         {
                             if (setter.Invoke((data.key, prop, data.value)))
                             {
                                 hasChanges = true;
                             }
-                        }
-                        else
-                        {
-                            Remove(data.key);
-                            hasChanges = true;
                         }
                     }
                 }

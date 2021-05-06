@@ -76,20 +76,18 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
         {
-            return GetRawProperties(nameof(FirebaseObject));
+            return GetRawProperties(nameof(FirebaseObject)).Where(i => i.Property is ObservableSerializableProperty);
         }
 
         public void MakeRealtime(RealtimeWire wire)
         {
             wire.OnStart += delegate
             {
-                Wire = wire;
-
-                var path = Wire.Query.GetAbsolutePath();
+                var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Helpers.SeparateUrl(path);
 
-                var subDatas = Wire.App.Database.OfflineDatabase.GetSubDatas(path);
+                var subDatas = wire.App.Database.OfflineDatabase.GetSubDatas(path);
 
                 foreach (var subData in subDatas)
                 {
@@ -99,22 +97,17 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        if (Wire.InvokeSetFirst)
-                        {
-                            subData.Delete();
-                        }
-                        else
-                        {
-                            propHolder = PropertyFactory(key, null, null, true);
-                            ((FirebaseProperty)propHolder.Property).SetBlob(subData.Blob);
-                            PropertyHolders.Add(propHolder);
-                        }
+                        propHolder = PropertyFactory(key, null, null, true);
+                        ((FirebaseProperty)propHolder.Property).SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        PropertyHolders.Add(propHolder);
                     }
                 }
 
+                Wire = wire;
+
                 foreach (var prop in GetRawPersistableProperties())
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst, Wire.IgnoreFirstStream);
+                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
                     ((FirebaseProperty)prop.Property).MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }

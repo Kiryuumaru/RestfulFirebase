@@ -24,7 +24,6 @@ namespace RestfulFirebase.Database.Streaming
         public string Key { get; }
         public FirebaseQuery Query { get; }
         public bool InvokeSetFirst { get; private set; }
-        public bool IgnoreFirstStream { get; private set; }
         public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
         public bool HasPendingWrite { get; private set; }
@@ -37,13 +36,12 @@ namespace RestfulFirebase.Database.Streaming
 
         #region Initializers
 
-        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, bool invokeSetFirst, bool ignoreFirstStream = false)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, bool invokeSetFirst)
         {
             App = app;
             Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
             InvokeSetFirst = invokeSetFirst;
-            IgnoreFirstStream = ignoreFirstStream;
         }
 
         #endregion
@@ -57,26 +55,23 @@ namespace RestfulFirebase.Database.Streaming
         public bool InvokeStream(StreamObject streamObject)
         {
             var hasChanges = false;
-            if (HasFirstStream || !IgnoreFirstStream)
-            {
-                streamObjectBuffer = streamObject;
-                // FIX LATER
-                //if (IsWritting && HasPendingWrite) return false;
-                //{
-                //    if (isStreamWaiting) return false;
-                //    isStreamWaiting = true;
-                //    while (IsWritting && HasPendingWrite) { }
-                //    isStreamWaiting = false;
-                //}
-                hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
-            }
+            streamObjectBuffer = streamObject;
+            // FIX LATER
+            //if (IsWritting && HasPendingWrite) return false;
+            //{
+            //    if (isStreamWaiting) return false;
+            //    isStreamWaiting = true;
+            //    while (IsWritting && HasPendingWrite) { }
+            //    isStreamWaiting = false;
+            //}
+            hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
             if (!HasFirstStream) HasFirstStream = true;
             return hasChanges;
         }
 
-        public RealtimeWire Child(string key, bool invokeSetFirst, bool ignoreFirstStream = false)
+        public RealtimeWire Child(string key, bool invokeSetFirst)
         {
-            return new RealtimeWire(App, key, Query, invokeSetFirst, ignoreFirstStream);
+            return new RealtimeWire(App, key, Query, invokeSetFirst);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
@@ -126,8 +121,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(RestfulFirebaseApp app, string key, T model, FirebaseQuery parent, bool invokeSetFirst, bool ignoreFirstStream = false)
-            : base (app, key, parent, invokeSetFirst, ignoreFirstStream)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, T model, FirebaseQuery parent, bool invokeSetFirst)
+            : base (app, key, parent, invokeSetFirst)
         {
             Model = model;
         }

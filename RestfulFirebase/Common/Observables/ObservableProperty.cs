@@ -35,12 +35,6 @@ namespace RestfulFirebase.Common.Observables
             set => Holder.SetAttribute(value);
         }
 
-        protected List<PropertyHolder> PropertyHolders
-        {
-            get => Holder.GetAttribute<List<PropertyHolder>>(new List<PropertyHolder>());
-            set => Holder.SetAttribute(value);
-        }
-
         public event PropertyChangedEventHandler PropertyChanged
         {
             add

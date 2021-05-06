@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Database\Models\Primitive\FirebasePropertyDictionary.cs~RF10d2e464.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />
   </ItemGroup>
 

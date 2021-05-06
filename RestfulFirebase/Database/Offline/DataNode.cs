@@ -16,37 +16,22 @@ namespace RestfulFirebase.Database.Offline
 
         public string Key => Helpers.SeparateUrl(Path).Last();
 
-        public bool Exist => Get(OfflineDatabase.ShortPath, Path) != null;
+        public bool Exist => Short != null;
 
         public bool HasBlobChanges { get; private set; }
 
         public string Short
         {
-            get
-            {
-                var shortPath = Get(OfflineDatabase.ShortPath, Path);
-                if (shortPath == null)
-                {
-                    shortPath = GetUniqueShort();
-                    App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabase.ShortPath, Path), shortPath);
-                    App.LocalDatabase.Set(Helpers.CombineUrl(OfflineDatabase.LongPath, shortPath), Path);
-                }
-                return shortPath;
-            }
+            get => Get(OfflineDatabase.ShortPath, Path);
             protected set => Set(value, OfflineDatabase.ShortPath, Path);
-        }
-
-        public string Long
-        {
-            get => Get(OfflineDatabase.LongPath, Short);
-            protected set => Set(value, OfflineDatabase.LongPath, Short);
         }
 
         public string Sync
         {
-            get => Get(OfflineDatabase.SyncBlobPath, Short);
+            get => Exist ? Get(OfflineDatabase.SyncBlobPath, Short) : null;
             set
             {
+                if (Short == null) Short = GetUniqueShort();
                 var oldBlob = Blob;
                 Set(value, OfflineDatabase.SyncBlobPath, Short);
                 if (oldBlob != Blob) HasBlobChanges = true;
@@ -55,9 +40,10 @@ namespace RestfulFirebase.Database.Offline
 
         public DataChanges Changes
         {
-            get => DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short));
+            get => Exist ? DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short)) : null;
             set
             {
+                if (Short == null) Short = GetUniqueShort();
                 var oldBlob = Blob;
                 Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
                 if (oldBlob != Blob) HasBlobChanges = true;
@@ -72,37 +58,6 @@ namespace RestfulFirebase.Database.Offline
                 var sync = Sync;
                 var changes = Changes;
                 return changes == null ? sync : changes.Blob;
-            }
-        }
-
-        public SyncStrategy SyncStrategy
-        {
-            get
-            {
-                switch (Get(OfflineDatabase.SyncStratPath, Short))
-                {
-                    case "1":
-                        return SyncStrategy.Active;
-                    case "2":
-                        return SyncStrategy.Passive;
-                    default:
-                        return SyncStrategy.None;
-                }
-            }
-            set
-            {
-                switch (value)
-                {
-                    case SyncStrategy.Active:
-                        Set("1", OfflineDatabase.SyncStratPath, Short);
-                        break;
-                    case SyncStrategy.Passive:
-                        Set("2", OfflineDatabase.SyncStratPath, Short);
-                        break;
-                    default:
-                        Set("0", OfflineDatabase.SyncStratPath, Short);
-                        break;
-                }
             }
         }
 
@@ -124,8 +79,9 @@ namespace RestfulFirebase.Database.Offline
             while (uid == null)
             {
                 uid = Helpers.GenerateUID(5, Helpers.Base64Charset);
-                var path = Get(OfflineDatabase.LongPath, uid);
-                if (path != null) uid = null;
+                var sync = Get(OfflineDatabase.SyncBlobPath, uid);
+                var changes = Get(OfflineDatabase.ChangesPath, uid);
+                if (sync != null || changes != null) uid = null;
             }
             return uid;
         }
@@ -149,10 +105,8 @@ namespace RestfulFirebase.Database.Offline
             var shortPath = Short;
             var oldBlob = Blob;
             Set(null, OfflineDatabase.ShortPath, Path);
-            Set(null, OfflineDatabase.LongPath, shortPath);
             Set(null, OfflineDatabase.SyncBlobPath, shortPath);
             Set(null, OfflineDatabase.ChangesPath, shortPath);
-            Set(null, OfflineDatabase.SyncStratPath, shortPath);
             if (oldBlob != Blob) HasBlobChanges = true;
             return true;
         }

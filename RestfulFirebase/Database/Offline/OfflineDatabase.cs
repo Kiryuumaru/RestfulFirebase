@@ -13,10 +13,8 @@ namespace RestfulFirebase.Database.Offline
 
         internal const string Root = "offdb";
         internal static readonly string ShortPath = Helpers.CombineUrl(Root, "short");
-        internal static readonly string LongPath = Helpers.CombineUrl(Root, "long");
         internal static readonly string SyncBlobPath = Helpers.CombineUrl(Root, "blob");
         internal static readonly string ChangesPath = Helpers.CombineUrl(Root, "changes");
-        internal static readonly string SyncStratPath = Helpers.CombineUrl(Root, "strat");
 
         public RestfulFirebaseApp App { get; }
 
