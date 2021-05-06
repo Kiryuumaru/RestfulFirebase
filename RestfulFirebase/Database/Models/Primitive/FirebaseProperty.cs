@@ -93,11 +93,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                         offline.Changes = null;
                         break;
                     case SyncTag:
-                        if (!Wire.HasFirstStream && Wire.IgnoreFirstStream)
-                        {
-                            return false;
-                        }
-                        else if (offline.Changes == null)
+                        if (offline.Changes == null)
                         {
                             if (blob == null) offline.Delete();
                             else offline.Sync = blob;

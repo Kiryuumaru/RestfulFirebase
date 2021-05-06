@@ -56,17 +56,21 @@ namespace RestfulFirebase.Database.Streaming
 
         public bool InvokeStream(StreamObject streamObject)
         {
-            streamObjectBuffer = streamObject;
-            // FIX LATER
-            //if (IsWritting && HasPendingWrite) return false;
-            //{
-            //    if (isStreamWaiting) return false;
-            //    isStreamWaiting = true;
-            //    while (IsWritting && HasPendingWrite) { }
-            //    isStreamWaiting = false;
-            //}
-            var hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
-            HasFirstStream = true;
+            var hasChanges = false;
+            if (HasFirstStream || !IgnoreFirstStream)
+            {
+                streamObjectBuffer = streamObject;
+                // FIX LATER
+                //if (IsWritting && HasPendingWrite) return false;
+                //{
+                //    if (isStreamWaiting) return false;
+                //    isStreamWaiting = true;
+                //    while (IsWritting && HasPendingWrite) { }
+                //    isStreamWaiting = false;
+                //}
+                hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
+            }
+            if (!HasFirstStream) HasFirstStream = true;
             return hasChanges;
         }
 
