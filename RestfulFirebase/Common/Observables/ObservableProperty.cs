@@ -1,6 +1,6 @@
-﻿using RestfulFirebase.Common.Converters;
-using RestfulFirebase.Common.Converters.Additionals;
-using RestfulFirebase.Common.Converters.Primitives;
+﻿using RestfulFirebase.Common.Serializers;
+using RestfulFirebase.Common.Serializers.Additionals;
+using RestfulFirebase.Common.Serializers.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

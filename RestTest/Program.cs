@@ -12,7 +12,7 @@ using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using RestfulFirebase.Common.Converters;
+using RestfulFirebase.Common.Serializers;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Common;
 using System.Threading;
@@ -93,8 +93,8 @@ namespace RestTest
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            TestPropertySub();
-            //TestObjectPut();
+            //TestPropertySub();
+            TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
@@ -140,7 +140,23 @@ namespace RestTest
             var obj = new TestStorable();
             obj.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("Prop: " + e.PropertyName);
+                var write = "Prop: " + e.PropertyName + ": ";
+                switch (e.PropertyName)
+                {
+                    case nameof(TestStorable.IsOk):
+                        write += Serializer.Serialize(obj.IsOk);
+                        break;
+                    case nameof(TestStorable.Premium):
+                        write += Serializer.Serialize(obj.Premium);
+                        break;
+                    case nameof(TestStorable.Premiums):
+                        write += Serializer.Serialize(obj.Premiums);
+                        break;
+                    case nameof(TestStorable.Test):
+                        write += Serializer.Serialize(obj.Test);
+                        break;
+                }
+                Console.WriteLine(write);
             };
             obj.IsOk = true;
             obj.Premium = TimeSpan.FromSeconds(60);
@@ -159,7 +175,23 @@ namespace RestTest
             var obj = new TestStorable();
             obj.PropertyChanged += (s, e) =>
             {
-                Console.WriteLine("Prop: " + e.PropertyName);
+                var write = "Prop: " + e.PropertyName + ": ";
+                switch (e.PropertyName)
+                {
+                    case nameof(TestStorable.IsOk):
+                        write += Serializer.Serialize(obj.IsOk);
+                        break;
+                    case nameof(TestStorable.Premium):
+                        write += Serializer.Serialize(obj.Premium);
+                        break;
+                    case nameof(TestStorable.Premiums):
+                        write += Serializer.Serialize(obj.Premiums);
+                        break;
+                    case nameof(TestStorable.Test):
+                        write += Serializer.Serialize(obj.Test);
+                        break;
+                }
+                Console.WriteLine(write);
             };
             //obj.IsOk = true;
             //obj.Premium = TimeSpan.FromSeconds(60);

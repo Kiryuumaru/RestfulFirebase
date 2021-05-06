@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Converters.Primitives
+namespace RestfulFirebase.Common.Serializers.Primitives
 {
-    public class SByteConverter : DataTypeConverter<sbyte>
+    public class SByteSerializer : Serializer<sbyte>
     {
-        public override string Encode(sbyte value)
+        public override string Serialize(sbyte value)
         {
             return value.ToString();
         }
 
-        public override sbyte Decode(string data, sbyte defaultValue = default)
+        public override sbyte Deserialize(string data, sbyte defaultValue = default)
         {
             if (string.IsNullOrEmpty(data)) return defaultValue;
             if (sbyte.TryParse(data, out sbyte result)) return result;

@@ -1,6 +1,6 @@
-﻿using RestfulFirebase.Common.Converters;
-using RestfulFirebase.Common.Converters.Additionals;
-using RestfulFirebase.Common.Converters.Primitives;
+﻿using RestfulFirebase.Common.Serializers;
+using RestfulFirebase.Common.Serializers.Additionals;
+using RestfulFirebase.Common.Serializers.Primitives;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -84,7 +84,7 @@ namespace RestfulFirebase.Common.Observables
             {
                 lock (this)
                 {
-                    return SetBlob(DataTypeConverter.GetConverter<T>().Encode(value), tag);
+                    return SetBlob(Serializer.GetSerializer<T>().Serialize(value), tag);
                 }
             }
             catch (Exception ex)
@@ -132,7 +132,7 @@ namespace RestfulFirebase.Common.Observables
             {
                 lock (this)
                 {
-                    return DataTypeConverter.GetConverter<T>().Decode(GetBlob(default, tag), defaultValue);
+                    return Serializer.GetSerializer<T>().Deserialize(GetBlob(default, tag), defaultValue);
                 }
             }
             catch (Exception ex)

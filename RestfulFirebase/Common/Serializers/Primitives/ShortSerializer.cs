@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Converters.Primitives
+namespace RestfulFirebase.Common.Serializers.Primitives
 {
-    public class ShortConverter : DataTypeConverter<short>
+    public class ShortSerializer : Serializer<short>
     {
-        public override string Encode(short value)
+        public override string Serialize(short value)
         {
             return value.ToString();
         }
 
-        public override short Decode(string data, short defaultValue = default)
+        public override short Deserialize(string data, short defaultValue = default)
         {
             if (string.IsNullOrEmpty(data)) return defaultValue;
             if (short.TryParse(data, out short result)) return result;

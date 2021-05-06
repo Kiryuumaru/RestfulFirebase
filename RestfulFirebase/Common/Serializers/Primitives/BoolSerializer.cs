@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Converters.Primitives
+namespace RestfulFirebase.Common.Serializers.Primitives
 {
-    public class BoolConverter : DataTypeConverter<bool>
+    public class BoolSerializer : Serializer<bool>
     {
-        public override string Encode(bool value)
+        public override string Serialize(bool value)
         {
             return value ? "1" : "0";
         }
 
-        public override bool Decode(string data, bool defaultValue = default)
+        public override bool Deserialize(string data, bool defaultValue = default)
         {
             if (string.IsNullOrEmpty(data)) return defaultValue;
             return data.Equals("1");

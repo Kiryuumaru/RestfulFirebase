@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Common;
-using RestfulFirebase.Common.Converters;
+using RestfulFirebase.Common.Serializers;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Offline;

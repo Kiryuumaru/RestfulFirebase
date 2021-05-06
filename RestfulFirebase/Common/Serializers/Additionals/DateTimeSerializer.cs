@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Text;
 using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Common.Converters.Additionals
+namespace RestfulFirebase.Common.Serializers.Additionals
 {
-    public class DateTimeConverter : DataTypeConverter<DateTime>
+    public class DateTimeSerializer : Serializer<DateTime>
     {
-        public override string Encode(DateTime value)
+        public override string Serialize(DateTime value)
         {
             return Helpers.EncodeDateTime(value);
         }
 
-        public override DateTime Decode(string data, DateTime defaultValue = default)
+        public override DateTime Deserialize(string data, DateTime defaultValue = default)
         {
             if (string.IsNullOrEmpty(data)) return defaultValue;
             var dateTime = Helpers.DecodeDateTime(data, defaultValue);
