@@ -162,9 +162,9 @@ namespace RestfulFirebase.Common.Serializers
             return GetSerializer<T>().Serialize(value);
         }
 
-        public static T Deserialize<T>(string data)
+        public static T Deserialize<T>(string data, T defaultValue = default)
         {
-            return GetSerializer<T>().Deserialize(data);
+            return GetSerializer<T>().Deserialize(data, defaultValue);
         }
 
         public static void RegisterSerializer(Serializer serializer)
