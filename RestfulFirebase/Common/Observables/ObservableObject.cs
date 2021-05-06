@@ -250,13 +250,15 @@ namespace RestfulFirebase.Common.Observables
             var propertyHandler = PropertyChangedHandler;
             if (propertyHandler != null)
             {
-                Context.Post(s =>
+                void invoke()
                 {
-                    if (propertyHandler != null)
-                    {
-                        propertyHandler(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
-                    }
-                }, null);
+                    propertyHandler(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+                }
+                if (propertyHandler != null)
+                {
+                    invoke();
+                    //Context.Post(s => invoke(), null);
+                }
             }
         }
 
