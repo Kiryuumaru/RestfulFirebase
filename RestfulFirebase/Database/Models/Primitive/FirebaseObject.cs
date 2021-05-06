@@ -40,12 +40,14 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override PropertyHolder PropertyFactory(string key, string group, string propertyName)
+        protected override PropertyHolder PropertyFactory(string key, string group, string propertyName, bool serializable)
         {
-            var newObj = new FirebaseProperty();
+            ObservableProperty prop;
+            if (serializable) prop = new FirebaseProperty();
+            else prop = new ObservableNonSerializableProperty();
             return new PropertyHolder()
             {
-                Property = newObj,
+                Property = prop,
                 Key = key,
                 Group = group,
                 PropertyName = propertyName
@@ -59,7 +61,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             Func<T, T, bool> validateValue = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            base.SetProperty(value, key, nameof(FirebaseObject), propertyName, validateValue, customValueSetter);
+            base.SetProperty(value, key, true, nameof(FirebaseObject), propertyName, validateValue, customValueSetter);
         }
 
         public T GetPersistableProperty<T>(
@@ -68,7 +70,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             [CallerMemberName] string propertyName = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            return base.GetProperty(key, nameof(FirebaseObject), defaultValue, propertyName, customValueSetter);
+            return base.GetProperty(key, true, nameof(FirebaseObject), defaultValue, propertyName, customValueSetter);
         }
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
@@ -156,7 +158,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(data.key, null, null);
+                        propHolder = PropertyFactory(data.key, null, null, true);
 
                         if (Wire != null)
                         {

@@ -118,11 +118,14 @@ namespace RestfulFirebase.Common.Observables
 
         #region Methods
 
-        protected virtual PropertyHolder PropertyFactory(string key, string group, string propertyName)
+        protected virtual PropertyHolder PropertyFactory(string key, string group, string propertyName, bool serializable)
         {
+            ObservableProperty prop;
+            if (serializable) prop = new ObservableSerializableProperty();
+            else  prop = new ObservableNonSerializableProperty();
             return new PropertyHolder()
             {
-                Property = new ObservableProperty(),
+                Property = prop,
                 Key = key,
                 Group = group,
                 PropertyName = propertyName
@@ -132,6 +135,7 @@ namespace RestfulFirebase.Common.Observables
         protected virtual bool SetProperty<T>(
             T value,
             string key,
+            bool serializable = false,
             string group = null,
             [CallerMemberName] string propertyName = null,
             Func<T, T, bool> validateValue = null,
@@ -174,7 +178,7 @@ namespace RestfulFirebase.Common.Observables
                 }
                 else
                 {
-                    propHolder = PropertyFactory(key, group, propertyName);
+                    propHolder = PropertyFactory(key, group, propertyName, serializable);
                     if (customValueSetter == null) propHolder.Property.SetValue(value);
                     else customValueSetter.Invoke((value, propHolder.Property));
                     PropertyHolders.Add(propHolder);
@@ -193,6 +197,7 @@ namespace RestfulFirebase.Common.Observables
 
         protected virtual T GetProperty<T>(
             string key,
+            bool serializable = false,
             string group = null,
             T defaultValue = default,
             [CallerMemberName] string propertyName = null,
@@ -203,7 +208,7 @@ namespace RestfulFirebase.Common.Observables
 
             if (propHolder == null)
             {
-                propHolder = PropertyFactory(key, group, propertyName);
+                propHolder = PropertyFactory(key, group, propertyName, serializable);
                 if (customValueSetter == null) propHolder.Property.SetValue(defaultValue);
                 else customValueSetter.Invoke((defaultValue, propHolder.Property));
                 PropertyHolders.Add(propHolder);
@@ -232,7 +237,7 @@ namespace RestfulFirebase.Common.Observables
         {
             var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
             if (propHolder == null) return false;
-            bool hasChanges = propHolder.Property.SetBlob(null);
+            bool hasChanges = propHolder.Property.SetNull();
             if (hasChanges) OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
             return hasChanges;
         }

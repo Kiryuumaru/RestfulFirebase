@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {
-    public class FirebaseProperty : ObservableProperty, IRealtimeModel
+    public class FirebaseProperty : ObservableSerializableProperty, IRealtimeModel
     {
         #region Properties
 

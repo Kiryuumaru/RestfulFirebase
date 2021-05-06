@@ -11,9 +11,11 @@ using System.Threading;
 
 namespace RestfulFirebase.Common.Observables
 {
-    public class ObservableProperty : ValueHolder, IObservable
+    public abstract class ObservableProperty : IAttributed, IObservable
     {
         #region Properties
+
+        public AttributeHolder Holder { get; } = new AttributeHolder();
 
         private SynchronizationContext Context
         {
@@ -80,15 +82,13 @@ namespace RestfulFirebase.Common.Observables
         #region Initializers
 
         public ObservableProperty(IAttributed attributed)
-            : base (attributed)
         {
-
+            Holder.Inherit(attributed);
         }
 
         public ObservableProperty()
-            : this(null)
         {
-
+            Holder.Inherit(null);
         }
 
         #endregion
@@ -128,68 +128,13 @@ namespace RestfulFirebase.Common.Observables
             }
         }
 
-        public override bool SetBlob(string blob, string tag = null)
-        {
-            if (base.SetBlob(blob, tag))
-            {
-                OnChanged(nameof(Blob));
-                return true;
-            }
-            return false;
-        }
+        public abstract bool SetValue<T>(T value, string tag = null);
 
-        public override string GetBlob(string defaultValue = null, string tag = null)
-        {
-            return base.GetBlob(defaultValue, tag);
-        }
+        public abstract bool SetNull(string tag = null);
 
-        public override bool SetValue<T>(T value, string tag = null)
-        {
-            try
-            {
-                return base.SetValue(value, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return false;
-        }
+        public abstract bool IsNull(string tag = null);
 
-        public override T GetValue<T>(T defaultValue = default, string tag = null)
-        {
-            try
-            {
-                return base.GetValue(defaultValue, tag);
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            return defaultValue;
-        }
-
-        #endregion
-    }
-
-    public class ObservableObject<T> : ObservableProperty
-    {
-        #region Properties
-
-        public T Value
-        {
-            get => GetValue<T>();
-            set => SetValue(Value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public ObservableObject() : base()
-        {
-
-        }
+        public abstract T GetValue<T>(T defaultValue = default, string tag = null);
 
         #endregion
     }
