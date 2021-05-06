@@ -24,6 +24,7 @@ namespace RestfulFirebase.Database.Streaming
         public string Key { get; }
         public FirebaseQuery Query { get; }
         public bool InvokeSetFirst { get; private set; }
+        public bool IgnoreFirstStream { get; private set; }
         public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
         public bool HasPendingWrite { get; private set; }
@@ -36,12 +37,13 @@ namespace RestfulFirebase.Database.Streaming
 
         #region Initializers
 
-        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, bool invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, FirebaseQuery parent, bool invokeSetFirst, bool ignoreFirstStream = false)
         {
             App = app;
             Key = key;
             Query = new ChildQuery(parent.App, parent, () => key);
             InvokeSetFirst = invokeSetFirst;
+            IgnoreFirstStream = ignoreFirstStream;
         }
 
         #endregion
@@ -68,9 +70,9 @@ namespace RestfulFirebase.Database.Streaming
             return hasChanges;
         }
 
-        public RealtimeWire Child(string key, bool invokeSetFirst)
+        public RealtimeWire Child(string key, bool invokeSetFirst, bool ignoreFirstStream = false)
         {
-            return new RealtimeWire(App, key, Query, invokeSetFirst);
+            return new RealtimeWire(App, key, Query, invokeSetFirst, ignoreFirstStream);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
@@ -120,8 +122,8 @@ namespace RestfulFirebase.Database.Streaming
     {
         public T Model { get; private set; }
 
-        internal RealtimeWire(RestfulFirebaseApp app, string key, T model, FirebaseQuery parent, bool invokeSetFirst)
-            : base (app, key, parent, invokeSetFirst)
+        internal RealtimeWire(RestfulFirebaseApp app, string key, T model, FirebaseQuery parent, bool invokeSetFirst, bool ignoreFirstStream = false)
+            : base (app, key, parent, invokeSetFirst, ignoreFirstStream)
         {
             Model = model;
         }

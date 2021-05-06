@@ -83,7 +83,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                 Wire = wire;
                 foreach (var prop in GetRawPersistableProperties())
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
+                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst, Wire.IgnoreFirstStream);
                     ((FirebaseProperty)prop.Property).MakeRealtime(subWire);
                     subWire.InvokeStart();
                 }
@@ -108,7 +108,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                         var props = new (string, StreamData)[0];
 
                         if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
-                        else if(streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[0];
 
                         var hasSubChanges = ReplaceProperties(props,
@@ -123,8 +122,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
-                        else if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
                         var hasSubChanges = UpdateProperties(props,

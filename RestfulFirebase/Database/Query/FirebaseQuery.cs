@@ -154,12 +154,12 @@ namespace RestfulFirebase.Database.Query
 
         public RealtimeWire<T> PutAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, key, model, this, true);
+            return new RealtimeWire<T>(App, key, model, this, true, true);
         }
 
         public RealtimeWire<T> SubAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, key, model, this, false);
+            return new RealtimeWire<T>(App, key, model, this, false, false);
         }
 
         public async Task<string> BuildUrlAsync(CancellationToken? token = null)

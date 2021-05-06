@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace RestfulFirebase.Common.Observables
 {
@@ -26,6 +27,12 @@ namespace RestfulFirebase.Common.Observables
         #region Properties
 
         public AttributeHolder Holder { get; } = new AttributeHolder();
+
+        private SynchronizationContext Context
+        {
+            get => Holder.GetAttribute<SynchronizationContext>(AsyncOperationManager.SynchronizationContext);
+            set => Holder.SetAttribute(value);
+        }
 
         private PropertyChangedEventHandler PropertyChangedHandler
         {
@@ -238,7 +245,20 @@ namespace RestfulFirebase.Common.Observables
         public virtual void OnChanged(
             string key,
             string group,
-            string propertyName) => PropertyChangedHandler?.Invoke(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+            string propertyName)
+        {
+            var propertyHandler = PropertyChangedHandler;
+            if (propertyHandler != null)
+            {
+                Context.Post(s =>
+                {
+                    if (propertyHandler != null)
+                    {
+                        propertyHandler(this, new ObservableObjectChangesEventArgs(key, group, propertyName));
+                    }
+                }, null);
+            }
+        }
 
 
         public virtual void OnChanged(string key)

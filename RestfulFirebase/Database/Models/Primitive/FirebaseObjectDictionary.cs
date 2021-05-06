@@ -8,7 +8,7 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {
-    public class FirebasePropertyDictionary : ObservableDictionary<string, FirebaseProperty>, IRealtimeModel
+    public class FirebaseObjectDictionary : ObservableDictionary<string, FirebaseObject>, IRealtimeModel
     {
         #region Properties
 
@@ -22,13 +22,13 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Initializers
 
-        public FirebasePropertyDictionary(IAttributed attributed)
+        public FirebaseObjectDictionary(IAttributed attributed)
             : base(attributed)
         {
 
         }
 
-        public FirebasePropertyDictionary()
+        public FirebaseObjectDictionary()
             : base(null)
         {
 
@@ -38,7 +38,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override (string key, FirebaseProperty value) ValueFactory(string key, FirebaseProperty value)
+        protected override (string key, FirebaseObject value) ValueFactory(string key, FirebaseObject value)
         {
             if (Wire != null && value.Wire == null)
             {
@@ -49,9 +49,9 @@ namespace RestfulFirebase.Database.Models.Primitive
             return (key, value);
         }
 
-        protected FirebaseProperty PropertyFactory()
+        protected FirebaseObject ObjectFactory()
         {
-            return new FirebaseProperty();
+            return new FirebaseObject();
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -88,11 +88,11 @@ namespace RestfulFirebase.Database.Models.Primitive
                         if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
                         else if (streamObject.Object is null) props = new (string, StreamData)[0];
 
-                        var hasSubChanges = ReplaceProperties(props,
+                        var hasSubChanges = ReplaceObjects(props,
                             args =>
                             {
                                 var subStreamObject = new StreamObject(args.value, args.key);
-                                return args.property.Wire.InvokeStream(subStreamObject);
+                                return args.obj.Wire.InvokeStream(subStreamObject);
                             });
                         if (hasSubChanges) hasChanges = true;
                     }
@@ -100,10 +100,25 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        if (streamObject.Object is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
-                        var hasSubChanges = UpdateProperties(props,
+                        var hasSubChanges = UpdateObjects(props,
+                            args =>
+                            {
+                                var subStreamObject = new StreamObject(args.value, args.key);
+                                return args.obj.Wire.InvokeStream(subStreamObject);
+                            });
+                        if (hasSubChanges) hasChanges = true;
+                    }
+                    else if (streamObject.Path.Length == 3)
+                    {
+                        var props = new (string, StreamData)[0];
+
+                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[2], single) };
+                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[2], null) };
+
+                        var hasSubChanges = UpdateProperties(streamObject.Path[1], props,
                             args =>
                             {
                                 var subStreamObject = new StreamObject(args.value, args.key);
@@ -120,32 +135,62 @@ namespace RestfulFirebase.Database.Models.Primitive
             };
         }
 
-        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        public bool UpdateProperties<T>(string key, IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
         {
             bool hasChanges = false;
 
-            foreach (var data in properties)
+            if (!TryGetValue(key, out FirebaseObject obj))
+            {
+                obj = ValueFactory(key, new FirebaseObject()).value;
+                Add(key, obj);
+            }
+
+            obj.UpdateProperties(properties, setter);
+
+            return hasChanges;
+        }
+
+        public bool ReplaceProperties<T>(string key, IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        {
+            bool hasChanges = false;
+
+            if (!TryGetValue(key, out FirebaseObject obj))
+            {
+                obj = ValueFactory(key, new FirebaseObject()).value;
+                Add(key, obj);
+            }
+
+            obj.ReplaceProperties(properties, setter);
+
+            return hasChanges;
+        }
+
+        public bool UpdateObjects<T>(IEnumerable<(string key, T value)> objs, Func<(string key, FirebaseObject obj, T value), bool> setter)
+        {
+            bool hasChanges = false;
+
+            foreach (var data in objs)
             {
                 try
                 {
-                    TryGetValue(data.key, out FirebaseProperty prop);
+                    TryGetValue(data.key, out FirebaseObject obj);
 
-                    if (prop == null)
+                    if (obj == null)
                     {
                         if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
                         {
-                            prop = PropertyFactory();
+                            obj = ObjectFactory();
 
                             if (Wire != null)
                             {
                                 var subWire = Wire.Child(data.key, false);
-                                prop.MakeRealtime(subWire);
+                                obj.MakeRealtime(subWire);
                                 subWire.InvokeStart();
                             }
 
-                            setter.Invoke((data.key, prop, data.value));
+                            setter.Invoke((data.key, obj, data.value));
 
-                            Add(data.key, prop);
+                            Add(data.key, obj);
 
                             hasChanges = true;
                         }
@@ -154,7 +199,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         if (!EqualityComparer<T>.Default.Equals(data.value, default(T)))
                         {
-                            if (setter.Invoke((data.key, prop, data.value)))
+                            if (setter.Invoke((data.key, obj, data.value)))
                             {
                                 hasChanges = true;
                             }
@@ -175,11 +220,11 @@ namespace RestfulFirebase.Database.Models.Primitive
             return hasChanges;
         }
 
-        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        public bool ReplaceObjects<T>(IEnumerable<(string key, T value)> objs, Func<(string key, FirebaseObject obj, T value), bool> setter)
         {
             bool hasChanges = false;
 
-            var excluded = new List<KeyValuePair<string, FirebaseProperty>>(this.Where(i => !properties.Any(j => j.key == i.Key)));
+            var excluded = new List<KeyValuePair<string, FirebaseObject>>(this.Where(i => !objs.Any(j => j.key == i.Key)));
 
             foreach (var prop in excluded)
             {
@@ -190,7 +235,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                 }
             }
 
-            if (UpdateProperties(properties, setter)) hasChanges = true;
+            if (UpdateObjects(objs, setter)) hasChanges = true;
 
             return hasChanges;
         }
@@ -198,7 +243,7 @@ namespace RestfulFirebase.Database.Models.Primitive
         public bool Delete()
         {
             var hasChanges = false;
-            foreach (var prop in new Dictionary<string, FirebaseProperty>(this))
+            foreach (var prop in new Dictionary<string, FirebaseObject>(this))
             {
                 prop.Value.Delete();
                 Remove(prop.Key);
