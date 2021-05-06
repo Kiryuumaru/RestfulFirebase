@@ -77,6 +77,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         prop = PropertyFactory();
                         prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        prop.MakeRealtime(wire.Child(key, true));
                         Add(key, prop);
                     }
                 }
@@ -85,9 +86,16 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 foreach (var prop in this)
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
-                    prop.Value.MakeRealtime(subWire);
-                    subWire.InvokeStart();
+                    if (prop.Value.Wire == null)
+                    {
+                        var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
+                        prop.Value.MakeRealtime(subWire);
+                        subWire.InvokeStart();
+                    }
+                    else
+                    {
+                        prop.Value.Wire.InvokeStart();
+                    }
                 }
             };
             wire.OnStop += delegate

@@ -74,6 +74,16 @@ namespace RestfulFirebase.Database.Streaming
             return new RealtimeWire(App, key, Query, invokeSetFirst);
         }
 
+        public DataNode GetData()
+        {
+            return App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+        }
+
+        public IEnumerable<DataNode> GetSubData()
+        {
+            return App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+        }
+
         public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
         {
             jsonToPut = json;
@@ -86,6 +96,10 @@ namespace RestfulFirebase.Database.Streaming
                 await Query.Put(() => jsonToPut, null, err =>
                 {
                     if (err.Exception.TaskCancelled)
+                    {
+                        err.Retry = true;
+                    }
+                    else if (err.Exception.InnerException is OfflineModeException)
                     {
                         err.Retry = true;
                     }

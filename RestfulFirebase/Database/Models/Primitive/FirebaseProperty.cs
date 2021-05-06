@@ -78,15 +78,24 @@ namespace RestfulFirebase.Database.Models.Primitive
                 switch (tag)
                 {
                     case InitTag:
-                        if (offline.Sync == null)
+                        if (Wire.InvokeSetFirst)
                         {
-                            put(blob);
-                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
+                            if (offline.Sync == null)
+                            {
+                                put(blob);
+                                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
+                            }
+                            else if (offline.Changes == null || offline.Blob != blob)
+                            {
+                                put(blob);
+                                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
+                            }
                         }
-                        else if (offline.Changes == null || offline.Blob != blob)
+                        else
                         {
-                            put(blob);
-                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
+                            var hasChanges = blob != offline.Changes?.Blob;
+                            if (hasChanges) OnChanged(nameof(Blob));
+                            return hasChanges;
                         }
                         return false;
                     case RevertTag:
@@ -212,7 +221,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 Wire = wire;
-                if (Wire.InvokeSetFirst) SetBlob(BlobHolder, InitTag);
+                SetBlob(BlobHolder, InitTag);
             };
             wire.OnStop += delegate
             {

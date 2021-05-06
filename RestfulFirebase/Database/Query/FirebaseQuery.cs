@@ -57,6 +57,17 @@ namespace RestfulFirebase.Database.Query
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
 
+            if (App.Config.OfflineMode)
+            {
+                var offlineEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException("Action interrupted", string.Empty, responseData, statusCode, new OfflineModeException()));
+                onException?.Invoke(offlineEx);
+                if (offlineEx.Retry)
+                {
+                    await Task.Delay(2000);
+                    await Put(jsonData, token, onException);
+                }
+            }
+
             try
             {
                 url = await BuildUrlAsync(token).ConfigureAwait(false);

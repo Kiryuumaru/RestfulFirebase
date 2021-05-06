@@ -93,11 +93,11 @@ namespace RestTest
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            //TestPropertySub();
+            TestPropertySub();
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
-            TestPropertyDictionarySub();
+            //TestPropertyDictionarySub();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
