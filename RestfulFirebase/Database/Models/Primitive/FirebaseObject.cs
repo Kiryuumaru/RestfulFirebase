@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Common.Models;
+﻿using RestfulFirebase.Common;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -83,6 +84,34 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 Wire = wire;
+
+                var path = Wire.Query.GetAbsolutePath();
+                path = path.Last() == '/' ? path : path + "/";
+                var separatedPath = Helpers.SeparateUrl(path);
+
+                var subDatas = Wire.App.Database.OfflineDatabase.GetSubDatas(path);
+
+                foreach (var subData in subDatas)
+                {
+                    var separatedSubPath = Helpers.SeparateUrl(subData.Path);
+                    var key = separatedSubPath[separatedPath.Length];
+                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+
+                    if (propHolder == null)
+                    {
+                        if (Wire.InvokeSetFirst)
+                        {
+                            subData.Delete();
+                        }
+                        else
+                        {
+                            propHolder = PropertyFactory(key, null, null, true);
+                            ((FirebaseProperty)propHolder.Property).SetBlob(subData.Blob);
+                            PropertyHolders.Add(propHolder);
+                        }
+                    }
+                }
+
                 foreach (var prop in GetRawPersistableProperties())
                 {
                     var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst, Wire.IgnoreFirstStream);

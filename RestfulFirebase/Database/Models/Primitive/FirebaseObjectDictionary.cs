@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Common.Observables;
+﻿using RestfulFirebase.Common;
+using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Streaming;
 using System;
@@ -59,6 +60,29 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 Wire = wire;
+
+                if (!Wire.InvokeSetFirst) Clear();
+
+                var path = Wire.Query.GetAbsolutePath();
+                path = path.Last() == '/' ? path : path + "/";
+                var separatedPath = Helpers.SeparateUrl(path);
+
+                var subDatas = Wire.App.Database.OfflineDatabase.GetSubDatas(path);
+
+                foreach (var subData in subDatas)
+                {
+                    var separatedSubPath = Helpers.SeparateUrl(subData.Path);
+                    var key = separatedSubPath[separatedPath.Length];
+                    TryGetValue(key, out FirebaseObject obj);
+
+                    if (obj == null)
+                    {
+                        obj = ObjectFactory();
+                        if (Wire.InvokeSetFirst) obj.Delete();
+                        else Add(key, obj);
+                    }
+                }
+
                 foreach (var prop in this)
                 {
                     var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst, Wire.IgnoreFirstStream);

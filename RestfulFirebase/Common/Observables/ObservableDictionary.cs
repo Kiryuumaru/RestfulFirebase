@@ -111,6 +111,16 @@ namespace RestfulFirebase.Common.Observables
             get => Dictionary.Values;
         }
 
+        public int Count
+        {
+            get => ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Count;
+        }
+
+        public bool IsReadOnly
+        {
+            get => ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).IsReadOnly;
+        }
+
         public TValue this[TKey key]
         {
             get => Dictionary[key];
@@ -213,9 +223,24 @@ namespace RestfulFirebase.Common.Observables
             TryAddWithNotification(key, value);
         }
 
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            TryAddWithNotification(item);
+        }
+
         public bool ContainsKey(TKey key)
         {
             return Dictionary.ContainsKey(key);
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Contains(item);
+        }
+
+        public bool TryGetValue(TKey key, out TValue value)
+        {
+            return Dictionary.TryGetValue(key, out value);
         }
 
         public bool Remove(TKey key)
@@ -224,46 +249,21 @@ namespace RestfulFirebase.Common.Observables
             return TryRemoveWithNotification(key, out temp);
         }
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            return Dictionary.TryGetValue(key, out value);
+            TValue temp;
+            return TryRemoveWithNotification(item.Key, out temp);
         }
 
-        void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> item)
-        {
-            TryAddWithNotification(item);
-        }
-
-        void ICollection<KeyValuePair<TKey, TValue>>.Clear()
+        public void Clear()
         {
             ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Clear();
             NotifyObserversOfChange();
         }
 
-        bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> item)
-        {
-            return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Contains(item);
-        }
-
-        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
             ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).CopyTo(array, arrayIndex);
-        }
-
-        int ICollection<KeyValuePair<TKey, TValue>>.Count
-        {
-            get { return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).Count; }
-        }
-
-        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
-        {
-            get { return ((ICollection<KeyValuePair<TKey, TValue>>)Dictionary).IsReadOnly; }
-        }
-
-        bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> item)
-        {
-            TValue temp;
-            return TryRemoveWithNotification(item.Key, out temp);
         }
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()

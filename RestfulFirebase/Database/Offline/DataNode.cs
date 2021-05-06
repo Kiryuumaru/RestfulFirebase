@@ -20,16 +20,6 @@ namespace RestfulFirebase.Database.Offline
 
         public bool HasBlobChanges { get; private set; }
 
-        public DataNode Parent
-        {
-            get
-            {
-                var separated = Helpers.SeparateUrl(Path);
-                var parentPath = Helpers.CombineUrl(separated.Take(separated.Length - 1).ToArray());
-                return new DataNode(App, parentPath);
-            }
-        }
-
         public string Short
         {
             get

@@ -33,17 +33,13 @@ namespace RestTest
             Task.Run(delegate
             {
                 var dbCopy = new Dictionary<string, string>();
-                lock (db)
-                {
-                    dbCopy = new Dictionary<string, string>(db);
-                }
+                dbCopy = new Dictionary<string, string>(db);
                 lock (this)
                 {
                     try
                     {
                         string contentCopy = Helpers.BlobConvert(dbCopy);
                         File.WriteAllText(filePath, contentCopy);
-                        Thread.Sleep(500);
                     }
                     catch { }
                 }
@@ -75,20 +71,14 @@ namespace RestTest
 
         public void Set(string key, string value)
         {
-            lock (db)
-            {
-                if (db.ContainsKey(key)) db[key] = value;
-                else db.Add(key, value);
-            }
+            if (db.ContainsKey(key)) db[key] = value;
+            else db.Add(key, value);
             Save();
         }
 
         public void Delete(string key)
         {
-            lock (db)
-            {
-                db.Remove(key);
-            }
+            db.Remove(key);
             Save();
         }
     }
