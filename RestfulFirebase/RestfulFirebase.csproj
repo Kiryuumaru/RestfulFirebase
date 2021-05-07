@@ -3,6 +3,15 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Company>Kiryuumaru</Company>
+    <Authors>Kiryuumaru</Authors>
+    <Description>Firebase REST API wired with MVVM observables</Description>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <Copyright>Kiryuumaru</Copyright>
+    <PackageProjectUrl>https://github.com/Kiryuumaru/RestfulFirebase</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
+    <PackageTags>Firebase, REST, Firebase REST API</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
