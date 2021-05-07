@@ -94,12 +94,12 @@ namespace RestTest
             //TestObservableObject();
             //TestPropertyPut();
             //TestPropertySub();
-            TestObjectPut();
+            //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
             //TestObjectDictionaryPut();
-            //TestObjectDictionarySub();
+            TestObjectDictionarySub();
             //ExperimentList();
         }
 
@@ -248,6 +248,66 @@ namespace RestTest
                 var prop = new FirebaseProperty();
                 prop.SetValue(line);
                 dict.Add(Helpers.GenerateSafeUID(), prop);
+            }
+        }
+
+        public static void TestObjectDictionaryPut()
+        {
+            var dict = new FirebaseObjectDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            var obj1 = new TestStorable();
+            dict.Add("aaa", obj1);
+            var obj2 = new TestStorable();
+            obj2.IsOk = true;
+            obj2.Premium = TimeSpan.FromSeconds(60);
+            obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+            obj2.Test = "testuuuuu";
+            dict.Add("bbb", obj2);
+            var obj3 = new TestStorable();
+            obj2.IsOk = false;
+            obj2.Premium = TimeSpan.FromSeconds(3600);
+            obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(7200) };
+            obj2.Test = "CLynt";
+            dict.Add("ccc", obj3);
+            userNode.Child("testing").PutAsRealtime("mock", dict).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
+            }
+        }
+
+        public static void TestObjectDictionarySub()
+        {
+            var dict = new FirebaseObjectDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            //var obj1 = new TestStorable();
+            //dict.Add("aaa", obj1);
+            //var obj2 = new TestStorable();
+            //obj2.IsOk = true;
+            //obj2.Premium = TimeSpan.FromSeconds(60);
+            //obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+            //obj2.Test = "testuuuuu";
+            //dict.Add("bbb", obj2);
+            //var obj3 = new TestStorable();
+            //obj2.IsOk = false;
+            //obj2.Premium = TimeSpan.FromSeconds(3600);
+            //obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(7200) };
+            //obj2.Test = "CLynt";
+            //dict.Add("ccc", obj3);
+            userNode.Child("testing").SubAsRealtime("mock", dict).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
             }
         }
 

@@ -75,20 +75,27 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (obj == null)
                     {
-                        // Probs
                         obj = ObjectFactory();
-                        if (wire.InvokeSetFirst) obj.Delete();
+                        var subWire = wire.Child(key, true);
+                        obj.MakeRealtime(subWire);
                         Add(key, obj);
                     }
                 }
 
                 Wire = wire;
 
-                foreach (var prop in this)
+                foreach (var obj in this)
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
-                    prop.Value.MakeRealtime(subWire);
-                    subWire.InvokeStart();
+                    if (obj.Value.Wire == null)
+                    {
+                        var subWire = Wire.Child(obj.Key, Wire.InvokeSetFirst);
+                        obj.Value.MakeRealtime(subWire);
+                        subWire.InvokeStart();
+                    }
+                    else
+                    {
+                        obj.Value.Wire.InvokeStart();
+                    }
                 }
             };
             wire.OnStop += delegate

@@ -76,7 +76,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
         {
-            return GetRawProperties(nameof(FirebaseObject)).Where(i => i.Property is ObservableSerializableProperty);
+            return GetRawProperties(nameof(FirebaseObject)).Where(i => i.Property is FirebaseProperty);
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -97,19 +97,28 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(key, null, null, true);
+                        propHolder = PropertyFactory(key, nameof(FirebaseObject), null, true);
                         ((FirebaseProperty)propHolder.Property).SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        ((FirebaseProperty)propHolder.Property).MakeRealtime(wire.Child(key, true));
                         PropertyHolders.Add(propHolder);
                     }
                 }
 
                 Wire = wire;
 
-                foreach (var prop in GetRawPersistableProperties())
+                foreach (var propHolder in GetRawPersistableProperties())
                 {
-                    var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
-                    ((FirebaseProperty)prop.Property).MakeRealtime(subWire);
-                    subWire.InvokeStart();
+                    var prop = (FirebaseProperty)propHolder.Property;
+                    if (prop.Wire == null)
+                    {
+                        var subWire = Wire.Child(propHolder.Key, Wire.InvokeSetFirst);
+                        prop.MakeRealtime(subWire);
+                        subWire.InvokeStart();
+                    }
+                    else
+                    {
+                        prop.Wire.InvokeStart();
+                    }
                 }
             };
             wire.OnStop += delegate
