@@ -43,7 +43,7 @@ namespace RestfulFirebase.Database.Query
 
         public RestfulFirebaseApp App { get; }
 
-        public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onException = null)
+        public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             if (token == null)
             {
@@ -60,7 +60,7 @@ namespace RestfulFirebase.Database.Query
 
             if (App.Config.OfflineMode)
             {
-                var offlineEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException("Action interrupted", string.Empty, responseData, statusCode, new OfflineModeException()));
+                var offlineEx = new RetryExceptionEventArgs(new OfflineModeException());
                 onException?.Invoke(offlineEx);
                 if (offlineEx.Retry)
                 {
@@ -75,7 +75,7 @@ namespace RestfulFirebase.Database.Query
             }
             catch (FirebaseDatabaseException ex)
             {
-                var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
+                var retryEx = new RetryExceptionEventArgs(ex);
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
@@ -86,7 +86,7 @@ namespace RestfulFirebase.Database.Query
             }
             catch (Exception ex)
             {
-                var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex));
+                var retryEx = new RetryExceptionEventArgs(ex);
                 onException?.Invoke(retryEx);
                 if (retryEx.Retry)
                 {
@@ -110,7 +110,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (FirebaseDatabaseException ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
+                    var retryEx = new RetryExceptionEventArgs(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
@@ -120,7 +120,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (Exception ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException(url, string.Empty, responseData, statusCode, ex));
+                    var retryEx = new RetryExceptionEventArgs(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
@@ -138,7 +138,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (FirebaseDatabaseException ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(ex);
+                    var retryEx = new RetryExceptionEventArgs(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
@@ -148,7 +148,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (Exception ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs<FirebaseDatabaseException>(new FirebaseDatabaseException(url, string.Empty, responseData, statusCode, ex));
+                    var retryEx = new RetryExceptionEventArgs(ex);
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
@@ -159,7 +159,7 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onException = null)
+        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             await Put(() => jsonData, token, onException);
         }
@@ -263,6 +263,14 @@ namespace RestfulFirebase.Database.Query
             {
                 url = await BuildUrlAsync(token).ConfigureAwait(false);
             }
+            catch (TaskCanceledException ex)
+            {
+                throw ex;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
                 throw new FirebaseDatabaseException("Couldn't build the url", requestData, responseData, statusCode, ex);
@@ -284,8 +292,17 @@ namespace RestfulFirebase.Database.Query
 
                 return responseData;
             }
+            catch (TaskCanceledException ex)
+            {
+                throw ex;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
+                Type s = ex.GetType();
                 throw new FirebaseDatabaseException(url, requestData, responseData, statusCode, ex);
             }
         }

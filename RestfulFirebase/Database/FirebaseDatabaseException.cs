@@ -14,8 +14,6 @@ namespace RestfulFirebase.Database
 
         public HttpStatusCode StatusCode { get; }
 
-        public bool TaskCancelled { get; }
-
         public FirebaseDatabaseException(string requestUrl, string requestData, string responseData, HttpStatusCode statusCode)
             : base(GenerateExceptionMessage(requestUrl, requestData, responseData))
         {
@@ -32,10 +30,6 @@ namespace RestfulFirebase.Database
             RequestData = requestData;
             ResponseData = responseData;
             StatusCode = statusCode;
-            if (innerException is TaskCanceledException)
-            {
-                TaskCancelled = true;
-            }
         }
 
         private static string GenerateExceptionMessage(string requestUrl, string requestData, string responseData)

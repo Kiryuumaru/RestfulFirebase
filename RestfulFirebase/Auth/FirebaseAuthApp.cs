@@ -55,7 +55,7 @@ namespace RestfulFirebase.Auth
             RetainPropertiesLocally();
         }
 
-        public async Task<CallResult<FirebaseAuthException>> CreateUserWithEmailAndPasswordAsync(string email, string password, string displayName = "", bool sendVerificationEmail = false)
+        public async Task<CallResult> CreateUserWithEmailAndPasswordAsync(string email, string password, string displayName = "", bool sendVerificationEmail = false)
         {
             try
             {
@@ -83,15 +83,15 @@ namespace RestfulFirebase.Auth
                     await SendEmailVerificationAsync().ConfigureAwait(false);
                 }
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch(FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInWithCustomTokenAsync(string customToken)
+        public async Task<CallResult> SignInWithCustomTokenAsync(string customToken)
         {
             try
             {
@@ -103,15 +103,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInWithOAuthAsync(FirebaseAuthType authType, string oauthAccessToken)
+        public async Task<CallResult> SignInWithOAuthAsync(FirebaseAuthType authType, string oauthAccessToken)
         {
             try
             {
@@ -124,15 +124,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInWithOAuthTwitterTokenAsync(string oauthAccessToken, string oauthTokenSecret)
+        public async Task<CallResult> SignInWithOAuthTwitterTokenAsync(string oauthAccessToken, string oauthTokenSecret)
         {
             try
             {
@@ -145,15 +145,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInWithGoogleIdTokenAsync(string idToken)
+        public async Task<CallResult> SignInWithGoogleIdTokenAsync(string idToken)
         {
             try
             {
@@ -166,15 +166,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInWithEmailAndPasswordAsync(string email, string password, string tenantId = null)
+        public async Task<CallResult> SignInWithEmailAndPasswordAsync(string email, string password, string tenantId = null)
         {
             try
             {
@@ -193,15 +193,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SignInAnonymouslyAsync()
+        public async Task<CallResult> SignInAnonymouslyAsync()
         {
             try
             {
@@ -213,15 +213,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> ChangeUserPassword(string password)
+        public async Task<CallResult> ChangeUserPassword(string password)
         {
             try
             {
@@ -233,15 +233,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SendPasswordResetEmailAsync(string email)
+        public async Task<CallResult> SendPasswordResetEmailAsync(string email)
         {
             try
             {
@@ -258,21 +258,25 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
                 }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     AuthErrorReason errorReason = GetFailureReason(responseData);
                     throw new FirebaseAuthException(GoogleGetConfirmationCodeUrl, content, responseData, ex, errorReason);
                 }
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> DeleteUserAsync()
+        public async Task<CallResult> DeleteUserAsync()
         {
             try
             {
@@ -291,21 +295,25 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
                 }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     AuthErrorReason errorReason = GetFailureReason(responseData);
                     throw new FirebaseAuthException(GoogleDeleteUserUrl, content, responseData, ex, errorReason);
                 }
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> SendEmailVerificationAsync()
+        public async Task<CallResult> SendEmailVerificationAsync()
         {
             try
             {
@@ -320,15 +328,19 @@ namespace RestfulFirebase.Auth
 
                 response.EnsureSuccessStatusCode();
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                throw ex;
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> LinkAccountsAsync(string email, string password)
+        public async Task<CallResult> LinkAccountsAsync(string email, string password)
         {
             try
             {
@@ -342,15 +354,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> LinkAccountsAsync(FirebaseAuthType authType, string oauthAccessToken)
+        public async Task<CallResult> LinkAccountsAsync(FirebaseAuthType authType, string oauthAccessToken)
         {
             try
             {
@@ -365,15 +377,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> UnlinkAccountsAsync(FirebaseAuthType authType)
+        public async Task<CallResult> UnlinkAccountsAsync(FirebaseAuthType authType)
         {
             try
             {
@@ -397,15 +409,15 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<ProviderQueryResult, FirebaseAuthException>> GetLinkedAccountsAsync()
+        public async Task<CallResult<ProviderQueryResult>> GetLinkedAccountsAsync()
         {
             try
             {
@@ -429,20 +441,24 @@ namespace RestfulFirebase.Auth
                     data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
                     data.Email = User.Email;
                 }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     throw new FirebaseAuthException(GoogleCreateAuthUrl, content, responseData, ex);
                 }
 
-                return CallResult<ProviderQueryResult, FirebaseAuthException>.Success(data);
+                return CallResult.Success<ProviderQueryResult>(data);
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<ProviderQueryResult, FirebaseAuthException>.Error(ex);
+                return CallResult.Error<ProviderQueryResult>(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> RefreshUserDetailsAsync()
+        public async Task<CallResult> RefreshUserDetailsAsync()
         {
             try
             {
@@ -463,21 +479,25 @@ namespace RestfulFirebase.Auth
                     var user = JsonConvert.DeserializeObject<User>(resultJson["users"].First().ToString());
                     User = user;
                 }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     AuthErrorReason errorReason = GetFailureReason(responseData);
                     throw new FirebaseAuthException(GoogleDeleteUserUrl, content, responseData, ex, errorReason);
                 }
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> RefreshAuthAsync()
+        public async Task<CallResult> RefreshAuthAsync()
         {
             try
             {
@@ -509,21 +529,25 @@ namespace RestfulFirebase.Auth
                         CopyPropertiesLocally(auth);
                         OnFirebaseAuthRefreshed(this);
                     }
+                    catch (HttpRequestException ex)
+                    {
+                        throw ex;
+                    }
                     catch (Exception ex)
                     {
                         throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
                     }
                 }
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public async Task<CallResult<string, FirebaseAuthException>> GetFreshTokenAsync()
+        public async Task<CallResult<string>> GetFreshTokenAsync()
         {
             try
             {
@@ -554,21 +578,25 @@ namespace RestfulFirebase.Auth
                         CopyPropertiesLocally(auth);
                         OnFirebaseAuthRefreshed(this);
                     }
+                    catch (HttpRequestException ex)
+                    {
+                        throw ex;
+                    }
                     catch (Exception ex)
                     {
                         throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
                     }
                 }
 
-                return CallResult<string, FirebaseAuthException>.Success(FirebaseToken);
+                return CallResult.Success<string>(FirebaseToken);
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<string, FirebaseAuthException>.Error(ex);
+                return CallResult.Error<string>(ex);
             }
         }
 
-        public async Task<CallResult<FirebaseAuthException>> UpdateProfileAsync(string displayName, string photoUrl)
+        public async Task<CallResult> UpdateProfileAsync(string displayName, string photoUrl)
         {
             try
             {
@@ -599,26 +627,26 @@ namespace RestfulFirebase.Auth
                 var auth = await ExecuteWithPostContentAsync(GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
                 CopyPropertiesLocally(auth);
 
-                return CallResult<FirebaseAuthException>.Success();
+                return CallResult.Success();
             }
             catch (FirebaseAuthException ex)
             {
-                return CallResult<FirebaseAuthException>.Error(ex);
+                return CallResult.Error(ex);
             }
         }
 
-        public Task<CallResult<FirebaseAuthException>> Signout()
+        public Task<CallResult> Signout()
         {
             try
             {
                 if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
                 PurgePropertiesLocally();
 
-                return Task.FromResult(CallResult<FirebaseAuthException>.Success());
+                return Task.FromResult(CallResult.Success());
             }
             catch (FirebaseAuthException ex)
             {
-                return Task.FromResult(CallResult<FirebaseAuthException>.Error(ex));
+                return Task.FromResult(CallResult.Error(ex));
             }
         }
 
@@ -653,8 +681,13 @@ namespace RestfulFirebase.Auth
 
                 return auth;
             }
+            catch (HttpRequestException ex)
+            {
+                throw ex;
+            }
             catch (Exception ex)
             {
+                Type s = ex.GetType();
                 AuthErrorReason errorReason = GetFailureReason(responseData);
                 throw new FirebaseAuthException(googleUrl, postContent, responseData, ex, errorReason);
             }

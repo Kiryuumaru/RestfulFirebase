@@ -65,9 +65,12 @@ namespace RestfulFirebase.Database.Models.Primitive
                     Wire.Put(JsonConvert.SerializeObject(data), error =>
                     {
                         if (Wire == null) return;
-                        if (error.Exception.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        if (error.Exception is FirebaseDatabaseException ex)
                         {
-                            SetBlob(null, RevertTag);
+                            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                            {
+                                SetBlob(null, RevertTag);
+                            }
                         }
                         OnError(error.Exception);
                     });

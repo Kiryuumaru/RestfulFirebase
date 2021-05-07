@@ -7,69 +7,53 @@ namespace RestfulFirebase
     public class CallResult
     {
         public bool IsSuccess { get; protected set; }
+        public Exception Exception { get; protected set; }
 
         public static CallResult Success()
         {
-            return new CallResult()
-            {
-                IsSuccess = true
-            };
+            return new CallResult(true);
+        }
+
+        public static CallResult<TResult> Success<TResult>(TResult result)
+        {
+            return new CallResult<TResult>(result, true);
         }
 
         public static CallResult Error()
         {
-            return new CallResult()
-            {
-                IsSuccess = false
-            };
+            return new CallResult(false);
         }
-    }
 
-    public class CallResult<TException> : CallResult
-        where TException : Exception
-    {
-        public TException Exception { get; protected set; }
-
-        public CallResult(TException exception)
+        public static CallResult Error(Exception exception)
         {
+            return new CallResult(false, exception);
+        }
+
+        public static CallResult<TResult> Error<TResult>(Exception exception)
+        {
+            return new CallResult<TResult>(default, false, exception);
+        }
+
+        public static CallResult<TResult> Error<TResult>(TResult result, Exception exception)
+        {
+            return new CallResult<TResult>(result, false, exception);
+        }
+
+        public CallResult(bool isSuccess, Exception exception = null)
+        {
+            IsSuccess = isSuccess;
             Exception = exception;
-            IsSuccess = Exception == default;
-        }
-
-        public static new CallResult<TException> Success()
-        {
-            return new CallResult<TException>(null);
-        }
-
-        public static CallResult<TException> Error(TException exception)
-        {
-            return new CallResult<TException>(exception);
         }
     }
 
-    public class CallResult<TResult, TException> : CallResult<TException>
-        where TException : Exception
+    public class CallResult<TResult> : CallResult
     {
         public TResult Result { get; protected set; }
 
-        public CallResult(TResult result, TException exception) : base(exception)
+        public CallResult(TResult result, bool isSuccess, Exception exception = null)
+            : base(isSuccess, exception)
         {
             Result = result;
-        }
-
-        public static CallResult<TResult, TException> Success(TResult result)
-        {
-            return new CallResult<TResult, TException>(result, null);
-        }
-
-        public static new CallResult<TResult, TException> Error(TException exception)
-        {
-            return new CallResult<TResult, TException>(default, exception);
-        }
-
-        public static CallResult<TResult, TException> Error(TResult result, TException exception)
-        {
-            return new CallResult<TResult, TException>(result, exception);
         }
     }
 }

@@ -6,8 +6,10 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
@@ -119,7 +121,7 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
         }
 
-        public async void Put(string json, Action<RetryExceptionEventArgs<FirebaseDatabaseException>> onError)
+        public async void Put(string json, Action<RetryExceptionEventArgs> onError)
         {
             InvokeDataChanges();
             ParentWire?.InvokeDataChanges();
@@ -133,19 +135,20 @@ namespace RestfulFirebase.Database.Realtime
                 HasPendingWrite = false;
                 await Query.Put(() => jsonToPut, null, err =>
                 {
-                    if (err.Exception.TaskCancelled)
+                    Type exType = err.Exception.GetType();
+                    if (err.Exception is OfflineModeException)
                     {
                         err.Retry = true;
                     }
-                    //else if (err.Exception.InnerException is OfflineModeException)
-                    //{
-                    //    err.Retry = true;
-                    //}
-                    //else if (err.Exception.InnerException is FirebaseAuthException)
-                    //{
-                    //    err.Retry = true;
-                    //}
-                    else if (err.Exception.StatusCode == System.Net.HttpStatusCode.OK)
+                    else if (err.Exception is TaskCanceledException)
+                    {
+                        err.Retry = true;
+                    }
+                    else if (err.Exception is HttpRequestException)
+                    {
+                        err.Retry = true;
+                    }
+                    else if (err.Exception is FirebaseAuthException)
                     {
                         err.Retry = true;
                     }
