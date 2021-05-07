@@ -48,6 +48,16 @@ namespace RestfulFirebase.Database.Offline
             return datas;
         }
 
+        public IEnumerable<DataNode> GetAllDatas()
+        {
+            var datas = new List<DataNode>();
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(Helpers.CombineUrl(ShortPath)))
+            {
+                datas.Add(new DataNode(App, subPath.Substring(ShortPath.Length)));
+            }
+            return datas;
+        }
+
         public void Flush(string path = null)
         {
             if (string.IsNullOrEmpty(path))

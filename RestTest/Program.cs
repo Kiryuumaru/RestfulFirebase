@@ -97,9 +97,9 @@ namespace RestTest
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
-            //TestPropertyDictionarySub();
+            TestPropertyDictionarySub();
             //TestObjectDictionaryPut();
-            TestObjectDictionarySub();
+            //TestObjectDictionarySub();
             //ExperimentList();
         }
 
@@ -233,7 +233,7 @@ namespace RestTest
             var dict = new FirebasePropertyDictionary();
             dict.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Count: " + dict.Keys.Count);
+                //Console.WriteLine("Count: " + dict.Keys.Count);
             };
             var prop1 = new FirebaseProperty();
             prop1.SetValue("333");
@@ -241,7 +241,12 @@ namespace RestTest
             var prop2 = new FirebaseProperty();
             prop2.SetValue("444");
             dict.Add("ddd", prop2);
-            userNode.Child("testing").SubAsRealtime("mock", dict).Start();
+            var wire = userNode.Child("testing").SubAsRealtime("mock", dict);
+            wire.OnDataChanges += (s, e) =>
+            {
+                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+            };
+            wire.Start();
             while (true)
             {
                 string line = Console.ReadLine();

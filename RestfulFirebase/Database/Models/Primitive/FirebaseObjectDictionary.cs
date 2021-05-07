@@ -1,6 +1,7 @@
 ﻿using RestfulFirebase.Common;
 using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Models.Primitive;
+using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;

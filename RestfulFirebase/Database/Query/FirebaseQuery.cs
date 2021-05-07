@@ -12,6 +12,7 @@ using RestfulFirebase.Database.Models;
 using System.IO;
 using System.Threading;
 using RestfulFirebase.Auth;
+using RestfulFirebase.Database.Realtime;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -165,12 +166,12 @@ namespace RestfulFirebase.Database.Query
 
         public RealtimeWire<T> PutAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, key, model, this, true);
+            return new RealtimeWire<T>(App, this, key, model, true);
         }
 
         public RealtimeWire<T> SubAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, key, model, this, false);
+            return new RealtimeWire<T>(App, this, key, model, false);
         }
 
         public async Task<string> BuildUrlAsync(CancellationToken? token = null)

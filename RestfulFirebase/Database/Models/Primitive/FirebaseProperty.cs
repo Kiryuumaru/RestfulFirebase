@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulFirebase.Database.Realtime;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {
@@ -82,13 +83,13 @@ namespace RestfulFirebase.Database.Models.Primitive
                         {
                             if (offline.Sync == null)
                             {
-                                put(blob);
                                 offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
+                                put(blob);
                             }
                             else if (offline.Changes == null || offline.Blob != blob)
                             {
-                                put(blob);
                                 offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
+                                put(blob);
                             }
                         }
                         else
@@ -171,13 +172,13 @@ namespace RestfulFirebase.Database.Models.Primitive
                     default:
                         if (offline.Sync == null)
                         {
-                            put(blob);
                             offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
+                            put(blob);
                         }
                         else if (offline.Changes == null || offline.Blob != blob)
                         {
-                            put(blob);
                             offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
+                            put(blob);
                         }
                         break;
                 }
