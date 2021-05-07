@@ -94,7 +94,7 @@ namespace RestTest
             //TestObservableObject();
             //TestPropertyPut();
             //TestPropertySub();
-            //TestObjectPut();
+            //TestObjectPut();s
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             TestPropertyDictionarySub();
