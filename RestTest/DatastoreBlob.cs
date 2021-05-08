@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common;
-using RestfulFirebase.Local;
+﻿using RestfulFirebase.Local;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,7 @@ namespace RestTest
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             if (!File.Exists(filePath))
                 File.WriteAllText(filePath, "");
-            if (isPersistent) db = Helpers.BlobConvert(File.ReadAllText(filePath));
+            if (isPersistent) db = Utils.BlobConvert(File.ReadAllText(filePath));
             else db = new Dictionary<string, string>();
         }
 
@@ -38,7 +37,7 @@ namespace RestTest
                 {
                     try
                     {
-                        string contentCopy = Helpers.BlobConvert(dbCopy);
+                        string contentCopy = Utils.BlobConvert(dbCopy);
                         File.WriteAllText(filePath, contentCopy);
                     }
                     catch { }

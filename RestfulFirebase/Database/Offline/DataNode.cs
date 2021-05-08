@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,7 +13,7 @@ namespace RestfulFirebase.Database.Offline
 
         public string Path { get; }
 
-        public string Key => Helpers.SeparateUrl(Path).Last();
+        public string Key => Utils.SeparateUrl(Path).Last();
 
         public bool Exist => Short != null;
 
@@ -78,7 +77,7 @@ namespace RestfulFirebase.Database.Offline
             string uid = null;
             while (uid == null)
             {
-                uid = Helpers.GenerateUID(5, Helpers.Base64Charset);
+                uid = UIDFactory.GenerateUID(5, Utils.Base64Charset);
                 var sync = Get(OfflineDatabase.SyncBlobPath, uid);
                 var changes = Get(OfflineDatabase.ChangesPath, uid);
                 if (sync != null || changes != null) uid = null;
@@ -89,12 +88,12 @@ namespace RestfulFirebase.Database.Offline
         protected string Get(params string[] path)
         {
             if (path.Any(i => i is null)) return null;
-            return App.LocalDatabase.Get(Helpers.CombineUrl(path));
+            return App.LocalDatabase.Get(Utils.CombineUrl(path));
         }
 
         protected void Set(string data, params string[] path)
         {
-            var combined = Helpers.CombineUrl(path);
+            var combined = Utils.CombineUrl(path);
             if (data == null) App.LocalDatabase.Delete(combined);
             else App.LocalDatabase.Set(combined, data);
         }

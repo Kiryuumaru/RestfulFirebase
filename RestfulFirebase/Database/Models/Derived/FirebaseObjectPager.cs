@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common;
-using RestfulFirebase.Common.Observables;
+﻿using ObservableHelpers.Observables;
 using RestfulFirebase.Database.Models.Primitive;
 using System;
 using System.Collections.Generic;
@@ -29,7 +28,7 @@ namespace RestfulFirebase.Database.Models.Derived
                 for (int i = 0; i < count; i++)
                 {
                     var data = GetPersistableProperty<string>(PagesKey + i.ToString());
-                    var deserialized = Helpers.DeserializeString(data);
+                    var deserialized = Utils.DeserializeString(data);
                     if (deserialized == null) continue;
                     keys.AddRange(deserialized);
                 }
@@ -62,7 +61,7 @@ namespace RestfulFirebase.Database.Models.Derived
                             pageKeys.Add(value[index]);
                             index++;
                         }
-                        var page = Helpers.SerializeString(pageKeys.ToArray());
+                        var page = Utils.SerializeString(pageKeys.ToArray());
                         SetPersistableProperty(page, (PagesKey + i.ToString()));
                     }
                     SetPersistableProperty(iterations, PagesKey);

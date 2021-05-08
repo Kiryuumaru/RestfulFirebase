@@ -1,9 +1,5 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Auth;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Serializers;
-using RestfulFirebase.Common.Models;
-using RestfulFirebase.Common.Observables;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Streaming;
 using System;
@@ -13,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Realtime;
+using ObservableHelpers.Observables;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {

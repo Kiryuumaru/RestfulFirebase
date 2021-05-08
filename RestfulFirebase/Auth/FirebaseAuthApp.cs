@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using RestfulFirebase.Common;
 using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ObservableHelpers.Serializers;
 
 namespace RestfulFirebase.Auth
 {
@@ -842,23 +842,23 @@ namespace RestfulFirebase.Auth
 
         private void SavePropertiesLocally()
         {
-            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "user"), Helpers.BlobConvert(JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(User))));
-            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "created"), Helpers.EncodeDateTime(Created));
-            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "expiresIn"), ExpiresIn.ToString());
-            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "refreshToken"), RefreshToken);
-            App.LocalDatabase.Set(Helpers.CombineUrl(AuthRoot, "firebaseToken"), FirebaseToken);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "user"), Utils.BlobConvert(JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(User))));
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "created"), Serializer.Serialize(Created));
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "expiresIn"), ExpiresIn.ToString());
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "refreshToken"), RefreshToken);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "firebaseToken"), FirebaseToken);
         }
 
         private void RetainPropertiesLocally()
         {
-            var rawUser = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "user"));
-            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(JsonConvert.SerializeObject(Helpers.BlobConvert(rawUser)));
-            var rawCreated = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "created"));
-            Created = rawCreated == null ? default : Helpers.DecodeDateTime(rawCreated, default);
-            var rawExpiredIn = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "expiresIn"));
-            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "expiresIn")));
-            RefreshToken = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "refreshToken"));
-            FirebaseToken = App.LocalDatabase.Get(Helpers.CombineUrl(AuthRoot, "firebaseToken"));
+            var rawUser = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "user"));
+            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(JsonConvert.SerializeObject(Utils.BlobConvert(rawUser)));
+            var rawCreated = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "created"));
+            Created = rawCreated == null ? default : Serializer.Deserialize<DateTime>(rawCreated, default);
+            var rawExpiredIn = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "expiresIn"));
+            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "expiresIn")));
+            RefreshToken = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "refreshToken"));
+            FirebaseToken = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "firebaseToken"));
         }
 
         private void PurgePropertiesLocally()
@@ -869,11 +869,11 @@ namespace RestfulFirebase.Auth
             RefreshToken = null;
             FirebaseToken = null;
 
-            App.LocalDatabase.Delete(Helpers.CombineUrl(AuthRoot, "user"));
-            App.LocalDatabase.Delete(Helpers.CombineUrl(AuthRoot, "created"));
-            App.LocalDatabase.Delete(Helpers.CombineUrl(AuthRoot, "expiresIn"));
-            App.LocalDatabase.Delete(Helpers.CombineUrl(AuthRoot, "refreshToken"));
-            App.LocalDatabase.Delete(Helpers.CombineUrl(AuthRoot, "firebaseToken"));
+            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "user"));
+            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "created"));
+            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "expiresIn"));
+            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "refreshToken"));
+            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "firebaseToken"));
         }
     }
 }

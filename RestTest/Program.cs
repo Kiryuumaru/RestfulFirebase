@@ -2,7 +2,6 @@
 using RestfulFirebase.Database;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Offline;
-using RestfulFirebase.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +11,9 @@ using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using RestfulFirebase.Common.Serializers;
-using RestfulFirebase.Common.Observables;
-using RestfulFirebase.Common;
 using System.Threading;
 using RestfulFirebase.Database.Models.Primitive;
+using ObservableHelpers.Serializers;
 
 namespace RestTest
 {
@@ -224,7 +221,7 @@ namespace RestTest
                 string line = Console.ReadLine();
                 var prop = new FirebaseProperty();
                 prop.SetValue(line);
-                dict.Add(Helpers.GenerateSafeUID(), prop);
+                dict.Add(UIDFactory.GenerateSafeUID(), prop);
             }
         }
 
@@ -252,7 +249,7 @@ namespace RestTest
                 string line = Console.ReadLine();
                 var prop = new FirebaseProperty();
                 prop.SetValue(line);
-                dict.Add(Helpers.GenerateSafeUID(), prop);
+                dict.Add(UIDFactory.GenerateSafeUID(), prop);
             }
         }
 
@@ -313,115 +310,6 @@ namespace RestTest
                 string line = Console.ReadLine();
                 var prop = new FirebaseProperty();
                 prop.SetValue(line);
-            }
-        }
-
-        public class Pager : FirebaseObject
-        {
-            private const string PagesKey = "pages";
-            private const int KeysPerPageCount = 10;
-
-            public string Testu
-            {
-                get => GetPersistableProperty<string>("1", "");
-                set => SetPersistableProperty(value, "1");
-            }
-
-            public int PageCount
-            {
-                get => GetPersistableProperty<int>(PagesKey, 0);
-                set => SetPersistableProperty(value, PagesKey);
-            }
-
-            public List<string> Keys
-            {
-                get
-                {
-                    var count = PageCount;
-                    var keys = new List<string>();
-                    for (int i = 0; i < count; i++)
-                    {
-                        var data = GetPersistableProperty<string>(PagesKey + i.ToString());
-                        var deserialized = Helpers.DeserializeString(data);
-                        if (deserialized == null) continue;
-                        keys.AddRange(deserialized);
-                    }
-                    return keys;
-                }
-                set
-                {
-                    if (value == null)
-                    {
-                        var count = PageCount;
-                        var keys = new List<string>();
-                        SetPersistableProperty(0, PagesKey);
-                        for (int i = 0; i < count; i++)
-                        {
-                            DeleteProperty(PagesKey + i.ToString());
-                        }
-                    }
-                    else
-                    {
-                        var iterations = (value.Count + (KeysPerPageCount - 1)) / KeysPerPageCount;
-                        var index = 0;
-                        var count = PageCount;
-                        var keys = new List<string>();
-                        for (int i = 0; i < iterations; i++)
-                        {
-                            var pageKeys = new List<string>();
-                            for (int j = 0; j < KeysPerPageCount; j++)
-                            {
-                                if (value.Count <= index) break;
-                                pageKeys.Add(value[index]);
-                                index++;
-                            }
-                            var page = Helpers.SerializeString(pageKeys.ToArray());
-                            SetPersistableProperty(page, (PagesKey + i.ToString()));
-                        }
-                        SetPersistableProperty(iterations, PagesKey);
-                    }
-                }
-            }
-
-            public Pager(IAttributed attributed)
-                : base(attributed)
-            {
-
-            }
-
-            public Pager()
-                : base(null)
-            {
-
-            }
-        }
-
-        public static void ExperimentList()
-        {
-            var obj = new Pager();
-            obj.PropertyChanged += (s, e) =>
-            {
-                Console.WriteLine("Prop: " + e.PropertyName);
-            };
-            userNode.Child("testing").PutAsRealtime("testPager", obj).Start();
-            var index = 0;
-            while (true)
-            {
-                //string line = Console.ReadLine();
-                if (index == 10) index = 0;
-                string line = (index++).ToString();
-                if (string.IsNullOrEmpty(line))
-                {
-                    obj.Keys = null;
-                }
-                else
-                {
-                    var keys = obj.Keys;
-                    //keys.Insert(0, line);
-                    keys.Add(line);
-                    obj.Keys = keys;
-                }
-                Thread.Sleep(100);
             }
         }
     }

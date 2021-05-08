@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,20 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Common
+namespace RestfulFirebase
 {
-    public static class Helpers
+    internal static class Utils
     {
         #region Properties
+
         private const string NullIdentifier = "-";
         private const string EmptyIdentifier = "_";
-
-        private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Base64Charset));
-        private static readonly DateTimeOffset Epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
-        private static readonly Random random = new Random();
-        private static readonly byte[] lastRandChars = new byte[12];
-
-        private static long lastPushTime;
 
         private const int Second = 1;
         private const int Minute = 60 * Second;
@@ -29,84 +22,17 @@ namespace RestfulFirebase.Common
         private const int Day = 24 * Hour;
         private const int Month = 30 * Day;
 
-        public const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-        public const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-        public const string Base38Charset = "-0123456789_abcdefghijklmnopqrstuvwxyz";
-        public const string Base36Charset = "0123456789abcdefghijklmnopqrstuvwxyz";
-        public const string Base32Charset = "2345678abcdefghijklmnpqrstuvwxyz"; // Excluded 0, 1, 9, o
-
-        #endregion
-
-        #region UIDGenerator
-
-        public static string GenerateUID(int length = 10, string charset = Base64Charset)
-        {
-            string id = "";
-            for (int i = 0; i < length; i++)
-            {
-                id += charset[random.Next(charset.Length)];
-            }
-            return id;
-        }
-
-        public static string GenerateSafeUID()
-        {
-            var id = new StringBuilder(20);
-            var now = (long)(DateTimeOffset.Now - Epoch).TotalMilliseconds;
-            var duplicateTime = now == lastPushTime;
-            lastPushTime = now;
-
-            var timeStampChars = new char[8];
-            for (int i = 7; i >= 0; i--)
-            {
-                var index = (int)(now % PushChars.Length);
-                timeStampChars[i] = PushChars[index];
-                now = (long)Math.Floor((double)now / PushChars.Length);
-            }
-
-            if (now != 0)
-            {
-                throw new Exception("We should have converted the entire timestamp.");
-            }
-
-            id.Append(timeStampChars);
-
-            if (!duplicateTime)
-            {
-                for (int i = 0; i < 12; i++)
-                {
-                    lastRandChars[i] = (byte)random.Next(0, PushChars.Length);
-                }
-            }
-            else
-            {
-                var lastIndex = 11;
-                for (; lastIndex >= 0 && lastRandChars[lastIndex] == PushChars.Length - 1; lastIndex--)
-                {
-                    lastRandChars[lastIndex] = 0;
-                }
-
-                lastRandChars[lastIndex]++;
-            }
-
-            for (int i = 0; i < 12; i++)
-            {
-                id.Append(PushChars[lastRandChars[i]]);
-            }
-
-            if (id.Length != 20)
-            {
-                throw new Exception("Length should be 20.");
-            }
-
-            return id.ToString();
-        }
+        internal const string Base64Charset = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+        internal const string Base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        internal const string Base38Charset = "-0123456789_abcdefghijklmnopqrstuvwxyz";
+        internal const string Base36Charset = "0123456789abcdefghijklmnopqrstuvwxyz";
+        internal const string Base32Charset = "2345678abcdefghijklmnpqrstuvwxyz"; // Excluded 0, 1, 9, o
 
         #endregion
 
         #region Serializer
 
-        public static string[] Split(string data, params int[] lengths)
+        internal static string[] Split(string data, params int[] lengths)
         {
             int sizes = 0;
             foreach (int size in lengths) sizes += size;
@@ -122,83 +48,7 @@ namespace RestfulFirebase.Common
             return datas;
         }
 
-        public static string EncodeDateTime(DateTime date)
-        {
-            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.Ticks, 64);
-            string base64 = "";
-            foreach (var num in bytes)
-            {
-                base64 += Base64Charset[(int)num];
-            }
-            return base64;
-        }
-
-        public static DateTime DecodeDateTime(string encodedTimestamp, DateTime defaultValue)
-        {
-            var dateTime = DecodeDateTime(encodedTimestamp);
-            return dateTime.HasValue ? dateTime.Value : defaultValue;
-        }
-
-        public static DateTime? DecodeDateTime(string encodedTimestamp)
-        {
-            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
-            try
-            {
-                var indexes = new List<uint>();
-                foreach (var num in encodedTimestamp)
-                {
-                    var indexOf = Base64Charset.IndexOf(num);
-                    if (indexOf == -1) throw new Exception("Unknown charset");
-                    indexes.Add((uint)indexOf);
-                }
-                var ticks = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-                return new DateTime((long)ticks);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public static string EncodeSmallDateTime(SmallDateTime date)
-        {
-            var bytes = ToUnsignedArbitraryBaseSystem((ulong)date.GetCompressedTime(), 64);
-            string base64 = "";
-            foreach (var num in bytes)
-            {
-                base64 += Base64Charset[(int)num];
-            }
-            return base64;
-        }
-
-        public static SmallDateTime DecodeSmallDateTime(string encodedTimestamp, SmallDateTime defaultValue)
-        {
-            var dateTime = DecodeSmallDateTime(encodedTimestamp);
-            return dateTime.HasValue ? dateTime.Value : defaultValue;
-        }
-
-        public static SmallDateTime? DecodeSmallDateTime(string encodedTimestamp)
-        {
-            if (string.IsNullOrEmpty(encodedTimestamp)) return null;
-            try
-            {
-                var indexes = new List<uint>();
-                foreach (var num in encodedTimestamp)
-                {
-                    var indexOf = Base64Charset.IndexOf(num);
-                    if (indexOf == -1) throw new Exception("Unknown charset");
-                    indexes.Add((uint)indexOf);
-                }
-                var unix = ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-                return new SmallDateTime((long)unix);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        public static string BlobGetValue(string[] blobArray, string key, string defaultValue = "")
+        internal static string BlobGetValue(string[] blobArray, string key, string defaultValue = "")
         {
             if (blobArray == null) return defaultValue;
             else if (blobArray.Length <= 1) return defaultValue;
@@ -208,13 +58,13 @@ namespace RestfulFirebase.Common
             else return defaultValue;
         }
 
-        public static string BlobGetValue(string blob, string key, string defaultValue = "")
+        internal static string BlobGetValue(string blob, string key, string defaultValue = "")
         {
             var blobArray = DeserializeString(blob);
             return BlobGetValue(blobArray, key, defaultValue);
         }
 
-        public static string[] BlobSetValue(string[] blobArray, string key, string value)
+        internal static string[] BlobSetValue(string[] blobArray, string key, string value)
         {
             if (blobArray == null) blobArray = Array.Empty<string>();
             else if (blobArray.Length <= 1) blobArray = Array.Empty<string>();
@@ -234,13 +84,13 @@ namespace RestfulFirebase.Common
             }
         }
 
-        public static string BlobSetValue(string blob, string key, string value)
+        internal static string BlobSetValue(string blob, string key, string value)
         {
             var blobArray = DeserializeString(blob);
             return SerializeString(BlobSetValue(blobArray, key, value));
         }
 
-        public static string[] BlobDeleteValue(string[] blobArray, string key)
+        internal static string[] BlobDeleteValue(string[] blobArray, string key)
         {
             if (blobArray == null) return blobArray;
             else if (blobArray.Length <= 1) return blobArray;
@@ -256,14 +106,13 @@ namespace RestfulFirebase.Common
             else return blobArray;
         }
 
-        public static string BlobDeleteValue(string blob, string key)
+        internal static string BlobDeleteValue(string blob, string key)
         {
             var blobArray = DeserializeString(blob);
             return SerializeString(BlobDeleteValue(blobArray, key));
         }
 
-
-        public static string BlobConvert(Dictionary<string, string> dictionary)
+        internal static string BlobConvert(Dictionary<string, string> dictionary)
         {
             string blob = "";
             foreach (var pair in dictionary)
@@ -273,7 +122,7 @@ namespace RestfulFirebase.Common
             return blob;
         }
 
-        public static Dictionary<string, string> BlobConvert(string blob)
+        internal static Dictionary<string, string> BlobConvert(string blob)
         {
             Dictionary<string, string> dictionary = new Dictionary<string, string>();
             var blobArray = DeserializeString(blob);
@@ -294,12 +143,12 @@ namespace RestfulFirebase.Common
             return dictionary;
         }
 
-        public static string JsonConvert(Dictionary<string, string> dictionary)
+        internal static string JsonConvert(Dictionary<string, string> dictionary)
         {
             return Newtonsoft.Json.JsonConvert.SerializeObject(dictionary);
         }
 
-        public static Dictionary<string, string> JsonConvert(string json)
+        internal static Dictionary<string, string> JsonConvert(string json)
         {
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
         }
@@ -308,7 +157,7 @@ namespace RestfulFirebase.Common
 
         #region UIStringer
 
-        public static string GetFormattedTimeSpan(TimeSpan timeSpan)
+        internal static string GetFormattedTimeSpan(TimeSpan timeSpan)
         {
             double delta = Math.Abs(timeSpan.TotalSeconds);
 
@@ -361,7 +210,7 @@ namespace RestfulFirebase.Common
             }
         }
 
-        public static byte[] Zip(string str)
+        internal static byte[] Zip(string str)
         {
             var bytes = Encoding.UTF8.GetBytes(str);
 
@@ -378,7 +227,7 @@ namespace RestfulFirebase.Common
             }
         }
 
-        public static string Unzip(byte[] bytes)
+        internal static string Unzip(byte[] bytes)
         {
             using (var msi = new MemoryStream(bytes))
             {
@@ -397,7 +246,7 @@ namespace RestfulFirebase.Common
 
         #region StringArraySerializer
 
-        public static string ToBase62(int number)
+        internal static string ToBase62(int number)
         {
             var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 62);
             string base62 = "";
@@ -408,7 +257,7 @@ namespace RestfulFirebase.Common
             return base62;
         }
 
-        public static int FromBase62(string number)
+        internal static int FromBase62(string number)
         {
             var indexes = new List<uint>();
             foreach (var num in number)
@@ -420,7 +269,7 @@ namespace RestfulFirebase.Common
             return (int)ToUnsignedNormalBaseSystem(indexes.ToArray(), 62);
         }
 
-        public static string ToBase64(int number)
+        internal static string ToBase64(int number)
         {
             var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 64);
             string base64 = "";
@@ -431,7 +280,7 @@ namespace RestfulFirebase.Common
             return base64;
         }
 
-        public static int FromBase64(string number)
+        internal static int FromBase64(string number)
         {
             var indexes = new List<uint>();
             foreach (var num in number)
@@ -443,7 +292,7 @@ namespace RestfulFirebase.Common
             return (int)ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
         }
 
-        public static string SerializeString(params string[] datas)
+        internal static string SerializeString(params string[] datas)
         {
             if (datas == null) return NullIdentifier;
             if (datas.Length == 0) return EmptyIdentifier;
@@ -464,43 +313,40 @@ namespace RestfulFirebase.Common
             return string.Join("", joinedArr);
         }
 
-        public static string[] DeserializeString(string data)
+        internal static string[] DeserializeString(string data)
         {
             if (string.IsNullOrEmpty(data)) return null;
             if (data.Equals(NullIdentifier)) return null;
             if (data.Equals(EmptyIdentifier)) return Array.Empty<string>();
             if (data.Length < 4) return new string[] { "" };
             var d = (string)data.Clone();
-            try
+
+            int indexDigits = FromBase62(d[0].ToString());
+            int indexCount = FromBase62(d.Substring(1, indexDigits));
+            var indices = d.Substring(1 + indexDigits, indexDigits * indexCount);
+            var dataPart = d.Substring(1 + indexDigits + (indexDigits * indexCount));
+            string[] datas = new string[indexCount];
+            var currIndex = 0;
+            for (int i = 0; i < indexCount; i++)
             {
-                int indexDigits = FromBase62(d[0].ToString());
-                int indexCount = FromBase62(d.Substring(1, indexDigits));
-                var indices = d.Substring(1 + indexDigits, indexDigits * indexCount);
-                var dataPart = d.Substring(1 + indexDigits + (indexDigits * indexCount));
-                string[] datas = new string[indexCount];
-                var currIndex = 0;
-                for (int i = 0; i < indexCount; i++)
+                var subData = indices.Substring(indexDigits * i, indexDigits).TrimStart(Base62Charset[0]);
+                if (subData.Equals(NullIdentifier)) datas[i] = null;
+                else if (subData.Equals(EmptyIdentifier)) datas[i] = "";
+                else
                 {
-                    var subData = indices.Substring(indexDigits * i, indexDigits).TrimStart(Base62Charset[0]);
-                    if (subData.Equals(NullIdentifier)) datas[i] = null;
-                    else if (subData.Equals(EmptyIdentifier)) datas[i] = "";
-                    else
-                    {
-                        var currLength = FromBase62(subData);
-                        datas[i] = dataPart.Substring(currIndex, currLength);
-                        currIndex += currLength;
-                    }
+                    var currLength = FromBase62(subData);
+                    datas[i] = dataPart.Substring(currIndex, currLength);
+                    currIndex += currLength;
                 }
-                return datas;
             }
-            catch { return null; }
+            return datas;
         }
 
         #endregion
 
         #region Math
 
-        public static uint[] ToUnsignedArbitraryBaseSystem(ulong number, uint baseSystem)
+        internal static uint[] ToUnsignedArbitraryBaseSystem(ulong number, uint baseSystem)
         {
             if (baseSystem < 2) throw new Exception("Base below 1 error");
             var baseArr = new List<uint>();
@@ -516,7 +362,7 @@ namespace RestfulFirebase.Common
             return baseArr.ToArray();
         }
 
-        public static ulong ToUnsignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
+        internal static ulong ToUnsignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
         {
             if (baseSystem < 2) throw new Exception("Base below 1 error");
             if (arbitraryBaseNumber.Any(i => i >= baseSystem)) throw new Exception("Number has greater value than base number system");
@@ -529,7 +375,7 @@ namespace RestfulFirebase.Common
             return value;
         }
 
-        public static uint[] ToSignedArbitraryBaseSystem(long number, uint baseSystem)
+        internal static uint[] ToSignedArbitraryBaseSystem(long number, uint baseSystem)
         {
             var num = ToUnsignedArbitraryBaseSystem((ulong)Math.Abs(number), baseSystem);
             var newNum = new uint[num.Length + 1];
@@ -538,7 +384,7 @@ namespace RestfulFirebase.Common
             return newNum;
         }
 
-        public static long ToSignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
+        internal static long ToSignedNormalBaseSystem(uint[] arbitraryBaseNumber, uint baseSystem)
         {
             bool isNegative;
             if (arbitraryBaseNumber[0] == 0) isNegative = false;
@@ -548,7 +394,7 @@ namespace RestfulFirebase.Common
             return isNegative ? -num : num;
         }
 
-        public static double CalcVariance(IEnumerable<double> datas)
+        internal static double CalcVariance(IEnumerable<double> datas)
         {
             double mean = datas.Average();
             double sum = 0;
@@ -556,7 +402,7 @@ namespace RestfulFirebase.Common
             return sum / (datas.Count() - 1);
         }
 
-        public static double CalcStandardDeviation(IEnumerable<double> datas)
+        internal static double CalcStandardDeviation(IEnumerable<double> datas)
         {
             double mean = datas.Average();
             double sum = 0;
@@ -575,7 +421,7 @@ namespace RestfulFirebase.Common
 		/// <param name="task">Task.</param>
 		/// <param name="timeoutInMilliseconds">Timeout duration in Milliseconds.</param>
 		/// <typeparam name="T">The 1st type parameter.</typeparam>
-		public async static Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds)
+		internal async static Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds)
         {
             var retTask = await Task.WhenAny(task, Task.Delay(timeoutInMilliseconds)).ConfigureAwait(false);
             return retTask is Task<T> ? task.Result : default;
@@ -588,7 +434,7 @@ namespace RestfulFirebase.Common
         /// <param name="task">Task.</param>
         /// <param name="timeout">Timeout Duration.</param>
         /// <typeparam name="T">The 1st type parameter.</typeparam>
-        public static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout) => WithTimeout(task, (int)timeout.TotalMilliseconds);
+        internal static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout) => WithTimeout(task, (int)timeout.TotalMilliseconds);
 
         /// <summary>
         /// Attempts to await on the task and catches exception
@@ -596,7 +442,7 @@ namespace RestfulFirebase.Common
         /// <param name="task">Task to execute</param>
         /// <param name="onException">What to do when method has an exception</param>
         /// <param name="continueOnCapturedContext">If the context should be captured.</param>
-        public static async void SafeFireAndForget(this Task task, Action<Exception> onException = null, bool continueOnCapturedContext = false)
+        internal static async void SafeFireAndForget(this Task task, Action<Exception> onException = null, bool continueOnCapturedContext = false)
         {
             try
             {
@@ -612,7 +458,7 @@ namespace RestfulFirebase.Common
 
         #region UrlUtils
 
-        public static string CombineUrl(params string[] paths)
+        internal static string CombineUrl(params string[] paths)
         {
             string ret = "";
             foreach (var path in paths)
@@ -623,7 +469,7 @@ namespace RestfulFirebase.Common
             return ret.Length == 0 ? "/" : ret;
         }
 
-        public static string[] SeparateUrl(string url)
+        internal static string[] SeparateUrl(string url)
         {
             var split = url.Split('/');
             if (!string.IsNullOrEmpty(split.Last())) return split;

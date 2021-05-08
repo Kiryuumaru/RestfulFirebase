@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 using RestfulFirebase.Database.Streaming;
 using System.Net;
 using RestfulFirebase.Extensions.Http;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Models;
 using System.Linq;
 using RestfulFirebase.Database.Models;
 using System.IO;

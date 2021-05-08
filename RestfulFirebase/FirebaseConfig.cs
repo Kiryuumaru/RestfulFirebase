@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common.Models;
-using RestfulFirebase.Database.Offline;
+﻿using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Extensions.Http;
 using RestfulFirebase.Local;
 using System;

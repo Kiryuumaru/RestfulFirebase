@@ -15,11 +15,11 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\LICENSE.md" Pack="true" PackagePath=""/>
+    <None Include="..\LICENCE.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="ObservableHelpers" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

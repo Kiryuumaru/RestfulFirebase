@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Common;
-using RestfulFirebase.Common.Observables;
+﻿using ObservableHelpers.Observables;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -64,13 +63,13 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
-                var separatedPath = Helpers.SeparateUrl(path);
+                var separatedPath = Utils.SeparateUrl(path);
 
                 var subDatas = wire.App.Database.OfflineDatabase.GetSubDatas(path);
 
                 foreach (var subData in subDatas)
                 {
-                    var separatedSubPath = Helpers.SeparateUrl(subData.Path);
+                    var separatedSubPath = Utils.SeparateUrl(subData.Path);
                     var key = separatedSubPath[separatedPath.Length];
                     TryGetValue(key, out FirebaseProperty prop);
 

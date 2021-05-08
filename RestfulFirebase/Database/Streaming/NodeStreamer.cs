@@ -10,9 +10,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Common.Models;
-using RestfulFirebase.Common.Observables;
 using Newtonsoft.Json;
+using ObservableHelpers.Observables;
 
 namespace RestfulFirebase.Database.Streaming
 {
