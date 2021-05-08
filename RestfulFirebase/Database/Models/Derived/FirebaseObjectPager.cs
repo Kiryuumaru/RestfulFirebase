@@ -71,22 +71,6 @@ namespace RestfulFirebase.Database.Models.Derived
 
         #endregion
 
-        #region Initializers
-
-        public FirebaseObjectPager(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseObjectPager()
-            : base(null)
-        {
-
-        }
-
-        #endregion
-
         #region Methods
 
 

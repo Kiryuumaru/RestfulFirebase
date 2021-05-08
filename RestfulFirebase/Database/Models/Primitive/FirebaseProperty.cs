@@ -21,33 +21,7 @@ namespace RestfulFirebase.Database.Models.Primitive
         protected const string SyncTag = "sync";
         protected const string RevertTag = "revert";
 
-        private string BlobHolder
-        {
-            get => Holder.GetAttribute<string>();
-            set => Holder.SetAttribute(value);
-        }
-
-        public RealtimeWire Wire
-        {
-            get => Holder.GetAttribute<RealtimeWire>();
-            set => Holder.SetAttribute(value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public FirebaseProperty(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseProperty()
-            : base(null)
-        {
-
-        }
+        public RealtimeWire Wire { get; private set; }
 
         #endregion
 
@@ -189,16 +163,9 @@ namespace RestfulFirebase.Database.Models.Primitive
             }
             else
             {
-                var newData = blob;
-                var oldData = BlobHolder;
+                var hasBlobChanges = base.SetBlob(blob);
 
-                var hasBlobChanges = newData != oldData;
-
-                if (hasBlobChanges)
-                {
-                    BlobHolder = blob;
-                    OnChanged(nameof(Blob));
-                }
+                if (hasBlobChanges) OnChanged(nameof(Blob));
 
                 return hasBlobChanges;
             }
@@ -213,7 +180,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             }
             else
             {
-                return BlobHolder;
+                return base.GetBlob(defaultValue, tag);
             }
         }
 
@@ -222,7 +189,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 Wire = wire;
-                SetBlob(BlobHolder, InitTag);
+                SetBlob(base.GetBlob(), InitTag);
             };
             wire.OnStop += delegate
             {
@@ -260,11 +227,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             return SetBlob(null);
         }
 
-        public FirebaseProperty<T> ParseModel<T>()
-        {
-            return new FirebaseProperty<T>(this);
-        }
-
         #endregion
     }
 
@@ -276,22 +238,6 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             get => base.GetValue<T>();
             set => base.SetValue(value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public FirebaseProperty(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseProperty()
-            : base(null)
-        {
-
         }
 
         #endregion

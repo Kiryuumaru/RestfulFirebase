@@ -14,27 +14,7 @@ namespace RestfulFirebase.Database.Models.Primitive
     {
         #region Properties
 
-        public RealtimeWire Wire
-        {
-            get => Holder.GetAttribute<RealtimeWire>();
-            set => Holder.SetAttribute(value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public FirebaseObject(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseObject()
-            : base(null)
-        {
-
-        }
+        public RealtimeWire Wire { get; private set; }
 
         #endregion
 
@@ -82,6 +62,8 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             wire.OnStart += delegate
             {
+                InitializeProperties();
+
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -105,7 +87,9 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 Wire = wire;
 
-                foreach (var propHolder in GetRawPersistableProperties())
+                var persistableProps = GetRawPersistableProperties();
+
+                foreach (var propHolder in persistableProps)
                 {
                     var prop = (FirebaseProperty)propHolder.Property;
                     if (prop.Wire == null)

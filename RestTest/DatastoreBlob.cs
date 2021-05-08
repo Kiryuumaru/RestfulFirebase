@@ -31,13 +31,11 @@ namespace RestTest
             if (!isPersistent) return;
             Task.Run(delegate
             {
-                var dbCopy = new Dictionary<string, string>();
-                dbCopy = new Dictionary<string, string>(db);
                 lock (this)
                 {
                     try
                     {
-                        string contentCopy = Utils.BlobConvert(dbCopy);
+                        string contentCopy = Utils.BlobConvert(db);
                         File.WriteAllText(filePath, contentCopy);
                     }
                     catch { }

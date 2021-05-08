@@ -47,16 +47,6 @@ namespace RestTest
 
         #endregion
 
-        #region Initializers
-
-        public TestStorable()
-            : base()
-        {
-
-        }
-
-        #endregion
-
         #region Methods
 
 
@@ -80,7 +70,7 @@ namespace RestTest
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com",
-                LocalDatabase = new DatastoreBlob(true)
+                LocalDatabase = new DatastoreBlob(false)
             });
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
@@ -91,7 +81,7 @@ namespace RestTest
             //TestObservableObject();
             //TestPropertyPut();
             //TestPropertySub();
-            //TestObjectPut();s
+            //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             TestPropertyDictionarySub();

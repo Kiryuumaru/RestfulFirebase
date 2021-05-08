@@ -13,27 +13,7 @@ namespace RestfulFirebase.Database.Models.Primitive
     {
         #region Properties
 
-        public RealtimeWire Wire
-        {
-            get => Holder.GetAttribute<RealtimeWire>();
-            set => Holder.SetAttribute(value);
-        }
-
-        #endregion
-
-        #region Initializers
-
-        public FirebaseObjectDictionary(IAttributed attributed)
-            : base(attributed)
-        {
-
-        }
-
-        public FirebaseObjectDictionary()
-            : base(null)
-        {
-
-        }
+        public RealtimeWire Wire { get; private set; }
 
         #endregion
 
