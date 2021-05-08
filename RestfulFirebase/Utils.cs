@@ -297,7 +297,7 @@ namespace RestfulFirebase
             if (datas == null) return NullIdentifier;
             if (datas.Length == 0) return EmptyIdentifier;
             var dataLength = ToBase62(datas.Length);
-            var lengths = datas.Select(i => i == null ? NullIdentifier : (i == "" ? EmptyIdentifier : ToBase62(i.Length))).ToArray();
+            var lengths = datas.Select(i => i == null ? NullIdentifier : (string.IsNullOrEmpty(i) ? EmptyIdentifier : ToBase62(i.Length))).ToArray();
             int maxDigitLength = Math.Max(lengths.Max(i => i.Length), dataLength.Length);
             var maxDigitLength62 = ToBase62(maxDigitLength); ;
             for (int i = 0; i < datas.Length; i++)
