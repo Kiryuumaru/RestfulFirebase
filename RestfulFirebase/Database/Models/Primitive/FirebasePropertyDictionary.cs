@@ -41,6 +41,8 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (!wire.InvokeSetFirst) Clear();
 
+                var subWires = new Dictionary<string, RealtimeWire>();
+
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -56,26 +58,38 @@ namespace RestfulFirebase.Database.Models.Primitive
                     if (prop == null)
                     {
                         prop = PropertyFactory();
+
                         prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
-                        prop.MakeRealtime(wire.Child(key, true));
+
+                        var subWire = wire.Child(key, false);
+                        prop.MakeRealtime(subWire);
+                        subWires.Add(key, subWire);
+
                         Add(key, prop);
+                    }
+                    else
+                    {
+                        var subWire = wire.Child(key, wire.InvokeSetFirst);
+                        prop.MakeRealtime(subWire);
+                        subWires.Add(key, subWire);
+                    }
+                }
+
+                foreach (var prop in this)
+                {
+                    if (!subWires.ContainsKey(prop.Key))
+                    {
+                        var subWire = wire.Child(prop.Key, wire.InvokeSetFirst);
+                        prop.Value.MakeRealtime(subWire);
+                        subWires.Add(prop.Key, subWire);
                     }
                 }
 
                 Wire = wire;
 
-                foreach (var prop in this)
+                foreach (var subWire in subWires.Values)
                 {
-                    if (prop.Value.Wire == null)
-                    {
-                        var subWire = Wire.Child(prop.Key, Wire.InvokeSetFirst);
-                        prop.Value.MakeRealtime(subWire);
-                        subWire.InvokeStart();
-                    }
-                    else
-                    {
-                        prop.Value.Wire.InvokeStart();
-                    }
+                    subWire.InvokeStart();
                 }
             };
             wire.OnStop += delegate

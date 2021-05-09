@@ -27,7 +27,6 @@ namespace RestfulFirebase.Database.Realtime
         public RealtimeWire ParentWire { get; }
         public FirebaseQuery ParentQuery { get; }
         public FirebaseQuery Query { get; }
-        public string Key { get; }
         public bool InvokeSetFirst { get; private set; }
         public bool HasFirstStream { get; private set; }
         public bool IsWritting { get; private set; }
@@ -42,7 +41,9 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                return GetSubDatas().Count() + (GetData().Exist ? 1 : 0);
+                var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+                var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+                return subData.Count() + (data.Exist ? 1 : 0);
             }
         }
 
@@ -50,7 +51,9 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                return GetSubDatas().Where(i => i.Changes == null).Count() + (GetData().Exist ? 1 : 0);
+                var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
+                var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+                return subData.Where(i => i.Changes == null).Count() + (data.Exist ? 1 : 0);
             }
         }
 
@@ -58,23 +61,42 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Initializers
 
-        public RealtimeWire(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, bool invokeSetFirst)
+        public static RealtimeWire CreateFromParent(RestfulFirebaseApp app, RealtimeWire parentWire, string key, bool invokeSetFirst)
         {
-            App = app;
-            ParentWire = null;
-            ParentQuery = parentQuery;
-            Query = new ChildQuery(parentQuery.App, parentQuery, () => key);
-            Key = key;
-            InvokeSetFirst = invokeSetFirst;
+            return new RealtimeWire(
+                app,
+                parentWire,
+                parentWire.Query,
+                new ChildQuery(app, parentWire.Query, () => key),
+                invokeSetFirst);
         }
 
-        public RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, string key, bool invokeSetFirst)
+        public static RealtimeWire CreateFromParent(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, bool invokeSetFirst)
+        {
+            return new RealtimeWire(
+                app,
+                null,
+                parentQuery,
+                new ChildQuery(app, parentQuery, () => key),
+                invokeSetFirst);
+        }
+
+        public static RealtimeWire CreateFromQuery(RestfulFirebaseApp app, FirebaseQuery query, bool invokeSetFirst)
+        {
+            return new RealtimeWire(
+                app,
+                null,
+                null,
+                query,
+                invokeSetFirst);
+        }
+
+        protected RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery parentQuery, FirebaseQuery query, bool invokeSetFirst)
         {
             App = app;
             ParentWire = parentWire;
-            ParentQuery = parentWire.Query;
-            Query = new ChildQuery(parentWire.App, parentWire.Query, () => key);
-            Key = key;
+            ParentQuery = parentQuery;
+            Query = query;
             InvokeSetFirst = invokeSetFirst;
         }
 
@@ -92,7 +114,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             var hasChanges = false;
             streamObjectBuffer = streamObject;
-            // FIX LATER
+            // Bug: Late push event still acknowledged
             //if (IsWritting && HasPendingWrite) return false;
             //{
             //    if (isStreamWaiting) return false;
@@ -108,17 +130,7 @@ namespace RestfulFirebase.Database.Realtime
 
         public RealtimeWire Child(string key, bool invokeSetFirst)
         {
-            return new RealtimeWire(App, this, key, invokeSetFirst);
-        }
-
-        public DataNode GetData()
-        {
-            return App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
-        }
-
-        public IEnumerable<DataNode> GetSubDatas()
-        {
-            return App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+            return RealtimeWire.CreateFromParent(App, this, key, invokeSetFirst);
         }
 
         public async void Put(string json, Action<RetryExceptionEventArgs> onError)
@@ -178,19 +190,56 @@ namespace RestfulFirebase.Database.Realtime
     public class RealtimeWire<T> : RealtimeWire
         where T : IRealtimeModel
     {
+        #region Methods
+
         public T Model { get; private set; }
 
-        public RealtimeWire(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, T model, bool invokeSetFirst)
-            : base(app, parentQuery, key, invokeSetFirst)
+        #endregion
+
+        #region Initializers
+
+        public static RealtimeWire<T> CreateFromParent(RestfulFirebaseApp app, RealtimeWire parentWire, string key, T model, bool invokeSetFirst)
+        {
+            return new RealtimeWire<T>(
+                app,
+                parentWire,
+                parentWire.Query,
+                new ChildQuery(app, parentWire.Query, () => key),
+                model,
+                invokeSetFirst);
+        }
+
+        public static RealtimeWire<T> CreateFromParent(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, T model, bool invokeSetFirst)
+        {
+            return new RealtimeWire<T>(
+                app,
+                null,
+                parentQuery,
+                new ChildQuery(app, parentQuery, () => key),
+                model,
+                invokeSetFirst);
+        }
+
+        public static RealtimeWire<T> CreateFromQuery(RestfulFirebaseApp app, FirebaseQuery query, T model, bool invokeSetFirst)
+        {
+            return new RealtimeWire<T>(
+                app,
+                null,
+                null,
+                query,
+                model,
+                invokeSetFirst);
+        }
+
+        private RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery parentQuery, FirebaseQuery query, T model, bool invokeSetFirst)
+            : base(app, parentWire, parentQuery, query, invokeSetFirst)
         {
             Model = model;
         }
 
-        public RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, string key, T model, bool invokeSetFirst)
-            : base(app, parentWire, key, invokeSetFirst)
-        {
-            Model = model;
-        }
+        #endregion
+
+        #region Methods
 
         public override void Start()
         {
@@ -200,5 +249,7 @@ namespace RestfulFirebase.Database.Realtime
                 .Create<StreamObject>(observer => new NodeStreamer(observer, Query, (s, e) => Model.OnError(e)).Run())
                 .Subscribe(streamObject => { InvokeStream(streamObject); });
         }
+
+        #endregion
     }
 }

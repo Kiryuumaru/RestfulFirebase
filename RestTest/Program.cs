@@ -70,7 +70,7 @@ namespace RestTest
                 ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com",
-                LocalDatabase = new DatastoreBlob(false)
+                LocalDatabase = new DatastoreBlob(true)
             });
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
@@ -81,10 +81,12 @@ namespace RestTest
             //TestObservableObject();
             //TestPropertyPut();
             //TestPropertySub();
+            //TestPropertySub2();
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             TestPropertyDictionarySub();
+            //TestPropertyDictionarySub2();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
@@ -115,6 +117,28 @@ namespace RestTest
             };
             props.Value = "numba11";
             userNode.Child("testing").Child("mock").SubAsRealtime("test", props).Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                props.Value = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static void TestPropertySub2()
+        {
+            var props = new FirebaseProperty<string>();
+            props.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
+            };
+            props.Value = "numba11";
+            userNode.Child("testing").Child("mock").SubAsRealtime("test", props).Start();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                props.Value = i.ToString();
+            }
+
             while (true)
             {
                 string line = Console.ReadLine();
@@ -234,6 +258,37 @@ namespace RestTest
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };
             wire.Start();
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
+                dict.Add(UIDFactory.GenerateSafeUID(), prop);
+            }
+        }
+
+        public static void TestPropertyDictionarySub2()
+        {
+            var dict = new FirebasePropertyDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                //Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+
+            var wire = userNode.Child("testing").SubAsRealtime("mock", dict);
+            wire.OnDataChanges += (s, e) =>
+            {
+                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+            };
+            wire.Start();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(i.ToString());
+                dict.Add(UIDFactory.GenerateSafeUID(), prop);
+            }
+
             while (true)
             {
                 string line = Console.ReadLine();

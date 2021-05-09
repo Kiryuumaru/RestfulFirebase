@@ -64,6 +64,8 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 InitializeProperties();
 
+                var subWires = new Dictionary<string, RealtimeWire>();
+
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -74,34 +76,51 @@ namespace RestfulFirebase.Database.Models.Primitive
                 {
                     var separatedSubPath = Utils.SeparateUrl(subData.Path);
                     var key = separatedSubPath[separatedPath.Length];
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+
+                    PropertyHolder propHolder = null;
+                    lock(PropertyHolders)
+                    {
+                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+                    }
 
                     if (propHolder == null)
                     {
                         propHolder = PropertyFactory(key, nameof(FirebaseObject), null, true);
+
                         ((FirebaseProperty)propHolder.Property).SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
-                        ((FirebaseProperty)propHolder.Property).MakeRealtime(wire.Child(key, true));
-                        PropertyHolders.Add(propHolder);
+
+                        var subWire = wire.Child(key, false);
+                        ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
+                        subWires.Add(propHolder.Key, subWire);
+
+                        lock (PropertyHolders)
+                        {
+                            PropertyHolders.Add(propHolder);
+                        }
+                    }
+                    else
+                    {
+                        var subWire = wire.Child(propHolder.Key, wire.InvokeSetFirst);
+                        ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
+                        subWires.Add(propHolder.Key, subWire);
+                    }
+                }
+
+                foreach (var propHolder in GetRawPersistableProperties())
+                {
+                    if (!subWires.ContainsKey(propHolder.Key))
+                    {
+                        var subWire = wire.Child(propHolder.Key, wire.InvokeSetFirst);
+                        ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
+                        subWires.Add(propHolder.Key, subWire);
                     }
                 }
 
                 Wire = wire;
 
-                var persistableProps = GetRawPersistableProperties();
-
-                foreach (var propHolder in persistableProps)
+                foreach (var subWire in subWires.Values)
                 {
-                    var prop = (FirebaseProperty)propHolder.Property;
-                    if (prop.Wire == null)
-                    {
-                        var subWire = Wire.Child(propHolder.Key, Wire.InvokeSetFirst);
-                        prop.MakeRealtime(subWire);
-                        subWire.InvokeStart();
-                    }
-                    else
-                    {
-                        prop.Wire.InvokeStart();
-                    }
+                    subWire.InvokeStart();
                 }
             };
             wire.OnStop += delegate
@@ -168,7 +187,11 @@ namespace RestfulFirebase.Database.Models.Primitive
                 {
                     bool hasSubChanges = false;
 
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(data.key));
+                    PropertyHolder propHolder = null;
+                    lock (PropertyHolders)
+                    {
+                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(data.key));
+                    }
 
                     if (propHolder == null)
                     {
@@ -183,7 +206,10 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                         setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, data.value));
 
-                        PropertyHolders.Add(propHolder);
+                        lock (PropertyHolders)
+                        {
+                            PropertyHolders.Add(propHolder);
+                        }
 
                         hasSubChanges = true;
                     }
@@ -214,7 +240,11 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             bool hasChanges = false;
 
-            var excluded = new List<PropertyHolder>(PropertyHolders.Where(i => !properties.Any(j => j.key == i.Key)));
+            List<PropertyHolder> excluded = null;
+            lock (PropertyHolders)
+            {
+                excluded = new List<PropertyHolder>(PropertyHolders.Where(i => !properties.Any(j => j.key == i.Key)));
+            }
 
             foreach (var propHolder in excluded)
             {
@@ -233,9 +263,12 @@ namespace RestfulFirebase.Database.Models.Primitive
         public bool Delete()
         {
             var hasChanges = false;
-            foreach (var propHolder in PropertyHolders)
+            lock (PropertyHolders)
             {
-                if (DeleteProperty(propHolder.Key)) hasChanges = true;
+                foreach (var propHolder in PropertyHolders)
+                {
+                    if (DeleteProperty(propHolder.Key)) hasChanges = true;
+                }
             }
             return hasChanges;
         }

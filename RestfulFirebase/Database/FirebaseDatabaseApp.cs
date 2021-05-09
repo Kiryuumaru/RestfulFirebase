@@ -21,12 +21,12 @@ namespace RestfulFirebase.Database
 
         public ChildQuery Child(string resourceName)
         {
-            return new ChildQuery(App, () => App.Config.DatabaseURL + resourceName);
+            return new ChildQuery(App, () => Utils.CombineUrl(App.Config.DatabaseURL, resourceName));
         }
 
         public void Dispose()
         {
-
+            OfflineDatabase?.Dispose();
         }
     }
 }

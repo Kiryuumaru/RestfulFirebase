@@ -19,9 +19,9 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         protected const string InitTag = "init";
         protected const string SyncTag = "sync";
-        protected const string RevertTag = "revert";
 
         public RealtimeWire Wire { get; private set; }
+        public DataNode Node { get; private set; }
 
         #endregion
 
@@ -29,154 +29,58 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         public override bool SetBlob(string blob, string tag = null)
         {
+            bool hasChanges = false;
+
+            void onError(RetryExceptionEventArgs err)
+            {
+                if (err.Exception is FirebaseDatabaseException ex)
+                {
+                    if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        if (Node.DeleteChanges()) OnChanged(nameof(Blob));
+                    }
+                }
+                OnError(err.Exception);
+            }
+
             if (Wire != null)
             {
-                void put(string data)
-                {
-                    Wire.Put(JsonConvert.SerializeObject(data), error =>
-                    {
-                        if (Wire == null) return;
-                        if (error.Exception is FirebaseDatabaseException ex)
-                        {
-                            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                            {
-                                SetBlob(null, RevertTag);
-                            }
-                        }
-                        OnError(error.Exception);
-                    });
-                }
-
-                var path = Wire.Query.GetAbsolutePath();
-                var offline = Wire.Query.App.Database.OfflineDatabase.GetData(path);
-
                 switch (tag)
                 {
                     case InitTag:
                         if (Wire.InvokeSetFirst)
                         {
-                            if (offline.Sync == null)
-                            {
-                                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
-                                put(blob);
-                            }
-                            else if (offline.Changes == null || offline.Blob != blob)
-                            {
-                                offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
-                                put(blob);
-                            }
-                        }
-                        else
-                        {
-                            var hasChanges = blob != offline.Changes?.Blob;
-                            if (hasChanges) OnChanged(nameof(Blob));
+                            if (Node.MakeChanges(blob, onError)) hasChanges = true;
                             return hasChanges;
                         }
-                        return false;
-                    case RevertTag:
-                        offline.Changes = null;
-                        break;
-                    case SyncTag:
-                        if (offline.Changes == null)
-                        {
-                            if (blob == null) offline.Delete();
-                            else offline.Sync = blob;
-                        }
-                        else if (offline.Changes.Blob == blob)
-                        {
-                            offline.Sync = blob;
-                            offline.Changes = null;
-                        }
                         else
                         {
-                            switch (offline.Changes.ChangesType)
-                            {
-                                case DataChangesType.Create:
-                                    if (blob == null)
-                                    {
-                                        put(offline.Changes.Blob);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.Sync = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case DataChangesType.Update:
-                                    if (blob == null)
-                                    {
-                                        offline.Delete();
-                                        break;
-                                    }
-                                    else if (offline.Sync == blob)
-                                    {
-                                        put(offline.Changes.Blob);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.Sync = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case DataChangesType.Delete:
-                                    if (blob == null)
-                                    {
-                                        return false;
-                                    }
-                                    else if (offline.Sync == blob)
-                                    {
-                                        put(null);
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        offline.Sync = blob;
-                                        offline.Changes = null;
-                                        break;
-                                    }
-                                case DataChangesType.None:
-                                    offline.Sync = blob;
-                                    offline.Changes = null;
-                                    break;
-                            }
+                            if (blob != Node.Changes?.Blob) hasChanges = true;
                         }
+                        break;
+                    case SyncTag:
+                        if (Node.MakeSync(blob, onError)) hasChanges = true;
                         break;
                     default:
-                        if (offline.Sync == null)
-                        {
-                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.None : DataChangesType.Create);
-                            put(blob);
-                        }
-                        else if (offline.Changes == null || offline.Blob != blob)
-                        {
-                            offline.Changes = new DataChanges(blob, blob == null ? DataChangesType.Delete : DataChangesType.Update);
-                            put(blob);
-                        }
+                        if (Node.MakeChanges(blob, onError)) hasChanges = true;
                         break;
                 }
-
-                if (offline.HasBlobChanges) OnChanged(nameof(Blob));
-
-                return offline.HasBlobChanges;
             }
             else
             {
-                var hasBlobChanges = base.SetBlob(blob);
-
-                if (hasBlobChanges) OnChanged(nameof(Blob));
-
-                return hasBlobChanges;
+                if (base.SetBlob(blob)) hasChanges = true;
             }
+
+            if (hasChanges) OnChanged(nameof(Blob));
+
+            return hasChanges;
         }
 
         public override string GetBlob(string defaultValue = null, string tag = null)
         {
             if (Wire != null)
             {
-                var path = Wire.Query.GetAbsolutePath();
-                return Wire.Query.App.Database.OfflineDatabase.GetData(path).Blob;
+                return Node.Blob;
             }
             else
             {
@@ -189,11 +93,13 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 Wire = wire;
+                Node = new DataNode(wire);
                 SetBlob(base.GetBlob(), InitTag);
             };
             wire.OnStop += delegate
             {
                 Wire = null;
+                Node = null;
             };
             wire.OnStream += streamObject =>
             {

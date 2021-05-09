@@ -14,6 +14,8 @@ namespace RestTest
         private static string filePath = Path.Combine(Directory.GetCurrentDirectory(), "db.db");
         private static Dictionary<string, string> db;
         private bool isPersistent;
+        private bool isWriting;
+        private bool write;
 
         public DatastoreBlob(bool isPersistent)
         {
@@ -29,53 +31,82 @@ namespace RestTest
         private void Save()
         {
             if (!isPersistent) return;
+
             Task.Run(delegate
             {
-                lock (this)
+                write = true;
+                if (isWriting) return;
+                isWriting = true;
+                while (write)
                 {
+                    write = false;
                     try
                     {
-                        string contentCopy = Utils.BlobConvert(db);
-                        File.WriteAllText(filePath, contentCopy);
+                        Dictionary<string, string> dbCopy = null;
+                        lock (db)
+                        {
+                            dbCopy = new Dictionary<string, string>(db);
+                        }
+                        lock (this)
+                        {
+                            string contentCopy = Utils.BlobConvert(dbCopy);
+                            File.WriteAllText(filePath, contentCopy);
+                        }
                     }
                     catch { }
                 }
+                isWriting = false;
             });
         }
 
         public IEnumerable<string> GetKeys()
         {
-            return db.Keys;
+            lock(db)
+            {
+                return db.Keys.ToArray();
+            }
         }
 
         public bool ContainsKey(string key)
         {
-            return db.ContainsKey(key);
+            lock (db)
+            {
+                return db.ContainsKey(key);
+            }
         }
 
         public string Get(string key)
         {
-            try
+            lock (db)
             {
-                if (!db.ContainsKey(key)) return null;
-                return db[key];
-            }
-            catch
-            {
-                return null;
+                try
+                {
+                    if (!db.ContainsKey(key)) return null;
+                    return db[key];
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 
         public void Set(string key, string value)
         {
-            if (db.ContainsKey(key)) db[key] = value;
-            else db.Add(key, value);
+            lock (db)
+            {
+                if (db.ContainsKey(key)) db[key] = value;
+                else db.Add(key, value);
+            }
             Save();
         }
 
         public void Delete(string key)
         {
-            db.Remove(key);
+            lock (db)
+            {
+                db.Remove(key);
+            }
             Save();
         }
     }

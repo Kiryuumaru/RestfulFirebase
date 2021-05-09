@@ -85,7 +85,11 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch(FirebaseAuthException ex)
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
+            catch (Exception ex)
             {
                 return CallResult.Error(ex);
             }
@@ -104,6 +108,10 @@ namespace RestfulFirebase.Auth
                 if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -126,6 +134,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -147,6 +159,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -167,6 +183,10 @@ namespace RestfulFirebase.Auth
                 if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -195,6 +215,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -215,6 +239,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -234,6 +262,10 @@ namespace RestfulFirebase.Auth
                 if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -269,6 +301,10 @@ namespace RestfulFirebase.Auth
                 }
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -356,6 +392,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -378,6 +418,10 @@ namespace RestfulFirebase.Auth
                 if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -410,6 +454,10 @@ namespace RestfulFirebase.Auth
                 if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -452,6 +500,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success<ProviderQueryResult>(data);
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error<ProviderQueryResult>(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error<ProviderQueryResult>(ex);
@@ -490,6 +542,10 @@ namespace RestfulFirebase.Auth
                 }
 
                 return CallResult.Success();
+            }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
             }
             catch (FirebaseAuthException ex)
             {
@@ -541,6 +597,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -590,6 +650,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success<string>(FirebaseToken);
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error<string>(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error<string>(ex);
@@ -629,6 +693,10 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
+            catch (HttpRequestException ex)
+            {
+                return CallResult.Error(ex);
+            }
             catch (FirebaseAuthException ex)
             {
                 return CallResult.Error(ex);
@@ -643,6 +711,10 @@ namespace RestfulFirebase.Auth
                 PurgePropertiesLocally();
 
                 return Task.FromResult(CallResult.Success());
+            }
+            catch (HttpRequestException ex)
+            {
+                return Task.FromResult(CallResult.Error(ex));
             }
             catch (FirebaseAuthException ex)
             {

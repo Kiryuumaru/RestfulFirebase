@@ -11,6 +11,7 @@ using System.IO;
 using System.Threading;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
+using System.Collections.Concurrent;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -52,97 +53,41 @@ namespace RestfulFirebase.Database.Query
                 token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
             }
 
-            string url;
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-
-            if (App.Config.OfflineMode)
+            async Task invoke(Func<string> invokeJsonData, CancellationToken? invokeToken)
             {
-                var offlineEx = new RetryExceptionEventArgs(new OfflineModeException());
-                onException?.Invoke(offlineEx);
-                if (offlineEx.Retry)
+                string url;
+                var responseData = string.Empty;
+                var statusCode = HttpStatusCode.OK;
+
+                if (App.Config.OfflineMode)
                 {
-                    await Task.Delay(2000);
-                    await Put(jsonData, token, onException);
+                    throw new OfflineModeException();
                 }
-            }
 
-            try
-            {
-                url = await BuildUrlAsync(token).ConfigureAwait(false);
-            }
-            catch (FirebaseDatabaseException ex)
-            {
-                var retryEx = new RetryExceptionEventArgs(ex);
-                onException?.Invoke(retryEx);
-                if (retryEx.Retry)
-                {
-                    await Task.Delay(2000);
-                    await Put(jsonData, token, onException);
-                }
-                return;
-            }
-            catch (Exception ex)
-            {
-                var retryEx = new RetryExceptionEventArgs(ex);
-                onException?.Invoke(retryEx);
-                if (retryEx.Retry)
-                {
-                    await Task.Delay(2000);
-                    await Put(jsonData, token, onException);
-                }
-                return;
-            }
+                url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
 
-            if (jsonData == null)
-            {
-                var c = GetClient();
-
-                try
+                if (invokeJsonData == null)
                 {
-                    var result = await c.DeleteAsync(url, token.Value).ConfigureAwait(false);
+                    var c = GetClient();
+
+                    var result = await c.DeleteAsync(url, invokeToken.Value).ConfigureAwait(false);
                     statusCode = result.StatusCode;
                     responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     result.EnsureSuccessStatusCode();
                 }
-                catch (FirebaseDatabaseException ex)
+                else
                 {
-                    var retryEx = new RetryExceptionEventArgs(ex);
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry)
-                    {
-                        await Task.Delay(2000);
-                        await Put(jsonData, token, onException);
-                    }
+                    var c = GetClient();
+                    await Silent().SendAsync(c, invokeJsonData(), HttpMethod.Put, invokeToken);
                 }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex);
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry)
-                    {
-                        await Task.Delay(2000);
-                        await Put(jsonData, token, onException);
-                    }
-                }
-            }
-            else
+            };
+
+            async Task recursive()
             {
                 try
                 {
-                    var c = GetClient();
-                    await Silent().SendAsync(c, jsonData(), HttpMethod.Put, token);
-                }
-                catch (FirebaseDatabaseException ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex);
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry)
-                    {
-                        await Task.Delay(2000);
-                        await Put(jsonData, token, onException);
-                    }
+                    await invoke(jsonData, token);
                 }
                 catch (Exception ex)
                 {
@@ -150,11 +95,13 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Task.Delay(2000);
-                        await Put(jsonData, token, onException);
+                        await Task.Delay(App.Config.DatabaseRetryDelay);
+                        await recursive();
                     }
                 }
             }
+
+            await recursive();
         }
 
         public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
@@ -164,12 +111,12 @@ namespace RestfulFirebase.Database.Query
 
         public RealtimeWire<T> PutAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, this, key, model, true);
+            return RealtimeWire<T>.CreateFromParent(App, this, key, model, true);
         }
 
         public RealtimeWire<T> SubAsRealtime<T>(string key, T model) where T : IRealtimeModel
         {
-            return new RealtimeWire<T>(App, this, key, model, false);
+            return RealtimeWire<T>.CreateFromParent(App, this, key, model, false);
         }
 
         public async Task<string> BuildUrlAsync(CancellationToken? token = null)

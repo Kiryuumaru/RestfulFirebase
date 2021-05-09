@@ -1,7 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using RestfulFirebase.Auth;
+using RestfulFirebase.Database.Query;
+using RestfulFirebase.Database.Realtime;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
@@ -11,13 +17,13 @@ namespace RestfulFirebase.Database.Offline
 
         public RestfulFirebaseApp App { get; }
 
+        public RealtimeWire Wire { get; }
+
         public string Path { get; }
 
         public string Key => Utils.SeparateUrl(Path).Last();
 
         public bool Exist => Short != null;
-
-        public bool HasBlobChanges { get; private set; }
 
         public string Short
         {
@@ -31,21 +37,17 @@ namespace RestfulFirebase.Database.Offline
             set
             {
                 if (Short == null) Short = GetUniqueShort();
-                var oldBlob = Blob;
                 Set(value, OfflineDatabase.SyncBlobPath, Short);
-                if (oldBlob != Blob) HasBlobChanges = true;
             }
         }
 
         public DataChanges Changes
         {
             get => Exist ? DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short)) : null;
-            set
+            private set
             {
                 if (Short == null) Short = GetUniqueShort();
-                var oldBlob = Blob;
                 Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
-                if (oldBlob != Blob) HasBlobChanges = true;
             }
         }
 
@@ -68,9 +70,22 @@ namespace RestfulFirebase.Database.Offline
         {
             App = app;
             Path = path;
+            Wire = RealtimeWire.CreateFromQuery(app, new ChildQuery(app, () => path), false);
+        }
+
+        public DataNode(RealtimeWire wire)
+        {
+            App = wire.App;
+            Path = wire.Query.GetAbsolutePath();
+            Wire = wire;
         }
 
         #endregion
+
+        private void Put(string blob, Action<RetryExceptionEventArgs> onError)
+        {
+            Wire.Put(JsonConvert.SerializeObject(blob), onError);
+        }
 
         protected string GetUniqueShort()
         {
@@ -98,15 +113,115 @@ namespace RestfulFirebase.Database.Offline
             else App.LocalDatabase.Set(combined, data);
         }
 
+        public bool MakeChanges(string blob, Action<RetryExceptionEventArgs> onError)
+        {
+            var oldBlob = Blob;
+
+            if (Sync == null)
+            {
+                Changes = new DataChanges(
+                    blob,
+                    blob == null ? DataChangesType.None : DataChangesType.Create,
+                    App.Database.OfflineDatabase.GetAvailableSyncPriority());
+
+                Put(blob, onError);
+            }
+            else if (Changes == null || oldBlob != blob)
+            {
+                Changes = new DataChanges(
+                    blob,
+                    blob == null ? DataChangesType.Delete : DataChangesType.Update,
+                    App.Database.OfflineDatabase.GetAvailableSyncPriority());
+
+                Put(blob, onError);
+            }
+
+            return oldBlob != Blob;
+        }
+
+        public bool MakeSync(string blob, Action<RetryExceptionEventArgs> onError)
+        {
+            var oldBlob = Blob;
+
+            if (Changes == null)
+            {
+                if (blob == null) Delete();
+                else Sync = blob;
+            }
+            else if (Changes.Blob == blob)
+            {
+                Sync = blob;
+                DeleteChanges();
+            }
+            else
+            {
+                switch (Changes.ChangesType)
+                {
+                    case DataChangesType.Create:
+                        if (blob == null)
+                        {
+                            Put(Changes.Blob, onError);
+                        }
+                        else
+                        {
+                            Sync = blob;
+                            DeleteChanges();
+                        }
+                        break;
+                    case DataChangesType.Update:
+                        if (blob == null)
+                        {
+                            Delete();
+                        }
+                        else if (Sync == blob)
+                        {
+                            Put(Changes.Blob, onError);
+                        }
+                        else
+                        {
+                            Sync = blob;
+                            DeleteChanges();
+                        }
+                        break;
+                    case DataChangesType.Delete:
+                        if (blob == null)
+                        {
+                            break;
+                        }
+                        if (Sync == blob)
+                        {
+                            Put(null, onError);
+                        }
+                        else
+                        {
+                            Sync = blob;
+                            DeleteChanges();
+                        }
+                        break;
+                    case DataChangesType.None:
+                        Sync = blob;
+                        DeleteChanges();
+                        break;
+                }
+            }
+
+            return oldBlob != Blob;
+        }
+
+        public bool DeleteChanges()
+        {
+            var hasChanges = Changes != null;
+            Changes = null;
+            return hasChanges;
+        }
+
         public virtual bool Delete()
         {
             if (!Exist) return false;
             var shortPath = Short;
-            var oldBlob = Blob;
             Set(null, OfflineDatabase.ShortPath, Path);
             Set(null, OfflineDatabase.SyncBlobPath, shortPath);
             Set(null, OfflineDatabase.ChangesPath, shortPath);
-            if (oldBlob != Blob) HasBlobChanges = true;
             return true;
         }
     }
