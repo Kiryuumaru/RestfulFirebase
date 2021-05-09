@@ -85,8 +85,8 @@ namespace RestTest
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
-            TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub();
+            TestPropertyDictionarySub2();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();

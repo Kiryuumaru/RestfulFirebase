@@ -44,15 +44,6 @@ namespace RestfulFirebase.Database.Query
 
         public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            if (token == null)
-            {
-                token = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-            }
-            else
-            {
-                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-            }
-
             async Task invoke(Func<string> invokeJsonData, CancellationToken? invokeToken)
             {
                 string url;
@@ -87,7 +78,18 @@ namespace RestfulFirebase.Database.Query
             {
                 try
                 {
-                    await invoke(jsonData, token);
+                    CancellationToken recursiveToken;
+
+                    if (token == null)
+                    {
+                        recursiveToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                    }
+                    else
+                    {
+                        recursiveToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                    }
+
+                    await invoke(jsonData, recursiveToken);
                 }
                 catch (Exception ex)
                 {

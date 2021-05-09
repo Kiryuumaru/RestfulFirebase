@@ -62,9 +62,10 @@ namespace RestfulFirebase.Database.Offline
             DataChanges firstChanges = null;
             foreach (var node in GetAllDatas())
             {
-                if (node.Changes != null)
+                var nodeChanges = node?.Changes;
+                if (nodeChanges != null)
                 {
-                    if (firstChanges == null || firstChanges?.SyncPriority <= node?.Changes.SyncPriority)
+                    if (firstChanges == null || firstChanges?.SyncPriority <= nodeChanges.SyncPriority)
                     {
                         first = node;
                         firstChanges = node.Changes;
@@ -80,9 +81,10 @@ namespace RestfulFirebase.Database.Offline
             DataChanges lastChanges = null;
             foreach (var node in GetAllDatas())
             {
-                if (node.Changes != null)
+                var nodeChanges = node?.Changes;
+                if (nodeChanges != null)
                 {
-                    if (lastChanges == null || lastChanges?.SyncPriority >= node?.Changes.SyncPriority)
+                    if (lastChanges == null || lastChanges?.SyncPriority >= nodeChanges.SyncPriority)
                     {
                         last = node;
                         lastChanges = node.Changes;
@@ -95,7 +97,7 @@ namespace RestfulFirebase.Database.Offline
         public long GetAvailableSyncPriority()
         {
             var lastPriority = App.Database.OfflineDatabase.GetLastSyncPriority();
-            return lastPriority == null ? 0 : lastPriority.Changes.SyncPriority + 1;
+            return lastPriority?.Changes == null ? 0 : lastPriority.Changes.SyncPriority + 1;
         }
 
         public void Flush()

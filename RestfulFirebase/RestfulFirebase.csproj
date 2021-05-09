@@ -27,6 +27,7 @@
     <None Remove="Database\Models\Primitive\FirebasePropertyDictionary.cs~RF10d2e464.TMP" />
     <None Remove="Database\Models\Primitive\FirebasePropertyDictionary.cs~RF1140b500.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />
+    <None Remove="Database\Offline\OfflineDatabase.cs~RF1f4578c1.TMP" />
   </ItemGroup>
 
   <ItemGroup>
