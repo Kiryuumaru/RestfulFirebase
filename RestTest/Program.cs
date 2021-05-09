@@ -65,13 +65,7 @@ namespace RestTest
 
         public static async Task Run()
         {
-            app = new RestfulFirebaseApp(new FirebaseConfig()
-            {
-                ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
-                DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
-                StorageBucket = "restfulplayground.appspot.com",
-                LocalDatabase = new DatastoreBlob(true)
-            });
+            app = new RestfulFirebaseApp(Config.YourConfig());
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
