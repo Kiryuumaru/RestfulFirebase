@@ -20,7 +20,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override PropertyHolder PropertyFactory(string key, string group, string propertyName, bool serializable)
+        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group, bool serializable)
         {
             ObservableProperty prop;
             if (serializable) prop = new FirebaseProperty();
@@ -80,12 +80,12 @@ namespace RestfulFirebase.Database.Models.Primitive
                     PropertyHolder propHolder = null;
                     lock(PropertyHolders)
                     {
-                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key.Equals(key));
+                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
                     }
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(key, nameof(FirebaseObject), null, true);
+                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject), true);
 
                         ((FirebaseProperty)propHolder.Property).SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
 
@@ -223,7 +223,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (hasSubChanges)
                     {
-                        OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                        OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
                         hasChanges = true;
                     }
                 }
@@ -250,7 +250,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, default)))
                 {
-                    OnChanged(propHolder.Key, propHolder.Group, propHolder.PropertyName);
+                    OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
                     hasChanges = true;
                 }
             }
@@ -271,12 +271,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                 }
             }
             return hasChanges;
-        }
-
-        public T ParseModel<T>()
-            where T : FirebaseObject
-        {
-            return (T)Activator.CreateInstance(typeof(T), this);
         }
 
         #endregion

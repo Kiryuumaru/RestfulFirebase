@@ -27,21 +27,21 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
+        private void OnPutError(RetryExceptionEventArgs err)
+        {
+            if (err.Exception is FirebaseDatabaseException ex)
+            {
+                if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    if (Node.DeleteChanges()) OnChanged(nameof(Blob));
+                }
+            }
+            OnError(err.Exception);
+        }
+
         public override bool SetBlob(string blob, string tag = null)
         {
             bool hasChanges = false;
-
-            void onError(RetryExceptionEventArgs err)
-            {
-                if (err.Exception is FirebaseDatabaseException ex)
-                {
-                    if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        if (Node.DeleteChanges()) OnChanged(nameof(Blob));
-                    }
-                }
-                OnError(err.Exception);
-            }
 
             if (Wire != null)
             {
@@ -50,28 +50,28 @@ namespace RestfulFirebase.Database.Models.Primitive
                     case InitTag:
                         if (Wire.InvokeSetFirst)
                         {
-                            if (Node.MakeChanges(blob, onError)) hasChanges = true;
+                            if (Node.MakeChanges(blob, OnPutError)) hasChanges = true;
                             return hasChanges;
                         }
-                        else
+                        else if (blob != Node.Changes?.Blob)
                         {
-                            if (blob != Node.Changes?.Blob) hasChanges = true;
+                            hasChanges = true;
                         }
                         break;
                     case SyncTag:
-                        if (Node.MakeSync(blob, onError)) hasChanges = true;
+                        if (Node.MakeSync(blob, OnPutError)) hasChanges = true;
                         break;
                     default:
-                        if (Node.MakeChanges(blob, onError)) hasChanges = true;
+                        if (Node.MakeChanges(blob, OnPutError)) hasChanges = true;
                         break;
                 }
+
+                if (hasChanges) OnChanged(nameof(Blob));
             }
             else
             {
                 if (base.SetBlob(blob)) hasChanges = true;
             }
-
-            if (hasChanges) OnChanged(nameof(Blob));
 
             return hasChanges;
         }
@@ -92,9 +92,10 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             wire.OnStart += delegate
             {
+                var blob = base.GetBlob();
                 Wire = wire;
                 Node = new DataNode(wire);
-                SetBlob(base.GetBlob(), InitTag);
+                SetBlob(blob, InitTag);
             };
             wire.OnStop += delegate
             {
@@ -152,8 +153,26 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         public override bool SetBlob(string blob, string tag = null)
         {
-            var hasChanges = base.SetBlob(blob, tag);
+            var hasChanges = false;
+            if (tag == InitTag)
+            {
+                if (Wire.InvokeSetFirst)
+                {
+                    if (base.SetBlob(blob, tag)) hasChanges = true;
+                    return hasChanges;
+                }
+                else
+                {
+                    if (base.SetBlob(blob, tag)) hasChanges = true;
+                }
+            }
+            else
+            {
+                if (base.SetBlob(blob, tag)) hasChanges = true;
+            }
+
             if (hasChanges) OnChanged(nameof(Value));
+
             return hasChanges;
         }
 
