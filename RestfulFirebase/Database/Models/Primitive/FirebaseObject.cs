@@ -29,8 +29,8 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 Property = prop,
                 Key = key,
-                Group = group,
-                PropertyName = propertyName
+                PropertyName = propertyName,
+                Group = group
             };
         }
 
@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             Func<T, T, bool> validateValue = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            base.SetProperty(value, key, true, nameof(FirebaseObject), propertyName, validateValue, customValueSetter);
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), true, validateValue, customValueSetter);
         }
 
         public T GetPersistableProperty<T>(
@@ -50,7 +50,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             [CallerMemberName] string propertyName = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            return base.GetProperty(key, true, nameof(FirebaseObject), defaultValue, propertyName, customValueSetter);
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), true, customValueSetter);
         }
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
