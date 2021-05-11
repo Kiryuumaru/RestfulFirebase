@@ -43,6 +43,13 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 var subWires = new Dictionary<string, RealtimeWire>();
 
+                foreach (var prop in this)
+                {
+                    var subWire = wire.Child(prop.Key, wire.InvokeSetFirst);
+                    prop.Value.MakeRealtime(subWire);
+                    subWires.Add(prop.Key, subWire);
+                }
+
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -66,22 +73,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                         subWires.Add(key, subWire);
 
                         Add(key, prop);
-                    }
-                    else
-                    {
-                        var subWire = wire.Child(key, wire.InvokeSetFirst);
-                        prop.MakeRealtime(subWire);
-                        subWires.Add(key, subWire);
-                    }
-                }
-
-                foreach (var prop in this)
-                {
-                    if (!subWires.ContainsKey(prop.Key))
-                    {
-                        var subWire = wire.Child(prop.Key, wire.InvokeSetFirst);
-                        prop.Value.MakeRealtime(subWire);
-                        subWires.Add(prop.Key, subWire);
                     }
                 }
 

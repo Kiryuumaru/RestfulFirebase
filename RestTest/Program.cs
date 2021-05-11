@@ -74,9 +74,9 @@ namespace RestTest
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            TestPropertySub();
+            //TestPropertySub();
             //TestPropertySub2();
-            //TestObjectPut();
+            TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
@@ -94,7 +94,7 @@ namespace RestTest
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba22";
-            userNode.Child("testing").Child("mock").PutAsRealtime("test", props).Start();
+            userNode.Child("testing").Child("mock").Child("test").PutAsRealtime(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -109,8 +109,8 @@ namespace RestTest
             {
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
-            props.Value = "numba11";
-            userNode.Child("testing").Child("mock").SubAsRealtime("test", props).Start();
+            //props.Value = "numba11";
+            userNode.Child("testing").Child("mock").Child("test").SubAsRealtime(props).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -126,7 +126,7 @@ namespace RestTest
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba11";
-            userNode.Child("testing").Child("mock").SubAsRealtime("test", props).Start();
+            userNode.Child("testing").Child("mock").Child("test").SubAsRealtime(props).Start();
 
             for (int i = 0; i < 1000; i++)
             {
@@ -167,7 +167,7 @@ namespace RestTest
             obj.Premium = TimeSpan.FromSeconds(60);
             obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
             obj.Test = "testuuuuu";
-            userNode.Child("testing").PutAsRealtime("mock", obj).Start();
+            userNode.Child("testing").Child("mock").PutAsRealtime(obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -202,7 +202,7 @@ namespace RestTest
             //obj.Premium = TimeSpan.FromSeconds(60);
             //obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
             //obj.Test = "testuuuuu";
-            userNode.Child("testing").SubAsRealtime("mock", obj).Start();
+            userNode.Child("testing").Child("mock").SubAsRealtime(obj).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -223,7 +223,7 @@ namespace RestTest
             var prop2 = new FirebaseProperty();
             prop2.SetValue("222");
             dict.Add("bbb", prop2);
-            userNode.Child("testing").PutAsRealtime("mock", dict).Start();
+            userNode.Child("testing").Child("mock").PutAsRealtime(dict).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -246,7 +246,7 @@ namespace RestTest
             var prop2 = new FirebaseProperty();
             prop2.SetValue("444");
             dict.Add("ddd", prop2);
-            var wire = userNode.Child("testing").SubAsRealtime("mock", dict);
+            var wire = userNode.Child("testing").Child("mock").SubAsRealtime(dict);
             wire.OnDataChanges += (s, e) =>
             {
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
@@ -269,7 +269,7 @@ namespace RestTest
                 //Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
-            var wire = userNode.Child("testing").SubAsRealtime("mock", dict);
+            var wire = userNode.Child("testing").Child("mock").SubAsRealtime(dict);
             wire.OnDataChanges += (s, e) =>
             {
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
@@ -313,7 +313,7 @@ namespace RestTest
             obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(7200) };
             obj2.Test = "CLynt";
             dict.Add("ccc", obj3);
-            userNode.Child("testing").PutAsRealtime("mock", dict).Start();
+            userNode.Child("testing").Child("mock").PutAsRealtime(dict).Start();
             while (true)
             {
                 string line = Console.ReadLine();
@@ -343,7 +343,7 @@ namespace RestTest
             //obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(7200) };
             //obj2.Test = "CLynt";
             //dict.Add("ccc", obj3);
-            userNode.Child("testing").SubAsRealtime("mock", dict).Start();
+            userNode.Child("testing").Child("mock").SubAsRealtime(dict).Start();
             while (true)
             {
                 string line = Console.ReadLine();

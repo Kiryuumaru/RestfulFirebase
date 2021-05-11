@@ -25,7 +25,6 @@ namespace RestfulFirebase.Database.Realtime
 
         public RestfulFirebaseApp App { get; }
         public RealtimeWire ParentWire { get; }
-        public FirebaseQuery ParentQuery { get; }
         public FirebaseQuery Query { get; }
         public bool InvokeSetFirst { get; private set; }
         public bool HasFirstStream { get; private set; }
@@ -66,18 +65,7 @@ namespace RestfulFirebase.Database.Realtime
             return new RealtimeWire(
                 app,
                 parentWire,
-                parentWire.Query,
                 new ChildQuery(app, parentWire.Query, () => key),
-                invokeSetFirst);
-        }
-
-        public static RealtimeWire CreateFromParent(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, bool invokeSetFirst)
-        {
-            return new RealtimeWire(
-                app,
-                null,
-                parentQuery,
-                new ChildQuery(app, parentQuery, () => key),
                 invokeSetFirst);
         }
 
@@ -86,16 +74,14 @@ namespace RestfulFirebase.Database.Realtime
             return new RealtimeWire(
                 app,
                 null,
-                null,
                 query,
                 invokeSetFirst);
         }
 
-        protected RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery parentQuery, FirebaseQuery query, bool invokeSetFirst)
+        protected RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery query, bool invokeSetFirst)
         {
             App = app;
             ParentWire = parentWire;
-            ParentQuery = parentQuery;
             Query = query;
             InvokeSetFirst = invokeSetFirst;
         }
@@ -164,6 +150,10 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         err.Retry = true;
                     }
+                    else if (err.Exception is FirebaseDatabaseException firEx && firEx.InnerException is HttpRequestException)
+                    {
+                        err.Retry = true;
+                    }
                     else
                     {
                         onError(err);
@@ -203,19 +193,7 @@ namespace RestfulFirebase.Database.Realtime
             return new RealtimeWire<T>(
                 app,
                 parentWire,
-                parentWire.Query,
                 new ChildQuery(app, parentWire.Query, () => key),
-                model,
-                invokeSetFirst);
-        }
-
-        public static RealtimeWire<T> CreateFromParent(RestfulFirebaseApp app, FirebaseQuery parentQuery, string key, T model, bool invokeSetFirst)
-        {
-            return new RealtimeWire<T>(
-                app,
-                null,
-                parentQuery,
-                new ChildQuery(app, parentQuery, () => key),
                 model,
                 invokeSetFirst);
         }
@@ -225,14 +203,13 @@ namespace RestfulFirebase.Database.Realtime
             return new RealtimeWire<T>(
                 app,
                 null,
-                null,
                 query,
                 model,
                 invokeSetFirst);
         }
 
-        private RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery parentQuery, FirebaseQuery query, T model, bool invokeSetFirst)
-            : base(app, parentWire, parentQuery, query, invokeSetFirst)
+        private RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery query, T model, bool invokeSetFirst)
+            : base(app, parentWire, query, invokeSetFirst)
         {
             Model = model;
         }

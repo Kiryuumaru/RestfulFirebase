@@ -62,9 +62,9 @@ namespace RestfulFirebase.Database.Models.Primitive
         {
             wire.OnStart += delegate
             {
-                InitializeProperties();
+                InitializeProperties(false);
 
-                var subWires = new Dictionary<string, RealtimeWire>();
+                var subWires = new List<(PropertyHolder propHolder, RealtimeWire wire)>();
 
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
@@ -87,11 +87,9 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         propHolder = PropertyFactory(key, null, nameof(FirebaseObject), true);
 
-                        ((FirebaseProperty)propHolder.Property).SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
-
                         var subWire = wire.Child(key, false);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
-                        subWires.Add(propHolder.Key, subWire);
+                        subWires.Add((propHolder, subWire));
 
                         lock (PropertyHolders)
                         {
@@ -102,25 +100,26 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var subWire = wire.Child(propHolder.Key, wire.InvokeSetFirst);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
-                        subWires.Add(propHolder.Key, subWire);
+                        subWires.Add((propHolder, subWire));
                     }
                 }
 
                 foreach (var propHolder in GetRawPersistableProperties())
                 {
-                    if (!subWires.ContainsKey(propHolder.Key))
+                    if (!subWires.Any(i => i.propHolder.Key == propHolder.Key))
                     {
                         var subWire = wire.Child(propHolder.Key, wire.InvokeSetFirst);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
-                        subWires.Add(propHolder.Key, subWire);
+                        subWires.Add((propHolder, subWire));
                     }
                 }
 
                 Wire = wire;
 
-                foreach (var subWire in subWires.Values)
+                foreach (var subWire in subWires)
                 {
-                    subWire.InvokeStart();
+                    subWire.wire.InvokeStart();
+                    if (!Wire.InvokeSetFirst) OnChanged(subWire.propHolder.Key, subWire.propHolder.PropertyName, subWire.propHolder.Group);
                 }
             };
             wire.OnStop += delegate

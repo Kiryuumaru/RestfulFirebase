@@ -33,7 +33,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    if (Node.DeleteChanges()) OnChanged(nameof(Blob));
+                    if (Node.DeleteChanges()) OnChanged(nameof(Property));
                 }
             }
             OnError(err.Exception);
@@ -53,7 +53,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                             if (Node.MakeChanges(blob, OnPutError)) hasChanges = true;
                             return hasChanges;
                         }
-                        else if (blob != Node.Changes?.Blob)
+                        else
                         {
                             hasChanges = true;
                         }
@@ -66,7 +66,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                         break;
                 }
 
-                if (hasChanges) OnChanged(nameof(Blob));
+                if (hasChanges) OnChanged(nameof(Property));
             }
             else
             {
