@@ -29,9 +29,9 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         private void OnPutError(RetryExceptionEventArgs err)
         {
-            if (err.Exception is FirebaseDatabaseException ex)
+            if (err.Exception is FirebaseException ex)
             {
-                if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
                 {
                     if (Node.DeleteChanges()) OnChanged(nameof(Property));
                 }

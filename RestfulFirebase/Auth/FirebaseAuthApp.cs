@@ -89,11 +89,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (Exception ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -115,11 +111,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -142,11 +134,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -169,11 +157,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -196,11 +180,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -229,11 +209,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -255,11 +231,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -279,11 +251,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -306,23 +274,19 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
                 }
-                catch (HttpRequestException ex)
+                catch (OperationCanceledException ex)
                 {
-                    throw ex;
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                 }
                 catch (Exception ex)
                 {
-                    AuthErrorReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseAuthException(GoogleGetConfirmationCodeUrl, content, responseData, ex, errorReason);
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
                 }
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -332,7 +296,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{ \"idToken\": \"{FirebaseToken}\" }}";
                 var responseData = "N/A";
@@ -347,19 +311,19 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
                 }
-                catch (HttpRequestException ex)
+                catch (OperationCanceledException ex)
                 {
-                    throw ex;
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                 }
                 catch (Exception ex)
                 {
-                    AuthErrorReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseAuthException(GoogleDeleteUserUrl, content, responseData, ex, errorReason);
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
                 }
 
                 return CallResult.Success();
             }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -369,24 +333,34 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{FirebaseToken}\"}}";
+                var responseData = "N/A";
 
-                var response = await client.PostAsync(
-                    new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
-                    new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                try
+                {
+                    var response = await client.PostAsync(
+                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                response.EnsureSuccessStatusCode();
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                throw ex;
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -396,7 +370,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
@@ -408,11 +382,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -422,7 +392,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var providerId = GetProviderId(authType);
                 var content = $"{{\"idToken\":\"{FirebaseToken}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
@@ -435,11 +405,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -449,7 +415,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 string providerId;
                 if (authType == FirebaseAuthType.EmailAndPassword)
@@ -471,11 +437,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -485,7 +447,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 string content = $"{{\"identifier\":\"{User.Email}\", \"continueUri\": \"http://localhost\"}}";
                 string responseData = "N/A";
@@ -505,22 +467,19 @@ namespace RestfulFirebase.Auth
                     data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
                     data.Email = User.Email;
                 }
-                catch (HttpRequestException ex)
+                catch (OperationCanceledException ex)
                 {
-                    throw ex;
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                 }
                 catch (Exception ex)
                 {
-                    throw new FirebaseAuthException(GoogleCreateAuthUrl, content, responseData, ex);
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
                 }
 
                 return CallResult.Success<ProviderQueryResult>(data);
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error<ProviderQueryResult>(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error<ProviderQueryResult>(ex);
             }
@@ -530,7 +489,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"idToken\":\"{FirebaseToken}\"}}";
                 var responseData = "N/A";
@@ -547,23 +506,19 @@ namespace RestfulFirebase.Auth
                     var user = JsonConvert.DeserializeObject<User>(resultJson["users"].First().ToString());
                     User = user;
                 }
-                catch (HttpRequestException ex)
+                catch (OperationCanceledException ex)
                 {
-                    throw ex;
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                 }
                 catch (Exception ex)
                 {
-                    AuthErrorReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseAuthException(GoogleDeleteUserUrl, content, responseData, ex, errorReason);
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
                 }
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -573,7 +528,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 if (IsExpired())
                 {
@@ -601,23 +556,19 @@ namespace RestfulFirebase.Auth
                         CopyPropertiesLocally(auth);
                         InvokeFirebaseAuthRefreshed();
                     }
-                    catch (HttpRequestException ex)
+                    catch (OperationCanceledException ex)
                     {
-                        throw ex;
+                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                     }
                     catch (Exception ex)
                     {
-                        throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
+                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
                     }
                 }
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -627,7 +578,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 if (IsExpired())
                 {
@@ -654,23 +605,19 @@ namespace RestfulFirebase.Auth
                         CopyPropertiesLocally(auth);
                         InvokeFirebaseAuthRefreshed();
                     }
-                    catch (HttpRequestException ex)
+                    catch (OperationCanceledException ex)
                     {
-                        throw ex;
+                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                     }
                     catch (Exception ex)
                     {
-                        throw new FirebaseAuthException(GoogleRefreshAuth, content, responseData, ex);
+                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
                     }
                 }
 
                 return CallResult.Success<string>(FirebaseToken);
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error<string>(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error<string>(ex);
             }
@@ -680,7 +627,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{FirebaseToken}\"");
                 if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))
@@ -709,11 +656,7 @@ namespace RestfulFirebase.Auth
 
                 return CallResult.Success();
             }
-            catch (HttpRequestException ex)
-            {
-                return CallResult.Error(ex);
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return CallResult.Error(ex);
             }
@@ -723,16 +666,12 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseAuthException(new Exception("NOT AUTHENTICATED"), AuthErrorReason.NotAuthenticated);
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
                 PurgePropertiesLocally();
 
                 return Task.FromResult(CallResult.Success());
             }
-            catch (HttpRequestException ex)
-            {
-                return Task.FromResult(CallResult.Error(ex));
-            }
-            catch (FirebaseAuthException ex)
+            catch (FirebaseException ex)
             {
                 return Task.FromResult(CallResult.Error(ex));
             }
@@ -774,21 +713,21 @@ namespace RestfulFirebase.Auth
 
                 return auth;
             }
-            catch (HttpRequestException ex)
+            catch (OperationCanceledException ex)
             {
-                throw ex;
+                throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
             }
             catch (Exception ex)
             {
                 Type s = ex.GetType();
-                AuthErrorReason errorReason = GetFailureReason(responseData);
-                throw new FirebaseAuthException(googleUrl, postContent, responseData, ex, errorReason);
+                FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                throw new FirebaseException(errorReason, ex);
             }
         }
 
-        private static AuthErrorReason GetFailureReason(string responseData)
+        private static FirebaseExceptionReason GetFailureReason(string responseData)
         {
-            var failureReason = AuthErrorReason.Undefined;
+            var failureReason = FirebaseExceptionReason.AuthUndefined;
             try
             {
                 if (!string.IsNullOrEmpty(responseData) && responseData != "N/A")
@@ -802,93 +741,93 @@ namespace RestfulFirebase.Auth
                     {
                         //general errors
                         case "invalid access_token, error code 43.":
-                            failureReason = AuthErrorReason.InvalidAccessToken;
+                            failureReason = FirebaseExceptionReason.AuthInvalidAccessToken;
                             break;
 
                         case "CREDENTIAL_TOO_OLD_LOGIN_AGAIN":
-                            failureReason = AuthErrorReason.LoginCredentialsTooOld;
+                            failureReason = FirebaseExceptionReason.AuthLoginCredentialsTooOld;
                             break;
 
                         case "OPERATION_NOT_ALLOWED":
-                            failureReason = AuthErrorReason.OperationNotAllowed;
+                            failureReason = FirebaseExceptionReason.AuthOperationNotAllowed;
                             break;
 
                         //possible errors from Third Party Authentication using GoogleIdentityUrl
                         case "INVALID_PROVIDER_ID : Provider Id is not supported.":
-                            failureReason = AuthErrorReason.InvalidProviderID;
+                            failureReason = FirebaseExceptionReason.AuthInvalidProviderID;
                             break;
                         case "MISSING_REQUEST_URI":
-                            failureReason = AuthErrorReason.MissingRequestURI;
+                            failureReason = FirebaseExceptionReason.AuthMissingRequestURI;
                             break;
                         case "A system error has occurred - missing or invalid postBody":
-                            failureReason = AuthErrorReason.SystemError;
+                            failureReason = FirebaseExceptionReason.AuthSystemError;
                             break;
 
                         //possible errors from Email/Password Account Signup (via signupNewUser or setAccountInfo) or Signin
                         case "INVALID_EMAIL":
-                            failureReason = AuthErrorReason.InvalidEmailAddress;
+                            failureReason = FirebaseExceptionReason.AuthInvalidEmailAddress;
                             break;
                         case "MISSING_PASSWORD":
-                            failureReason = AuthErrorReason.MissingPassword;
+                            failureReason = FirebaseExceptionReason.AuthMissingPassword;
                             break;
 
                         //possible errors from Email/Password Account Signup (via signupNewUser or setAccountInfo)
                         case "EMAIL_EXISTS":
-                            failureReason = AuthErrorReason.EmailExists;
+                            failureReason = FirebaseExceptionReason.AuthEmailExists;
                             break;
 
                         //possible errors from Account Delete
                         case "USER_NOT_FOUND":
-                            failureReason = AuthErrorReason.UserNotFound;
+                            failureReason = FirebaseExceptionReason.AuthUserNotFound;
                             break;
 
                         //possible errors from Email/Password Signin
                         case "INVALID_PASSWORD":
-                            failureReason = AuthErrorReason.WrongPassword;
+                            failureReason = FirebaseExceptionReason.AuthWrongPassword;
                             break;
                         case "EMAIL_NOT_FOUND":
-                            failureReason = AuthErrorReason.UnknownEmailAddress;
+                            failureReason = FirebaseExceptionReason.AuthUnknownEmailAddress;
                             break;
                         case "USER_DISABLED":
-                            failureReason = AuthErrorReason.UserDisabled;
+                            failureReason = FirebaseExceptionReason.AuthUserDisabled;
                             break;
 
                         //possible errors from Email/Password Signin or Password Recovery or Email/Password Sign up using setAccountInfo
                         case "MISSING_EMAIL":
-                            failureReason = AuthErrorReason.MissingEmail;
+                            failureReason = FirebaseExceptionReason.AuthMissingEmail;
                             break;
                         case "RESET_PASSWORD_EXCEED_LIMIT":
-                            failureReason = AuthErrorReason.ResetPasswordExceedLimit;
+                            failureReason = FirebaseExceptionReason.AuthResetPasswordExceedLimit;
                             break;
 
                         //possible errors from Password Recovery
                         case "MISSING_REQ_TYPE":
-                            failureReason = AuthErrorReason.MissingRequestType;
+                            failureReason = FirebaseExceptionReason.AuthMissingRequestType;
                             break;
 
                         //possible errors from Account Linking
                         case "INVALID_ID_TOKEN":
-                            failureReason = AuthErrorReason.InvalidIDToken;
+                            failureReason = FirebaseExceptionReason.AuthInvalidIDToken;
                             break;
 
                         //possible errors from Getting Linked Accounts
                         case "INVALID_IDENTIFIER":
-                            failureReason = AuthErrorReason.InvalidIdentifier;
+                            failureReason = FirebaseExceptionReason.AuthInvalidIdentifier;
                             break;
                         case "MISSING_IDENTIFIER":
-                            failureReason = AuthErrorReason.MissingIdentifier;
+                            failureReason = FirebaseExceptionReason.AuthMissingIdentifier;
                             break;
                         case "FEDERATED_USER_ID_ALREADY_LINKED":
-                            failureReason = AuthErrorReason.AlreadyLinked;
+                            failureReason = FirebaseExceptionReason.AuthAlreadyLinked;
                             break;
                     }
 
-                    if (failureReason == AuthErrorReason.Undefined)
+                    if (failureReason == FirebaseExceptionReason.Undefined)
                     {
                         //possible errors from Email/Password Account Signup (via signupNewUser or setAccountInfo)
-                        if (errorData?.error?.message?.StartsWith("WEAK_PASSWORD :") ?? false) failureReason = AuthErrorReason.WeakPassword;
+                        if (errorData?.error?.message?.StartsWith("WEAK_PASSWORD :") ?? false) failureReason = FirebaseExceptionReason.AuthWeakPassword;
                         //possible errors from Email/Password Signin
-                        else if (errorData?.error?.message?.StartsWith("TOO_MANY_ATTEMPTS_TRY_LATER :") ?? false) failureReason = AuthErrorReason.TooManyAttemptsTryLater;
+                        else if (errorData?.error?.message?.StartsWith("TOO_MANY_ATTEMPTS_TRY_LATER :") ?? false) failureReason = FirebaseExceptionReason.AuthTooManyAttemptsTryLater;
                     }
                 }
             }

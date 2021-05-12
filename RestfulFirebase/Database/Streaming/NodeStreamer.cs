@@ -122,13 +122,13 @@ namespace RestfulFirebase.Database.Streaming
                 }
                 catch (Exception ex)
                 {
-                    var fireEx = new FirebaseDatabaseException(url, string.Empty, line, statusCode, ex);
-                    var args = new ContinueExceptionEventArgs(fireEx, statusCode == HttpStatusCode.OK);
+                    var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                    var args = new ContinueExceptionEventArgs(fireEx, true);
                     exceptionThrown?.Invoke(this, args);
 
                     if (!args.IgnoreAndContinue)
                     {
-                        this.observer.OnError(new FirebaseDatabaseException(url, string.Empty, line, statusCode, ex));
+                        this.observer.OnError(fireEx);
                         Dispose();
                         break;
                     }
@@ -183,7 +183,7 @@ namespace RestfulFirebase.Database.Streaming
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
-                    this.observer.OnError(new FirebaseDatabaseException(url, string.Empty, serverData, HttpStatusCode.Unauthorized));
+                    this.observer.OnError(new FirebaseException(FirebaseExceptionReason.DatabaseUnauthorized, new Exception("Cancelled")));
                     Dispose();
                     break;
             }

@@ -141,21 +141,24 @@ namespace RestfulFirebase.Database.Realtime
                 await Query.Put(() => jsonToPut, null, err =>
                 {
                     Type exType = err.Exception.GetType();
-                    if (err.Exception is OfflineModeException)
+                    if (err.Exception is FirebaseException firEx)
                     {
-                        err.Retry = true;
-                    }
-                    else if (err.Exception is TaskCanceledException)
-                    {
-                        err.Retry = true;
-                    }
-                    else if (err.Exception is HttpRequestException)
-                    {
-                        err.Retry = true;
-                    }
-                    else if (err.Exception is FirebaseAuthException)
-                    {
-                        err.Retry = true;
+                        if (firEx.Reason == FirebaseExceptionReason.OfflineMode)
+                        {
+                            err.Retry = true;
+                        }
+                        else if (firEx.Reason == FirebaseExceptionReason.OperationCancelled)
+                        {
+                            err.Retry = true;
+                        }
+                        else if (firEx.Reason == FirebaseExceptionReason.Auth)
+                        {
+                            err.Retry = true;
+                        }
+                        else
+                        {
+                            onError(err);
+                        }
                     }
                     else
                     {
