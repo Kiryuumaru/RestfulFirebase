@@ -180,11 +180,17 @@ namespace RestfulFirebase.Database.Realtime
             OnStop?.Invoke();
         }
 
-        public async Task WaitForFirstStream(TimeSpan timeout)
+        public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
+            bool isSuccess = false;
             await Task.WhenAny(
-                Task.Run(delegate { hasFirstStreamWait.Token.WaitHandle.WaitOne(); }),
+                Task.Run(delegate
+                {
+                    hasFirstStreamWait.Token.WaitHandle.WaitOne();
+                    isSuccess = true;
+                }),
                 Task.Delay(timeout));
+            return isSuccess;
         }
 
         #endregion
