@@ -56,7 +56,26 @@ namespace RestfulFirebase.Database.Query
                     throw new OfflineModeException();
                 }
 
-                url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
+                try
+                {
+                    url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
+                }
+                catch (TaskCanceledException ex)
+                {
+                    throw ex;
+                }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
+                catch (FirebaseAuthException ex)
+                {
+                    throw ex;
+                }
+                catch (Exception ex)
+                {
+                    throw new FirebaseDatabaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex);
+                }
 
                 var c = GetClient();
 
@@ -69,6 +88,14 @@ namespace RestfulFirebase.Database.Query
                         responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                         result.EnsureSuccessStatusCode();
+                    }
+                    catch (TaskCanceledException ex)
+                    {
+                        throw ex; 
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        throw ex;
                     }
                     catch (Exception ex)
                     {
@@ -131,7 +158,26 @@ namespace RestfulFirebase.Database.Query
                     throw new OfflineModeException();
                 }
 
-                url = await this.BuildUrlAsync().ConfigureAwait(false);
+                try
+                {
+                    url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
+                }
+                catch (TaskCanceledException ex)
+                {
+                    throw ex;
+                }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
+                }
+                catch (FirebaseAuthException ex)
+                {
+                    throw ex;
+                }
+                catch (Exception ex)
+                {
+                    throw new FirebaseDatabaseException("Couldn't build the url", string.Empty, responseData, statusCode, ex);
+                }
 
                 try
                 {
@@ -143,6 +189,14 @@ namespace RestfulFirebase.Database.Query
                     response.Dispose();
 
                     return responseData;
+                }
+                catch (TaskCanceledException ex)
+                {
+                    throw ex;
+                }
+                catch (HttpRequestException ex)
+                {
+                    throw ex;
                 }
                 catch (Exception ex)
                 {
@@ -287,6 +341,10 @@ namespace RestfulFirebase.Database.Query
                 throw ex;
             }
             catch (HttpRequestException ex)
+            {
+                throw ex;
+            }
+            catch (FirebaseAuthException ex)
             {
                 throw ex;
             }
