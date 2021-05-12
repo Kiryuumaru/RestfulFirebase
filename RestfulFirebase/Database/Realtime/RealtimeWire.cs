@@ -179,6 +179,13 @@ namespace RestfulFirebase.Database.Realtime
             OnStop?.Invoke();
         }
 
+        public async Task WaitForFirstStream(TimeSpan timeout)
+        {
+            await Task.WhenAny(
+                Task.Run(async delegate { while (!HasFirstStream) { await Task.Delay(500); } }),
+                Task.Delay(timeout));
+        }
+
         #endregion
     }
 
