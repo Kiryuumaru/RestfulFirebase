@@ -35,6 +35,7 @@ namespace RestfulFirebase.Database.Realtime
         public event Action OnStop;
         public event Func<StreamObject, bool> OnStream;
         public event EventHandler<DataChangesEventArgs> OnDataChanges;
+        public event Action OnFirstStream;
 
         public int TotalDataCount
         {
@@ -109,7 +110,11 @@ namespace RestfulFirebase.Database.Realtime
             //    isStreamWaiting = false;
             //}
             hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
-            if (!HasFirstStream) HasFirstStream = true;
+            if (!HasFirstStream)
+            {
+                HasFirstStream = true;
+                OnFirstStream?.Invoke();
+            }
             InvokeDataChanges();
             return hasChanges;
         }
