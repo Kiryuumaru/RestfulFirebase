@@ -46,7 +46,9 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        public event EventHandler<FirebaseAuthEventArgs> FirebaseAuthRefreshed;
+        public event Action FirebaseAuthRefreshed;
+
+        public event Action OnAuthenticated;
 
         internal FirebaseAuthApp(RestfulFirebaseApp firebaseApp)
         {
@@ -76,6 +78,8 @@ namespace RestfulFirebase.Auth
                 CopyPropertiesLocally(auth);
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
+
+                InvokeOnAuthenticated();
 
                 if (sendVerificationEmail)
                 {
@@ -107,6 +111,8 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
+                InvokeOnAuthenticated();
+
                 return CallResult.Success();
             }
             catch (HttpRequestException ex)
@@ -131,6 +137,8 @@ namespace RestfulFirebase.Auth
                 CopyPropertiesLocally(auth);
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
+
+                InvokeOnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -157,6 +165,8 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
+                InvokeOnAuthenticated();
+
                 return CallResult.Success();
             }
             catch (HttpRequestException ex)
@@ -181,6 +191,8 @@ namespace RestfulFirebase.Auth
                 CopyPropertiesLocally(auth);
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
+
+                InvokeOnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -213,6 +225,8 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
 
+                InvokeOnAuthenticated();
+
                 return CallResult.Success();
             }
             catch (HttpRequestException ex)
@@ -236,6 +250,8 @@ namespace RestfulFirebase.Auth
                 CopyPropertiesLocally(auth);
                 var refreshResult = await RefreshUserDetailsAsync();
                 if (!refreshResult.IsSuccess) return refreshResult;
+
+                InvokeOnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -583,7 +599,7 @@ namespace RestfulFirebase.Auth
                         };
 
                         CopyPropertiesLocally(auth);
-                        OnFirebaseAuthRefreshed(this);
+                        InvokeFirebaseAuthRefreshed();
                     }
                     catch (HttpRequestException ex)
                     {
@@ -636,7 +652,7 @@ namespace RestfulFirebase.Auth
                         };
 
                         CopyPropertiesLocally(auth);
-                        OnFirebaseAuthRefreshed(this);
+                        InvokeFirebaseAuthRefreshed();
                     }
                     catch (HttpRequestException ex)
                     {
@@ -727,9 +743,14 @@ namespace RestfulFirebase.Auth
             client.Dispose();
         }
 
-        protected void OnFirebaseAuthRefreshed(FirebaseAuth auth)
+        protected void InvokeFirebaseAuthRefreshed()
         {
-            FirebaseAuthRefreshed?.Invoke(this, new FirebaseAuthEventArgs(auth));
+            FirebaseAuthRefreshed?.Invoke();
+        }
+
+        protected void InvokeOnAuthenticated()
+        {
+            OnAuthenticated?.Invoke();
         }
 
         private async Task<FirebaseAuth> ExecuteWithPostContentAsync(string googleUrl, string postContent)
