@@ -113,7 +113,12 @@ namespace RestfulFirebase.Database.Query
             await recursive();
         }
 
-        public async Task<string> OnceSingle(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            await Put(() => jsonData, token, onException);
+        }
+
+        public async Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task<string> invoke(CancellationToken? invokeToken)
             {
@@ -176,11 +181,6 @@ namespace RestfulFirebase.Database.Query
             }
 
             return await recursive();
-        }
-
-        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            await Put(() => jsonData, token, onException);
         }
 
         public RealtimeWire<T> PutAsRealtime<T>(T model) where T : IRealtimeModel
