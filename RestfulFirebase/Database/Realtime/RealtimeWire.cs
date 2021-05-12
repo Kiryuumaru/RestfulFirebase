@@ -20,6 +20,7 @@ namespace RestfulFirebase.Database.Realtime
         private string jsonToPut;
         //private bool isStreamWaiting;
         private StreamObject streamObjectBuffer;
+        public CancellationTokenSource hasFirstStreamWait { get; private set; }
 
         protected IDisposable Subscription;
 
@@ -113,6 +114,7 @@ namespace RestfulFirebase.Database.Realtime
             if (!HasFirstStream)
             {
                 HasFirstStream = true;
+                hasFirstStreamWait.Cancel();
                 OnFirstStream?.Invoke();
             }
             InvokeDataChanges();
@@ -155,10 +157,6 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         err.Retry = true;
                     }
-                    else if (err.Exception is FirebaseDatabaseException firEx && firEx.InnerException is HttpRequestException)
-                    {
-                        err.Retry = true;
-                    }
                     else
                     {
                         onError(err);
@@ -182,7 +180,7 @@ namespace RestfulFirebase.Database.Realtime
         public async Task WaitForFirstStream(TimeSpan timeout)
         {
             await Task.WhenAny(
-                Task.Run(async delegate { while (!HasFirstStream) { await Task.Delay(500); } }),
+                Task.Run(delegate { hasFirstStreamWait.Token.WaitHandle.WaitOne(); }),
                 Task.Delay(timeout));
         }
 
