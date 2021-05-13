@@ -42,12 +42,12 @@ namespace RestfulFirebase.Local
                 var keyHeir = KeyHeirPath;
                 for (int i = 0; i < separated.Length - 1; i++)
                 {
-                    keyHeir = ValidatePath(Utils.CombineUrl(keyHeir, separated[i]));
-                    var heirs = db.Get(keyHeir);
+                    keyHeir = Utils.CombineUrl(keyHeir, separated[i]);
+                    var heirs = db.Get(ValidatePath(keyHeir));
                     var deserialized = Utils.DeserializeString(heirs)?.ToList() ?? new List<string>();
                     if (!deserialized.Contains(separated[i + 1])) deserialized.Add(separated[i + 1]);
                     var serialized = Utils.SerializeString(deserialized.ToArray());
-                    db.Set(keyHeir, serialized);
+                    db.Set(ValidatePath(keyHeir), serialized);
                 }
                 db.Set(path, data);
             }

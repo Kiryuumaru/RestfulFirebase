@@ -17,10 +17,10 @@ namespace RestfulFirebase.Database.Realtime
     {
         #region Properties
 
+        private CancellationTokenSource hasFirstStreamWait = new CancellationTokenSource();
+
         private string jsonToPut;
-        //private bool isStreamWaiting;
         private StreamObject streamObjectBuffer;
-        public CancellationTokenSource hasFirstStreamWait { get; private set; }
 
         protected IDisposable Subscription;
 
@@ -102,14 +102,6 @@ namespace RestfulFirebase.Database.Realtime
         {
             var hasChanges = false;
             streamObjectBuffer = streamObject;
-            // Bug: Late push event still acknowledged
-            //if (IsWritting && HasPendingWrite) return false;
-            //{
-            //    if (isStreamWaiting) return false;
-            //    isStreamWaiting = true;
-            //    while (IsWritting && HasPendingWrite) { }
-            //    isStreamWaiting = false;
-            //}
             hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
             if (!HasFirstStream)
             {
