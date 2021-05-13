@@ -33,7 +33,16 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
                 {
-                    if (Node.DeleteChanges()) OnChanged(nameof(Property));
+                    var hasChanges = false;
+                    if (Node.Sync == null)
+                    {
+                        if (Node.Delete()) hasChanges = true;
+                    }
+                    else
+                    {
+                        if (Node.DeleteChanges()) hasChanges = true;
+                    }
+                    if (hasChanges) OnChanged(nameof(Property));
                 }
             }
             OnError(err.Exception);
@@ -93,14 +102,14 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStart += delegate
             {
                 var blob = base.GetBlob();
-                Wire = wire;
                 Node = new DataNode(wire);
+                Wire = wire;
                 SetBlob(blob, InitTag);
             };
             wire.OnStop += delegate
             {
-                Wire = null;
                 Node = null;
+                Wire = null;
             };
             wire.OnStream += streamObject =>
             {

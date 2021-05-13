@@ -92,13 +92,13 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
-        private void InvokeDataChanges() => OnDataChanges?.Invoke(this, new DataChangesEventArgs(TotalDataCount, SyncedDataCount));
+        internal void InvokeDataChanges() => OnDataChanges?.Invoke(this, new DataChangesEventArgs(TotalDataCount, SyncedDataCount));
 
-        public void InvokeStart() => OnStart?.Invoke();
+        internal void InvokeStart() => OnStart?.Invoke();
 
-        public void InvokeStop() => OnStop?.Invoke();
+        internal void InvokeStop() => OnStop?.Invoke();
 
-        public bool InvokeStream(StreamObject streamObject)
+        internal bool InvokeStream(StreamObject streamObject)
         {
             var hasChanges = false;
             streamObjectBuffer = streamObject;
@@ -113,12 +113,12 @@ namespace RestfulFirebase.Database.Realtime
             return hasChanges;
         }
 
-        public RealtimeWire Child(string key, bool invokeSetFirst)
+        internal RealtimeWire Child(string key, bool invokeSetFirst)
         {
             return RealtimeWire.CreateFromParent(App, this, key, invokeSetFirst);
         }
 
-        public async void Put(string json, Action<RetryExceptionEventArgs> onError)
+        internal async void Put(string json, Action<RetryExceptionEventArgs> onError)
         {
             InvokeDataChanges();
             ParentWire?.InvokeDataChanges();

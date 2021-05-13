@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {
@@ -21,6 +22,27 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         protected override (string key, FirebaseProperty value) ValueFactory(string key, FirebaseProperty value)
         {
+            value.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(value.Property))
+                {
+                    if (value.IsNull())
+                    {
+                        if (this.ContainsKey(key))
+                        {
+                            Remove(key);
+                            Wire?.InvokeDataChanges();
+                        }
+                    }
+                    else
+                    {
+                        if (!this.ContainsKey(key))
+                        {
+                            Add(key, value);
+                        }
+                    }
+                }
+            };
             if (Wire != null && value.Wire == null)
             {
                 var subWire = Wire.Child(key, true);
@@ -176,7 +198,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                         if (EqualityComparer<T>.Default.Equals(data.value, default(T)))
                         {
                             setter.Invoke((data.key, prop, default));
-                            Remove(data.key);
+                            //Remove(data.key);
                             hasChanges = true;
                         }
                         else
@@ -207,7 +229,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (setter.Invoke((prop.Key, prop.Value, default)))
                 {
-                    Remove(prop.Key);
                     hasChanges = true;
                 }
             }
@@ -223,7 +244,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             foreach (var prop in new Dictionary<string, FirebaseProperty>(this))
             {
                 prop.Value.Delete();
-                Remove(prop.Key);
                 hasChanges = true;
             }
             return hasChanges;

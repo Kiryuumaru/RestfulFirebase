@@ -21,6 +21,24 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         protected override (string key, FirebaseObject value) ValueFactory(string key, FirebaseObject value)
         {
+            value.PropertyChanged += (s, e) =>
+            {
+                if (value.IsNull())
+                {
+                    if (this.ContainsKey(key))
+                    {
+                        Remove(key);
+                        Wire?.InvokeDataChanges();
+                    }
+                }
+                else
+                {
+                    if (!this.ContainsKey(key))
+                    {
+                        Add(key, value);
+                    }
+                }
+            };
             if (Wire != null && value.Wire == null)
             {
                 var subWire = Wire.Child(key, true);
