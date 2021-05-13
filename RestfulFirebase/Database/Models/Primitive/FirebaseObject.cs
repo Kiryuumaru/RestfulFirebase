@@ -25,13 +25,21 @@ namespace RestfulFirebase.Database.Models.Primitive
             ObservableProperty prop;
             if (serializable) prop = new FirebaseProperty();
             else prop = new ObservableNonSerializableProperty();
-            return new PropertyHolder()
+            var propHolder = new PropertyHolder()
             {
                 Property = prop,
                 Key = key,
                 PropertyName = propertyName,
                 Group = group
             };
+            prop.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(prop.Property))
+                {
+                    OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
+                }
+            };
+            return propHolder;
         }
 
         public void SetPersistableProperty<T>(
@@ -119,7 +127,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                 foreach (var subWire in subWires)
                 {
                     subWire.wire.InvokeStart();
-                    if (!Wire.InvokeSetFirst) OnChanged(subWire.propHolder.Key, subWire.propHolder.PropertyName, subWire.propHolder.Group);
                 }
             };
             wire.OnStop += delegate
@@ -184,8 +191,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 try
                 {
-                    bool hasSubChanges = false;
-
                     PropertyHolder propHolder = null;
                     lock (PropertyHolders)
                     {
@@ -210,20 +215,14 @@ namespace RestfulFirebase.Database.Models.Primitive
                             PropertyHolders.Add(propHolder);
                         }
 
-                        hasSubChanges = true;
+                        hasChanges = true;
                     }
                     else
                     {
                         if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, data.value)))
                         {
-                            hasSubChanges = true;
+                            hasChanges = true;
                         }
-                    }
-
-                    if (hasSubChanges)
-                    {
-                        OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
-                        hasChanges = true;
                     }
                 }
                 catch (Exception ex)
@@ -249,7 +248,6 @@ namespace RestfulFirebase.Database.Models.Primitive
             {
                 if (setter.Invoke((propHolder.Key, (FirebaseProperty)propHolder.Property, default)))
                 {
-                    OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
                     hasChanges = true;
                 }
             }

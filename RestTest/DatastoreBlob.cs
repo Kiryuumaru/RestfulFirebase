@@ -59,14 +59,6 @@ namespace RestTest
             });
         }
 
-        public IEnumerable<string> GetKeys()
-        {
-            lock(db)
-            {
-                return db.Keys.ToArray();
-            }
-        }
-
         public bool ContainsKey(string key)
         {
             lock (db)

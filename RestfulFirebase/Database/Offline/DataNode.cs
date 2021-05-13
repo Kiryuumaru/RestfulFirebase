@@ -121,8 +121,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 Changes = new DataChanges(
                     blob,
-                    blob == null ? DataChangesType.None : DataChangesType.Create,
-                    App.Database.OfflineDatabase.GetAvailableSyncPriority());
+                    blob == null ? DataChangesType.None : DataChangesType.Create);
 
                 Put(blob, onError);
             }
@@ -130,8 +129,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 Changes = new DataChanges(
                     blob,
-                    blob == null ? DataChangesType.Delete : DataChangesType.Update,
-                    App.Database.OfflineDatabase.GetAvailableSyncPriority());
+                    blob == null ? DataChangesType.Delete : DataChangesType.Update);
 
                 Put(blob, onError);
             }

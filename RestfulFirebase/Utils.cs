@@ -463,7 +463,8 @@ namespace RestfulFirebase
             string ret = "";
             foreach (var path in paths)
             {
-                if (path.EndsWith("/")) ret += path;
+                if (string.IsNullOrEmpty(path)) ret += "//";
+                else if (path.EndsWith("/")) ret += path;
                 else ret += (path + "/");
             }
             return ret.Length == 0 ? "/" : ret;

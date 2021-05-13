@@ -56,50 +56,6 @@ namespace RestfulFirebase.Database.Offline
             return datas;
         }
 
-        public DataNode GetFirstSyncPriority()
-        {
-            DataNode first = null;
-            DataChanges firstChanges = null;
-            foreach (var node in GetAllDatas())
-            {
-                var nodeChanges = node?.Changes;
-                if (nodeChanges != null)
-                {
-                    if (firstChanges == null || firstChanges?.SyncPriority <= nodeChanges.SyncPriority)
-                    {
-                        first = node;
-                        firstChanges = node.Changes;
-                    }
-                }
-            }
-            return first;
-        }
-
-        public DataNode GetLastSyncPriority()
-        {
-            DataNode last = null;
-            DataChanges lastChanges = null;
-            foreach (var node in GetAllDatas())
-            {
-                var nodeChanges = node?.Changes;
-                if (nodeChanges != null)
-                {
-                    if (lastChanges == null || lastChanges?.SyncPriority >= nodeChanges.SyncPriority)
-                    {
-                        last = node;
-                        lastChanges = node.Changes;
-                    }
-                }
-            }
-            return last;
-        }
-
-        public long GetAvailableSyncPriority()
-        {
-            var lastPriority = App.Database.OfflineDatabase.GetLastSyncPriority();
-            return lastPriority?.Changes == null ? 0 : lastPriority.Changes.SyncPriority + 1;
-        }
-
         public void Flush()
         {
             var subPaths = App.LocalDatabase.GetSubPaths(Root);
