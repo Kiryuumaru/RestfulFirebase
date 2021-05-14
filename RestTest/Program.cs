@@ -69,19 +69,19 @@ namespace RestTest
 
             var signInResult = await app.Auth.SignInWithEmailAndPasswordAsync("t@st.com", "123123");
             var update = await app.Auth.UpdateProfileAsync("disp", "123123");
-            userNode = app.Database.Child("users").Child(app.Auth.User.LocalId + "s");
+            userNode = app.Database.Child("users").Child(app.Auth.User.LocalId);
 
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            //TestPropertySub();
+            TestPropertySub();
             //TestPropertySub2();
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
             //TestPropertyDictionarySub2();
-            TestObjectDictionaryPut();
+            //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
         }
