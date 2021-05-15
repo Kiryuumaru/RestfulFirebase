@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ObservableHelpers.Serializers;
+using System.Text.Json;
 
 namespace RestfulFirebase.Auth
 {
@@ -464,7 +463,7 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
 
-                    data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
+                    data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, Utils.JsonSerializerOptions);
                     data.Email = User.Email;
                 }
                 catch (OperationCanceledException ex)
@@ -502,8 +501,8 @@ namespace RestfulFirebase.Auth
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
 
-                    var resultJson = JObject.Parse(responseData);
-                    var user = JsonConvert.DeserializeObject<User>(resultJson["users"].First().ToString());
+                    var resultJson = JsonDocument.Parse(responseData);
+                    var user = JsonSerializer.Deserialize<User>(resultJson.RootElement.GetProperty("users").EnumerateObject().First().Value.ToString(), Utils.JsonSerializerOptions);
                     User = user;
                 }
                 catch (OperationCanceledException ex)
@@ -544,7 +543,7 @@ namespace RestfulFirebase.Auth
                             new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
 
                         var auth = new FirebaseAuth
                         {
@@ -593,7 +592,7 @@ namespace RestfulFirebase.Auth
                             new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
 
                         var auth = new FirebaseAuth
                         {
@@ -706,8 +705,8 @@ namespace RestfulFirebase.Auth
 
                 response.EnsureSuccessStatusCode();
 
-                var user = JsonConvert.DeserializeObject<User>(responseData);
-                var auth = JsonConvert.DeserializeObject<FirebaseAuth>(responseData);
+                var user = JsonSerializer.Deserialize<User>(responseData, Utils.JsonSerializerOptions);
+                var auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, Utils.JsonSerializerOptions);
 
                 auth.User = user;
 
@@ -734,7 +733,7 @@ namespace RestfulFirebase.Auth
                 {
                     //create error data template and try to parse JSON
                     var errorData = new { error = new { code = 0, message = "errorid" } };
-                    errorData = JsonConvert.DeserializeAnonymousType(responseData, errorData);
+                    errorData = Utils.JsonDeserializeAnonymousType(responseData, errorData, Utils.JsonSerializerOptions);
 
                     //errorData is just null if different JSON was received
                     switch (errorData?.error?.message)
@@ -831,7 +830,7 @@ namespace RestfulFirebase.Auth
                     }
                 }
             }
-            catch (JsonReaderException)
+            catch (JsonException)
             {
                 //the response wasn't JSON - no data to be parsed
             }
@@ -874,7 +873,16 @@ namespace RestfulFirebase.Auth
 
         private void SavePropertiesLocally()
         {
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "user"), Utils.BlobConvert(JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(User))));
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lid"), User.LocalId);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fid"), User.FederatedId);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fname"), User.FirstName);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lname"), User.LastName);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "dname"), User.DisplayName);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "email"), User.Email);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "vmail"), User.IsEmailVerified ? "1" : "0");
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "purl"), User.PhotoUrl);
+            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "pnum"), User.PhoneNumber);
+
             App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "created"), Serializer.Serialize(Created));
             App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "expiresIn"), ExpiresIn.ToString());
             App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "refreshToken"), RefreshToken);
@@ -883,8 +891,28 @@ namespace RestfulFirebase.Auth
 
         private void RetainPropertiesLocally()
         {
-            var rawUser = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "user"));
-            User = rawUser == null ? default : JsonConvert.DeserializeObject<User>(JsonConvert.SerializeObject(Utils.BlobConvert(rawUser)));
+            var lid = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lid"));
+            var fid = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fid"));
+            var fname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fname"));
+            var lname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lname"));
+            var dname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "dname"));
+            var email = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "email"));
+            var vmail = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "vmail"));
+            var purl = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "purl"));
+            var pnum = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "pnum"));
+
+            User = new User()
+            {
+                LocalId = lid,
+                FederatedId = fid,
+                FirstName = fname,
+                LastName = lname,
+                DisplayName = dname,
+                Email = email,
+                IsEmailVerified = vmail == "1",
+                PhotoUrl = purl,
+                PhoneNumber = pnum
+            };
             var rawCreated = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "created"));
             Created = rawCreated == null ? default : Serializer.Deserialize<DateTime>(rawCreated, default);
             var rawExpiredIn = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "expiresIn"));

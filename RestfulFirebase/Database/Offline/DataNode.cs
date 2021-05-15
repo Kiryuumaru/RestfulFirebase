@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Auth;
+﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using System;
@@ -7,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
@@ -84,7 +84,7 @@ namespace RestfulFirebase.Database.Offline
 
         private void Put(string blob, Action<RetryExceptionEventArgs> onError)
         {
-            Wire.Put(JsonConvert.SerializeObject(blob), onError);
+            Wire.Put(JsonSerializer.Serialize(blob, Utils.JsonSerializerOptions), onError);
         }
 
         protected string GetUniqueShort()

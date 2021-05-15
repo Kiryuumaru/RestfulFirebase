@@ -1,46 +1,46 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Storage
 {
     public class FirebaseMetaData
     {
-        [JsonProperty("bucket")]
+        [JsonPropertyName("bucket")]
         public string Bucket { get; set; }
 
-        [JsonProperty("generation")]
+        [JsonPropertyName("generation")]
         public string Generation { get; set; }
 
-        [JsonProperty("metageneration")]
+        [JsonPropertyName("metageneration")]
         public string MetaGeneration { get; set; }
 
-        [JsonProperty("fullPath")]
+        [JsonPropertyName("fullPath")]
         public string FullPath { get; set; }
 
-        [JsonProperty("name")]
+        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonProperty("size")]
+        [JsonPropertyName("size")]
         public long Size { get; set; }
 
-        [JsonProperty("contentType")]
+        [JsonPropertyName("contentType")]
         public string ContentType { get; set; }
 
-        [JsonProperty("timeCreated")]
+        [JsonPropertyName("timeCreated")]
         public DateTime TimeCreated { get; set; }
 
-        [JsonProperty("updated")]
+        [JsonPropertyName("updated")]
         public DateTime Updated { get; set; }
 
-        [JsonProperty("md5Hash")]
+        [JsonPropertyName("md5Hash")]
         public string Md5Hash { get; set; }
 
-        [JsonProperty("contentEncoding")]
+        [JsonPropertyName("contentEncoding")]
         public string ContentEncoding { get; set; }
 
-        [JsonProperty("contentDisposition")]
+        [JsonPropertyName("contentDisposition")]
         public string ContentDisposition { get; set; }
     }
 }

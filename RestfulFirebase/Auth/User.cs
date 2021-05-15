@@ -1,44 +1,44 @@
 ﻿using System.ComponentModel;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Auth
 {
     public class User
     {
-        [JsonProperty("localId", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("localId")]
         [DefaultValue("")]
-        public string LocalId { get; set; }
+        public string LocalId { get; set; } = "";
 
-        [JsonProperty("federatedId", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("federatedId")]
         [DefaultValue("")]
-        public string FederatedId { get; set; }
+        public string FederatedId { get; set; } = "";
 
-        [JsonProperty("firstName", DefaultValueHandling = DefaultValueHandling.Populate)] 
+        [JsonPropertyName("firstName")] 
         [DefaultValue("")]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = "";
 
-        [JsonProperty("lastName", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("lastName")]
         [DefaultValue("")]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = "";
 
-        [JsonProperty("displayName", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("displayName")]
         [DefaultValue("")]
-        public string DisplayName { get; set; }
+        public string DisplayName { get; set; } = "";
 
-        [JsonProperty("email", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("email")]
         [DefaultValue("")]
-        public string Email { get; set; }
+        public string Email { get; set; } = "";
 
-        [JsonProperty("emailVerified", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("emailVerified")]
         [DefaultValue(false)]
-        public bool IsEmailVerified { get; set; }
+        public bool IsEmailVerified { get; set; } = false;
 
-        [JsonProperty("photoUrl", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("photoUrl")]
         [DefaultValue("")]
-        public string PhotoUrl { get; set; }
+        public string PhotoUrl { get; set; } = "";
 
-        [JsonProperty("phoneNumber", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("phoneNumber")]
         [DefaultValue("")]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = "";
     }
 }

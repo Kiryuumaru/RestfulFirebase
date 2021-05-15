@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using RestfulFirebase.Database.Query;
+﻿using RestfulFirebase.Database.Query;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,8 +9,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using ObservableHelpers.Observables;
+using System.Text.Json;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -35,11 +34,11 @@ namespace RestfulFirebase.Database.Streaming
 
             cancel = new CancellationTokenSource();
 
-            var handler = new HttpClientHandler
-            {
-                MaxAutomaticRedirections = 10,
-                CookieContainer = new CookieContainer()
-            };
+            var handler = new HttpClientHandler();
+            //{
+            //    MaxAutomaticRedirections = 10,
+            //    CookieContainer = new CookieContainer()
+            //};
 
             var httpClient = new HttpClient(handler, true);
 
@@ -166,10 +165,10 @@ namespace RestfulFirebase.Database.Streaming
             {
                 case ServerEventType.Put:
                 case ServerEventType.Patch:
-                    var result = JObject.Parse(serverData);
-                    var pathToken = result["path"];
-                    var dataToken = result["data"];
-                    var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
+                    var result = JsonDocument.Parse(serverData, Utils.JsonDocumentOptions);
+                    var pathToken = result.RootElement.GetProperty("path");
+                    var dataToken = result.RootElement.GetProperty("data");
+                    var path = pathToken.ValueKind == JsonValueKind.Null ? null : pathToken.ToString();
                     List<string> separatedPath = new List<string>()
                     {
                         query.GetAbsolutePath().Split('/').Where(x => !string.IsNullOrWhiteSpace(x)).LastOrDefault()
@@ -188,27 +187,23 @@ namespace RestfulFirebase.Database.Streaming
             }
         }
 
-        private StreamData Convert(JToken token)
+        private StreamData Convert(JsonElement element)
         {
-            if (token.Type == JTokenType.Property)
+            if (element.ValueKind == JsonValueKind.Object)
             {
-                throw new Exception("Invalid Json");
-            }
-            else if (token.Type == JTokenType.Object)
-            {
-                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
+                var datas = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText(), Utils.JsonSerializerOptions);
                 var subDatas = new Dictionary<string, StreamData>();
-                foreach (var entry in datas)
+                foreach (var obj in element.EnumerateObject())
                 {
-                    subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
+                    subDatas.Add(obj.Name, Convert(obj.Value));
                 }
                 return new MultiStreamData(subDatas);
             }
-            else if (token.Type != JTokenType.Null)
+            else if (element.ValueKind != JsonValueKind.Null)
             {
-                return new SingleStreamData(((JValue)token).Value?.ToString());
+                return new SingleStreamData(element.ToString());
             }
-            else if (token.Type == JTokenType.Null)
+            else if (element.ValueKind == JsonValueKind.Null)
             {
                 return null;
             }

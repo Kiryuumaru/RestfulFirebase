@@ -16,8 +16,8 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.8</Version>
-    <PackageReleaseNotes>* Fixed bug on blazor wasm platform</PackageReleaseNotes>
+    <Version>1.0.9</Version>
+    <PackageReleaseNotes>* Changes JSON dependency to System.Text.Json</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Auth\FirebaseAuthApp.cs~RF20cd8c7.TMP" />
     <None Remove="Database\Models\Primitive\FirebasePropertyDictionary.cs~RF10d2e464.TMP" />
     <None Remove="Database\Models\Primitive\FirebasePropertyDictionary.cs~RF1140b500.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />
@@ -32,8 +33,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ObservableHelpers" Version="1.0.10" />
+    <PackageReference Include="System.Text.Json" Version="5.0.2" />
   </ItemGroup>
 
 </Project>

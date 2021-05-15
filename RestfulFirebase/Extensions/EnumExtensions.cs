@@ -1,10 +1,10 @@
-﻿namespace RestfulFirebase.Extensions
-{
-    using System;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.Serialization;
+﻿using System;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 
+namespace RestfulFirebase.Extensions
+{
     public static class EnumExtensions
     {
         public static string ToEnumString<T>(this T type)

@@ -1,15 +1,15 @@
-﻿namespace RestfulFirebase.Storage
-{
-    using Newtonsoft.Json;
-    using RestfulFirebase.Extensions.Http;
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Threading;
-    using System.Threading.Tasks;
+﻿using RestfulFirebase.Extensions.Http;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
+namespace RestfulFirebase.Storage
+{
     public class FirebaseStorageReference
     {
         private const string FirebaseStorageEndpoint = "https://firebasestorage.googleapis.com/v0/b/";
@@ -49,7 +49,7 @@
 
             if (!data.TryGetValue("downloadTokens", out object downloadTokens))
             {
-                throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonConvert.SerializeObject(data)}");
+                throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonSerializer.Serialize(data, Utils.JsonSerializerOptions)}");
             }
 
             return GetFullDownloadUrl() + downloadTokens;
@@ -94,7 +94,7 @@
                 {
                     var result = await http.GetAsync(url);
                     resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var data = JsonConvert.DeserializeObject<T>(resultContent);
+                    var data = JsonSerializer.Deserialize<T>(resultContent, Utils.JsonSerializerOptions);
 
                     result.EnsureSuccessStatusCode();
 

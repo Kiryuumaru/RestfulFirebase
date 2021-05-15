@@ -12,7 +12,6 @@ using System.Threading;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
 using System.Collections.Concurrent;
-using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Query
 {

@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Auth;
+﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Streaming;
 using System;
