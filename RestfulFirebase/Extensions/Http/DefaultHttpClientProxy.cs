@@ -2,11 +2,11 @@
 
 namespace RestfulFirebase.Extensions.Http
 {
-    internal sealed class SimpleHttpClientProxy : IHttpClientProxy
+    internal sealed class DefaultHttpClientProxy : IHttpClientProxy
     {
         private readonly HttpClient _httpClient;
 
-        public SimpleHttpClientProxy(HttpClient httpClient)
+        public DefaultHttpClientProxy(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }

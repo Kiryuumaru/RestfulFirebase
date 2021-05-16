@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase
@@ -14,7 +15,9 @@ namespace RestfulFirebase
         public FirebaseConfig()
         {
             LocalDatabase = new SimpleLocalDatabase();
-            HttpClientFactory = new TransientHttpClientFactory();
+            HttpClientFactory = new DefaultHttpClientFactory();
+            HttpClientHandlerFactory = new DefaultHttpClientHandler();
+            StreamHttpRequestFactory = new DefaultStreamHttpRequestFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
             DatabaseRequestTimeout = TimeSpan.FromMinutes(2);
             DatabaseRetryDelay = TimeSpan.FromSeconds(5);
@@ -28,6 +31,12 @@ namespace RestfulFirebase
         public string DatabaseURL { get; set; }
 
         public string StorageBucket { get; set; }
+
+        public IHttpClientFactory HttpClientFactory { get; set; }
+
+        public IHttpClientHandlerFactory HttpClientHandlerFactory { get; set; }
+
+        public IStreamHttpRequestFactory StreamHttpRequestFactory { get; set; }
 
         public TimeSpan AuthRequestTimeout { get; set; }
 
@@ -48,7 +57,5 @@ namespace RestfulFirebase
         public bool OfflineMode { get; set; }
 
         public int DatabaseMaxConcurrentSync { get; set; }
-
-        public IHttpClientFactory HttpClientFactory { get; set; }
     }
 }

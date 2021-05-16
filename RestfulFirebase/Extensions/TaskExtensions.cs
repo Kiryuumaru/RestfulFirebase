@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Extensions
 {
-    public static class TaskExtensions
+    internal static class TaskExtensions
     {
-        public static async Task WithAggregateException(this Task source)
+        internal static async Task WithAggregateException(this Task source)
         {
             try
             {
@@ -14,6 +14,26 @@ namespace RestfulFirebase.Extensions
             catch (Exception ex)
             {
                 throw source.Exception ?? ex;
+            }
+        }
+
+        internal async static Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds)
+        {
+            var retTask = await Task.WhenAny(task, Task.Delay(timeoutInMilliseconds)).ConfigureAwait(false);
+            return retTask is Task<T> ? task.Result : default;
+        }
+
+        internal static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout) => WithTimeout(task, (int)timeout.TotalMilliseconds);
+
+        internal static async void SafeFireAndForget(this Task task, Action<Exception> onException = null, bool continueOnCapturedContext = false)
+        {
+            try
+            {
+                await task.ConfigureAwait(continueOnCapturedContext);
+            }
+            catch (Exception ex) when (onException != null)
+            {
+                onException.Invoke(ex);
             }
         }
     }

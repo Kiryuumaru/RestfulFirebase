@@ -34,24 +34,14 @@ namespace RestfulFirebase.Auth
         private const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
         private SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
-
         private IHttpClientProxy client;
+        private Session session;
 
         public RestfulFirebaseApp App { get; private set; }
-
-        public Session Session
-        {
-            get
-            {
-                var session = new Session(App);
-                return session.Exist ? session : null;
-            }
-        }
-
+        public Session Session => session.Exist ? session : null;
         public bool Authenticated => Session != null;
 
-        public event Action FirebaseAuthRefreshed;
-
+        public event Action OnAuthRefreshed;
         public event Action OnAuthenticated;
 
         #endregion
@@ -61,6 +51,7 @@ namespace RestfulFirebase.Auth
         internal FirebaseAuthApp(RestfulFirebaseApp app)
         {
             App = app;
+            session = new Session(App);
         }
 
         #endregion
@@ -244,7 +235,7 @@ namespace RestfulFirebase.Auth
             return client.GetHttpClient();
         }
 
-        public async Task<CallResult> GetUserInfo(FirebaseAuth auth)
+        private async Task<CallResult> RefreshUserInfo(FirebaseAuth auth)
         {
             try
             {
@@ -264,7 +255,11 @@ namespace RestfulFirebase.Auth
 
                     auth.User = user;
 
-                    return CallResult.Success<User>(user);
+                    session.UpdateAuth(auth);
+
+                    InvokeAuthRefreshed();
+
+                    return CallResult.Success(user);
                 }
                 catch (OperationCanceledException ex)
                 {
@@ -278,7 +273,7 @@ namespace RestfulFirebase.Auth
             }
             catch (FirebaseException ex)
             {
-                return CallResult.Error<User>(ex);
+                return CallResult.Error(ex);
             }
         }
 
@@ -286,11 +281,11 @@ namespace RestfulFirebase.Auth
 
         #region Methods
 
-        protected void InvokeFirebaseAuthRefreshed()
+        protected void InvokeAuthRefreshed()
         {
             context.Post(s =>
             {
-                FirebaseAuthRefreshed?.Invoke();
+                OnAuthRefreshed?.Invoke();
             }, null);
         }
 
@@ -320,10 +315,8 @@ namespace RestfulFirebase.Auth
                     auth.User.DisplayName = displayName;
                 }
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -349,10 +342,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleCustomAuthUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -373,10 +364,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -397,10 +386,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -421,10 +408,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -451,10 +436,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GooglePasswordUrl, sb.ToString()).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -474,10 +457,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 InvokeOnAuthenticated();
 
@@ -493,17 +474,15 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"idToken\":\"{token}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
                 var auth = await ExecuteWithPostContent(GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 return CallResult.Success();
             }
@@ -552,7 +531,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{ \"idToken\": \"{token}\" }}";
@@ -590,7 +569,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
@@ -628,17 +607,15 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
                 var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 return CallResult.Success();
             }
@@ -652,7 +629,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 var providerId = GetProviderId(authType);
@@ -660,10 +637,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 return CallResult.Success();
             }
@@ -677,7 +652,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 string providerId;
@@ -694,10 +669,8 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, content).ConfigureAwait(false);
 
-                var refreshResult = await GetUserInfo(auth);
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
 
                 return CallResult.Success();
             }
@@ -711,9 +684,9 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var session = Session;
-                if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-                var email = session?.Email;
+                var token = session.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                var email = session.Email;
                 if (string.IsNullOrEmpty(email)) throw new FirebaseException(FirebaseExceptionReason.AuthMissingEmail, new Exception("Email not found"));
 
                 string content = $"{{\"identifier\":\"{email}\", \"continueUri\": \"http://localhost\"}}";
@@ -752,41 +725,12 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        public async Task<CallResult> RefreshUserDetails()
-        {
-            try
-            {
-                var session = Session;
-                if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var auth = new FirebaseAuth()
-                {
-                    FirebaseToken = session.FirebaseToken,
-                    RefreshToken = session.RefreshToken,
-                    ExpiresIn = session.ExpiresIn,
-                    Created = session.Created
-                };
-
-                var refreshResult = await GetUserInfo(auth);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                new Session(App).UpdateAuth(auth);
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error<User>(ex);
-            }
-        }
-
         public async Task<CallResult<string>> GetFreshToken()
         {
             try
             {
-                var session = Session;
-                var token = Session?.RefreshToken;
-                if (session == null || string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                var token = session.RefreshToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 if (session.IsExpired())
                 {
@@ -811,9 +755,9 @@ namespace RestfulFirebase.Auth
                             FirebaseToken = refreshAuth.AccessToken
                         };
 
-                        new Session(App).UpdateAuth(auth);
+                        session.UpdateAuth(auth);
 
-                        InvokeFirebaseAuthRefreshed();
+                        InvokeAuthRefreshed();
                     }
                     catch (OperationCanceledException ex)
                     {
@@ -837,8 +781,22 @@ namespace RestfulFirebase.Auth
         {
             try
             {
+                var session = Session;
+                if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
                 var refresh = await GetFreshToken();
                 if (!refresh.IsSuccess) return refresh;
+
+                var auth = new FirebaseAuth()
+                {
+                    FirebaseToken = session.FirebaseToken,
+                    RefreshToken = session.RefreshToken,
+                    ExpiresIn = session.ExpiresIn,
+                    Created = session.Created
+                };
+
+                var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
+                if (!refreshResult.IsSuccess) return refreshResult;
 
                 return CallResult.Success();
             }
@@ -853,7 +811,7 @@ namespace RestfulFirebase.Auth
             try
             {
                 var session = Session;
-                var token = Session?.FirebaseToken;
+                var token = session.FirebaseToken;
                 if (session == null || string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{token}\"");
@@ -880,7 +838,7 @@ namespace RestfulFirebase.Auth
 
                 var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
 
-                new Session(App).UpdateAuth(auth);
+                session.UpdateAuth(auth);
 
                 return CallResult.Success();
             }
@@ -896,7 +854,7 @@ namespace RestfulFirebase.Auth
             {
                 if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
-                new Session(App).Purge();
+                session.Purge();
 
                 return await Task.FromResult(CallResult.Success());
             }

@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace RestfulFirebase.Extensions.Http
 {
-    internal sealed class TransientHttpClientFactory : IHttpClientFactory
+    internal sealed class DefaultHttpClientFactory : IHttpClientFactory
     {
         public IHttpClientProxy GetHttpClient(TimeSpan? timeout)
         {
@@ -12,7 +12,7 @@ namespace RestfulFirebase.Extensions.Http
                 client.Timeout = timeout.Value;
             }
 
-            return new SimpleHttpClientProxy(client);
+            return new DefaultHttpClientProxy(client);
         }
     }
 }

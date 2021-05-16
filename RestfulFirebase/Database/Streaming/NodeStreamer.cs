@@ -23,23 +23,22 @@ namespace RestfulFirebase.Database.Streaming
 
         private EventHandler<ContinueExceptionEventArgs> exceptionThrown;
 
+        public RestfulFirebaseApp App { get; }
+
         internal NodeStreamer(
+            RestfulFirebaseApp app,
             IObserver<StreamObject> observer,
             IFirebaseQuery query,
             EventHandler<ContinueExceptionEventArgs> exceptionThrown)
         {
+            App = app;
             this.observer = observer;
             this.query = query;
             this.exceptionThrown = exceptionThrown;
 
             cancel = new CancellationTokenSource();
 
-            var handler = new HttpClientHandler();
-            //{
-            //    AllowAutoRedirect = true,
-            //    MaxAutomaticRedirections = 10,
-            //    CookieContainer = new CookieContainer()
-            //};
+            var handler = App.Config.HttpClientHandlerFactory.GetHttpClientHandler();
 
             var httpClient = new HttpClient(handler, true);
 
@@ -71,12 +70,13 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     cancel.Token.ThrowIfCancellationRequested();
 
-                    // initialize network connection
                     url = await query.BuildUrlAsync().ConfigureAwait(false);
-                    var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    var serverEvent = ServerEventType.KeepAlive;
+
+                    var request = App.Config.StreamHttpRequestFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
 
                     var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
+
+                    var serverEvent = ServerEventType.KeepAlive;
 
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
@@ -87,8 +87,8 @@ namespace RestfulFirebase.Database.Streaming
                         while (true)
                         {
                             cancel.Token.ThrowIfCancellationRequested();
-
-                            line = reader.ReadLine()?.Trim();
+                            
+                            line = (await reader.ReadLineAsync())?.Trim();
 
                             if (string.IsNullOrWhiteSpace(line))
                             {
@@ -124,6 +124,8 @@ namespace RestfulFirebase.Database.Streaming
                     var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
                     var args = new ContinueExceptionEventArgs(fireEx, true);
                     exceptionThrown?.Invoke(this, args);
+
+                    Console.WriteLine("STREAM ERROR: " + ex.Message);
 
                     if (!args.IgnoreAndContinue)
                     {

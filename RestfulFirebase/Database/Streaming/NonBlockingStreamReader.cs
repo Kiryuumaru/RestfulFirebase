@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -22,19 +23,19 @@ namespace RestfulFirebase.Database.Streaming
             cachedData = string.Empty;
         }
 
-        public override string ReadLine()
+        public override async Task<string> ReadLineAsync()
         {
             var currentString = TryGetNewLine();
-            
+
             while (currentString == null)
             {
-                var read = stream.Read(buffer, 0, bufferSize);
+                var read = await stream.ReadAsync(buffer, 0, bufferSize);
                 var str = Encoding.UTF8.GetString(buffer, 0, read);
 
                 cachedData += str;
                 currentString = TryGetNewLine();
             }
-            
+
             return currentString;
         }
 

@@ -23,13 +23,13 @@ namespace RestfulFirebase.Auth
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ref"), value);
         }
 
-        public int ExpiresIn
+        internal int ExpiresIn
         {
             get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "exp")));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "exp"), Serializer.Serialize(value));
         }
 
-        public DateTime Created
+        internal DateTime Created
         {
             get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "ctd")));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ctd"), Serializer.Serialize(value));

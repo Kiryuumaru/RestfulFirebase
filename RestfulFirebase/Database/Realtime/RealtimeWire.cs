@@ -234,7 +234,7 @@ namespace RestfulFirebase.Database.Realtime
             Model.MakeRealtime(this);
             InvokeStart();
             Subscription = Observable
-                .Create<StreamObject>(observer => new NodeStreamer(observer, Query, (s, e) => Model.OnError(e)).Run())
+                .Create<StreamObject>(observer => new NodeStreamer(App, observer, Query, (s, e) => Model.OnError(e)).Run())
                 .Subscribe(streamObject => { InvokeStream(streamObject); });
         }
 
