@@ -105,9 +105,9 @@ namespace RestfulFirebase.Database.Realtime
             hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
             if (!HasFirstStream)
             {
+                OnFirstStream?.Invoke();
                 HasFirstStream = true;
                 hasFirstStreamWait.Cancel();
-                OnFirstStream?.Invoke();
             }
             InvokeDataChanges();
             return hasChanges;

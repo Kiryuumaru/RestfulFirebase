@@ -217,7 +217,7 @@ namespace RestfulFirebase.Database.Query
                 {
                     return WithAuth(() =>
                     {
-                        var getTokenResult = App.Auth.GetFreshTokenAsync();
+                        var getTokenResult = App.Auth.GetFreshToken();
                         if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
                         return getTokenResult.Result.Result;
                     }).BuildUrl(null);

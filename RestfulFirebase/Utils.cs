@@ -32,7 +32,7 @@ namespace RestfulFirebase
         internal const string Base36Charset = "0123456789abcdefghijklmnopqrstuvwxyz";
         internal const string Base32Charset = "2345678abcdefghijklmnpqrstuvwxyz"; // Excluded 0, 1, 9, o
 
-        public static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
+        internal static JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
             AllowTrailingCommas = true,
@@ -41,7 +41,7 @@ namespace RestfulFirebase
             Converters = { new SingleOrArrayConverterFactory() }
         };
 
-        public static JsonDocumentOptions JsonDocumentOptions = new JsonDocumentOptions
+        internal static JsonDocumentOptions JsonDocumentOptions = new JsonDocumentOptions
         {
             AllowTrailingCommas = true,
             CommentHandling = JsonCommentHandling.Skip
@@ -502,19 +502,19 @@ namespace RestfulFirebase
 
         #region JsonUtils
 
-        public static T JsonDeserializeAnonymousType<T>(string json, T anonymousTypeObject, JsonSerializerOptions options = default)
+        internal static T JsonDeserializeAnonymousType<T>(string json, T anonymousTypeObject, JsonSerializerOptions options = default)
             => JsonSerializer.Deserialize<T>(json, options);
 
-        public static ValueTask<TValue> JsonDeserializeAnonymousTypeAsync<TValue>(Stream stream, TValue anonymousTypeObject, JsonSerializerOptions options = default, CancellationToken cancellationToken = default)
+        internal static ValueTask<TValue> JsonDeserializeAnonymousTypeAsync<TValue>(Stream stream, TValue anonymousTypeObject, JsonSerializerOptions options = default, CancellationToken cancellationToken = default)
             => JsonSerializer.DeserializeAsync<TValue>(stream, options, cancellationToken); // Method to deserialize from a stream added for completeness
 
-        public class SingleOrArrayConverter<TItem> : SingleOrArrayConverter<List<TItem>, TItem>
+        internal class SingleOrArrayConverter<TItem> : SingleOrArrayConverter<List<TItem>, TItem>
         {
             public SingleOrArrayConverter() : this(true) { }
             public SingleOrArrayConverter(bool canWrite) : base(canWrite) { }
         }
 
-        public class SingleOrArrayConverterFactory : JsonConverterFactory
+        internal class SingleOrArrayConverterFactory : JsonConverterFactory
         {
             public bool CanWrite { get; }
 
@@ -561,7 +561,7 @@ namespace RestfulFirebase
             }
         }
 
-        public class SingleOrArrayConverter<TCollection, TItem> : JsonConverter<TCollection> where TCollection : class, ICollection<TItem>, new()
+        internal class SingleOrArrayConverter<TCollection, TItem> : JsonConverter<TCollection> where TCollection : class, ICollection<TItem>, new()
         {
             public SingleOrArrayConverter() : this(true) { }
             public SingleOrArrayConverter(bool canWrite) => CanWrite = canWrite;

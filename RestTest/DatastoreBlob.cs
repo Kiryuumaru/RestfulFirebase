@@ -101,5 +101,14 @@ namespace RestTest
             }
             Save();
         }
+
+        public void Clear()
+        {
+            lock (db)
+            {
+                db.Clear();
+            }
+            Save();
+        }
     }
 }

@@ -44,5 +44,13 @@ namespace RestfulFirebase.Local
                 db.Remove(key);
             }
         }
+
+        public void Clear()
+        {
+            lock (db)
+            {
+                db.Clear();
+            }
+        }
     }
 }

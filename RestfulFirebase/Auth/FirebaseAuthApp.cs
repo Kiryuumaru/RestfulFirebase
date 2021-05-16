@@ -10,11 +10,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using ObservableHelpers.Serializers;
 using System.Text.Json;
+using RestfulFirebase.Extensions.Http;
+using System.ComponentModel;
 
 namespace RestfulFirebase.Auth
 {
-    public class FirebaseAuthApp : FirebaseAuth, IDisposable
+    public class FirebaseAuthApp : IDisposable
     {
+        #region Properties
+
         private const string GoogleRefreshAuth = "https://securetoken.googleapis.com/v1/token?key={0}";
         private const string GoogleCustomAuthUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={0}";
         private const string GoogleGetUser = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key={0}";
@@ -28,676 +32,48 @@ namespace RestfulFirebase.Auth
         private const string GoogleUpdateUserPassword = "https://identitytoolkit.googleapis.com/v1/accounts:update?key={0}";
         private const string ProfileDeleteDisplayName = "DISPLAY_NAME";
         private const string ProfileDeletePhotoUrl = "PHOTO_URL";
-        private const string AuthRoot = "auth";
 
-        private readonly HttpClient client;
+        private SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
 
-        public RestfulFirebaseApp App { get; }
+        private IHttpClientProxy client;
 
-        public bool Authenticated
+        public RestfulFirebaseApp App { get; private set; }
+
+        public Session Session
         {
             get
             {
-                return 
-                    User != null && 
-                    !string.IsNullOrEmpty(FirebaseToken) && 
-                    !string.IsNullOrEmpty(FirebaseToken);
+                var session = new Session(App);
+                return session.Exist ? session : null;
             }
         }
+
+        public bool Authenticated => Session != null;
 
         public event Action FirebaseAuthRefreshed;
 
         public event Action OnAuthenticated;
 
-        internal FirebaseAuthApp(RestfulFirebaseApp firebaseApp)
+        #endregion
+
+        #region Initializers
+
+        internal FirebaseAuthApp(RestfulFirebaseApp app)
         {
-            App = firebaseApp;
-            client = new HttpClient();
-            RetainPropertiesLocally();
+            App = app;
         }
 
-        public async Task<CallResult> CreateUserWithEmailAndPasswordAsync(string email, string password, string displayName = "", bool sendVerificationEmail = false)
-        {
-            try
-            {
-                var content = $"{{\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+        #endregion
 
-                var auth = await ExecuteWithPostContentAsync(GoogleSignUpUrl, content).ConfigureAwait(false);
+        #region Helpers
 
-                if (!string.IsNullOrWhiteSpace(displayName))
-                {
-                    // set display name
-                    content = $"{{\"displayName\":\"{displayName}\",\"idToken\":\"{auth.FirebaseToken}\",\"returnSecureToken\":true}}";
-
-                    await ExecuteWithPostContentAsync(GoogleSetAccountUrl, content).ConfigureAwait(false);
-
-                    auth.User.DisplayName = displayName;
-                }
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                if (sendVerificationEmail)
-                {
-                    //send verification email
-                    await SendEmailVerificationAsync().ConfigureAwait(false);
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInWithCustomTokenAsync(string customToken)
-        {
-            try
-            {
-                string content = $"{{\"token\":\"{customToken}\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleCustomAuthUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInWithOAuthAsync(FirebaseAuthType authType, string oauthAccessToken)
-        {
-            try
-            {
-                var providerId = GetProviderId(authType);
-                var content = $"{{\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleIdentityUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInWithOAuthTwitterTokenAsync(string oauthAccessToken, string oauthTokenSecret)
-        {
-            try
-            {
-                var providerId = GetProviderId(FirebaseAuthType.Twitter);
-                var content = $"{{\"postBody\":\"access_token={oauthAccessToken}&oauth_token_secret={oauthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleIdentityUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInWithGoogleIdTokenAsync(string idToken)
-        {
-            try
-            {
-                var providerId = GetProviderId(FirebaseAuthType.Google);
-                var content = $"{{\"postBody\":\"id_token={idToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleIdentityUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInWithEmailAndPasswordAsync(string email, string password, string tenantId = null)
-        {
-            try
-            {
-                StringBuilder sb = new StringBuilder($"{{\"email\":\"{email}\",\"password\":\"{password}\",");
-
-                if (tenantId != null)
-                {
-                    sb.Append($"\"tenantId\":\"{tenantId}\",");
-                }
-
-                sb.Append("\"returnSecureToken\":true}");
-
-                var auth = await ExecuteWithPostContentAsync(GooglePasswordUrl, sb.ToString()).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SignInAnonymouslyAsync()
-        {
-            try
-            {
-                var content = $"{{\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleSignUpUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                InvokeOnAuthenticated();
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> ChangeUserPassword(string password)
-        {
-            try
-            {
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleUpdateUserPassword, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SendPasswordResetEmailAsync(string email)
-        {
-            try
-            {
-                var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{email}\"}}";
-                var responseData = "N/A";
-
-                try
-                {
-                    var response = await client.PostAsync(
-                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> DeleteUserAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var content = $"{{ \"idToken\": \"{FirebaseToken}\" }}";
-                var responseData = "N/A";
-
-                try
-                {
-                    var response = await client.PostAsync(
-                        new Uri(string.Format(GoogleDeleteUserUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> SendEmailVerificationAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{FirebaseToken}\"}}";
-                var responseData = "N/A";
-
-                try
-                {
-                    var response = await client.PostAsync(
-                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> LinkAccountsAsync(string email, string password)
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleSetAccountUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> LinkAccountsAsync(FirebaseAuthType authType, string oauthAccessToken)
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var providerId = GetProviderId(authType);
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleIdentityUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> UnlinkAccountsAsync(FirebaseAuthType authType)
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                string providerId;
-                if (authType == FirebaseAuthType.EmailAndPassword)
-                {
-                    providerId = authType.ToEnumString();
-                }
-                else
-                {
-                    providerId = GetProviderId(authType);
-                }
-
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"deleteProvider\":[\"{providerId}\"]}}";
-
-                var auth = await ExecuteWithPostContentAsync(GoogleSetAccountUrl, content).ConfigureAwait(false);
-
-                CopyPropertiesLocally(auth);
-                var refreshResult = await RefreshUserDetailsAsync();
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult<ProviderQueryResult>> GetLinkedAccountsAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                string content = $"{{\"identifier\":\"{User.Email}\", \"continueUri\": \"http://localhost\"}}";
-                string responseData = "N/A";
-
-                ProviderQueryResult data;
-
-                try
-                {
-                    var response = await client.PostAsync(
-                        new Uri(string.Format(GoogleCreateAuthUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-
-                    data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, Utils.JsonSerializerOptions);
-                    data.Email = User.Email;
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success<ProviderQueryResult>(data);
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error<ProviderQueryResult>(ex);
-            }
-        }
-
-        public async Task<CallResult> RefreshUserDetailsAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var content = $"{{\"idToken\":\"{FirebaseToken}\"}}";
-                var responseData = "N/A";
-                try
-                {
-                    var response = await client.PostAsync(
-                        new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    response.EnsureSuccessStatusCode();
-
-                    var resultJson = JsonDocument.Parse(responseData);
-                    var user = JsonSerializer.Deserialize<User>(resultJson.RootElement.GetProperty("users").EnumerateObject().First().Value.ToString(), Utils.JsonSerializerOptions);
-                    User = user;
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult> RefreshAuthAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                if (IsExpired())
-                {
-                    var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{RefreshToken}\"}}";
-                    var responseData = "N/A";
-
-                    try
-                    {
-                        HttpResponseMessage response = null;
-                        response = await client.PostAsync(
-                            new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
-                            new StringContent(content, Encoding.UTF8, "Application/json"),
-                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-
-                        responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
-
-                        var auth = new FirebaseAuth
-                        {
-                            ExpiresIn = refreshAuth.ExpiresIn,
-                            RefreshToken = refreshAuth.RefreshToken,
-                            FirebaseToken = refreshAuth.AccessToken
-                        };
-
-                        CopyPropertiesLocally(auth);
-                        InvokeFirebaseAuthRefreshed();
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
-                    }
-                }
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public async Task<CallResult<string>> GetFreshTokenAsync()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                if (IsExpired())
-                {
-                    var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{RefreshToken}\"}}";
-                    var responseData = "N/A";
-
-                    try
-                    {
-                        var response = await client.PostAsync(
-                            new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
-                            new StringContent(content, Encoding.UTF8, "Application/json"),
-                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-
-                        responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
-
-                        var auth = new FirebaseAuth
-                        {
-                            ExpiresIn = refreshAuth.ExpiresIn,
-                            RefreshToken = refreshAuth.RefreshToken,
-                            FirebaseToken = refreshAuth.AccessToken
-                        };
-
-                        CopyPropertiesLocally(auth);
-                        InvokeFirebaseAuthRefreshed();
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
-                    }
-                }
-
-                return CallResult.Success<string>(FirebaseToken);
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error<string>(ex);
-            }
-        }
-
-        public async Task<CallResult> UpdateProfileAsync(string displayName, string photoUrl)
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{FirebaseToken}\"");
-                if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))
-                {
-                    sb.Append($",\"displayName\":\"{displayName}\",\"photoUrl\":\"{photoUrl}\"");
-                }
-                else if (!string.IsNullOrWhiteSpace(displayName))
-                {
-                    sb.Append($",\"displayName\":\"{displayName}\"");
-                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
-                }
-                else if (!string.IsNullOrWhiteSpace(photoUrl))
-                {
-                    sb.Append($",\"photoUrl\":\"{photoUrl}\"");
-                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
-                }
-                else
-                {
-                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
-                }
-
-                sb.Append($",\"returnSecureToken\":true}}");
-
-                var auth = await ExecuteWithPostContentAsync(GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
-                CopyPropertiesLocally(auth);
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
-        }
-
-        public Task<CallResult> Signout()
-        {
-            try
-            {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-                PurgePropertiesLocally();
-
-                return Task.FromResult(CallResult.Success());
-            }
-            catch (FirebaseException ex)
-            {
-                return Task.FromResult(CallResult.Error(ex));
-            }
-        }
-
-        public void Dispose()
-        {
-            client.Dispose();
-        }
-
-        protected void InvokeFirebaseAuthRefreshed()
-        {
-            FirebaseAuthRefreshed?.Invoke();
-        }
-
-        protected void InvokeOnAuthenticated()
-        {
-            OnAuthenticated?.Invoke();
-        }
-
-        private async Task<FirebaseAuth> ExecuteWithPostContentAsync(string googleUrl, string postContent)
+        private async Task<FirebaseAuth> ExecuteWithPostContent(string googleUrl, string postContent)
         {
             string responseData = "N/A";
 
             try
             {
-                var response = await client.PostAsync(
+                var response = await GetClient().PostAsync(
                     new Uri(string.Format(googleUrl, App.Config.ApiKey)),
                     new StringContent(postContent, Encoding.UTF8, "Application/json"),
                     new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
@@ -858,82 +234,683 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        private void CopyPropertiesLocally(FirebaseAuth auth)
+        private HttpClient GetClient()
         {
-            if (auth != null)
+            if (client == null)
             {
-                if (auth.User != null) User = auth.User;
-                if (auth.Created != default) Created = auth.Created;
-                if (auth.ExpiresIn != default) ExpiresIn = auth.ExpiresIn;
-                if (!string.IsNullOrEmpty(auth.RefreshToken)) RefreshToken = auth.RefreshToken;
-                if (!string.IsNullOrEmpty(auth.FirebaseToken)) FirebaseToken = auth.FirebaseToken;
-                SavePropertiesLocally();
+                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.AuthRequestTimeout);
+            }
+
+            return client.GetHttpClient();
+        }
+
+        public async Task<CallResult> GetUserInfo(FirebaseAuth auth)
+        {
+            try
+            {
+                var content = $"{{\"idToken\":\"{auth.FirebaseToken}\"}}";
+                var responseData = "N/A";
+                try
+                {
+                    var response = await GetClient().PostAsync(
+                        new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    response.EnsureSuccessStatusCode();
+
+                    var resultJson = JsonDocument.Parse(responseData);
+                    var user = JsonSerializer.Deserialize<User>(resultJson.RootElement.GetProperty("users").EnumerateArray().First().ToString(), Utils.JsonSerializerOptions);
+
+                    auth.User = user;
+
+                    return CallResult.Success<User>(user);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error<User>(ex);
             }
         }
 
-        private void SavePropertiesLocally()
+        #endregion
+
+        #region Methods
+
+        protected void InvokeFirebaseAuthRefreshed()
         {
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lid"), User.LocalId);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fid"), User.FederatedId);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fname"), User.FirstName);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lname"), User.LastName);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "dname"), User.DisplayName);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "email"), User.Email);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "vmail"), User.IsEmailVerified ? "1" : "0");
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "purl"), User.PhotoUrl);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "pnum"), User.PhoneNumber);
-
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "created"), Serializer.Serialize(Created));
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "expiresIn"), ExpiresIn.ToString());
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "refreshToken"), RefreshToken);
-            App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "firebaseToken"), FirebaseToken);
-        }
-
-        private void RetainPropertiesLocally()
-        {
-            var lid = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lid"));
-            var fid = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fid"));
-            var fname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fname"));
-            var lname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lname"));
-            var dname = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "dname"));
-            var email = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "email"));
-            var vmail = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "vmail"));
-            var purl = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "purl"));
-            var pnum = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "pnum"));
-
-            User = new User()
+            context.Post(s =>
             {
-                LocalId = lid,
-                FederatedId = fid,
-                FirstName = fname,
-                LastName = lname,
-                DisplayName = dname,
-                Email = email,
-                IsEmailVerified = vmail == "1",
-                PhotoUrl = purl,
-                PhoneNumber = pnum
-            };
-            var rawCreated = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "created"));
-            Created = rawCreated == null ? default : Serializer.Deserialize<DateTime>(rawCreated, default);
-            var rawExpiredIn = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "expiresIn"));
-            ExpiresIn = rawExpiredIn == null ? default : int.Parse(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "expiresIn")));
-            RefreshToken = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "refreshToken"));
-            FirebaseToken = App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "firebaseToken"));
+                FirebaseAuthRefreshed?.Invoke();
+            }, null);
         }
 
-        private void PurgePropertiesLocally()
+        protected void InvokeOnAuthenticated()
         {
-            User = null;
-            Created = default;
-            ExpiresIn = 0;
-            RefreshToken = null;
-            FirebaseToken = null;
-
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "user"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "created"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "expiresIn"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "refreshToken"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "firebaseToken"));
+            context.Post(s =>
+            {
+                OnAuthenticated?.Invoke();
+            }, null);
         }
+
+        public async Task<CallResult> CreateUserWithEmailAndPassword(string email, string password, string displayName = "", bool sendVerificationEmail = false)
+        {
+            try
+            {
+                var content = $"{{\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
+
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    // set display name
+                    content = $"{{\"displayName\":\"{displayName}\",\"idToken\":\"{auth.FirebaseToken}\",\"returnSecureToken\":true}}";
+
+                    await ExecuteWithPostContent(GoogleSetAccountUrl, content).ConfigureAwait(false);
+
+                    auth.User.DisplayName = displayName;
+                }
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                if (sendVerificationEmail)
+                {
+                    var sendVerification = await SendEmailVerification().ConfigureAwait(false);
+                    if (!sendVerification.IsSuccess) return sendVerification;
+                }
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInWithCustomToken(string customToken)
+        {
+            try
+            {
+                string content = $"{{\"token\":\"{customToken}\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleCustomAuthUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInWithOAuth(FirebaseAuthType authType, string oauthAccessToken)
+        {
+            try
+            {
+                var providerId = GetProviderId(authType);
+                var content = $"{{\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInWithOAuthTwitterToken(string oauthAccessToken, string oauthTokenSecret)
+        {
+            try
+            {
+                var providerId = GetProviderId(FirebaseAuthType.Twitter);
+                var content = $"{{\"postBody\":\"access_token={oauthAccessToken}&oauth_token_secret={oauthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInWithGoogleIdToken(string idToken)
+        {
+            try
+            {
+                var providerId = GetProviderId(FirebaseAuthType.Google);
+                var content = $"{{\"postBody\":\"id_token={idToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInWithEmailAndPassword(string email, string password, string tenantId = null)
+        {
+            try
+            {
+                StringBuilder sb = new StringBuilder($"{{\"email\":\"{email}\",\"password\":\"{password}\",");
+
+                if (tenantId != null)
+                {
+                    sb.Append($"\"tenantId\":\"{tenantId}\",");
+                }
+
+                sb.Append("\"returnSecureToken\":true}");
+
+                var auth = await ExecuteWithPostContent(GooglePasswordUrl, sb.ToString()).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SignInAnonymously()
+        {
+            try
+            {
+                var content = $"{{\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                InvokeOnAuthenticated();
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> ChangeUserPassword(string password)
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var content = $"{{\"idToken\":\"{token}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleUpdateUserPassword, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SendPasswordResetEmail(string email)
+        {
+            try
+            {
+                var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{email}\"}}";
+                var responseData = "N/A";
+
+                try
+                {
+                    var response = await GetClient().PostAsync(
+                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> DeleteUser()
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var content = $"{{ \"idToken\": \"{token}\" }}";
+                var responseData = "N/A";
+
+                try
+                {
+                    var response = await GetClient().PostAsync(
+                        new Uri(string.Format(GoogleDeleteUserUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> SendEmailVerification()
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
+                var responseData = "N/A";
+
+                try
+                {
+                    var response = await GetClient().PostAsync(
+                        new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    response.EnsureSuccessStatusCode();
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> LinkAccounts(string email, string password)
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> LinkAccounts(FirebaseAuthType authType, string oauthAccessToken)
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var providerId = GetProviderId(authType);
+                var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+                var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> UnlinkAccounts(FirebaseAuthType authType)
+        {
+            try
+            {
+                var token = Session?.FirebaseToken;
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                string providerId;
+                if (authType == FirebaseAuthType.EmailAndPassword)
+                {
+                    providerId = authType.ToEnumString();
+                }
+                else
+                {
+                    providerId = GetProviderId(authType);
+                }
+
+                var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
+
+                var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, content).ConfigureAwait(false);
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult<ProviderQueryResult>> GetLinkedAccounts()
+        {
+            try
+            {
+                var session = Session;
+                if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                var email = session?.Email;
+                if (string.IsNullOrEmpty(email)) throw new FirebaseException(FirebaseExceptionReason.AuthMissingEmail, new Exception("Email not found"));
+
+                string content = $"{{\"identifier\":\"{email}\", \"continueUri\": \"http://localhost\"}}";
+                string responseData = "N/A";
+
+                ProviderQueryResult data;
+
+                try
+                {
+                    var response = await GetClient().PostAsync(
+                        new Uri(string.Format(GoogleCreateAuthUrl, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    response.EnsureSuccessStatusCode();
+
+                    data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, Utils.JsonSerializerOptions);
+                    data.Email = email;
+                }
+                catch (OperationCanceledException ex)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                }
+                catch (Exception ex)
+                {
+                    FirebaseExceptionReason errorReason = GetFailureReason(responseData);
+                    throw new FirebaseException(errorReason, ex);
+                }
+
+                return CallResult.Success<ProviderQueryResult>(data);
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error<ProviderQueryResult>(ex);
+            }
+        }
+
+        public async Task<CallResult> RefreshUserDetails()
+        {
+            try
+            {
+                var session = Session;
+                if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                var auth = new FirebaseAuth()
+                {
+                    FirebaseToken = session.FirebaseToken,
+                    RefreshToken = session.RefreshToken,
+                    ExpiresIn = session.ExpiresIn,
+                    Created = session.Created
+                };
+
+                var refreshResult = await GetUserInfo(auth);
+                if (!refreshResult.IsSuccess) return refreshResult;
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error<User>(ex);
+            }
+        }
+
+        public async Task<CallResult<string>> GetFreshToken()
+        {
+            try
+            {
+                var session = Session;
+                var token = Session?.RefreshToken;
+                if (session == null || string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                if (session.IsExpired())
+                {
+                    var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{token}\"}}";
+                    var responseData = "N/A";
+
+                    try
+                    {
+                        HttpResponseMessage response = null;
+                        response = await GetClient().PostAsync(
+                            new Uri(string.Format(GoogleRefreshAuth, App.Config.ApiKey)),
+                            new StringContent(content, Encoding.UTF8, "Application/json"),
+                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+
+                        responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
+
+                        var auth = new FirebaseAuth
+                        {
+                            ExpiresIn = refreshAuth.ExpiresIn,
+                            RefreshToken = refreshAuth.RefreshToken,
+                            FirebaseToken = refreshAuth.AccessToken
+                        };
+
+                        new Session(App).UpdateAuth(auth);
+
+                        InvokeFirebaseAuthRefreshed();
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
+                    }
+                }
+
+                return CallResult.Success(session.FirebaseToken);
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error<string>(ex);
+            }
+        }
+
+        public async Task<CallResult> RefreshAuth()
+        {
+            try
+            {
+                var refresh = await GetFreshToken();
+                if (!refresh.IsSuccess) return refresh;
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> UpdateProfile(string displayName, string photoUrl)
+        {
+            try
+            {
+                var session = Session;
+                var token = Session?.FirebaseToken;
+                if (session == null || string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{token}\"");
+                if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))
+                {
+                    sb.Append($",\"displayName\":\"{displayName}\",\"photoUrl\":\"{photoUrl}\"");
+                }
+                else if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    sb.Append($",\"displayName\":\"{displayName}\"");
+                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
+                }
+                else if (!string.IsNullOrWhiteSpace(photoUrl))
+                {
+                    sb.Append($",\"photoUrl\":\"{photoUrl}\"");
+                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
+                }
+                else
+                {
+                    sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
+                }
+
+                sb.Append($",\"returnSecureToken\":true}}");
+
+                var auth = await ExecuteWithPostContent(GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
+
+                new Session(App).UpdateAuth(auth);
+
+                return CallResult.Success();
+            }
+            catch (FirebaseException ex)
+            {
+                return CallResult.Error(ex);
+            }
+        }
+
+        public async Task<CallResult> Signout()
+        {
+            try
+            {
+                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+
+                new Session(App).Purge();
+
+                return await Task.FromResult(CallResult.Success());
+            }
+            catch (FirebaseException ex)
+            {
+                return await Task.FromResult(CallResult.Error(ex));
+            }
+        }
+
+        public void Dispose()
+        {
+            client.Dispose();
+        }
+
+        #endregion
     }
 }

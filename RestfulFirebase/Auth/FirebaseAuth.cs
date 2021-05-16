@@ -34,7 +34,7 @@ namespace RestfulFirebase.Auth
         /// Gets or sets the numbers of seconds since <see cref="Created"/> when the token expires.
         /// </summary>
         [JsonPropertyName("expiresIn")]
-        public int ExpiresIn
+        public int? ExpiresIn
         {
             get;
             set;
@@ -43,7 +43,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets or sets when this token was created.
         /// </summary>
-        public DateTime Created
+        public DateTime? Created
         {
             get;
             set;
@@ -63,8 +63,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public bool IsExpired()
         {
-            // include a small 10s window when the token is technically valid but it's a good idea to refresh it already.
-            return DateTime.Now > Created.AddSeconds(ExpiresIn - 10);
+            if (!Created.HasValue || !ExpiresIn.HasValue) return true;
+            return DateTime.Now > Created.Value.AddSeconds(ExpiresIn.Value - 10);
         }
     }
 }

@@ -36,6 +36,7 @@ namespace RestfulFirebase.Database.Streaming
 
             var handler = new HttpClientHandler();
             //{
+            //    AllowAutoRedirect = true,
             //    MaxAutomaticRedirections = 10,
             //    CookieContainer = new CookieContainer()
             //};

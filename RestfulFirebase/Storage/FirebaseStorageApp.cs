@@ -26,7 +26,7 @@ namespace RestfulFirebase.Storage
 
             if (App.Auth.Authenticated)
             {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", App.Auth.FirebaseToken);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", App.Auth.Session.FirebaseToken);
             }
 
             return client;

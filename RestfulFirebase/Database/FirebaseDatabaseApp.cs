@@ -6,19 +6,30 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database
 {
     public class FirebaseDatabaseApp : IDisposable
     {
-        public RestfulFirebaseApp App { get; }
-        public OfflineDatabase OfflineDatabase { get; }
+        #region Properties
+
+        public RestfulFirebaseApp App { get; private set; }
+        public OfflineDatabase OfflineDatabase { get; private set; }
+
+        #endregion
+
+        #region Initializers
 
         internal FirebaseDatabaseApp(RestfulFirebaseApp app)
         {
             App = app;
             OfflineDatabase = new OfflineDatabase(app);
         }
+
+        #endregion
+
+        #region Methods
 
         public ChildQuery Child(string resourceName)
         {
@@ -29,5 +40,7 @@ namespace RestfulFirebase.Database
         {
             OfflineDatabase?.Dispose();
         }
+
+        #endregion
     }
 }
