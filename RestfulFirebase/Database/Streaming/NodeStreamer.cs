@@ -38,9 +38,7 @@ namespace RestfulFirebase.Database.Streaming
 
             cancel = new CancellationTokenSource();
 
-            var handler = App.Config.HttpClientHandlerFactory.GetHttpClientHandler();
-
-            var httpClient = new HttpClient(handler, true);
+            var httpClient = App.Config.HttpStreamFactory.GetHttpClient();
 
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
 
@@ -72,7 +70,7 @@ namespace RestfulFirebase.Database.Streaming
 
                     url = await query.BuildUrlAsync().ConfigureAwait(false);
 
-                    var request = App.Config.StreamHttpRequestFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
+                    var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
 
                     var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
 

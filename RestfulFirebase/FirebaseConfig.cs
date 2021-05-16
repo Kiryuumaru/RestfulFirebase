@@ -16,8 +16,7 @@ namespace RestfulFirebase
         {
             LocalDatabase = new SimpleLocalDatabase();
             HttpClientFactory = new DefaultHttpClientFactory();
-            HttpClientHandlerFactory = new DefaultHttpClientHandler();
-            StreamHttpRequestFactory = new DefaultStreamHttpRequestFactory();
+            HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
             DatabaseRequestTimeout = TimeSpan.FromMinutes(2);
             DatabaseRetryDelay = TimeSpan.FromSeconds(5);
@@ -34,9 +33,7 @@ namespace RestfulFirebase
 
         public IHttpClientFactory HttpClientFactory { get; set; }
 
-        public IHttpClientHandlerFactory HttpClientHandlerFactory { get; set; }
-
-        public IStreamHttpRequestFactory StreamHttpRequestFactory { get; set; }
+        public IHttpStreamFactory HttpStreamFactory { get; set; }
 
         public TimeSpan AuthRequestTimeout { get; set; }
 
