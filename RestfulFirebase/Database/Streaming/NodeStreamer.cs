@@ -9,8 +9,10 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ObservableHelpers.Observables;
-using System.Text.Json;
+using ObservableHelpers;
+using RestfulFirebase.Extensions;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -166,10 +168,10 @@ namespace RestfulFirebase.Database.Streaming
             {
                 case ServerEventType.Put:
                 case ServerEventType.Patch:
-                    var result = JsonDocument.Parse(serverData, Utils.JsonDocumentOptions);
-                    var pathToken = result.RootElement.GetProperty("path");
-                    var dataToken = result.RootElement.GetProperty("data");
-                    var path = pathToken.ValueKind == JsonValueKind.Null ? null : pathToken.ToString();
+                    var result = JObject.Parse(serverData);
+                    var pathToken = result["path"];
+                    var dataToken = result["data"];
+                    var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
                     List<string> separatedPath = new List<string>()
                     {
                         query.GetAbsolutePath().Split('/').Where(x => !string.IsNullOrWhiteSpace(x)).LastOrDefault()
@@ -188,23 +190,27 @@ namespace RestfulFirebase.Database.Streaming
             }
         }
 
-        private StreamData Convert(JsonElement element)
+        private StreamData Convert(JToken token)
         {
-            if (element.ValueKind == JsonValueKind.Object)
+            if (token.Type == JTokenType.Property)
             {
-                var datas = JsonSerializer.Deserialize<Dictionary<string, object>>(element.GetRawText(), Utils.JsonSerializerOptions);
+                throw new Exception("Invalid Json");
+            }
+            else if (token.Type == JTokenType.Object)
+            {
+                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
                 var subDatas = new Dictionary<string, StreamData>();
-                foreach (var obj in element.EnumerateObject())
+                foreach (var entry in datas)
                 {
-                    subDatas.Add(obj.Name, Convert(obj.Value));
+                    subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
                 }
                 return new MultiStreamData(subDatas);
             }
-            else if (element.ValueKind != JsonValueKind.Null)
+            else if (token.Type != JTokenType.Null)
             {
-                return new SingleStreamData(element.ToString());
+                return new SingleStreamData(((JValue)token).Value?.ToString());
             }
-            else if (element.ValueKind == JsonValueKind.Null)
+            else if (token.Type == JTokenType.Null)
             {
                 return null;
             }

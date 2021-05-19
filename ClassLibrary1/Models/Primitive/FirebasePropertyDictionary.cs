@@ -1,4 +1,4 @@
-﻿using ObservableHelpers;
+﻿using ObservableHelpers.Observables;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models.Primitive
 {
-    public class FirebaseObjectDictionary : ObservableDictionary<string, FirebaseObject>, IRealtimeModel
+    public class FirebasePropertyDictionary : ObservableDictionary<string, FirebaseProperty>, IRealtimeModel
     {
         #region Properties
 
@@ -19,23 +20,26 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override (string key, FirebaseObject value) ValueFactory(string key, FirebaseObject value)
+        protected override (string key, FirebaseProperty value) ValueFactory(string key, FirebaseProperty value)
         {
             value.PropertyChanged += (s, e) =>
             {
-                if (value.IsNull())
+                if (e.PropertyName == nameof(value.Property))
                 {
-                    if (this.ContainsKey(key))
+                    if (value.IsNull())
                     {
-                        Remove(key);
-                        Wire?.InvokeDataChanges();
+                        if (this.ContainsKey(key))
+                        {
+                            Remove(key);
+                            Wire?.InvokeDataChanges();
+                        }
                     }
-                }
-                else
-                {
-                    if (!this.ContainsKey(key))
+                    else
                     {
-                        Add(key, value);
+                        if (!this.ContainsKey(key))
+                        {
+                            Add(key, value);
+                        }
                     }
                 }
             };
@@ -48,9 +52,9 @@ namespace RestfulFirebase.Database.Models.Primitive
             return (key, value);
         }
 
-        protected FirebaseObject ObjectFactory()
+        protected FirebaseProperty PropertyFactory()
         {
-            return new FirebaseObject();
+            return new FirebaseProperty();
         }
 
         public void MakeRealtime(RealtimeWire wire)
@@ -61,11 +65,11 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 var subWires = new Dictionary<string, RealtimeWire>();
 
-                foreach (var obj in this)
+                foreach (var prop in this)
                 {
-                    var subWire = wire.Child(obj.Key, wire.InvokeSetFirst);
-                    obj.Value.MakeRealtime(subWire);
-                    subWires.Add(obj.Key, subWire);
+                    var subWire = wire.Child(prop.Key, wire.InvokeSetFirst);
+                    prop.Value.MakeRealtime(subWire);
+                    subWires.Add(prop.Key, subWire);
                 }
 
                 var path = wire.Query.GetAbsolutePath();
@@ -78,17 +82,19 @@ namespace RestfulFirebase.Database.Models.Primitive
                 {
                     var separatedSubPath = Utils.SeparateUrl(subData.Path);
                     var key = separatedSubPath[separatedPath.Length];
-                    TryGetValue(key, out FirebaseObject obj);
+                    TryGetValue(key, out FirebaseProperty prop);
 
-                    if (obj == null)
+                    if (prop == null)
                     {
-                        obj = ObjectFactory();
+                        prop = PropertyFactory();
+
+                        prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
 
                         var subWire = wire.Child(key, false);
-                        obj.MakeRealtime(subWire);
+                        prop.MakeRealtime(subWire);
                         subWires.Add(key, subWire);
 
-                        Add(key, obj);
+                        Add(key, prop);
                     }
                 }
 
@@ -121,11 +127,11 @@ namespace RestfulFirebase.Database.Models.Primitive
                         if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
                         else if (streamObject.Object is null) props = new (string, StreamData)[0];
 
-                        var hasSubChanges = ReplaceObjects(props,
+                        var hasSubChanges = ReplaceProperties(props,
                             args =>
                             {
                                 var subStreamObject = new StreamObject(args.value, args.key);
-                                return args.obj.Wire.InvokeStream(subStreamObject);
+                                return args.property.Wire.InvokeStream(subStreamObject);
                             });
                         if (hasSubChanges) hasChanges = true;
                     }
@@ -133,25 +139,10 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
+                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
-                        var hasSubChanges = UpdateObjects(props,
-                            args =>
-                            {
-                                var subStreamObject = new StreamObject(args.value, args.key);
-                                return args.obj.Wire.InvokeStream(subStreamObject);
-                            });
-                        if (hasSubChanges) hasChanges = true;
-                    }
-                    else if (streamObject.Path.Length == 3)
-                    {
-                        var props = new (string, StreamData)[0];
-
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[2], single) };
-                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[2], null) };
-
-                        var hasSubChanges = UpdateProperties(streamObject.Path[1], props,
+                        var hasSubChanges = UpdateProperties(props,
                             args =>
                             {
                                 var subStreamObject = new StreamObject(args.value, args.key);
@@ -168,66 +159,36 @@ namespace RestfulFirebase.Database.Models.Primitive
             };
         }
 
-        public bool UpdateProperties<T>(string key, IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
+        public bool UpdateProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
         {
             bool hasChanges = false;
 
-            if (!TryGetValue(key, out FirebaseObject obj))
-            {
-                obj = ValueFactory(key, new FirebaseObject()).value;
-                Add(key, obj);
-            }
-
-            obj.UpdateProperties(properties, setter);
-
-            return hasChanges;
-        }
-
-        public bool ReplaceProperties<T>(string key, IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
-        {
-            bool hasChanges = false;
-
-            if (!TryGetValue(key, out FirebaseObject obj))
-            {
-                obj = ValueFactory(key, new FirebaseObject()).value;
-                Add(key, obj);
-            }
-
-            obj.ReplaceProperties(properties, setter);
-
-            return hasChanges;
-        }
-
-        public bool UpdateObjects<T>(IEnumerable<(string key, T value)> objs, Func<(string key, FirebaseObject obj, T value), bool> setter)
-        {
-            bool hasChanges = false;
-
-            foreach (var data in objs)
+            foreach (var data in properties)
             {
                 try
                 {
-                    TryGetValue(data.key, out FirebaseObject obj);
+                    TryGetValue(data.key, out FirebaseProperty prop);
 
-                    if (obj == null)
+                    if (prop == null)
                     {
-                        obj = ObjectFactory();
+                        prop = PropertyFactory();
 
                         if (EqualityComparer<T>.Default.Equals(data.value, default(T)))
                         {
-                            setter.Invoke((data.key, obj, default));
+                            setter.Invoke((data.key, prop, default));
                         }
                         else
                         {
                             if (Wire != null)
                             {
                                 var subWire = Wire.Child(data.key, false);
-                                obj.MakeRealtime(subWire);
+                                prop.MakeRealtime(subWire);
                                 subWire.InvokeStart();
                             }
 
-                            setter.Invoke((data.key, obj, data.value));
+                            setter.Invoke((data.key, prop, data.value));
 
-                            Add(data.key, obj);
+                            Add(data.key, prop);
 
                             hasChanges = true;
                         }
@@ -236,13 +197,13 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         if (EqualityComparer<T>.Default.Equals(data.value, default(T)))
                         {
-                            setter.Invoke((data.key, obj, default));
-                            Remove(data.key);
+                            setter.Invoke((data.key, prop, default));
+                            //Remove(data.key);
                             hasChanges = true;
                         }
                         else
                         {
-                            if (setter.Invoke((data.key, obj, data.value)))
+                            if (setter.Invoke((data.key, prop, data.value)))
                             {
                                 hasChanges = true;
                             }
@@ -258,22 +219,21 @@ namespace RestfulFirebase.Database.Models.Primitive
             return hasChanges;
         }
 
-        public bool ReplaceObjects<T>(IEnumerable<(string key, T value)> objs, Func<(string key, FirebaseObject obj, T value), bool> setter)
+        public bool ReplaceProperties<T>(IEnumerable<(string key, T value)> properties, Func<(string key, FirebaseProperty property, T value), bool> setter)
         {
             bool hasChanges = false;
 
-            var excluded = new List<KeyValuePair<string, FirebaseObject>>(this.Where(i => !objs.Any(j => j.key == i.Key)));
+            var excluded = new List<KeyValuePair<string, FirebaseProperty>>(this.Where(i => !properties.Any(j => j.key == i.Key)));
 
             foreach (var prop in excluded)
             {
                 if (setter.Invoke((prop.Key, prop.Value, default)))
                 {
-                    Remove(prop.Key);
                     hasChanges = true;
                 }
             }
 
-            if (UpdateObjects(objs, setter)) hasChanges = true;
+            if (UpdateProperties(properties, setter)) hasChanges = true;
 
             return hasChanges;
         }
@@ -281,10 +241,9 @@ namespace RestfulFirebase.Database.Models.Primitive
         public bool Delete()
         {
             var hasChanges = false;
-            foreach (var prop in new Dictionary<string, FirebaseObject>(this))
+            foreach (var prop in new Dictionary<string, FirebaseProperty>(this))
             {
                 prop.Value.Delete();
-                Remove(prop.Key);
                 hasChanges = true;
             }
             return hasChanges;

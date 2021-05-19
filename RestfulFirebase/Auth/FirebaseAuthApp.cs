@@ -8,10 +8,10 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ObservableHelpers.Serializers;
-using System.Text.Json;
 using RestfulFirebase.Extensions.Http;
 using System.ComponentModel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace RestfulFirebase.Auth
 {
@@ -72,8 +72,8 @@ namespace RestfulFirebase.Auth
 
                 response.EnsureSuccessStatusCode();
 
-                var user = JsonSerializer.Deserialize<User>(responseData, Utils.JsonSerializerOptions);
-                var auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, Utils.JsonSerializerOptions);
+                var user = JsonConvert.DeserializeObject<User>(responseData);
+                var auth = JsonConvert.DeserializeObject<FirebaseAuth>(responseData);
 
                 auth.User = user;
 
@@ -100,7 +100,7 @@ namespace RestfulFirebase.Auth
                 {
                     //create error data template and try to parse JSON
                     var errorData = new { error = new { code = 0, message = "errorid" } };
-                    errorData = Utils.JsonDeserializeAnonymousType(responseData, errorData, Utils.JsonSerializerOptions);
+                    errorData = JsonConvert.DeserializeAnonymousType(responseData, errorData);
 
                     //errorData is just null if different JSON was received
                     switch (errorData?.error?.message)
@@ -250,8 +250,8 @@ namespace RestfulFirebase.Auth
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
 
-                    var resultJson = JsonDocument.Parse(responseData);
-                    var user = JsonSerializer.Deserialize<User>(resultJson.RootElement.GetProperty("users").EnumerateArray().First().ToString(), Utils.JsonSerializerOptions);
+                    var resultJson = JObject.Parse(responseData);
+                    var user = JsonConvert.DeserializeObject<User>(resultJson["users"].First().ToString());
 
                     auth.User = user;
 
@@ -704,7 +704,7 @@ namespace RestfulFirebase.Auth
 
                     response.EnsureSuccessStatusCode();
 
-                    data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, Utils.JsonSerializerOptions);
+                    data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
                     data.Email = email;
                 }
                 catch (OperationCanceledException ex)
@@ -746,7 +746,7 @@ namespace RestfulFirebase.Auth
                             new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
                         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, Utils.JsonSerializerOptions);
+                        var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
 
                         var auth = new FirebaseAuth
                         {
@@ -810,9 +810,8 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                var session = Session;
                 var token = session.FirebaseToken;
-                if (session == null || string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{token}\"");
                 if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))

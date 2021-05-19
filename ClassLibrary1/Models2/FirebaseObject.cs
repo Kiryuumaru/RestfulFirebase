@@ -8,9 +8,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace RestfulFirebase.Database.Models.Primitive
+namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObject : ObservableObject, IRealtimeModel
+    public abstract class FirebaseObject : ObservableObject, IRealtimeModel
     {
         #region Properties
 
@@ -81,19 +81,19 @@ namespace RestfulFirebase.Database.Models.Primitive
                 foreach (var subData in subDatas)
                 {
                     var separatedSubPath = Utils.SeparateUrl(subData.Path);
-                    var key = separatedSubPath[separatedPath.Length];
+                    var keys = separatedSubPath.Skip(separatedPath.Length).ToArray();
 
                     PropertyHolder propHolder = null;
                     lock(PropertyHolders)
                     {
-                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key == keys[0]);
                     }
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
+                        propHolder = PropertyFactory(keys[0], null, nameof(FirebaseObject));
 
-                        var subWire = wire.Child(key, false);
+                        var subWire = wire.Child(keys[0], false);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
                         subWires.Add((propHolder, subWire));
 
@@ -110,7 +110,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     }
                 }
 
-                foreach (var propHolder in GetRawPersistableProperties())
+                foreach (var propHolder in GetRawProperties(nameof(FirebaseObject)))
                 {
                     if (!subWires.Any(i => i.propHolder.Key == propHolder.Key))
                     {
@@ -130,9 +130,9 @@ namespace RestfulFirebase.Database.Models.Primitive
             wire.OnStop += delegate
             {
                 Wire = null;
-                foreach (var prop in GetRawPersistableProperties())
+                foreach (var propHolder in GetRawProperties(nameof(FirebaseObject)))
                 {
-                    ((FirebaseProperty)prop.Property).Wire.InvokeStop();
+                    ((FirebaseProperty)propHolder.Property).Wire.InvokeStop();
                 }
             };
             wire.OnStream += streamObject =>
@@ -161,7 +161,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
+                        else if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
                         else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
                         var hasSubChanges = UpdateProperties(props,

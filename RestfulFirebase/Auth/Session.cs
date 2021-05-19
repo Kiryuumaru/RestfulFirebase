@@ -1,4 +1,5 @@
-﻿using ObservableHelpers.Serializers;
+﻿using RestfulFirebase.Extensions;
+using RestfulFirebase.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,25 +12,25 @@ namespace RestfulFirebase.Auth
 
         public RestfulFirebaseApp App { get; }
 
-        internal string FirebaseToken
+        public string FirebaseToken
         {
             get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "tok"));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "tok"), value);
         }
 
-        internal string RefreshToken
+        public string RefreshToken
         {
             get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "ref"));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ref"), value);
         }
 
-        internal int ExpiresIn
+        public int ExpiresIn
         {
             get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "exp")));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "exp"), Serializer.Serialize(value));
         }
 
-        internal DateTime Created
+        public DateTime Created
         {
             get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "ctd")));
             private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ctd"), Serializer.Serialize(value));

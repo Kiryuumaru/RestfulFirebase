@@ -9,10 +9,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Realtime;
 using ObservableHelpers;
-using RestfulFirebase.Extensions;
-using RestfulFirebase.Serializers;
+using RestfulFirebase.Extensions.Json;
 
-namespace RestfulFirebase.Database.Models.Primitive
+namespace RestfulFirebase.Database.Models
 {
     public class FirebaseProperty : ObservableProperty, IRealtimeModel
     {
@@ -49,7 +48,54 @@ namespace RestfulFirebase.Database.Models.Primitive
             OnError(err.Exception);
         }
 
-        protected virtual bool SetBlob(string blob, string tag = null)
+        public override bool SetValue<T>(T value, string tag = null)
+        {
+            if (value is FirebaseObject)
+            {
+                return SetObject(value, tag);
+            }
+            else
+            {
+                try
+                {
+                    return SetObject(JsonExtensions.Serialize(value), tag);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                    return false;
+                }
+            }
+        }
+
+        public override T GetValue<T>(T defaultValue = default, string tag = null)
+        {
+            if (defaultValue is FirebaseObject)
+            {
+                var obj = GetObject(defaultValue, tag);
+                if (obj is FirebaseObject) return (T)obj;
+                else return defaultValue;
+            }
+            else
+            {
+                try
+                {
+                    var obj = GetObject(defaultValue, tag);
+                    if (obj is string str)
+                    {
+                        return JsonExtensions.Deserialize<T>(str);
+                    }
+                    else return defaultValue;
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                    return defaultValue;
+                }
+            }
+        }
+
+        public virtual bool SetBlob(string blob, string tag = null)
         {
             bool hasChanges = false;
 
@@ -60,17 +106,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     case InitTag:
                         if (Wire.InvokeSetFirst)
                         {
-                            var obj = GetObject(null, tag);
-                            if (obj is string strObj)
-                            {
-                                if (Node.MakeChanges(strObj, OnPutError)) hasChanges = true;
-                                return hasChanges;
-                            }
-                            else
-                            {
-                                if (Node.MakeChanges(null, OnPutError)) hasChanges = true;
-                                return hasChanges;
-                            }
+                            if (Node.MakeChanges(blob, OnPutError)) hasChanges = true;
+                            return hasChanges;
                         }
                         else
                         {
@@ -95,7 +132,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             return hasChanges;
         }
 
-        protected virtual string GetBlob(string defaultValue = null, string tag = null)
+        public virtual string GetBlob(string defaultValue = null, string tag = null)
         {
             if (Wire != null)
             {
@@ -103,86 +140,31 @@ namespace RestfulFirebase.Database.Models.Primitive
             }
             else
             {
-                var obj = GetObject(defaultValue, tag);
-                if (obj is string strObj)
-                {
-                    return strObj;
-                }
-                else
-                {
-                    return defaultValue;
-                }
+                return (string)GetObject(defaultValue, tag);
             }
         }
 
-        public override bool SetValue<T>(T value, string tag = null)
+        public virtual FirebaseObject GetFirebaseObject(string defaultValue = null, string tag = null)
         {
-            if (typeof(T).IsAssignableFrom(typeof(FirebaseProperty)))
-            {
-                OnError(new Exception("Cannot nest assign FirebaseProperty"));
-                return false;
-            }
-            else if (typeof(T).IsAssignableFrom(typeof(FirebaseObject)))
-            {
-                return SetObject(value, tag);
-            }
-            else
-            {
-                try
-                {
-                    var json = Serializer.Serialize(value);
-                    return SetBlob(json, tag);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                    return false;
-                }
-            }
-        }
 
-        public override T GetValue<T>(T defaultValue = default, string tag = null)
-        {
-            if (typeof(T).IsAssignableFrom(typeof(FirebaseProperty)))
-            {
-                OnError(new Exception("Cannot nest assign FirebaseProperty"));
-                return defaultValue;
-            }
-            else if (typeof(T).IsAssignableFrom(typeof(FirebaseObject)))
-            {
-                var obj = GetObject(defaultValue, tag);
-                if (obj is FirebaseObject) return (T)obj;
-                else return defaultValue;
-            }
-            else
-            {
-                try
-                {
-                    var str = GetBlob(null, tag);
-                    if (str == null)
-                    {
-                        return defaultValue;
-                    }
-                    else
-                    {
-                        return Serializer.Deserialize<T>(str);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                    return defaultValue;
-                }
-            }
         }
 
         public void MakeRealtime(RealtimeWire wire)
         {
             wire.OnStart += delegate
             {
-                Node = new DataNode(wire);
-                Wire = wire;
-                SetBlob(null, InitTag);
+                var obj = GetObject();
+                if (obj is FirebaseObject firObj)
+                {
+                    firObj.Wire
+                }
+                else
+                {
+                    var blob = (string)obj;
+                    Node = new DataNode(wire);
+                    Wire = wire;
+                    SetBlob(blob, InitTag);
+                }
             };
             wire.OnStop += delegate
             {
@@ -198,15 +180,16 @@ namespace RestfulFirebase.Database.Models.Primitive
                     else if (streamObject.Path.Length == 0) throw new Exception("StreamEvent Key empty");
                     else if (streamObject.Path.Length == 1)
                     {
-                        if (streamObject.Object is SingleStreamData single)
+                        if (streamObject.Object is MultiStreamData multi)
+                        {
+                            var obj = GetValue<FirebaseObject>();
+                            obj.Wire.InvokeStream();
+                            //hasChanges = SetBlob(multi.Data, SyncTag);
+                        }
+                        else if (streamObject.Object is SingleStreamData single)
                         {
                             hasChanges = SetBlob(single.Data, SyncTag);
                         }
-                        //else if (streamObject.Object is MultiStreamData multi)
-                        //{
-                        //    var obj = GetObject(new FirebaseO, SyncTag);
-                        //    hasChanges = SetBlob(obj.Data, SyncTag);
-                        //}
                         else if (streamObject.Object is null)
                         {
                             hasChanges = SetBlob(null, SyncTag);
@@ -243,7 +226,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override bool SetBlob(string blob, string tag = null)
+        public override bool SetBlob(string blob, string tag = null)
         {
             var hasChanges = false;
             if (tag == InitTag)

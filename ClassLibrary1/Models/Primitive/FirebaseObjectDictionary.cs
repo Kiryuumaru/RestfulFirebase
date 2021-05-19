@@ -1,4 +1,4 @@
-﻿using ObservableHelpers;
+﻿using ObservableHelpers.Observables;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -61,13 +61,6 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 var subWires = new Dictionary<string, RealtimeWire>();
 
-                foreach (var obj in this)
-                {
-                    var subWire = wire.Child(obj.Key, wire.InvokeSetFirst);
-                    obj.Value.MakeRealtime(subWire);
-                    subWires.Add(obj.Key, subWire);
-                }
-
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -89,6 +82,22 @@ namespace RestfulFirebase.Database.Models.Primitive
                         subWires.Add(key, subWire);
 
                         Add(key, obj);
+                    }
+                    else
+                    {
+                        var subWire = wire.Child(key, wire.InvokeSetFirst);
+                        obj.MakeRealtime(subWire);
+                        subWires.Add(key, subWire);
+                    }
+                }
+
+                foreach (var obj in this)
+                {
+                    if (!subWires.ContainsKey(obj.Key))
+                    {
+                        var subWire = wire.Child(obj.Key, wire.InvokeSetFirst);
+                        obj.Value.MakeRealtime(subWire);
+                        subWires.Add(obj.Key, subWire);
                     }
                 }
 

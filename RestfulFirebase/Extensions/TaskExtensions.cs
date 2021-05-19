@@ -17,13 +17,13 @@ namespace RestfulFirebase.Extensions
             }
         }
 
-        internal async static Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds)
+        internal async static Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds, T defaultValue = default)
         {
             var retTask = await Task.WhenAny(task, Task.Delay(timeoutInMilliseconds)).ConfigureAwait(false);
-            return retTask is Task<T> ? task.Result : default;
+            return retTask is Task<T> ? task.Result : defaultValue;
         }
 
-        internal static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout) => WithTimeout(task, (int)timeout.TotalMilliseconds);
+        internal static Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout, T defaultValue = default) => WithTimeout(task, (int)timeout.TotalMilliseconds, defaultValue);
 
         internal static async void SafeFireAndForget(this Task task, Action<Exception> onException = null, bool continueOnCapturedContext = false)
         {

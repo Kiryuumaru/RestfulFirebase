@@ -1,4 +1,4 @@
-﻿using ObservableHelpers.Observables;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -88,7 +88,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         prop = PropertyFactory();
 
-                        prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        //prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
 
                         var subWire = wire.Child(key, false);
                         prop.MakeRealtime(subWire);

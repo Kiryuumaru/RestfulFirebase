@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System.Collections.Generic;
 
 namespace RestfulFirebase.Auth
 {
@@ -12,21 +13,20 @@ namespace RestfulFirebase.Auth
 
         public string Email { get; set; }
 
-        [JsonPropertyName("registered")]
+        [JsonProperty("registered")]
         public bool IsRegistered { get; set; }
 
-        [JsonPropertyName("forExistingProvider")]
+        [JsonProperty("forExistingProvider")]
         public bool IsForExistingProvider { get; set; }
 
-        [JsonPropertyName("authUri")]
+        [JsonProperty("authUri")]
         public string AuthUri { get; set; }
 
-        [JsonPropertyName("providerId")]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty("providerId")]
+        [JsonConverter(typeof(StringEnumConverter))]
         public FirebaseAuthType? ProviderId { get; set; }
 
-        [JsonPropertyName("allProviders")]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty("allProviders", ItemConverterType = typeof(StringEnumConverter))]
         public List<FirebaseAuthType> Providers { get; set; }
     }
 }

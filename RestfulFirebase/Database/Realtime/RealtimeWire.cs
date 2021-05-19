@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Auth;
+using RestfulFirebase.Extensions;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
@@ -16,8 +17,6 @@ namespace RestfulFirebase.Database.Realtime
     public class RealtimeWire : IDisposable
     {
         #region Properties
-
-        private CancellationTokenSource hasFirstStreamWait = new CancellationTokenSource();
 
         private string jsonToPut;
         private StreamObject streamObjectBuffer;
@@ -107,7 +106,6 @@ namespace RestfulFirebase.Database.Realtime
             {
                 OnFirstStream?.Invoke();
                 HasFirstStream = true;
-                hasFirstStreamWait.Cancel();
             }
             InvokeDataChanges();
             return hasChanges;
@@ -174,15 +172,11 @@ namespace RestfulFirebase.Database.Realtime
 
         public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
-            bool isSuccess = false;
-            await Task.WhenAny(
-                Task.Run(delegate
-                {
-                    hasFirstStreamWait.Token.WaitHandle.WaitOne();
-                    isSuccess = true;
-                }),
-                Task.Delay(timeout));
-            return isSuccess;
+            return await Task.Run(async delegate
+            {
+                while (!HasFirstStream) { await Task.Delay(100); }
+                return true;
+            }).WithTimeout(timeout, false);
         }
 
         #endregion

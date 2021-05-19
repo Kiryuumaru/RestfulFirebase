@@ -1,5 +1,5 @@
-﻿using System;
-using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace RestfulFirebase.Auth
 {
@@ -13,7 +13,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets or sets the firebase token which can be used for authenticated queries. 
         /// </summary>
-        [JsonPropertyName("idToken")]
+        [JsonProperty("idToken")]
         public string FirebaseToken
         {
             get;
@@ -23,7 +23,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets or sets the refresh token of the underlying service which can be used to get a new access token. 
         /// </summary>
-        [JsonPropertyName("refreshToken")]
+        [JsonProperty("refreshToken")]
         public string RefreshToken
         {
             get;
@@ -33,7 +33,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets or sets the numbers of seconds since <see cref="Created"/> when the token expires.
         /// </summary>
-        [JsonPropertyName("expiresIn")]
+        [JsonProperty("expiresIn")]
         public int? ExpiresIn
         {
             get;
@@ -58,9 +58,6 @@ namespace RestfulFirebase.Auth
             set;
         }
 
-        /// <summary>
-        /// Specifies whether the token already expired. 
-        /// </summary>
         public bool IsExpired()
         {
             if (!Created.HasValue || !ExpiresIn.HasValue) return true;

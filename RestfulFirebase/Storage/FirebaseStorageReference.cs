@@ -1,12 +1,13 @@
 ﻿using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace RestfulFirebase.Storage
 {
@@ -49,7 +50,7 @@ namespace RestfulFirebase.Storage
 
             if (!data.TryGetValue("downloadTokens", out object downloadTokens))
             {
-                throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonSerializer.Serialize(data, Utils.JsonSerializerOptions)}");
+                throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonConvert.SerializeObject(data)}");
             }
 
             return GetFullDownloadUrl() + downloadTokens;
@@ -94,7 +95,7 @@ namespace RestfulFirebase.Storage
                 {
                     var result = await http.GetAsync(url);
                     resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var data = JsonSerializer.Deserialize<T>(resultContent, Utils.JsonSerializerOptions);
+                    var data = JsonConvert.DeserializeObject<T>(resultContent);
 
                     result.EnsureSuccessStatusCode();
 

@@ -1,4 +1,4 @@
-﻿using ObservableHelpers;
+﻿using ObservableHelpers.Observables;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -20,9 +20,11 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
+        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group, bool serializable)
         {
-            var prop = new FirebaseProperty();
+            ObservableProperty prop;
+            if (serializable) prop = new FirebaseProperty();
+            else prop = new ObservableNonSerializableProperty();
             var propHolder = new PropertyHolder()
             {
                 Property = prop,
@@ -47,7 +49,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             Func<T, T, bool> validateValue = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue, customValueSetter);
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), true, validateValue, customValueSetter);
         }
 
         public T GetPersistableProperty<T>(
@@ -56,7 +58,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             [CallerMemberName] string propertyName = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), customValueSetter);
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), true, customValueSetter);
         }
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
@@ -91,7 +93,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
+                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject), true);
 
                         var subWire = wire.Child(key, false);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
@@ -197,7 +199,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(data.key, null, null);
+                        propHolder = PropertyFactory(data.key, null, null, true);
 
                         if (Wire != null)
                         {

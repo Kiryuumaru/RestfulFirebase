@@ -13,7 +13,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
 using RestfulFirebase.Database.Models.Primitive;
-using ObservableHelpers.Serializers;
+using ObservableHelpers;
 
 namespace RestTest
 {
@@ -67,20 +67,20 @@ namespace RestTest
         {
             app = new RestfulFirebaseApp(Config.YourConfig());
 
-            //var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
-            //var update = await app.Auth.UpdateProfile("disp", "123123");
+            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+            var update = await app.Auth.UpdateProfile("disp", "123123");
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
             //TestObservableObject();
             //TestPropertyPut();
-            //TestPropertySub();
+            TestPropertySub();
             //TestPropertySub2();
             //TestObjectPut();
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
@@ -149,16 +149,16 @@ namespace RestTest
                 switch (e.PropertyName)
                 {
                     case nameof(TestStorable.IsOk):
-                        write += Serializer.Serialize(obj.IsOk);
+                        write += obj.IsOk.ToString();
                         break;
                     case nameof(TestStorable.Premium):
-                        write += Serializer.Serialize(obj.Premium);
+                        write += obj.Premium.ToString();
                         break;
                     case nameof(TestStorable.Premiums):
-                        write += Serializer.Serialize(obj.Premiums);
+                        write += obj.Premiums.ToString();
                         break;
                     case nameof(TestStorable.Test):
-                        write += Serializer.Serialize(obj.Test);
+                        write += obj.Test;
                         break;
                 }
                 Console.WriteLine(write);
@@ -184,16 +184,16 @@ namespace RestTest
                 switch (e.PropertyName)
                 {
                     case nameof(TestStorable.IsOk):
-                        write += Serializer.Serialize(obj.IsOk);
+                        write += obj.IsOk.ToString();
                         break;
                     case nameof(TestStorable.Premium):
-                        write += Serializer.Serialize(obj.Premium);
+                        write += obj.Premium.ToString();
                         break;
                     case nameof(TestStorable.Premiums):
-                        write += Serializer.Serialize(obj.Premiums);
+                        write += obj.Premiums.ToString();
                         break;
                     case nameof(TestStorable.Test):
-                        write += Serializer.Serialize(obj.Test);
+                        write += obj.Test;
                         break;
                 }
                 Console.WriteLine(write);
@@ -275,6 +275,8 @@ namespace RestTest
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };
             wire.Start();
+
+            string lin11e = Console.ReadLine();
 
             for (int i = 0; i < 1000; i++)
             {
