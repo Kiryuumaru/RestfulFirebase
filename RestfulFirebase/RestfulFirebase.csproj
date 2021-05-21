@@ -28,12 +28,13 @@
     <None Remove="Auth\FirebaseAuthApp.cs~RF20cd8c7.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />
     <None Remove="Database\Offline\OfflineDatabase.cs~RF1f4578c1.TMP" />
+    <None Remove="Database\Realtime\RealtimeWire.cs~RFf20d81e.TMP" />
     <None Remove="Extensions\Http\DefaultHttpStreamFactory.cs~RFcdef18d.TMP" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.0.15" />
+    <PackageReference Include="ObservableHelpers" Version="1.0.16" />
   </ItemGroup>
 
 </Project>

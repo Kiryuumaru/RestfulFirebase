@@ -39,6 +39,22 @@ namespace RestfulFirebase.Database.Streaming
             return currentString;
         }
 
+        public override string ReadLine()
+        {
+            var currentString = TryGetNewLine();
+
+            while (currentString == null)
+            {
+                var read = stream.Read(buffer, 0, bufferSize);
+                var str = Encoding.UTF8.GetString(buffer, 0, read);
+
+                cachedData += str;
+                currentString = TryGetNewLine();
+            }
+
+            return currentString;
+        }
+
         private string TryGetNewLine()
         {
             var newLine = cachedData.IndexOf('\n');

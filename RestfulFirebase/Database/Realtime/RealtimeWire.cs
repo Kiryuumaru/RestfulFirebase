@@ -1,41 +1,25 @@
-﻿using RestfulFirebase.Auth;
-using RestfulFirebase.Extensions;
-using RestfulFirebase.Database.Models;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
-    public class RealtimeWire : IDisposable
+    public class RealtimeWire
     {
         #region Properties
 
-        private string jsonToPut;
-        private StreamObject streamObjectBuffer;
-
-        protected IDisposable Subscription;
-
         public RestfulFirebaseApp App { get; }
-        public RealtimeWire ParentWire { get; }
-        public FirebaseQuery Query { get; }
-        public bool InvokeSetFirst { get; private set; }
-        public bool HasFirstStream { get; private set; }
-        public bool IsWritting { get; private set; }
-        public bool HasPendingWrite { get; private set; }
 
-        public event Action OnStart;
-        public event Action OnStop;
-        public event Func<StreamObject, bool> OnStream;
-        public event EventHandler<DataChangesEventArgs> OnDataChanges;
-        public event Action OnFirstStream;
+        public IFirebaseQuery Query { get; }
+
+        public bool HasFirstStream { get; private set; }
 
         public int TotalDataCount
         {
@@ -43,7 +27,7 @@ namespace RestfulFirebase.Database.Realtime
             {
                 var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
                 var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
-                return subData.Count() + (data.Exist ? 1 : 0);
+                return subData.Count() + (data == null ? 0 : 1);
             }
         }
 
@@ -53,183 +37,211 @@ namespace RestfulFirebase.Database.Realtime
             {
                 var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
                 var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
-                return subData.Where(i => i.Changes == null).Count() + (data.Exist ? 1 : 0);
+                return subData.Where(i => i.Changes == null).Count() + (data == null ? 0 : 1);
             }
         }
+
+        public event EventHandler<DataChangesEventArgs> OnChanges;
+        public event EventHandler<SyncEventArgs> OnSync;
+        public event EventHandler<Exception> OnError;
+
+        internal event EventHandler<DataChangesEventArgs> OnInternalChanges;
+        internal event EventHandler<SyncEventArgs> OnInternalSync;
+        internal event EventHandler<Exception> OnInternalError;
+
+        private IDisposable subscription;
+        private SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
 
         #endregion
 
         #region Initializers
 
-        public static RealtimeWire CreateFromParent(RestfulFirebaseApp app, RealtimeWire parentWire, string key, bool invokeSetFirst)
-        {
-            return new RealtimeWire(
-                app,
-                parentWire,
-                new ChildQuery(app, parentWire.Query, () => key),
-                invokeSetFirst);
-        }
-
-        public static RealtimeWire CreateFromQuery(RestfulFirebaseApp app, FirebaseQuery query, bool invokeSetFirst)
-        {
-            return new RealtimeWire(
-                app,
-                null,
-                query,
-                invokeSetFirst);
-        }
-
-        protected RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery query, bool invokeSetFirst)
+        public RealtimeWire(RestfulFirebaseApp app, IFirebaseQuery query)
         {
             App = app;
-            ParentWire = parentWire;
             Query = query;
-            InvokeSetFirst = invokeSetFirst;
         }
 
         #endregion
 
         #region Methods
 
-        internal void InvokeDataChanges() => OnDataChanges?.Invoke(this, new DataChangesEventArgs(TotalDataCount, SyncedDataCount));
+        public void Start()
+        {
+            subscription = new NodeStreamer(App, Query, OnNext, OnError).Run();
+        }
 
-        internal void InvokeStart() => OnStart?.Invoke();
+        public void Stop()
+        {
+            subscription?.Dispose();
+            subscription = null;
+        }
 
-        internal void InvokeStop() => OnStop?.Invoke();
+        public void MakeChanges(string path, string blob)
+        {
+            path = path.TrimStart('/');
+            path = path.TrimEnd('/');
+            if (string.IsNullOrEmpty(path)) return;
+            var uri = Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            var dataHolder = new DataHolder(App, uri);
+            if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
+            {
+                InvokeOnChangesAndSync(uri);
+            }
+        }
 
-        internal bool InvokeStream(StreamObject streamObject)
+        protected void InvokeOnChangesAndSync(string uri)
+        {
+            InvokeOnChanges(uri);
+            InvokeOnSync();
+        }
+
+        protected void InvokeOnChanges(string uri)
+        {
+            uri = uri.EndsWith("/") ? uri : uri + "/";
+            var baseUri = Query.GetAbsolutePath();
+            if (!uri.StartsWith(baseUri)) return;
+            var path = uri.Replace(baseUri, "");
+            var separatedPath = Utils.SeparateUrl(path);
+            var affectedUris = new List<string>();
+            var eventUri = Utils.CombineUrl(baseUri);
+            affectedUris.Add(eventUri);
+            for (int i = 0; i < separatedPath.Length; i++)
+            {
+                eventUri = Utils.CombineUrl(eventUri, separatedPath[i]);
+                affectedUris.Add(eventUri);
+            }
+            foreach (var affectedUri in affectedUris.OrderByDescending(i => i.Length))
+            {
+                OnInternalChanges?.Invoke(this, new DataChangesEventArgs(affectedUri));
+                context.Post(s =>
+                {
+                    OnChanges?.Invoke(this, new DataChangesEventArgs(affectedUri));
+                }, null);
+            }
+        }
+
+        protected void InvokeOnSync()
+        {
+            OnInternalSync?.Invoke(this, new SyncEventArgs(TotalDataCount, SyncedDataCount));
+            context.Post(s =>
+            {
+                OnSync?.Invoke(this, new SyncEventArgs(TotalDataCount, SyncedDataCount));
+            }, null);
+        }
+
+        protected void InvokeOnError(Exception exception)
+        {
+            OnInternalError?.Invoke(this, exception);
+            context.Post(s =>
+            {
+                OnError?.Invoke(this, exception);
+            }, null);
+        }
+
+        private void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
             var hasChanges = false;
-            streamObjectBuffer = streamObject;
-            hasChanges = OnStream?.Invoke(streamObjectBuffer) ?? false;
-            if (!HasFirstStream)
+            if (err.Exception is FirebaseException ex)
             {
-                OnFirstStream?.Invoke();
-                HasFirstStream = true;
-            }
-            InvokeDataChanges();
-            return hasChanges;
-        }
-
-        internal RealtimeWire Child(string key, bool invokeSetFirst)
-        {
-            return RealtimeWire.CreateFromParent(App, this, key, invokeSetFirst);
-        }
-
-        internal async void Put(string json, Action<RetryExceptionEventArgs> onError)
-        {
-            InvokeDataChanges();
-            ParentWire?.InvokeDataChanges();
-
-            jsonToPut = json;
-            HasPendingWrite = true;
-            if (IsWritting) return;
-            IsWritting = true;
-            while (HasPendingWrite)
-            {
-                HasPendingWrite = false;
-                await Query.Put(() => jsonToPut, null, err =>
+                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
                 {
-                    Type exType = err.Exception.GetType();
-                    if (err.Exception is FirebaseException firEx)
+                    if (holder.Sync == null)
                     {
-                        if (firEx.Reason == FirebaseExceptionReason.OfflineMode)
-                        {
-                            err.Retry = true;
-                        }
-                        else if (firEx.Reason == FirebaseExceptionReason.OperationCancelled)
-                        {
-                            err.Retry = true;
-                        }
-                        else if (firEx.Reason == FirebaseExceptionReason.Auth)
-                        {
-                            err.Retry = true;
-                        }
-                        else
-                        {
-                            onError(err);
-                        }
+                        if (holder.Delete()) hasChanges = true;
                     }
                     else
                     {
-                        onError(err);
+                        if (holder.DeleteChanges()) hasChanges = true;
                     }
-                });
+                }
             }
-            IsWritting = false;
-        }
-
-        public virtual void Start()
-        {
-            InvokeStart();
-        }
-
-        public void Dispose()
-        {
-            Subscription?.Dispose();
-            OnStop?.Invoke();
-        }
-
-        public async Task<bool> WaitForFirstStream(TimeSpan timeout)
-        {
-            return await Task.Run(async delegate
+            InvokeOnError(err.Exception);
+            if (hasChanges)
             {
-                while (!HasFirstStream) { await Task.Delay(100); }
-                return true;
-            }).WithTimeout(timeout, false);
+                InvokeOnChangesAndSync(holder.Uri);
+            }
         }
 
-        #endregion
-    }
-
-    public class RealtimeWire<T> : RealtimeWire
-        where T : IRealtimeModel
-    {
-        #region Methods
-
-        public T Model { get; private set; }
-
-        #endregion
-
-        #region Initializers
-
-        public static RealtimeWire<T> CreateFromParent(RestfulFirebaseApp app, RealtimeWire parentWire, string key, T model, bool invokeSetFirst)
+        private void OnNext(object sender, StreamObject streamObject)
         {
-            return new RealtimeWire<T>(
-                app,
-                parentWire,
-                new ChildQuery(app, parentWire.Query, () => key),
-                model,
-                invokeSetFirst);
-        }
+            var eventInvoked = false;
+            if (streamObject.Data is null)
+            {
+                // Delete all
+                var datas = App.Database.OfflineDatabase.GetDataAndSubDatas(streamObject.Uri);
+                foreach (var data in datas)
+                {
+                    if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
+                    {
+                        eventInvoked = true;
+                        InvokeOnChangesAndSync(data.Uri);
+                    }
+                }
+            }
+            else if (streamObject.Data is SingleStreamData2 single)
+            {
+                // Delete multi
+                var subDatas = App.Database.OfflineDatabase.GetSubDatas(streamObject.Uri);
+                foreach (var subData in subDatas)
+                {
+                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    {
+                        eventInvoked = true;
+                        InvokeOnChangesAndSync(subData.Uri);
+                    }
+                }
 
-        public static RealtimeWire<T> CreateFromQuery(RestfulFirebaseApp app, FirebaseQuery query, T model, bool invokeSetFirst)
-        {
-            return new RealtimeWire<T>(
-                app,
-                null,
-                query,
-                model,
-                invokeSetFirst);
-        }
+                // Make single
+                var data = App.Database.OfflineDatabase.GetData(streamObject.Uri) ?? new DataHolder(App, streamObject.Uri);
+                if (data.MakeSync(single.Blob, err => OnPutError(data, err)))
+                {
+                    eventInvoked = true;
+                    InvokeOnChangesAndSync(data.Uri);
+                }
+            }
+            else if (streamObject.Data is MultiStreamData2 multi)
+            {
+                // Delete single
+                var data = App.Database.OfflineDatabase.GetData(streamObject.Uri);
+                if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
+                {
+                    eventInvoked = true;
+                    InvokeOnChangesAndSync(data.Uri);
+                }
 
-        private RealtimeWire(RestfulFirebaseApp app, RealtimeWire parentWire, FirebaseQuery query, T model, bool invokeSetFirst)
-            : base(app, parentWire, query, invokeSetFirst)
-        {
-            Model = model;
-        }
+                var subDatas = App.Database.OfflineDatabase.GetSubDatas(streamObject.Uri);
+                var descendants = multi.GetDescendants();
+                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.CombineUrl(streamObject.Uri, i.path), i.blob)));
+                var excluded = subDatas.Where(i => syncDatas.Any(j => j.path != i.Uri));
 
-        #endregion
+                // Delete excluded multi
+                foreach (var subData in excluded)
+                {
+                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    {
+                        eventInvoked = true;
+                        InvokeOnChangesAndSync(subData.Uri);
+                    }
+                }
 
-        #region Methods
-
-        public override void Start()
-        {
-            Model.MakeRealtime(this);
-            InvokeStart();
-            Subscription = Observable
-                .Create<StreamObject>(observer => new NodeStreamer(App, observer, Query, (s, e) => Model.OnError(e)).Run())
-                .Subscribe(streamObject => { InvokeStream(streamObject); });
+                // Make multi
+                foreach (var syncData in syncDatas)
+                {
+                    var subData = subDatas.FirstOrDefault(i => i.Uri == syncData.path);
+                    if (subData == null) subData = new DataHolder(App, syncData.path);
+                    if (subData?.MakeSync(syncData.blob, err => OnPutError(subData, err)) ?? false)
+                    {
+                        eventInvoked = true;
+                        InvokeOnChangesAndSync(subData.Uri);
+                    }
+                }
+            }
+            if (!eventInvoked)
+            {
+                InvokeOnChangesAndSync(Query.GetAbsolutePath());
+            }
+            HasFirstStream = true;
         }
 
         #endregion

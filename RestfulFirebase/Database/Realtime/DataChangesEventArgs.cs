@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Database.Streaming;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,13 +7,11 @@ namespace RestfulFirebase.Database.Realtime
 {
     public class DataChangesEventArgs : EventArgs
     {
-        public int TotalDataCount { get; }
-        public int SyncedDataCount { get; }
+        public string Uri { get; }
 
-        public DataChangesEventArgs(int totalDataCount, int syncedDataCount)
+        public DataChangesEventArgs(string uri)
         {
-            TotalDataCount = totalDataCount;
-            SyncedDataCount = syncedDataCount;
+            Uri = uri;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using ObservableHelpers.Observables;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;

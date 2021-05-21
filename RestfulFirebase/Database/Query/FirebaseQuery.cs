@@ -42,6 +42,16 @@ namespace RestfulFirebase.Database.Query
 
         public RestfulFirebaseApp App { get; }
 
+        public ChildQuery Child(Func<string> pathFactory)
+        {
+            return new ChildQuery(App, this, pathFactory);
+        }
+
+        public ChildQuery Child(string path)
+        {
+            return Child(() => path);
+        }
+
         public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task invoke(Func<string> invokeJsonData, CancellationToken? invokeToken)
@@ -190,15 +200,15 @@ namespace RestfulFirebase.Database.Query
             return await recursive();
         }
 
-        public RealtimeWire<T> PutAsRealtime<T>(T model) where T : IRealtimeModel
-        {
-            return RealtimeWire<T>.CreateFromQuery(App, this, model, true);
-        }
+        //public RealtimeWire<T> PutAsRealtime<T>(T model) where T : IRealtimeModel
+        //{
+        //    return RealtimeWire<T>.CreateFromQuery(App, this, model, true);
+        //}
 
-        public RealtimeWire<T> SubAsRealtime<T>(T model) where T : IRealtimeModel
-        {
-            return RealtimeWire<T>.CreateFromQuery(App, this, model, false);
-        }
+        //public RealtimeWire<T> SubAsRealtime<T>(T model) where T : IRealtimeModel
+        //{
+        //    return RealtimeWire<T>.CreateFromQuery(App, this, model, false);
+        //}
 
         public async Task<string> BuildUrlAsync(CancellationToken? token = null)
         {

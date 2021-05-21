@@ -1,4 +1,4 @@
-﻿using ObservableHelpers.Observables;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -20,11 +20,9 @@ namespace RestfulFirebase.Database.Models.Primitive
 
         #region Methods
 
-        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group, bool serializable)
+        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
         {
-            ObservableProperty prop;
-            if (serializable) prop = new FirebaseProperty();
-            else prop = new ObservableNonSerializableProperty();
+            var prop = new FirebaseProperty();
             var propHolder = new PropertyHolder()
             {
                 Property = prop,
@@ -49,7 +47,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             Func<T, T, bool> validateValue = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), true, validateValue, customValueSetter);
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue, customValueSetter);
         }
 
         public T GetPersistableProperty<T>(
@@ -58,7 +56,7 @@ namespace RestfulFirebase.Database.Models.Primitive
             [CallerMemberName] string propertyName = null,
             Func<(T value, ObservableProperty property), bool> customValueSetter = null)
         {
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), true, customValueSetter);
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), customValueSetter);
         }
 
         public IEnumerable<PropertyHolder> GetRawPersistableProperties()
@@ -82,7 +80,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 foreach (var subData in subDatas)
                 {
-                    var separatedSubPath = Utils.SeparateUrl(subData.Path);
+                    var separatedSubPath = Utils.SeparateUrl(subData.Uri);
                     var key = separatedSubPath[separatedPath.Length];
 
                     PropertyHolder propHolder = null;
@@ -93,7 +91,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject), true);
+                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
 
                         var subWire = wire.Child(key, false);
                         ((FirebaseProperty)propHolder.Property).MakeRealtime(subWire);
@@ -148,8 +146,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
-                        else if (streamObject.Object is null) props = new (string, StreamData)[0];
+                        if (streamObject.Data is MultiStreamData multi) props = multi.Blobs.Select(i => (i.Key, i.Value)).ToArray();
+                        else if (streamObject.Data is null) props = new (string, StreamData)[0];
 
                         var hasSubChanges = ReplaceProperties(props,
                             args =>
@@ -163,8 +161,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
-                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
+                        if (streamObject.Data is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        else if (streamObject.Data is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
                         var hasSubChanges = UpdateProperties(props,
                             args =>
@@ -199,7 +197,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                     if (propHolder == null)
                     {
-                        propHolder = PropertyFactory(data.key, null, null, true);
+                        propHolder = PropertyFactory(data.key, null, null);
 
                         if (Wire != null)
                         {

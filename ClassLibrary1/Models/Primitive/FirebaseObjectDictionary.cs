@@ -1,4 +1,4 @@
-﻿using ObservableHelpers.Observables;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -61,6 +61,13 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 var subWires = new Dictionary<string, RealtimeWire>();
 
+                foreach (var obj in this)
+                {
+                    var subWire = wire.Child(obj.Key, wire.InvokeSetFirst);
+                    obj.Value.MakeRealtime(subWire);
+                    subWires.Add(obj.Key, subWire);
+                }
+
                 var path = wire.Query.GetAbsolutePath();
                 path = path.Last() == '/' ? path : path + "/";
                 var separatedPath = Utils.SeparateUrl(path);
@@ -69,7 +76,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 foreach (var subData in subDatas)
                 {
-                    var separatedSubPath = Utils.SeparateUrl(subData.Path);
+                    var separatedSubPath = Utils.SeparateUrl(subData.Uri);
                     var key = separatedSubPath[separatedPath.Length];
                     TryGetValue(key, out FirebaseObject obj);
 
@@ -82,22 +89,6 @@ namespace RestfulFirebase.Database.Models.Primitive
                         subWires.Add(key, subWire);
 
                         Add(key, obj);
-                    }
-                    else
-                    {
-                        var subWire = wire.Child(key, wire.InvokeSetFirst);
-                        obj.MakeRealtime(subWire);
-                        subWires.Add(key, subWire);
-                    }
-                }
-
-                foreach (var obj in this)
-                {
-                    if (!subWires.ContainsKey(obj.Key))
-                    {
-                        var subWire = wire.Child(obj.Key, wire.InvokeSetFirst);
-                        obj.Value.MakeRealtime(subWire);
-                        subWires.Add(obj.Key, subWire);
                     }
                 }
 
@@ -127,8 +118,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
-                        else if (streamObject.Object is null) props = new (string, StreamData)[0];
+                        if (streamObject.Data is MultiStreamData multi) props = multi.Blobs.Select(i => (i.Key, i.Value)).ToArray();
+                        else if (streamObject.Data is null) props = new (string, StreamData)[0];
 
                         var hasSubChanges = ReplaceObjects(props,
                             args =>
@@ -142,8 +133,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
-                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
+                        if (streamObject.Data is MultiStreamData multi) props = new (string, StreamData)[] { (streamObject.Path[1], multi) };
+                        else if (streamObject.Data is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
                         var hasSubChanges = UpdateObjects(props,
                             args =>
@@ -157,8 +148,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[2], single) };
-                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[2], null) };
+                        if (streamObject.Data is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[2], single) };
+                        else if (streamObject.Data is null) props = new (string, StreamData)[] { (streamObject.Path[2], null) };
 
                         var hasSubChanges = UpdateProperties(streamObject.Path[1], props,
                             args =>

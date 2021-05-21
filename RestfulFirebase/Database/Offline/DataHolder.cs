@@ -12,30 +12,26 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public class DataNode
+    public class DataHolder
     {
         #region Properties
 
         public RestfulFirebaseApp App { get; }
 
-        public RealtimeWire Wire { get; }
-
-        public string Path { get; }
-
-        public string Key => Utils.SeparateUrl(Path).Last();
+        public string Uri { get; }
 
         public bool Exist => Short != null;
 
         public string Short
         {
-            get => Get(OfflineDatabase.ShortPath, Path);
-            protected set => Set(value, OfflineDatabase.ShortPath, Path);
+            get => Get(OfflineDatabase.ShortPath, Uri);
+            internal set => Set(value, OfflineDatabase.ShortPath, Uri);
         }
 
         public string Sync
         {
             get => Exist ? Get(OfflineDatabase.SyncBlobPath, Short) : null;
-            set
+            internal set
             {
                 if (Short == null) Short = GetUniqueShort();
                 Set(value, OfflineDatabase.SyncBlobPath, Short);
@@ -45,7 +41,7 @@ namespace RestfulFirebase.Database.Offline
         public DataChanges Changes
         {
             get => Exist ? DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short)) : null;
-            private set
+            internal set
             {
                 if (Short == null) Short = GetUniqueShort();
                 Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
@@ -67,25 +63,17 @@ namespace RestfulFirebase.Database.Offline
 
         #region Initializers
 
-        public DataNode(RestfulFirebaseApp app, string path)
+        public DataHolder(RestfulFirebaseApp app, string Uri)
         {
             App = app;
-            Path = path;
-            Wire = RealtimeWire.CreateFromQuery(app, new ChildQuery(app, () => path), false);
-        }
-
-        public DataNode(RealtimeWire wire)
-        {
-            App = wire.App;
-            Path = wire.Query.GetAbsolutePath();
-            Wire = wire;
+            this.Uri = Uri;
         }
 
         #endregion
 
         private void Put(string blob, Action<RetryExceptionEventArgs> onError)
         {
-            Wire.Put(JsonConvert.SerializeObject(blob), onError);
+            App.Database.OfflineDatabase.Put(Uri, blob, onError);
         }
 
         protected string GetUniqueShort()
@@ -114,7 +102,7 @@ namespace RestfulFirebase.Database.Offline
             else App.LocalDatabase.Set(combined, data);
         }
 
-        public bool MakeChanges(string blob, Action<RetryExceptionEventArgs> onError)
+        internal bool MakeChanges(string blob, Action<RetryExceptionEventArgs> onError)
         {
             var oldBlob = Blob;
 
@@ -138,7 +126,7 @@ namespace RestfulFirebase.Database.Offline
             return oldBlob != Blob;
         }
 
-        public bool MakeSync(string blob, Action<RetryExceptionEventArgs> onError)
+        internal bool MakeSync(string blob, Action<RetryExceptionEventArgs> onError)
         {
             var oldBlob = Blob;
 
@@ -207,18 +195,18 @@ namespace RestfulFirebase.Database.Offline
             return oldBlob != Blob;
         }
 
-        public bool DeleteChanges()
+        internal bool DeleteChanges()
         {
             var hasChanges = Changes != null;
             Changes = null;
             return hasChanges;
         }
 
-        public virtual bool Delete()
+        internal virtual bool Delete()
         {
             if (!Exist) return false;
             var shortPath = Short;
-            Set(null, OfflineDatabase.ShortPath, Path);
+            Set(null, OfflineDatabase.ShortPath, Uri);
             Set(null, OfflineDatabase.SyncBlobPath, shortPath);
             Set(null, OfflineDatabase.ChangesPath, shortPath);
             return true;

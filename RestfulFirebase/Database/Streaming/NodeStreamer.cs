@@ -16,27 +16,33 @@ using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    internal class NodeStreamer : IDisposable
+    public class NodeStreamer : IDisposable
     {
-        private readonly IObserver<StreamObject> observer;
+        #region Properties
+
+        public RestfulFirebaseApp App { get; }
+
         private readonly CancellationTokenSource cancel;
         private readonly IFirebaseQuery query;
         private readonly HttpClient http;
 
-        private EventHandler<ContinueExceptionEventArgs> exceptionThrown;
+        private EventHandler<StreamObject> onNext;
+        private EventHandler<Exception> onError;
 
-        public RestfulFirebaseApp App { get; }
+        #endregion
 
-        internal NodeStreamer(
+        #region Initializers
+
+        public NodeStreamer(
             RestfulFirebaseApp app,
-            IObserver<StreamObject> observer,
             IFirebaseQuery query,
-            EventHandler<ContinueExceptionEventArgs> exceptionThrown)
+            EventHandler<StreamObject> onNext,
+            EventHandler<Exception> onError)
         {
             App = app;
-            this.observer = observer;
             this.query = query;
-            this.exceptionThrown = exceptionThrown;
+            this.onNext = onNext;
+            this.onError = onError;
 
             cancel = new CancellationTokenSource();
 
@@ -47,16 +53,7 @@ namespace RestfulFirebase.Database.Streaming
             http = httpClient;
         }
 
-        public void Dispose()
-        {
-            cancel.Cancel();
-        }
-
-        internal IDisposable Run()
-        {
-            Task.Run(ReceiveThread);
-            return this;
-        }
+        #endregion
 
         private async void ReceiveThread()
         {
@@ -88,7 +85,8 @@ namespace RestfulFirebase.Database.Streaming
                         {
                             cancel.Token.ThrowIfCancellationRequested();
                             
-                            line = (await reader.ReadLineAsync())?.Trim();
+                            line = (reader.ReadLine())?.Trim();
+                            //line = (await reader.ReadLineAsync())?.Trim();
 
                             if (string.IsNullOrWhiteSpace(line))
                             {
@@ -122,17 +120,8 @@ namespace RestfulFirebase.Database.Streaming
                 catch (Exception ex)
                 {
                     var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
-                    var args = new ContinueExceptionEventArgs(fireEx, true);
-                    exceptionThrown?.Invoke(this, args);
-
                     Console.WriteLine("STREAM ERROR: " + ex.Message);
-
-                    if (!args.IgnoreAndContinue)
-                    {
-                        this.observer.OnError(fireEx);
-                        Dispose();
-                        break;
-                    }
+                    onError?.Invoke(this, fireEx);
                 }
                 await Task.Delay(2000).ConfigureAwait(false);
             }
@@ -171,32 +160,31 @@ namespace RestfulFirebase.Database.Streaming
                     var result = JObject.Parse(serverData);
                     var pathToken = result["path"];
                     var dataToken = result["data"];
-                    var path = pathToken.Type == JTokenType.Null ? null : pathToken.ToString();
-                    List<string> separatedPath = new List<string>()
-                    {
-                        query.GetAbsolutePath().Split('/').Where(x => !string.IsNullOrWhiteSpace(x)).LastOrDefault()
-                    };
-                    if (path != "/") separatedPath.AddRange(path.Split('/').Skip(1));
+                    var streamPath = pathToken.ToString();
+                    var absolutePath = query.GetAbsolutePath();
 
-                    this.observer.OnNext(new StreamObject(Convert(dataToken), separatedPath.ToArray()));
+                    var uri = streamPath == "/" ?
+                        absolutePath : Utils.CombineUrl(absolutePath, streamPath.Substring(1));
+
+                    var type = dataToken.Type;
+
+                    onNext?.Invoke(this, new StreamObject(Convert(dataToken), uri));
 
                     break;
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
-                    this.observer.OnError(new FirebaseException(FirebaseExceptionReason.DatabaseUnauthorized, new Exception("Cancelled")));
-                    Dispose();
+                    var firEx = new FirebaseException(FirebaseExceptionReason.DatabaseUnauthorized, new Exception("Cancelled"));
+                    Console.WriteLine("STREAM Cancelled");
+                    onError?.Invoke(this, firEx);
+
                     break;
             }
         }
 
         private StreamData Convert(JToken token)
         {
-            if (token.Type == JTokenType.Property)
-            {
-                throw new Exception("Invalid Json");
-            }
-            else if (token.Type == JTokenType.Object)
+            if (token.Type == JTokenType.Object)
             {
                 var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
                 var subDatas = new Dictionary<string, StreamData>();
@@ -204,11 +192,11 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
                 }
-                return new MultiStreamData(subDatas);
+                return new MultiStreamData2(subDatas);
             }
             else if (token.Type != JTokenType.Null)
             {
-                return new SingleStreamData(((JValue)token).Value?.ToString());
+                return new SingleStreamData2(((JValue)token).Value?.ToString());
             }
             else if (token.Type == JTokenType.Null)
             {
@@ -218,6 +206,17 @@ namespace RestfulFirebase.Database.Streaming
             {
                 throw new Exception("Unknown stream data type");
             }
+        }
+
+        public IDisposable Run()
+        {
+            Task.Run(ReceiveThread);
+            return this;
+        }
+
+        public void Dispose()
+        {
+            cancel.Cancel();
         }
     }
 }

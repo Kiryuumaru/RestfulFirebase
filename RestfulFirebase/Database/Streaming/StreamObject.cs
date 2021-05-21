@@ -7,14 +7,14 @@ namespace RestfulFirebase.Database.Streaming
 {
     public class StreamObject
     {
-        public StreamData Object { get; }
+        public StreamData Data { get; }
 
-        public string[] Path { get; }
+        public string Uri { get; }
 
-        internal StreamObject(StreamData data, params string[] path)
+        internal StreamObject(StreamData data, string uri)
         {
-            Object = data;
-            Path = path;
+            Data = data;
+            Uri = uri;
         }
     }
 }

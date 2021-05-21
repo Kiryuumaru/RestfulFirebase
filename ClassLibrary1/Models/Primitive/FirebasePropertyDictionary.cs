@@ -1,4 +1,4 @@
-﻿using ObservableHelpers.Observables;
+﻿using ObservableHelpers;
 using RestfulFirebase.Database.Models.Primitive;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
@@ -80,7 +80,7 @@ namespace RestfulFirebase.Database.Models.Primitive
 
                 foreach (var subData in subDatas)
                 {
-                    var separatedSubPath = Utils.SeparateUrl(subData.Path);
+                    var separatedSubPath = Utils.SeparateUrl(subData.Uri);
                     var key = separatedSubPath[separatedPath.Length];
                     TryGetValue(key, out FirebaseProperty prop);
 
@@ -88,7 +88,7 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         prop = PropertyFactory();
 
-                        prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
+                        //prop.SetBlob(wire.InvokeSetFirst ? null : subData.Blob);
 
                         var subWire = wire.Child(key, false);
                         prop.MakeRealtime(subWire);
@@ -124,8 +124,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is MultiStreamData multi) props = multi.Data.Select(i => (i.Key, i.Value)).ToArray();
-                        else if (streamObject.Object is null) props = new (string, StreamData)[0];
+                        if (streamObject.Data is MultiStreamData multi) props = multi.Blobs.Select(i => (i.Key, i.Value)).ToArray();
+                        else if (streamObject.Data is null) props = new (string, StreamData)[0];
 
                         var hasSubChanges = ReplaceProperties(props,
                             args =>
@@ -139,8 +139,8 @@ namespace RestfulFirebase.Database.Models.Primitive
                     {
                         var props = new (string, StreamData)[0];
 
-                        if (streamObject.Object is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
-                        else if (streamObject.Object is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
+                        if (streamObject.Data is SingleStreamData single) props = new (string, StreamData)[] { (streamObject.Path[1], single) };
+                        else if (streamObject.Data is null) props = new (string, StreamData)[] { (streamObject.Path[1], null) };
 
                         var hasSubChanges = UpdateProperties(props,
                             args =>

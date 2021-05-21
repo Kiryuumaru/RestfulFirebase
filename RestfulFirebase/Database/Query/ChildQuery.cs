@@ -20,16 +20,6 @@ namespace RestfulFirebase.Database.Query
         {
         }
 
-        public ChildQuery Child(Func<string> pathFactory)
-        {
-            return new ChildQuery(App, this, pathFactory);
-        }
-
-        public ChildQuery Child(string path)
-        {
-            return Child(() => path);
-        }
-
         public ShallowQuery Shallow()
         {
             return new ShallowQuery(App, this);
