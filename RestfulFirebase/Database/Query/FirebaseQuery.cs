@@ -69,7 +69,9 @@ namespace RestfulFirebase.Database.Query
 
                 var c = GetClient();
 
-                if (invokeJsonData == null)
+                var currentJsonToInvoke = invokeJsonData();
+
+                if (currentJsonToInvoke == null)
                 {
                     try
                     {
@@ -90,7 +92,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 else
                 {
-                    await Silent().SendAsync(c, invokeJsonData(), HttpMethod.Put, invokeToken);
+                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, invokeToken);
                 }
             };
 

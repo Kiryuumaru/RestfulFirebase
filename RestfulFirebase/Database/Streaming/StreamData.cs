@@ -13,21 +13,21 @@ namespace RestfulFirebase.Database.Streaming
         }
     }
 
-    public class SingleStreamData2 : StreamData
+    public class SingleStreamData : StreamData
     {
         public string Blob { get; }
 
-        internal SingleStreamData2(string blob)
+        internal SingleStreamData(string blob)
         {
             Blob = blob;
         }
     }
 
-    public class MultiStreamData2 : StreamData
+    public class MultiStreamData : StreamData
     {
         public Dictionary<string, StreamData> Blobs { get; }
 
-        internal MultiStreamData2(Dictionary<string, StreamData> blobs)
+        internal MultiStreamData(Dictionary<string, StreamData> blobs)
         {
             Blobs = blobs;
         }
@@ -45,12 +45,12 @@ namespace RestfulFirebase.Database.Streaming
                         if (string.IsNullOrEmpty(path)) descendants.Add((Utils.CombineUrl(pair.Key), null));
                         else descendants.Add((Utils.CombineUrl(path, pair.Key), null));
                     }
-                    else if (pair.Value is SingleStreamData2 single)
+                    else if (pair.Value is SingleStreamData single)
                     {
                         if (string.IsNullOrEmpty(path)) descendants.Add((Utils.CombineUrl(pair.Key), single.Blob));
                         else descendants.Add((Utils.CombineUrl(path, pair.Key), single.Blob));
                     }
-                    else if (pair.Value is MultiStreamData2 multi)
+                    else if (pair.Value is MultiStreamData multi)
                     {
                         if (string.IsNullOrEmpty(path)) recursive(multi.Blobs, Utils.CombineUrl(pair.Key));
                         else recursive(multi.Blobs, Utils.CombineUrl(path, pair.Key));

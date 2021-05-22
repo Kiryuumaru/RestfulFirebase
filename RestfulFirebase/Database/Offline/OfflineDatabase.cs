@@ -66,7 +66,7 @@ namespace RestfulFirebase.Database.Offline
                 while (HasPendingWrite)
                 {
                     HasPendingWrite = false;
-                    await Query.Put(() => JsonConvert.SerializeObject(Blob), null, err =>
+                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), null, err =>
                     {
                         Type exType = err.Exception.GetType();
                         if (err.Exception is FirebaseException firEx)

@@ -84,9 +84,15 @@ namespace RestfulFirebase.Database.Streaming
                         while (true)
                         {
                             cancel.Token.ThrowIfCancellationRequested();
-                            
-                            line = (reader.ReadLine())?.Trim();
-                            //line = (await reader.ReadLineAsync())?.Trim();
+
+                            try
+                            {
+                                line = reader.ReadLine()?.Trim();
+                            }
+                            catch
+                            {
+                                line = (await reader.ReadLineAsync())?.Trim();
+                            }
 
                             if (string.IsNullOrWhiteSpace(line))
                             {
@@ -184,7 +190,13 @@ namespace RestfulFirebase.Database.Streaming
 
         private StreamData Convert(JToken token)
         {
-            if (token.Type == JTokenType.Object)
+            if (token.Type == JTokenType.Property ||
+                token.Type == JTokenType.Comment ||
+                token.Type == JTokenType.Undefined)
+            {
+                throw new Exception("Unknown stream data type");
+            }
+            else if (token.Type == JTokenType.Object)
             {
                 var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
                 var subDatas = new Dictionary<string, StreamData>();
@@ -192,11 +204,22 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
                 }
-                return new MultiStreamData2(subDatas);
+                return new MultiStreamData(subDatas);
+            }
+            else if (token.Type == JTokenType.Array)
+            {
+                var datas = JsonConvert.DeserializeObject<List<object>>(token.ToString());
+                var subDatas = new Dictionary<string, StreamData>();
+                for (int i = 0; i < datas.Count; i++)
+                {
+                    if (datas[i] == null) subDatas.Add(i.ToString(), null);
+                    else subDatas.Add(i.ToString(), Convert(JToken.FromObject(datas[i])));
+                }
+                return new MultiStreamData(subDatas);
             }
             else if (token.Type != JTokenType.Null)
             {
-                return new SingleStreamData2(((JValue)token).Value?.ToString());
+                return new SingleStreamData(((JValue)token).Value?.ToString());
             }
             else if (token.Type == JTokenType.Null)
             {

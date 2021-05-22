@@ -103,20 +103,21 @@ namespace RestfulFirebase.Database.Realtime
             if (!uri.StartsWith(baseUri)) return;
             var path = uri.Replace(baseUri, "");
             var separatedPath = Utils.SeparateUrl(path);
-            var affectedUris = new List<string>();
-            var eventUri = Utils.CombineUrl(baseUri);
-            affectedUris.Add(eventUri);
+            var affectedPaths = new List<string>();
+            var eventPath = "";
+            affectedPaths.Add(eventPath);
             for (int i = 0; i < separatedPath.Length; i++)
             {
-                eventUri = Utils.CombineUrl(eventUri, separatedPath[i]);
-                affectedUris.Add(eventUri);
+                if (string.IsNullOrEmpty(eventPath)) eventPath = Utils.CombineUrl(separatedPath[i]);
+                else eventPath = Utils.CombineUrl(eventPath, separatedPath[i]);
+                affectedPaths.Add(eventPath);
             }
-            foreach (var affectedUri in affectedUris.OrderByDescending(i => i.Length))
+            foreach (var affectedPath in affectedPaths.OrderByDescending(i => i.Length))
             {
-                OnInternalChanges?.Invoke(this, new DataChangesEventArgs(affectedUri));
+                OnInternalChanges?.Invoke(this, new DataChangesEventArgs(baseUri, affectedPath));
                 context.Post(s =>
                 {
-                    OnChanges?.Invoke(this, new DataChangesEventArgs(affectedUri));
+                    OnChanges?.Invoke(this, new DataChangesEventArgs(baseUri, affectedPath));
                 }, null);
             }
         }
@@ -179,7 +180,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                 }
             }
-            else if (streamObject.Data is SingleStreamData2 single)
+            else if (streamObject.Data is SingleStreamData single)
             {
                 // Delete multi
                 var subDatas = App.Database.OfflineDatabase.GetSubDatas(streamObject.Uri);
@@ -200,7 +201,7 @@ namespace RestfulFirebase.Database.Realtime
                     InvokeOnChangesAndSync(data.Uri);
                 }
             }
-            else if (streamObject.Data is MultiStreamData2 multi)
+            else if (streamObject.Data is MultiStreamData multi)
             {
                 // Delete single
                 var data = App.Database.OfflineDatabase.GetData(streamObject.Uri);

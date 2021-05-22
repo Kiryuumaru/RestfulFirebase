@@ -6,7 +6,9 @@ namespace RestfulFirebase.Database.Streaming
 {
     public class NonBlockingStreamReader : TextReader
     {
-        private const int DefaultBufferSize = 16000;
+        private const int DefaultBufferSize = 1024;
+        //private const int DefaultBufferSize = 16000;
+        //private const int DefaultBufferSize = 1048576;
 
         private readonly Stream stream;
         private readonly byte[] buffer;
