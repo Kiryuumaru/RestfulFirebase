@@ -25,8 +25,9 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
-                var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+                var path = Query.GetAbsolutePath();
+                var data = App.Database.OfflineDatabase.GetData(path);
+                var subData = App.Database.OfflineDatabase.GetSubDatas(path);
                 return subData.Count() + (data == null ? 0 : 1);
             }
         }
@@ -35,8 +36,9 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                var data = App.Database.OfflineDatabase.GetData(Query.GetAbsolutePath());
-                var subData = App.Database.OfflineDatabase.GetSubDatas(Query.GetAbsolutePath());
+                var path = Query.GetAbsolutePath();
+                var data = App.Database.OfflineDatabase.GetData(path);
+                var subData = App.Database.OfflineDatabase.GetSubDatas(path);
                 return subData.Where(i => i.Changes == null).Count() + (data == null ? 0 : 1);
             }
         }

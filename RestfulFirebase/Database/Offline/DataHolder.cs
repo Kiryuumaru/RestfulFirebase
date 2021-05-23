@@ -66,7 +66,7 @@ namespace RestfulFirebase.Database.Offline
         public DataHolder(RestfulFirebaseApp app, string Uri)
         {
             App = app;
-            this.Uri = Uri;
+            this.Uri = Uri.EndsWith("/") ? Uri : Uri + "/";
         }
 
         #endregion

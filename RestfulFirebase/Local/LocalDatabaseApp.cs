@@ -9,6 +9,7 @@ namespace RestfulFirebase.Local
         #region Properties
 
         private const string KeyHeirPath = "key";
+        private const string ValuePath = "val";
 
         private ILocalDatabase db => App.Config.LocalDatabase;
 
@@ -38,6 +39,15 @@ namespace RestfulFirebase.Local
             path = ValidatePath(path);
             lock (this)
             {
+                //string uid = null;
+                //while (uid == null)
+                //{
+                //    uid = UIDFactory.GenerateUID(5, Utils.Base64Charset);
+                //    var sync = Get(Utils.CombineUrl(ValuePath, uid));
+                //    var changes = Get(OfflineDatabase.ChangesPath, uid);
+                //    if (sync != null || changes != null) uid = null;
+                //}
+
                 var separated = Utils.SeparateUrl(path);
                 var keyHeir = KeyHeirPath;
                 for (int i = 0; i < separated.Length - 1; i++)
@@ -71,6 +81,8 @@ namespace RestfulFirebase.Local
                 for (int i = separated.Length - 1; i >= 0; i--)
                 {
                     var keyHeirList = separated.Take(i).ToList();
+                    var valuePath = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
+                    if (db.Get(valuePath) != null) break;
                     keyHeirList.Insert(0, KeyHeirPath);
                     var keyHeir = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
                     var heirs = db.Get(keyHeir);
@@ -84,6 +96,7 @@ namespace RestfulFirebase.Local
                     {
                         var serialized = Utils.SerializeString(deserialized.ToArray());
                         db.Set(keyHeir, serialized);
+                        break;
                     }
                 }
                 db.Delete(path);
