@@ -26,9 +26,7 @@ namespace RestfulFirebase.Database.Realtime
             get
             {
                 var path = Query.GetAbsolutePath();
-                var data = App.Database.OfflineDatabase.GetData(path);
-                var subData = App.Database.OfflineDatabase.GetSubDatas(path);
-                return subData.Count() + (data == null ? 0 : 1);
+                return App.Database.OfflineDatabase.GetDatas(path, true).Count();
             }
         }
 
@@ -37,9 +35,7 @@ namespace RestfulFirebase.Database.Realtime
             get
             {
                 var path = Query.GetAbsolutePath();
-                var data = App.Database.OfflineDatabase.GetData(path);
-                var subData = App.Database.OfflineDatabase.GetSubDatas(path);
-                return subData.Where(i => i.Changes == null).Count() + (data == null ? 0 : 1);
+                return App.Database.OfflineDatabase.GetDatas(path, true).Where(i => i.Changes == null).Count();
             }
         }
 
@@ -47,12 +43,12 @@ namespace RestfulFirebase.Database.Realtime
         public event EventHandler<SyncEventArgs> OnSync;
         public event EventHandler<Exception> OnError;
 
-        internal event EventHandler<DataChangesEventArgs> OnInternalChanges;
-        internal event EventHandler<SyncEventArgs> OnInternalSync;
-        internal event EventHandler<Exception> OnInternalError;
+        public event EventHandler<DataChangesEventArgs> OnInternalChanges;
+        public event EventHandler<SyncEventArgs> OnInternalSync;
+        public event EventHandler<Exception> OnInternalError;
 
+        private readonly SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
         private IDisposable subscription;
-        private SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
 
         #endregion
 
@@ -79,17 +75,40 @@ namespace RestfulFirebase.Database.Realtime
             subscription = null;
         }
 
-        public void MakeChanges(string path, string blob)
+        public void SetBlob(string blob, string path = null)
         {
-            path = path.TrimStart('/');
-            path = path.TrimEnd('/');
-            if (string.IsNullOrEmpty(path)) return;
-            var uri = Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            path = path?.TrimStart('/');
+            path = path?.TrimEnd('/');
+            var uri = string.IsNullOrEmpty(path) ? Utils.CombineUrl(Query.GetAbsolutePath()) : Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            
+            // Delete subChanges
+            var subDatas = App.Database.OfflineDatabase.GetDatas(uri);
+            foreach (var subData in subDatas)
+            {
+                subData.DeleteChanges();
+            }
+
+            // Make changes
             var dataHolder = new DataHolder(App, uri);
             if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
             {
                 InvokeOnChangesAndSync(uri);
             }
+        }
+
+        public string GetBlob(string path = null)
+        {
+            path = path?.TrimStart('/');
+            path = path?.TrimEnd('/');
+            var uri = string.IsNullOrEmpty(path) ? Utils.CombineUrl(Query.GetAbsolutePath()) : Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            var dataHolder = new DataHolder(App, uri);
+            return dataHolder.Blob;
+        }
+
+        public IEnumerable<string> GetPaths()
+        {
+            var path = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetSubPaths(path, true);
         }
 
         protected void InvokeOnChangesAndSync(string uri)
@@ -172,7 +191,7 @@ namespace RestfulFirebase.Database.Realtime
             if (streamObject.Data is null)
             {
                 // Delete all
-                var datas = App.Database.OfflineDatabase.GetDataAndSubDatas(streamObject.Uri);
+                var datas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true);
                 foreach (var data in datas)
                 {
                     if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
@@ -185,7 +204,7 @@ namespace RestfulFirebase.Database.Realtime
             else if (streamObject.Data is SingleStreamData single)
             {
                 // Delete multi
-                var subDatas = App.Database.OfflineDatabase.GetSubDatas(streamObject.Uri);
+                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri);
                 foreach (var subData in subDatas)
                 {
                     if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
@@ -213,7 +232,7 @@ namespace RestfulFirebase.Database.Realtime
                     InvokeOnChangesAndSync(data.Uri);
                 }
 
-                var subDatas = App.Database.OfflineDatabase.GetSubDatas(streamObject.Uri);
+                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri);
                 var descendants = multi.GetDescendants();
                 var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.CombineUrl(streamObject.Uri, i.path), i.blob)));
                 var excluded = subDatas.Where(i => syncDatas.Any(j => j.path != i.Uri));

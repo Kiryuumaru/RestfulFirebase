@@ -111,12 +111,12 @@ namespace RestTest
                     if (line.EndsWith(" "))
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        wire.MakeChanges(path, null);
+                        wire.SetBlob(null, path == "/" ? null : path);
                     }
                     else
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        wire.MakeChanges(path, data);
+                        wire.SetBlob(data, path == "/" ? null : path);
                     }
                 }
             }

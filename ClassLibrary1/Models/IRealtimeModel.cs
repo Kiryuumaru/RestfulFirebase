@@ -10,7 +10,10 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable
     {
+        RealtimeWire Wire { get; }
         void MakeRealtime(RealtimeWire wire);
+        void Start();
+        void Stop();
         bool Delete();
     }
 }

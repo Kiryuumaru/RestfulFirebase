@@ -39,15 +39,6 @@ namespace RestfulFirebase.Local
             path = ValidatePath(path);
             lock (this)
             {
-                //string uid = null;
-                //while (uid == null)
-                //{
-                //    uid = UIDFactory.GenerateUID(5, Utils.Base64Charset);
-                //    var sync = Get(Utils.CombineUrl(ValuePath, uid));
-                //    var changes = Get(OfflineDatabase.ChangesPath, uid);
-                //    if (sync != null || changes != null) uid = null;
-                //}
-
                 var separated = Utils.SeparateUrl(path);
                 var keyHeir = KeyHeirPath;
                 for (int i = 0; i < separated.Length - 1; i++)
@@ -80,13 +71,12 @@ namespace RestfulFirebase.Local
                 var separated = Utils.SeparateUrl(path);
                 for (int i = separated.Length - 1; i >= 0; i--)
                 {
-                    var keyHeirList = separated.Take(i).ToList();
-                    var valuePath = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
-                    if (db.Get(valuePath) != null) break;
-                    keyHeirList.Insert(0, KeyHeirPath);
-                    var keyHeir = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
-                    var heirs = db.Get(keyHeir);
-                    var deserialized = Utils.DeserializeString(heirs)?.ToList() ?? new List<string>();
+                    var keyHierList = separated.Take(i).ToList();
+                    var valuePath = ValidatePath(Utils.CombineUrl(keyHierList.ToArray()));
+                    keyHierList.Insert(0, KeyHeirPath);
+                    var keyHeir = ValidatePath(Utils.CombineUrl(keyHierList.ToArray()));
+                    var hiers = db.Get(keyHeir);
+                    var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
                     if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
                     if (deserialized.Count == 0)
                     {
@@ -98,6 +88,7 @@ namespace RestfulFirebase.Local
                         db.Set(keyHeir, serialized);
                         break;
                     }
+                    if (db.Get(valuePath) != null) break;
                 }
                 db.Delete(path);
             }

@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <None Remove="Auth\FirebaseAuthApp.cs~RF20cd8c7.TMP" />
+    <None Remove="Database\Offline\DataHolder.cs~RF2eb3d46.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />
     <None Remove="Database\Offline\OfflineDatabase.cs~RF1f4578c1.TMP" />
     <None Remove="Database\Realtime\RealtimeWire.cs~RF123265c.TMP" />

@@ -5,11 +5,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public class OfflineDatabase : IDisposable
+    internal class OfflineDatabase : IDisposable
     {
         #region Helper Classes
 
@@ -17,18 +18,7 @@ namespace RestfulFirebase.Database.Offline
         {
             public RestfulFirebaseApp App { get; }
 
-            public string Uri { get; }
-
-            private string blob;
-            public string Blob
-            {
-                get => blob;
-                set
-                {
-                    HasPendingWrite = true;
-                    blob = value;
-                }
-            }
+            public DataHolder Data { get; }
 
             public Action<RetryExceptionEventArgs> OnError { get; set; }
 
@@ -36,19 +26,22 @@ namespace RestfulFirebase.Database.Offline
 
             public bool IsWritting { get; private set; }
 
-            public bool HasPendingWrite { get; private set; }
+            public bool HasPendingWrite { get; set; }
 
-            public WriteTask(RestfulFirebaseApp app, string uri, string blob, Action<RetryExceptionEventArgs> onError)
+            public CancellationTokenSource CancellationSource { get; private set; }
+
+            public WriteTask(RestfulFirebaseApp app, DataHolder data, Action<RetryExceptionEventArgs> onError)
             {
                 App = app;
-                Uri = uri;
-                Blob = blob;
+                Data = data;
                 OnError = onError;
-                Query = new ChildQuery(app, () => uri);
+                Query = new ChildQuery(app, () => data.Uri);
+                CancellationSource = new CancellationTokenSource();
             }
 
             public void Run()
             {
+                HasPendingWrite = true;
                 Task.Run(async delegate
                 {
                     await Write();
@@ -61,13 +54,20 @@ namespace RestfulFirebase.Database.Offline
 
             public async Task Write()
             {
+                if (CancellationSource.IsCancellationRequested) return;
                 if (IsWritting) return;
                 IsWritting = true;
                 while (HasPendingWrite)
                 {
+                    if (CancellationSource.IsCancellationRequested) return;
                     HasPendingWrite = false;
-                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), null, err =>
+                    await Query.Put(() =>
                     {
+                        var blob = Data.Changes?.Blob;
+                        return blob == null ? null : JsonConvert.SerializeObject(blob);
+                    }, CancellationSource.Token, err =>
+                    {
+                        if (CancellationSource.IsCancellationRequested) return;
                         Type exType = err.Exception.GetType();
                         if (err.Exception is FirebaseException firEx)
                         {
@@ -124,27 +124,30 @@ namespace RestfulFirebase.Database.Offline
 
         #region Methods
 
-        public DataHolder GetData(string path)
+        public DataHolder GetData(string uri)
         {
-            var data = new DataHolder(App, path);
+            var data = new DataHolder(App, uri);
             return data.Exist ? data : null;
         }
 
-        public IEnumerable<DataHolder> GetSubDatas(string path)
+        public IEnumerable<string> GetSubPaths(string uri, bool includeBaseIfExists = false)
         {
-            var datas = new List<DataHolder>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.CombineUrl(ShortPath, path)))
+            var paths = new List<string>();
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.CombineUrl(ShortPath, uri)))
             {
-                datas.Add(new DataHolder(App, subPath.Substring(ShortPath.Length)));
+                paths.Add(subPath.Substring(ShortPath.Length));
             }
-            return datas;
+            if (GetData(uri) != null && includeBaseIfExists) paths.Add(uri);
+            return paths;
         }
 
-        public IEnumerable<DataHolder> GetDataAndSubDatas(string path)
+        public IEnumerable<DataHolder> GetDatas(string uri, bool includeBaseIfExists = false)
         {
-            var datas = new List<DataHolder>(GetSubDatas(path));
-            var data = GetData(path);
-            if (data != null) datas.Add(data);
+            var datas = new List<DataHolder>();
+            foreach (var subPath in GetSubPaths(uri, includeBaseIfExists))
+            {
+                datas.Add(new DataHolder(App, subPath));
+            }
             return datas;
         }
 
@@ -172,23 +175,46 @@ namespace RestfulFirebase.Database.Offline
 
         }
 
-        internal void Put(string uri, string blob, Action<RetryExceptionEventArgs> onError)
+        internal void Put(DataHolder data, Action<RetryExceptionEventArgs> onError)
         {
-            uri = uri.EndsWith("/") ? uri : uri + "/";
+            var datas = GetDatas(data.Uri).ToList();
+            foreach (var uri in data.HierarchyUri)
+            {
+                var hierData = GetData(uri);
+                if (hierData != null) datas.Add(hierData);
+            }
+            foreach (var subData in datas)
+            {
+                CancelPut(subData);
+            }
+
             WriteTask existing = null;
             lock (writeTasks)
             {
-                existing = writeTasks.FirstOrDefault(i => i.Uri == uri);
+                existing = writeTasks.FirstOrDefault(i => i.Data.Uri == data.Uri);
                 if (existing != null)
                 {
-                    existing.Blob = blob;
+                    existing.HasPendingWrite = true;
                     existing.OnError = onError;
                 }
                 else
                 {
-                    var newWriteTask = new WriteTask(App, uri, blob, onError);
+                    var newWriteTask = new WriteTask(App, data, onError);
                     writeTasks.Add(newWriteTask);
                     newWriteTask.Run();
+                }
+            }
+        }
+
+        internal void CancelPut(DataHolder data)
+        {
+            WriteTask existing = null;
+            lock (writeTasks)
+            {
+                existing = writeTasks.FirstOrDefault(i => i.Data.Uri == data.Uri);
+                if (existing != null)
+                {
+                    existing.CancellationSource.Cancel();
                 }
             }
         }

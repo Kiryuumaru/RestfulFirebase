@@ -4,12 +4,12 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public enum DataChangesType
+    internal enum DataChangesType
     {
         Create, Update, Delete, None
     }
 
-    public class DataChanges
+    internal class DataChanges
     {
         public string Blob { get; }
         public DataChangesType ChangesType { get; }

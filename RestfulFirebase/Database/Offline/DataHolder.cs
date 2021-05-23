@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public class DataHolder
+    internal class DataHolder
     {
         #region Properties
 
@@ -59,6 +59,23 @@ namespace RestfulFirebase.Database.Offline
             }
         }
 
+        public IEnumerable<string> HierarchyUri
+        {
+            get
+            {
+                var hier = new List<string>();
+                var path = Uri.Replace(App.Config.DatabaseURL, "");
+                var separated = Utils.SeparateUrl(path);
+                var currentUri = App.Config.DatabaseURL;
+                for (int i = 0; i < separated.Length - 1; i++)
+                {
+                    currentUri = Utils.CombineUrl(currentUri, separated[i]);
+                    hier.Add(currentUri);
+                }
+                return hier;
+            }
+        }
+
         #endregion
 
         #region Initializers
@@ -71,9 +88,9 @@ namespace RestfulFirebase.Database.Offline
 
         #endregion
 
-        private void Put(string blob, Action<RetryExceptionEventArgs> onError)
+        private void Put(Action<RetryExceptionEventArgs> onError)
         {
-            App.Database.OfflineDatabase.Put(Uri, blob, onError);
+            App.Database.OfflineDatabase.Put(this, onError);
         }
 
         protected string GetUniqueShort()
@@ -112,7 +129,7 @@ namespace RestfulFirebase.Database.Offline
                     blob,
                     blob == null ? DataChangesType.None : DataChangesType.Create);
 
-                Put(blob, onError);
+                Put(onError);
             }
             else if (Changes == null || oldBlob != blob)
             {
@@ -120,7 +137,7 @@ namespace RestfulFirebase.Database.Offline
                     blob,
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
 
-                Put(blob, onError);
+                Put(onError);
             }
 
             return oldBlob != Blob;
@@ -147,7 +164,7 @@ namespace RestfulFirebase.Database.Offline
                     case DataChangesType.Create:
                         if (blob == null)
                         {
-                            Put(Changes.Blob, onError);
+                            Put(onError);
                         }
                         else
                         {
@@ -162,7 +179,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         else if (Sync == blob)
                         {
-                            Put(Changes.Blob, onError);
+                            Put(onError);
                         }
                         else
                         {
@@ -177,7 +194,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         if (Sync == blob)
                         {
-                            Put(null, onError);
+                            Put(onError);
                         }
                         else
                         {
@@ -197,6 +214,7 @@ namespace RestfulFirebase.Database.Offline
 
         internal bool DeleteChanges()
         {
+            App.Database.OfflineDatabase.CancelPut(this);
             var hasChanges = Changes != null;
             Changes = null;
             return hasChanges;
@@ -205,6 +223,7 @@ namespace RestfulFirebase.Database.Offline
         internal virtual bool Delete()
         {
             if (!Exist) return false;
+            App.Database.OfflineDatabase.CancelPut(this);
             var shortPath = Short;
             Set(null, OfflineDatabase.ShortPath, Uri);
             Set(null, OfflineDatabase.SyncBlobPath, shortPath);

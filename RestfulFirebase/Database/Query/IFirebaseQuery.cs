@@ -18,6 +18,7 @@ namespace RestfulFirebase.Database.Query
         Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
         //RealtimeWire<T> PutAsRealtime<T>(T model) where T : IRealtimeModel;
         //RealtimeWire<T> SubAsRealtime<T>(T model) where T : IRealtimeModel;
+        RealtimeWire AsRealtimeWire();
         Task<string> BuildUrlAsync(CancellationToken? token = null);
         string GetAbsolutePath();
     }
