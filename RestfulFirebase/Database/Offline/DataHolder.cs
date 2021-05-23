@@ -130,7 +130,7 @@ namespace RestfulFirebase.Database.Offline
         {
             var oldBlob = Blob;
 
-            if (Changes == null)
+            if (Changes?.Blob == null)
             {
                 if (blob == null) Delete();
                 else Sync = blob;

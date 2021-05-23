@@ -78,21 +78,18 @@ namespace RestfulFirebase.Database.Streaming
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
 
+                    Console.WriteLine("READ START");
+
                     using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                    using (var reader = new NonBlockingStreamReader(stream))
+                    using (var reader = new StreamReader(stream))
                     {
+                        reader.Peek(); // Fixes annoying problem
+
                         while (true)
                         {
                             cancel.Token.ThrowIfCancellationRequested();
 
-                            try
-                            {
-                                line = reader.ReadLine()?.Trim();
-                            }
-                            catch
-                            {
-                                line = (await reader.ReadLineAsync())?.Trim();
-                            }
+                            line = (await reader.ReadLineAsync())?.Trim();
 
                             if (string.IsNullOrWhiteSpace(line))
                             {
