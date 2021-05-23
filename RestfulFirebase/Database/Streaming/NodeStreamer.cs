@@ -16,7 +16,7 @@ using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public class NodeStreamer : IDisposable
+    internal class NodeStreamer : IDisposable
     {
         #region Properties
 

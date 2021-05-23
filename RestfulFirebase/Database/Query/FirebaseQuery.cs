@@ -212,6 +212,11 @@ namespace RestfulFirebase.Database.Query
         //    return RealtimeWire<T>.CreateFromQuery(App, this, model, false);
         //}
 
+        public RealtimeWire AsRealtimeWire()
+        {
+            return new RealtimeWire(App, this);
+        }
+
         public async Task<string> BuildUrlAsync(CancellationToken? token = null)
         {
             if (token == null)

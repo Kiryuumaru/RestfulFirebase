@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public class OfflineDatabase : IDisposable
+    internal class OfflineDatabase : IDisposable
     {
         #region Helper Classes
 
@@ -130,21 +130,24 @@ namespace RestfulFirebase.Database.Offline
             return data.Exist ? data : null;
         }
 
-        public IEnumerable<DataHolder> GetSubDatas(string path)
+        public IEnumerable<string> GetSubPaths(string path, bool includeBaseIfExists = false)
         {
-            var datas = new List<DataHolder>();
+            var paths = new List<string>();
             foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.CombineUrl(ShortPath, path)))
             {
-                datas.Add(new DataHolder(App, subPath.Substring(ShortPath.Length)));
+                paths.Add(subPath.Substring(ShortPath.Length));
             }
-            return datas;
+            if (GetData(path) != null && includeBaseIfExists) paths.Add(path);
+            return paths;
         }
 
-        public IEnumerable<DataHolder> GetDataAndSubDatas(string path)
+        public IEnumerable<DataHolder> GetDatas(string path, bool includeBaseIfExists = false)
         {
-            var datas = new List<DataHolder>(GetSubDatas(path));
-            var data = GetData(path);
-            if (data != null) datas.Add(data);
+            var datas = new List<DataHolder>();
+            foreach (var subPath in GetSubPaths(path, includeBaseIfExists))
+            {
+                datas.Add(new DataHolder(App, subPath));
+            }
             return datas;
         }
 

@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database
         #region Properties
 
         public RestfulFirebaseApp App { get; private set; }
-        public OfflineDatabase OfflineDatabase { get; private set; }
+        internal OfflineDatabase OfflineDatabase { get; private set; }
 
         #endregion
 

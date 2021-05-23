@@ -82,7 +82,6 @@ namespace RestfulFirebase.Local
                 {
                     var keyHeirList = separated.Take(i).ToList();
                     var valuePath = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
-                    if (db.Get(valuePath) != null) break;
                     keyHeirList.Insert(0, KeyHeirPath);
                     var keyHeir = ValidatePath(Utils.CombineUrl(keyHeirList.ToArray()));
                     var heirs = db.Get(keyHeir);
@@ -98,6 +97,7 @@ namespace RestfulFirebase.Local
                         db.Set(keyHeir, serialized);
                         break;
                     }
+                    if (db.Get(valuePath) != null) break;
                 }
                 db.Delete(path);
             }

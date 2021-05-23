@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {
-    public class DataHolder
+    internal class DataHolder
     {
         #region Properties
 
