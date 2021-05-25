@@ -204,18 +204,12 @@ namespace RestfulFirebase.Database.Query
 
         public T PutAsRealtime<T>(T model) where T : IRealtimeModel
         {
-            var wire = new RealtimeWire(App, this);
-            model.StartRealtime(new RealtimeModelWire(wire, model, null), true);
-            wire.Start();
-            return model;
+            return new RealtimeWire(App, this).PutModel(model);
         }
 
         public T SubAsRealtime<T>(T model) where T : IRealtimeModel
         {
-            var wire = new RealtimeWire(App, this);
-            model.StartRealtime(new RealtimeModelWire(wire, model, null), false);
-            wire.Start();
-            return model;
+            return new RealtimeWire(App, this).SubModel(model);
         }
 
         public RealtimeWire AsRealtimeWire()

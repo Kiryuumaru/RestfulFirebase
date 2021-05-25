@@ -427,19 +427,15 @@ namespace RestfulFirebase
 
         internal static bool UrlCompare(string url1, string url2)
         {
-            url1 = url1.Trim();
-            url2 = url2.Trim();
-            url1 = url1.Trim('/');
-            url2 = url2.Trim('/');
+            url1 = url1.Trim().Trim('/');
+            url2 = url2.Trim().Trim('/');
             return url1 == url2;
         }
 
         internal static bool UrlIsBaseFrom(string baseUrl, string url)
         {
-            baseUrl = baseUrl.Trim();
-            url = url.Trim();
-            baseUrl = baseUrl.Trim('/');
-            url = url.Trim('/');
+            baseUrl = baseUrl.Trim().Trim('/');
+            url = url.Trim().Trim('/');
             return url.StartsWith(baseUrl);
         }
 

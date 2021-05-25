@@ -131,6 +131,10 @@ namespace RestTest
                         Console.WriteLine("Key: " + pair.Key + " Value: " + pair.Value);
                     }
                 }
+                else if (line == "view1")
+                {
+                    wire.InvokeOnSync();
+                }
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -8,6 +9,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
@@ -21,6 +23,8 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool HasFirstStream { get; private set; }
 
+        public bool Started => subscription != null;
+
         public event EventHandler<DataChangesEventArgs> OnChanges;
         public event EventHandler<SyncEventArgs> OnSync;
         public event EventHandler<Exception> OnError;
@@ -31,6 +35,9 @@ namespace RestfulFirebase.Database.Realtime
 
         private readonly SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
         private IDisposable subscription;
+
+        private int lastTotalDataCount;
+        private int lastSyncedDataCount;
 
         #endregion
 
@@ -110,6 +117,24 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetSubUris(uri, true);
         }
 
+        public T PutModel<T>(T model, string path = null)
+            where T : IRealtimeModel
+        {
+            if (!Started) return default;
+            path = path?.Trim().Trim('/');
+            model.StartRealtime(new RealtimeModelWire(this, model, path), true);
+            return model;
+        }
+
+        public T SubModel<T>(T model, string path = null)
+            where T : IRealtimeModel
+        {
+            if (!Started) return default;
+            path = path?.Trim().Trim('/');
+            model.StartRealtime(new RealtimeModelWire(this, model, path), false);
+            return model;
+        }
+
         protected void InvokeOnChangesAndSync(string uri)
         {
             InvokeOnChanges(uri);
@@ -142,12 +167,15 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        protected void InvokeOnSync()
+        public void InvokeOnSync()
         {
-            OnInternalSync?.Invoke(this, new SyncEventArgs(GetTotalDataCount(), GetSyncedDataCount()));
+            lastTotalDataCount = GetTotalDataCount();
+            lastSyncedDataCount = GetSyncedDataCount();
+
+            OnInternalSync?.Invoke(this, new SyncEventArgs(lastTotalDataCount, lastSyncedDataCount));
             context.Post(s =>
             {
-                OnSync?.Invoke(this, new SyncEventArgs(GetTotalDataCount(), GetSyncedDataCount()));
+                OnSync?.Invoke(this, new SyncEventArgs(lastTotalDataCount, lastSyncedDataCount));
             }, null);
         }
 
@@ -186,7 +214,6 @@ namespace RestfulFirebase.Database.Realtime
 
         private void OnNext(object sender, StreamObject streamObject)
         {
-            var eventInvoked = false;
             if (streamObject.Data is null)
             {
                 // Delete all
@@ -195,8 +222,7 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
                     {
-                        eventInvoked = true;
-                        InvokeOnChangesAndSync(data.Uri);
+                        InvokeOnChanges(data.Uri);
                     }
                 }
             }
@@ -208,8 +234,7 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
                     {
-                        eventInvoked = true;
-                        InvokeOnChangesAndSync(subData.Uri);
+                        InvokeOnChanges(subData.Uri);
                     }
                 }
 
@@ -217,8 +242,7 @@ namespace RestfulFirebase.Database.Realtime
                 var data = App.Database.OfflineDatabase.GetData(streamObject.Uri) ?? new DataHolder(App, streamObject.Uri);
                 if (data.MakeSync(single.Blob, err => OnPutError(data, err)))
                 {
-                    eventInvoked = true;
-                    InvokeOnChangesAndSync(data.Uri);
+                    InvokeOnChanges(data.Uri);
                 }
             }
             else if (streamObject.Data is MultiStreamData multi)
@@ -233,8 +257,7 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
                     {
-                        eventInvoked = true;
-                        InvokeOnChangesAndSync(subData.Uri);
+                        InvokeOnChanges(subData.Uri);
                     }
                 }
 
@@ -245,16 +268,12 @@ namespace RestfulFirebase.Database.Realtime
                     if (subData == null) subData = new DataHolder(App, syncData.path);
                     if (subData?.MakeSync(syncData.blob, err => OnPutError(subData, err)) ?? false)
                     {
-                        eventInvoked = true;
-                        InvokeOnChangesAndSync(subData.Uri);
+                        InvokeOnChanges(subData.Uri);
                     }
                 }
             }
-            if (!eventInvoked)
-            {
-                InvokeOnSync();
-            }
-            HasFirstStream = true;
+            InvokeOnSync();
+            if (!HasFirstStream) HasFirstStream = true;
         }
 
         #endregion
