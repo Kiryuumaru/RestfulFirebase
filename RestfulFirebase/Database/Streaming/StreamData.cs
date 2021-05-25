@@ -42,18 +42,18 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     if (pair.Value is null)
                     {
-                        if (string.IsNullOrEmpty(path)) descendants.Add((Utils.CombineUrl(pair.Key), null));
-                        else descendants.Add((Utils.CombineUrl(path, pair.Key), null));
+                        if (string.IsNullOrEmpty(path)) descendants.Add((Utils.UrlCombine(pair.Key), null));
+                        else descendants.Add((Utils.UrlCombine(path, pair.Key), null));
                     }
                     else if (pair.Value is SingleStreamData single)
                     {
-                        if (string.IsNullOrEmpty(path)) descendants.Add((Utils.CombineUrl(pair.Key), single.Blob));
-                        else descendants.Add((Utils.CombineUrl(path, pair.Key), single.Blob));
+                        if (string.IsNullOrEmpty(path)) descendants.Add((Utils.UrlCombine(pair.Key), single.Blob));
+                        else descendants.Add((Utils.UrlCombine(path, pair.Key), single.Blob));
                     }
                     else if (pair.Value is MultiStreamData multi)
                     {
-                        if (string.IsNullOrEmpty(path)) recursive(multi.Blobs, Utils.CombineUrl(pair.Key));
-                        else recursive(multi.Blobs, Utils.CombineUrl(path, pair.Key));
+                        if (string.IsNullOrEmpty(path)) recursive(multi.Blobs, Utils.UrlCombine(pair.Key));
+                        else recursive(multi.Blobs, Utils.UrlCombine(path, pair.Key));
                     }
                 }
             }

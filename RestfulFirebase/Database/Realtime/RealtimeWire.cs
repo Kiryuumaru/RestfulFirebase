@@ -75,40 +75,45 @@ namespace RestfulFirebase.Database.Realtime
             subscription = null;
         }
 
-        public void SetBlob(string blob, string path = null)
+        public bool SetBlob(string blob, string path = null)
         {
-            path = path?.TrimStart('/');
-            path = path?.TrimEnd('/');
-            var uri = string.IsNullOrEmpty(path) ? Utils.CombineUrl(Query.GetAbsolutePath()) : Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            var hasChanges = false;
+
+            path = path?.Trim();
+            path = path?.Trim('/');
+            var uri = string.IsNullOrEmpty(path) ? Utils.UrlCombine(Query.GetAbsolutePath()) : Utils.UrlCombine(Query.GetAbsolutePath(), path);
             
             // Delete subChanges
             var subDatas = App.Database.OfflineDatabase.GetDatas(uri);
             foreach (var subData in subDatas)
             {
-                subData.DeleteChanges();
+                if (subData.DeleteChanges()) hasChanges = true;
             }
 
             // Make changes
             var dataHolder = new DataHolder(App, uri);
             if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
             {
+                hasChanges = true;
                 InvokeOnChangesAndSync(uri);
             }
+
+            return hasChanges;
         }
 
         public string GetBlob(string path = null)
         {
             path = path?.TrimStart('/');
             path = path?.TrimEnd('/');
-            var uri = string.IsNullOrEmpty(path) ? Utils.CombineUrl(Query.GetAbsolutePath()) : Utils.CombineUrl(Query.GetAbsolutePath(), path);
+            var uri = string.IsNullOrEmpty(path) ? Utils.UrlCombine(Query.GetAbsolutePath()) : Utils.UrlCombine(Query.GetAbsolutePath(), path);
             var dataHolder = new DataHolder(App, uri);
             return dataHolder.Blob;
         }
 
-        public IEnumerable<string> GetPaths()
+        public IEnumerable<string> GetPaths(string path = null)
         {
-            var path = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubPaths(path, true);
+            var uri = string.IsNullOrEmpty(path) ? Query.GetAbsolutePath() : Utils.UrlCombine(Query.GetAbsolutePath(), path);
+            return App.Database.OfflineDatabase.GetSubPaths(uri, true);
         }
 
         protected void InvokeOnChangesAndSync(string uri)
@@ -123,14 +128,14 @@ namespace RestfulFirebase.Database.Realtime
             var baseUri = Query.GetAbsolutePath();
             if (!uri.StartsWith(baseUri)) return;
             var path = uri.Replace(baseUri, "");
-            var separatedPath = Utils.SeparateUrl(path);
+            var separatedPath = Utils.UrlSeparate(path);
             var affectedPaths = new List<string>();
             var eventPath = "";
             affectedPaths.Add(eventPath);
             for (int i = 0; i < separatedPath.Length; i++)
             {
-                if (string.IsNullOrEmpty(eventPath)) eventPath = Utils.CombineUrl(separatedPath[i]);
-                else eventPath = Utils.CombineUrl(eventPath, separatedPath[i]);
+                if (string.IsNullOrEmpty(eventPath)) eventPath = Utils.UrlCombine(separatedPath[i]);
+                else eventPath = Utils.UrlCombine(eventPath, separatedPath[i]);
                 affectedPaths.Add(eventPath);
             }
             foreach (var affectedPath in affectedPaths.OrderByDescending(i => i.Length))
@@ -234,7 +239,7 @@ namespace RestfulFirebase.Database.Realtime
 
                 var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri);
                 var descendants = multi.GetDescendants();
-                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.CombineUrl(streamObject.Uri, i.path), i.blob)));
+                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.UrlCombine(streamObject.Uri, i.path), i.blob)));
                 var excluded = subDatas.Where(i => syncDatas.Any(j => j.path != i.Uri));
 
                 // Delete excluded multi
@@ -261,7 +266,7 @@ namespace RestfulFirebase.Database.Realtime
             }
             if (!eventInvoked)
             {
-                InvokeOnChangesAndSync(Query.GetAbsolutePath());
+                InvokeOnSync();
             }
             HasFirstStream = true;
         }

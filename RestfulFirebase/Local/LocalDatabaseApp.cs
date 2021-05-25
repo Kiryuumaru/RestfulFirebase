@@ -39,11 +39,11 @@ namespace RestfulFirebase.Local
             path = ValidatePath(path);
             lock (this)
             {
-                var separated = Utils.SeparateUrl(path);
+                var separated = Utils.UrlSeparate(path);
                 var keyHeir = KeyHeirPath;
                 for (int i = 0; i < separated.Length - 1; i++)
                 {
-                    keyHeir = Utils.CombineUrl(keyHeir, separated[i]);
+                    keyHeir = Utils.UrlCombine(keyHeir, separated[i]);
                     var heirs = db.Get(ValidatePath(keyHeir));
                     var deserialized = Utils.DeserializeString(heirs)?.ToList() ?? new List<string>();
                     if (!deserialized.Contains(separated[i + 1])) deserialized.Add(separated[i + 1]);
@@ -68,13 +68,13 @@ namespace RestfulFirebase.Local
             path = ValidatePath(path);
             lock (this)
             {
-                var separated = Utils.SeparateUrl(path);
+                var separated = Utils.UrlSeparate(path);
                 for (int i = separated.Length - 1; i >= 0; i--)
                 {
                     var keyHierList = separated.Take(i).ToList();
-                    var valuePath = ValidatePath(Utils.CombineUrl(keyHierList.ToArray()));
+                    var valuePath = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
                     keyHierList.Insert(0, KeyHeirPath);
-                    var keyHeir = ValidatePath(Utils.CombineUrl(keyHierList.ToArray()));
+                    var keyHeir = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
                     var hiers = db.Get(keyHeir);
                     var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
                     if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
@@ -99,7 +99,7 @@ namespace RestfulFirebase.Local
             List<string> subPaths = new List<string>();
             void recursive(string subPath)
             {
-                var s = Utils.CombineUrl(KeyHeirPath, subPath);
+                var s = Utils.UrlCombine(KeyHeirPath, subPath);
                 var heirs = db.Get(ValidatePath(s));
                 var deserialized = Utils.DeserializeString(heirs)?.ToList() ?? new List<string>();
                 if (deserialized.Count == 0)
@@ -110,7 +110,7 @@ namespace RestfulFirebase.Local
                 {
                     foreach (var heir in deserialized)
                     {
-                        recursive(Utils.CombineUrl(subPath, heir));
+                        recursive(Utils.UrlCombine(subPath, heir));
                     }
                 }
             }

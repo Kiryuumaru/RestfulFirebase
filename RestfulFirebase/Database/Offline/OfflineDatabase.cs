@@ -103,9 +103,9 @@ namespace RestfulFirebase.Database.Offline
         #region Properties
 
         internal const string Root = "offdb";
-        internal static readonly string ShortPath = Utils.CombineUrl(Root, "short");
-        internal static readonly string SyncBlobPath = Utils.CombineUrl(Root, "blob");
-        internal static readonly string ChangesPath = Utils.CombineUrl(Root, "changes");
+        internal static readonly string ShortPath = Utils.UrlCombine(Root, "short");
+        internal static readonly string SyncBlobPath = Utils.UrlCombine(Root, "blob");
+        internal static readonly string ChangesPath = Utils.UrlCombine(Root, "changes");
 
         public RestfulFirebaseApp App { get; }
 
@@ -133,7 +133,7 @@ namespace RestfulFirebase.Database.Offline
         public IEnumerable<string> GetSubPaths(string uri, bool includeBaseIfExists = false)
         {
             var paths = new List<string>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.CombineUrl(ShortPath, uri)))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)))
             {
                 paths.Add(subPath.Substring(ShortPath.Length));
             }
@@ -154,7 +154,7 @@ namespace RestfulFirebase.Database.Offline
         public IEnumerable<DataHolder> GetAllDatas()
         {
             var datas = new List<DataHolder>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.CombineUrl(ShortPath)))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath)))
             {
                 datas.Add(new DataHolder(App, subPath.Substring(ShortPath.Length)));
             }
@@ -172,7 +172,13 @@ namespace RestfulFirebase.Database.Offline
 
         public void Dispose()
         {
-
+            lock (writeTasks)
+            {
+                foreach (var writeTask in writeTasks)
+                {
+                    writeTask.CancellationSource.Cancel();
+                }
+            }
         }
 
         internal void Put(DataHolder data, Action<RetryExceptionEventArgs> onError)

@@ -202,15 +202,21 @@ namespace RestfulFirebase.Database.Query
             return await recursive();
         }
 
-        //public RealtimeWire<T> PutAsRealtime<T>(T model) where T : IRealtimeModel
-        //{
-        //    return RealtimeWire<T>.CreateFromQuery(App, this, model, true);
-        //}
+        public T PutAsRealtime<T>(T model) where T : IRealtimeModel
+        {
+            var wire = new RealtimeWire(App, this);
+            model.StartRealtime(new RealtimeModelWire(wire, model, null), true);
+            wire.Start();
+            return model;
+        }
 
-        //public RealtimeWire<T> SubAsRealtime<T>(T model) where T : IRealtimeModel
-        //{
-        //    return RealtimeWire<T>.CreateFromQuery(App, this, model, false);
-        //}
+        public T SubAsRealtime<T>(T model) where T : IRealtimeModel
+        {
+            var wire = new RealtimeWire(App, this);
+            model.StartRealtime(new RealtimeModelWire(wire, model, null), false);
+            wire.Start();
+            return model;
+        }
 
         public RealtimeWire AsRealtimeWire()
         {

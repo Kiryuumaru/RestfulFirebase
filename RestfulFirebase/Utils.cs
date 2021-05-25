@@ -406,7 +406,7 @@ namespace RestfulFirebase
 
         #region UrlUtils
 
-        internal static string CombineUrl(params string[] paths)
+        internal static string UrlCombine(params string[] paths)
         {
             string ret = "";
             foreach (var path in paths)
@@ -418,11 +418,29 @@ namespace RestfulFirebase
             return ret.Length == 0 ? "/" : ret;
         }
 
-        internal static string[] SeparateUrl(string url)
+        internal static string[] UrlSeparate(string url)
         {
             var split = url.Split('/');
             if (!string.IsNullOrEmpty(split.Last())) return split;
             return split.Take(split.Length - 1).ToArray();
+        }
+
+        internal static bool UrlCompare(string url1, string url2)
+        {
+            url1 = url1.Trim();
+            url2 = url2.Trim();
+            url1 = url1.Trim('/');
+            url2 = url2.Trim('/');
+            return url1 == url2;
+        }
+
+        internal static bool UrlIsBaseFrom(string baseUrl, string url)
+        {
+            baseUrl = baseUrl.Trim();
+            url = url.Trim();
+            baseUrl = baseUrl.Trim('/');
+            url = url.Trim('/');
+            return url.StartsWith(baseUrl);
         }
 
         #endregion

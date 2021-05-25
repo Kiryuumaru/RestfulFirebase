@@ -12,7 +12,6 @@ using RestfulFirebase.Database.Models;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading;
-//using RestfulFirebase.Database.Models.Primitive;
 using ObservableHelpers;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Database.Realtime;
@@ -74,8 +73,9 @@ namespace RestTest
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
+            //TestRealtimeWire();
             //TestObservableObject();
-            //TestPropertyPut();
+            TestPropertyPut();
             //TestPropertySub();
             //TestPropertySub2();
             //TestObjectPut();
@@ -86,6 +86,10 @@ namespace RestTest
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
+        }
+
+        public static void TestRealtimeWire()
+        {
             var query = app.Database.Child("public");
             var wire = new RealtimeWire(app, query);
             wire.OnSync += (s, e) =>
@@ -122,21 +126,21 @@ namespace RestTest
             }
         }
 
-        //public static void TestPropertyPut()
-        //{
-        //    var props = new FirebaseProperty<string>();
-        //    props.PropertyChanged += (s, e) =>
-        //    {
-        //        Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
-        //    };
-        //    props.Value = "numba22";
-        //    userNode.Child("testing").Child("mock").Child("test").PutAsRealtime(props).Start();
-        //    while (true)
-        //    {
-        //        string line = Console.ReadLine();
-        //        props.Value = string.IsNullOrEmpty(line) ? null : line;
-        //    }
-        //}
+        public static void TestPropertyPut()
+        {
+            var props = new FirebaseProperty<string>();
+            props.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
+            };
+            props.Value = "numba22";
+            userNode.Child("testing").Child("mock").Child("test").PutAsRealtime(props);
+            while (true)
+            {
+                string line = Console.ReadLine();
+                props.Value = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
 
         //public static void TestPropertySub()
         //{

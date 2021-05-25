@@ -14,80 +14,80 @@ namespace RestfulFirebase.Auth
 
         public string FirebaseToken
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "tok"));
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "tok"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "tok"));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "tok"), value);
         }
 
         public string RefreshToken
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "ref"));
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ref"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "ref"));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "ref"), value);
         }
 
         public int ExpiresIn
         {
-            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "exp")));
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "exp"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "exp")));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "exp"), Serializer.Serialize(value));
         }
 
         public DateTime Created
         {
-            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "ctd")));
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "ctd"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "ctd")));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "ctd"), Serializer.Serialize(value));
         }
 
         public string LocalId
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "lid")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "lid"), value);
         }
 
         public string FederatedId
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "fid")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "fid"), value);
         }
 
         public string FirstName
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "fname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "fname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "fname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "fname"), value);
         }
 
         public string LastName
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "lname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "lname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "lname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "lname"), value);
         }
 
         public string DisplayName
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "dname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "dname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "dname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "dname"), value);
         }
 
         public string Email
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "email")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "email"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "email")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "email"), value);
         }
 
         public bool IsEmailVerified
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "vmail")) == "1";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "vmail"), value ? "1" : "0");
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "vmail")) == "1";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "vmail"), value ? "1" : "0");
         }
 
         public string PhotoUrl
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "purl")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "purl"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "purl")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "purl"), value);
         }
 
         public string PhoneNumber
         {
-            get => App.LocalDatabase.Get(Utils.CombineUrl(AuthRoot, "pnum")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.CombineUrl(AuthRoot, "pnum"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "pnum")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "pnum"), value);
         }
 
         public bool Exist
@@ -129,20 +129,20 @@ namespace RestfulFirebase.Auth
 
         internal void Purge()
         {
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "ctd"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "exp"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "ref"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "tok"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "ctd"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "exp"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "ref"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "tok"));
 
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "lid"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "fid"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "fname"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "lname"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "dname"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "email"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "vmail"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "purl"));
-            App.LocalDatabase.Delete(Utils.CombineUrl(AuthRoot, "pnum"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "lid"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "fid"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "fname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "lname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "dname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "email"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "vmail"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "purl"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "pnum"));
         }
 
         public bool IsExpired()

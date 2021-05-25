@@ -11,7 +11,7 @@ namespace RestfulFirebase.Database.Realtime
 
         public string Path { get; }
 
-        public string Uri => (string.IsNullOrEmpty(Path) ? BaseUri : Utils.CombineUrl(BaseUri, Path));
+        public string Uri => (string.IsNullOrEmpty(Path) ? BaseUri : Utils.UrlCombine(BaseUri, Path));
 
         public DataChangesEventArgs(string baseUri, string path)
         {

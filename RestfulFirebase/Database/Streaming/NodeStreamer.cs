@@ -78,8 +78,6 @@ namespace RestfulFirebase.Database.Streaming
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
 
-                    Console.WriteLine("READ START");
-
                     using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var reader = new StreamReader(stream))
                     {
@@ -123,7 +121,6 @@ namespace RestfulFirebase.Database.Streaming
                 catch (Exception ex)
                 {
                     var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
-                    Console.WriteLine("STREAM ERROR: " + ex.Message);
                     onError?.Invoke(this, fireEx);
                 }
                 await Task.Delay(2000).ConfigureAwait(false);
@@ -167,7 +164,7 @@ namespace RestfulFirebase.Database.Streaming
                     var absolutePath = query.GetAbsolutePath();
 
                     var uri = streamPath == "/" ?
-                        absolutePath : Utils.CombineUrl(absolutePath, streamPath.Substring(1));
+                        absolutePath : Utils.UrlCombine(absolutePath, streamPath.Substring(1));
 
                     var type = dataToken.Type;
 

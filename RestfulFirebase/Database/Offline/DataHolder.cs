@@ -65,11 +65,12 @@ namespace RestfulFirebase.Database.Offline
             {
                 var hier = new List<string>();
                 var path = Uri.Replace(App.Config.DatabaseURL, "");
-                var separated = Utils.SeparateUrl(path);
+                var separated = Utils.UrlSeparate(path);
                 var currentUri = App.Config.DatabaseURL;
+                hier.Add(currentUri);
                 for (int i = 0; i < separated.Length - 1; i++)
                 {
-                    currentUri = Utils.CombineUrl(currentUri, separated[i]);
+                    currentUri = Utils.UrlCombine(currentUri, separated[i]);
                     hier.Add(currentUri);
                 }
                 return hier;
@@ -109,12 +110,12 @@ namespace RestfulFirebase.Database.Offline
         protected string Get(params string[] path)
         {
             if (path.Any(i => i is null)) return null;
-            return App.LocalDatabase.Get(Utils.CombineUrl(path));
+            return App.LocalDatabase.Get(Utils.UrlCombine(path));
         }
 
         protected void Set(string data, params string[] path)
         {
-            var combined = Utils.CombineUrl(path);
+            var combined = Utils.UrlCombine(path);
             if (data == null) App.LocalDatabase.Delete(combined);
             else App.LocalDatabase.Set(combined, data);
         }
