@@ -130,23 +130,55 @@ namespace RestfulFirebase.Database.Offline
             return data.Exist ? data : null;
         }
 
-        public IEnumerable<string> GetSubPaths(string uri, bool includeBaseIfExists = false)
+        public IEnumerable<string> GetSubUris(string uri, bool includeOriginIfExists = false)
         {
             var paths = new List<string>();
             foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)))
             {
                 paths.Add(subPath.Substring(ShortPath.Length));
             }
-            if (GetData(uri) != null && includeBaseIfExists) paths.Add(uri);
+            if (GetData(uri) != null && includeOriginIfExists) paths.Add(uri);
             return paths;
         }
 
-        public IEnumerable<DataHolder> GetDatas(string uri, bool includeBaseIfExists = false)
+        public IEnumerable<string> GetHierUris(string uri, string baseUri = "", bool includeOriginIfExists = false)
+        {
+            if (string.IsNullOrEmpty(baseUri)) baseUri = App.Config.DatabaseURL;
+
+            uri = uri.Trim();
+            uri = uri.Trim('/');
+            baseUri = baseUri.Trim();
+            baseUri = baseUri.Trim('/');
+
+            if (!uri.StartsWith(baseUri)) throw new Exception("URI not related");
+
+            var hier = new List<string>();
+            var path = uri.Replace(baseUri, "");
+            var separated = Utils.UrlSeparate(path);
+            var currentUri = App.Config.DatabaseURL;
+            hier.Add(currentUri);
+            for (int i = 0; i < separated.Length - 1; i++)
+            {
+                currentUri = Utils.UrlCombine(currentUri, separated[i]);
+                if (GetData(currentUri) != null) hier.Add(currentUri);
+            }
+            if (GetData(uri) != null && includeOriginIfExists) hier.Add(uri);
+            return hier;
+        }
+
+        public IEnumerable<DataHolder> GetDatas(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<DataHolder>();
-            foreach (var subPath in GetSubPaths(uri, includeBaseIfExists))
+            foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
             {
-                datas.Add(new DataHolder(App, subPath));
+                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri))) datas.Add(new DataHolder(App, subUri));
+            }
+            if (includeHierIfExists)
+            {
+                foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
+                {
+                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri))) datas.Add(new DataHolder(App, subUri));
+                }
             }
             return datas;
         }
@@ -183,7 +215,7 @@ namespace RestfulFirebase.Database.Offline
 
         internal void Put(DataHolder data, Action<RetryExceptionEventArgs> onError)
         {
-            var datas = GetDatas(data.Uri).ToList();
+            var datas = GetDatas(data.Uri, false, true).ToList();
             foreach (var uri in data.HierarchyUri)
             {
                 var hierData = GetData(uri);
@@ -217,7 +249,7 @@ namespace RestfulFirebase.Database.Offline
             WriteTask existing = null;
             lock (writeTasks)
             {
-                existing = writeTasks.FirstOrDefault(i => i.Data.Uri == data.Uri);
+                existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Data.Uri, data.Uri));
                 if (existing != null)
                 {
                     existing.CancellationSource.Cancel();

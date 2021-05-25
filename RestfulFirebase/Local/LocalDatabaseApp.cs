@@ -102,11 +102,14 @@ namespace RestfulFirebase.Local
                 var s = Utils.UrlCombine(KeyHeirPath, subPath);
                 var heirs = db.Get(ValidatePath(s));
                 var deserialized = Utils.DeserializeString(heirs)?.ToList() ?? new List<string>();
-                if (deserialized.Count == 0)
+                if (path != subPath)
                 {
-                    if (path != subPath) subPaths.Add(subPath);
+                    if (db.ContainsKey(ValidatePath(subPath)))
+                    {
+                        subPaths.Add(subPath);
+                    }
                 }
-                else
+                if (deserialized.Count != 0)
                 {
                     foreach (var heir in deserialized)
                     {

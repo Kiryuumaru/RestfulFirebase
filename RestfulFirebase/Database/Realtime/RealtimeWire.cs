@@ -25,8 +25,8 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                var path = Query.GetAbsolutePath();
-                return App.Database.OfflineDatabase.GetDatas(path, true).Count();
+                var uri = Query.GetAbsolutePath();
+                return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
             }
         }
 
@@ -34,8 +34,8 @@ namespace RestfulFirebase.Database.Realtime
         {
             get
             {
-                var path = Query.GetAbsolutePath();
-                return App.Database.OfflineDatabase.GetDatas(path, true).Where(i => i.Changes == null).Count();
+                var uri = Query.GetAbsolutePath();
+                return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
             }
         }
 
@@ -83,8 +83,8 @@ namespace RestfulFirebase.Database.Realtime
             path = path?.Trim('/');
             var uri = string.IsNullOrEmpty(path) ? Utils.UrlCombine(Query.GetAbsolutePath()) : Utils.UrlCombine(Query.GetAbsolutePath(), path);
             
-            // Delete subChanges
-            var subDatas = App.Database.OfflineDatabase.GetDatas(uri);
+            // Delete related changes
+            var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
             foreach (var subData in subDatas)
             {
                 if (subData.DeleteChanges()) hasChanges = true;
@@ -113,7 +113,7 @@ namespace RestfulFirebase.Database.Realtime
         public IEnumerable<string> GetPaths(string path = null)
         {
             var uri = string.IsNullOrEmpty(path) ? Query.GetAbsolutePath() : Utils.UrlCombine(Query.GetAbsolutePath(), path);
-            return App.Database.OfflineDatabase.GetSubPaths(uri, true);
+            return App.Database.OfflineDatabase.GetSubUris(uri, true);
         }
 
         protected void InvokeOnChangesAndSync(string uri)
@@ -196,7 +196,7 @@ namespace RestfulFirebase.Database.Realtime
             if (streamObject.Data is null)
             {
                 // Delete all
-                var datas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true);
+                var datas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
                 foreach (var data in datas)
                 {
                     if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
@@ -208,8 +208,8 @@ namespace RestfulFirebase.Database.Realtime
             }
             else if (streamObject.Data is SingleStreamData single)
             {
-                // Delete multi
-                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri);
+                // Delete related
+                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, false, true, Query.GetAbsolutePath());
                 foreach (var subData in subDatas)
                 {
                     if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
@@ -229,20 +229,12 @@ namespace RestfulFirebase.Database.Realtime
             }
             else if (streamObject.Data is MultiStreamData multi)
             {
-                // Delete single
-                var data = App.Database.OfflineDatabase.GetData(streamObject.Uri);
-                if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
-                {
-                    eventInvoked = true;
-                    InvokeOnChangesAndSync(data.Uri);
-                }
-
-                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri);
+                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
                 var descendants = multi.GetDescendants();
                 var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.UrlCombine(streamObject.Uri, i.path), i.blob)));
-                var excluded = subDatas.Where(i => syncDatas.Any(j => j.path != i.Uri));
 
-                // Delete excluded multi
+                // Delete related
+                var excluded = subDatas.Where(i => !syncDatas.Any(j => Utils.UrlCompare(j.path, i.Uri)));
                 foreach (var subData in excluded)
                 {
                     if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)

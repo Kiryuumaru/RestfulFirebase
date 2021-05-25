@@ -55,62 +55,36 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetValue<T>(T value, string tag = null)
         {
-            if (typeof(T).IsAssignableFrom(typeof(FirebaseProperty)))
+            try
             {
-                OnError(new Exception("Cannot nest assign FirebaseProperty"));
-                return false;
+                var json = Serializer.Serialize(value);
+                return SetBlob(json, tag);
             }
-            //else if (typeof(T).IsAssignableFrom(typeof(FirebaseObject)))
-            //{
-            //    return SetObject(value, tag);
-            //}
-            else
+            catch (Exception ex)
             {
-                try
-                {
-                    var json = Serializer.Serialize(value);
-                    return SetBlob(json, tag);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                    return false;
-                }
+                OnError(ex);
+                return false;
             }
         }
 
         public override T GetValue<T>(T defaultValue = default, string tag = null)
         {
-            if (typeof(T).IsAssignableFrom(typeof(FirebaseProperty)))
+            try
             {
-                OnError(new Exception("Cannot nest assign FirebaseProperty"));
-                return defaultValue;
-            }
-            //else if (typeof(T).IsAssignableFrom(typeof(FirebaseObject)))
-            //{
-            //    var obj = GetObject(defaultValue, tag);
-            //    if (obj is FirebaseObject) return (T)obj;
-            //    else return defaultValue;
-            //}
-            else
-            {
-                try
+                var str = GetBlob(null, tag);
+                if (str == null)
                 {
-                    var str = GetBlob(null, tag);
-                    if (str == null)
-                    {
-                        return defaultValue;
-                    }
-                    else
-                    {
-                        return Serializer.Deserialize<T>(str);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
                     return defaultValue;
                 }
+                else
+                {
+                    return Serializer.Deserialize<T>(str);
+                }
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+                return defaultValue;
             }
         }
 

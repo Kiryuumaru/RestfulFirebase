@@ -22,18 +22,27 @@ namespace RestfulFirebase.Database.Models
 
         public void StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
         {
-            if (invokeSetFirst)
-            {
+            InitializeProperties(false);
 
-                ModelWire = modelWire;
-                ModelWire.Subscribe();
+            ModelWire = modelWire;
+            ModelWire.Subscribe();
 
-            }
-            else
-            {
-                ModelWire = modelWire;
-                ModelWire.Subscribe();
-            }
+            //ModelWire.SetOnChanges(args =>
+            //{
+            //    OnChanged(nameof(Property));
+            //});
+
+            //if (invokeSetFirst)
+            //{
+            //    ModelWire.SetBlob(blob);
+            //}
+            //else
+            //{
+            //    if (blob != GetBlob())
+            //    {
+            //        OnChanged(nameof(Property));
+            //    }
+            //}
         }
 
         public void StopRealtime()

@@ -73,9 +73,9 @@ namespace RestTest
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
-            //TestRealtimeWire();
+            TestRealtimeWire();
             //TestObservableObject();
-            TestPropertyPut();
+            //TestPropertyPut();
             //TestPropertySub();
             //TestPropertySub2();
             //TestObjectPut();
