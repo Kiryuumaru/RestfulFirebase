@@ -63,7 +63,17 @@ namespace RestfulFirebase.Database.Offline
         {
             get
             {
-                return App.Database.OfflineDatabase.GetHierUris(Uri);
+                var hier = new List<string>();
+                var path = Uri.Replace(App.Config.DatabaseURL, "");
+                var separated = Utils.UrlSeparate(path);
+                var currentUri = App.Config.DatabaseURL;
+                hier.Add(currentUri);
+                for (int i = 0; i < separated.Length - 1; i++)
+                {
+                    currentUri = Utils.UrlCombine(currentUri, separated[i]);
+                    hier.Add(currentUri);
+                }
+                return hier;
             }
         }
 

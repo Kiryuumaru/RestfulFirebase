@@ -21,24 +21,6 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool HasFirstStream { get; private set; }
 
-        public int TotalDataCount
-        {
-            get
-            {
-                var uri = Query.GetAbsolutePath();
-                return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
-            }
-        }
-
-        public int SyncedDataCount
-        {
-            get
-            {
-                var uri = Query.GetAbsolutePath();
-                return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
-            }
-        }
-
         public event EventHandler<DataChangesEventArgs> OnChanges;
         public event EventHandler<SyncEventArgs> OnSync;
         public event EventHandler<Exception> OnError;
@@ -73,6 +55,18 @@ namespace RestfulFirebase.Database.Realtime
         {
             subscription?.Dispose();
             subscription = null;
+        }
+
+        public int GetTotalDataCount()
+        {
+            var uri = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
+        }
+
+        public int GetSyncedDataCount()
+        {
+            var uri = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
         }
 
         public bool SetBlob(string blob, string path = null)
@@ -150,10 +144,10 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void InvokeOnSync()
         {
-            OnInternalSync?.Invoke(this, new SyncEventArgs(TotalDataCount, SyncedDataCount));
+            OnInternalSync?.Invoke(this, new SyncEventArgs(GetTotalDataCount(), GetSyncedDataCount()));
             context.Post(s =>
             {
-                OnSync?.Invoke(this, new SyncEventArgs(TotalDataCount, SyncedDataCount));
+                OnSync?.Invoke(this, new SyncEventArgs(GetTotalDataCount(), GetSyncedDataCount()));
             }, null);
         }
 

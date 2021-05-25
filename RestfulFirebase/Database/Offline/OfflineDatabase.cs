@@ -154,9 +154,10 @@ namespace RestfulFirebase.Database.Offline
 
             var hier = new List<string>();
             var path = uri.Replace(baseUri, "");
+            path = path.Trim('/');
             var separated = Utils.UrlSeparate(path);
-            var currentUri = App.Config.DatabaseURL;
-            hier.Add(currentUri);
+            var currentUri = baseUri;
+            if (GetData(currentUri) != null) hier.Add(currentUri);
             for (int i = 0; i < separated.Length - 1; i++)
             {
                 currentUri = Utils.UrlCombine(currentUri, separated[i]);

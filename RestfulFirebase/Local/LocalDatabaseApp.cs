@@ -68,27 +68,35 @@ namespace RestfulFirebase.Local
             path = ValidatePath(path);
             lock (this)
             {
-                var separated = Utils.UrlSeparate(path);
-                for (int i = separated.Length - 1; i >= 0; i--)
+                var subKeyHierPath = ValidatePath(Utils.UrlCombine(KeyHeirPath, path));
+                if (db.Get(subKeyHierPath) == null)
                 {
-                    var keyHierList = separated.Take(i).ToList();
-                    var valuePath = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
-                    keyHierList.Insert(0, KeyHeirPath);
-                    var keyHeir = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
-                    var hiers = db.Get(keyHeir);
-                    var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
-                    if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
-                    if (deserialized.Count == 0)
+                    var separated = Utils.UrlSeparate(path);
+                    for (int i = separated.Length - 1; i >= 0; i--)
                     {
-                        db.Delete(keyHeir);
+                        var keyHierList = separated.Take(i + 1).ToList();
+                        if (separated.Length - 1 != i)
+                        {
+                            var valuePath = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
+                            if (db.Get(valuePath) != null) break;
+                        }
+                        keyHierList = keyHierList.Take(i).ToList();
+                        keyHierList.Insert(0, KeyHeirPath);
+                        var keyHeir = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
+                        var hiers = db.Get(keyHeir);
+                        var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
+                        if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
+                        if (deserialized.Count == 0)
+                        {
+                            db.Delete(keyHeir);
+                        }
+                        else
+                        {
+                            var serialized = Utils.SerializeString(deserialized.ToArray());
+                            db.Set(keyHeir, serialized);
+                            break;
+                        }
                     }
-                    else
-                    {
-                        var serialized = Utils.SerializeString(deserialized.ToArray());
-                        db.Set(keyHeir, serialized);
-                        break;
-                    }
-                    if (db.Get(valuePath) != null) break;
                 }
                 db.Delete(path);
             }

@@ -123,6 +123,14 @@ namespace RestTest
                         wire.SetBlob(data, path == "/" ? null : path);
                     }
                 }
+                else if (line == "view")
+                {
+                    var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
+                    foreach (var pair in db)
+                    {
+                        Console.WriteLine("Key: " + pair.Key + " Value: " + pair.Value);
+                    }
+                }
             }
         }
 

@@ -59,6 +59,11 @@ namespace RestTest
             });
         }
 
+        public Dictionary<string, string> GetDB()
+        {
+            return db;
+        }
+
         public bool ContainsKey(string key)
         {
             lock (db)
