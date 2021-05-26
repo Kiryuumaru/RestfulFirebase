@@ -10,49 +10,56 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObject : ObservableObject, IRealtimeModel
+    public class FirebaseObject : ObservableObject, IRealtimeModelProxy
     {
         #region Properties
 
-        public RealtimeModelWire ModelWire { get; private set; }
+        private RealtimeModelWire modelWire;
 
         #endregion
 
         #region Methods
 
-        public void StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
+        public void Start()
         {
-            InitializeProperties(false);
-
-            ModelWire = modelWire;
-            ModelWire.Subscribe();
-
-            //ModelWire.SetOnChanges(args =>
-            //{
-            //    OnChanged(nameof(Property));
-            //});
-
-            //if (invokeSetFirst)
-            //{
-            //    ModelWire.SetBlob(blob);
-            //}
-            //else
-            //{
-            //    if (blob != GetBlob())
-            //    {
-            //        OnChanged(nameof(Property));
-            //    }
-            //}
+            //if (!modelWire.Wire.Started) modelWire.Wire.Start();
+            modelWire?.Subscribe();
         }
 
-        public void StopRealtime()
+        public void Stop()
         {
-            throw new NotImplementedException();
+            modelWire?.Unsubscribe();
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            Stop();
+        }
+
+        void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
+        {
+            this.modelWire = modelWire;
+            modelWire.SetOnSubscribed(delegate
+            {
+                //modelWire.SetOnChanges(args =>
+                //{
+                //    OnChanged(nameof(Property));
+                //});
+
+                //var blob = GetBlob(UnwiredBlobTag);
+
+                //if (invokeSetFirst)
+                //{
+                //    this.modelWire.SetBlob(blob);
+                //}
+                //else
+                //{
+                //    if (blob != GetBlob())
+                //    {
+                //        OnChanged(nameof(Property));
+                //    }
+                //}
+            });
         }
 
         #endregion

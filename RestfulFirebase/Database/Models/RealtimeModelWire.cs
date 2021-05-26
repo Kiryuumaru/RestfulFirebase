@@ -6,27 +6,33 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class RealtimeModelWireChangesEventArgs : EventArgs
+    internal class RealtimeModelWireChangesEventArgs : EventArgs
     {
-        public string Path { get; private set; }
+        internal string Path { get; private set; }
 
-        public RealtimeModelWireChangesEventArgs(string path)
+        internal RealtimeModelWireChangesEventArgs(string path)
         {
             Path = path;
         }
     }
 
-    public class RealtimeModelWire
+    internal class RealtimeModelWire
     {
-        public RealtimeWire Wire { get; }
-        public IRealtimeModel Model { get; }
-        public string Path { get; }
+        internal RealtimeIntance Wire { get; }
 
+        internal IRealtimeModelProxy Model { get; }
+
+        internal string Path { get; }
+
+        internal bool Subscribed { get; private set; }
+
+        private Action onSubscribe;
+        private Action onUnsubscribe;
         private Action<RealtimeModelWireChangesEventArgs> onChanges;
 
         internal RealtimeModelWire(
-            RealtimeWire wire,
-            IRealtimeModel model,
+            RealtimeIntance wire,
+            IRealtimeModelProxy model,
             string path)
         {
             Wire = wire;
@@ -37,42 +43,51 @@ namespace RestfulFirebase.Database.Models
             Path?.Trim('/');
         }
 
-        public RealtimeModelWire Child(IRealtimeModel model, string subPath)
+        internal bool SetBlob(string blob)
         {
-            return new RealtimeModelWire(Wire, model, GetSubPath(subPath));
+            return Wire.SetBlob(blob);
         }
 
-        public bool SetBlob(string blob, string subPath = null)
+        internal string GetBlob()
         {
-            return Wire.SetBlob(blob, GetSubPath(subPath));
+            return Wire.GetBlob();
         }
 
-        public string GetBlob(string subPath = null)
+        internal IEnumerable<string> GetPaths()
         {
-            return Wire.GetBlob(GetSubPath(subPath));
+            return Wire.GetPaths();
         }
 
-        public IEnumerable<string> GetPaths(string subPath = null)
+        internal void SetOnSubscribed(Action onSubscribe)
         {
-            return Wire.GetPaths(GetSubPath(subPath));
+            this.onSubscribe = onSubscribe;
         }
 
-        public void SetOnChanges(Action<RealtimeModelWireChangesEventArgs> onChanges)
+        internal void SetOnUnsubscribe(Action onUnsubscribe)
+        {
+            this.onUnsubscribe = onUnsubscribe;
+        }
+
+        internal void SetOnChanges(Action<RealtimeModelWireChangesEventArgs> onChanges)
         {
             this.onChanges = onChanges;
         }
 
         internal void Subscribe()
         {
+            if (Subscribed) return;
+            Subscribed = true;
+            onSubscribe?.Invoke();
             Wire.OnInternalChanges += OnInternalChanges;
-            Wire.OnInternalSync += OnInternalSync;
-            Wire.OnInternalError += OnInternalError;
+            Wire.OnInternalError += OnInternalError; ;
         }
 
         internal void Unsubscribe()
         {
+            if (!Subscribed) return;
+            Subscribed = false;
+            onUnsubscribe?.Invoke();
             Wire.OnInternalChanges -= OnInternalChanges;
-            Wire.OnInternalSync -= OnInternalSync;
             Wire.OnInternalError -= OnInternalError;
         }
 
@@ -118,14 +133,9 @@ namespace RestfulFirebase.Database.Models
             if (path != null) onChanges?.Invoke(new RealtimeModelWireChangesEventArgs(path));
         }
 
-        private void OnInternalSync(object sender, SyncEventArgs e)
+        private void OnInternalError(object sender, WireErrorEventArgs e)
         {
-
-        }
-
-        private void OnInternalError(object sender, Exception e)
-        {
-            Model.OnError(e);
+            Model.OnError(e.Exception);
         }
     }
 }

@@ -10,7 +10,11 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable, IDisposable
     {
+
+    }
+
+    internal interface IRealtimeModelProxy : IRealtimeModel
+    {
         void StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst);
-        void StopRealtime();
     }
 }

@@ -202,16 +202,6 @@ namespace RestfulFirebase.Database.Query
             return await recursive();
         }
 
-        public T PutAsRealtime<T>(T model) where T : IRealtimeModel
-        {
-            return new RealtimeWire(App, this).PutModel(model);
-        }
-
-        public T SubAsRealtime<T>(T model) where T : IRealtimeModel
-        {
-            return new RealtimeWire(App, this).SubModel(model);
-        }
-
         public RealtimeWire AsRealtimeWire()
         {
             return new RealtimeWire(App, this);

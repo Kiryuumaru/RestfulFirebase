@@ -73,8 +73,8 @@ namespace RestTest
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
-            TestRealtimeWire();
             //TestObservableObject();
+            TestRealtimeWire();
             //TestPropertyPut();
             //TestPropertySub();
             //TestPropertySub2();
@@ -90,19 +90,14 @@ namespace RestTest
 
         public static void TestRealtimeWire()
         {
-            var query = app.Database.Child("public");
-            var wire = new RealtimeWire(app, query);
-            wire.OnSync += (s, e) =>
-            {
-                Console.WriteLine("OnSync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString());
-            };
+            var wire = app.Database.Child("public").AsRealtimeWire();
             wire.OnChanges += (s, e) =>
             {
-                Console.WriteLine("OnStream: " + e.Uri);
+                Console.WriteLine("Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString()+ " Path: " + e.Path);
             };
             wire.OnError += (s, e) =>
             {
-                Console.WriteLine("OnError: " + e.Message);
+                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             wire.Start();
             while (true)
@@ -115,12 +110,24 @@ namespace RestTest
                     if (line.EndsWith(" "))
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        wire.SetBlob(null, path == "/" ? null : path);
+                        var separated = Utils.SeparateUrl(path);
+                        RealtimeIntance subWire = wire;
+                        for (int i = 0; i < separated.Length; i++)
+                        {
+                            subWire = subWire.Child(separated[i]);
+                        }
+                        subWire.SetBlob(null);
                     }
                     else
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        wire.SetBlob(data, path == "/" ? null : path);
+                        var separated = Utils.SeparateUrl(path);
+                        RealtimeIntance subWire = wire;
+                        for (int i = 0; i < separated.Length; i++)
+                        {
+                            subWire = subWire.Child(separated[i]);
+                        }
+                        subWire.SetBlob(data);
                     }
                 }
                 else if (line == "view")
@@ -130,10 +137,6 @@ namespace RestTest
                     {
                         Console.WriteLine("Key: " + pair.Key + " Value: " + pair.Value);
                     }
-                }
-                else if (line == "view1")
-                {
-                    wire.InvokeOnSync();
                 }
             }
         }
@@ -146,7 +149,7 @@ namespace RestTest
                 Console.WriteLine("Data: " + props.Value + " Prop: " + e.PropertyName);
             };
             props.Value = "numba22";
-            userNode.Child("testing").Child("mock").Child("test").PutAsRealtime(props);
+            userNode.Child("testing").Child("mock").Child("test").AsRealtimeWire().PutModel(props);
             while (true)
             {
                 string line = Console.ReadLine();
