@@ -13,7 +13,7 @@ namespace RestfulFirebase.Database.Models
 
         private const string UnwiredBlobTag = "unwired";
 
-        private RealtimeModelWire modelWire;
+        internal RealtimeModelWire ModelWire { get; private set; }
 
         #endregion
 
@@ -23,9 +23,9 @@ namespace RestfulFirebase.Database.Models
         {
             bool hasChanges = false;
 
-            if (modelWire?.Subscribed ?? false && tag != UnwiredBlobTag)
+            if (ModelWire != null && tag != UnwiredBlobTag)
             {
-                if (modelWire.Wire.SetBlob(blob)) hasChanges = true;
+                if (ModelWire.RealtimeInstance.SetBlob(blob)) hasChanges = true;
             }
             else
             {
@@ -37,9 +37,9 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual string GetBlob(string defaultValue = null, string tag = null)
         {
-            if (modelWire?.Subscribed ?? false && tag != UnwiredBlobTag)
+            if (ModelWire != null && tag != UnwiredBlobTag)
             {
-                return modelWire.GetBlob();
+                return ModelWire.GetBlob();
             }
             else
             {
@@ -80,7 +80,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 else
                 {
-                    return Serializer.Deserialize<T>(str);
+                    return Serializer.Deserialize<T>(str, defaultValue);
                 }
             }
             catch (Exception ex)
@@ -90,46 +90,42 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void Start()
-        {
-            //if (!modelWire.Wire.Started) modelWire.Wire.Start();
-            modelWire?.Subscribe();
-        }
-
-        public void Stop()
-        {
-            modelWire?.Unsubscribe();
-        }
-
         public void Dispose()
         {
-            Stop();
+            ModelWire?.Unsubscribe();
+            ModelWire = null;
         }
 
         void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
         {
-            this.modelWire = modelWire;
-            modelWire.SetOnSubscribed(delegate
+            if (ModelWire != null)
             {
-                modelWire.SetOnChanges(args =>
+                ModelWire?.Unsubscribe();
+                ModelWire = null;
+            }
+
+            ModelWire = modelWire;
+
+            ModelWire.Subscribe();
+
+            ModelWire.SetOnChanges(args =>
+            {
+                OnChanged(nameof(Property));
+            });
+
+            var blob = GetBlob(null, UnwiredBlobTag);
+
+            if (invokeSetFirst)
+            {
+                ModelWire.SetBlob(blob);
+            }
+            else
+            {
+                if (blob != GetBlob())
                 {
                     OnChanged(nameof(Property));
-                });
-
-                var blob = GetBlob(UnwiredBlobTag);
-
-                if (invokeSetFirst)
-                {
-                    this.modelWire.SetBlob(blob);
                 }
-                else
-                {
-                    if (blob != GetBlob())
-                    {
-                        OnChanged(nameof(Property));
-                    }
-                }
-            });
+            }
         }
 
         #endregion

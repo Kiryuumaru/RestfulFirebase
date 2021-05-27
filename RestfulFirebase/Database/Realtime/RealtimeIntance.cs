@@ -103,27 +103,31 @@ namespace RestfulFirebase.Database.Realtime
             return dataHolder.Blob;
         }
 
-        public IEnumerable<string> GetPaths()
+        public IEnumerable<string> GetSubPaths()
         {
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubUris(uri, true);
+            return App.Database.OfflineDatabase.GetSubUris(uri, false).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
+        }
+
+        public IEnumerable<string> GetSubUris()
+        {
+            var uri = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetSubUris(uri, false);
         }
 
         public T PutModel<T>(T model)
             where T : IRealtimeModel
         {
-            var path = Query.GetAbsolutePath();
             var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy, path), true);
+            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy), true);
             return model;
         }
 
         public T SubModel<T>(T model)
             where T : IRealtimeModel
         {
-            var path = Query.GetAbsolutePath();
             var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy, path), false);
+            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy), false);
             return model;
         }
 
