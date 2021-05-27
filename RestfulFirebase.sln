@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClassLibrary1", "ClassLibrary1\ClassLibrary1.csproj", "{DC314A2D-B48F-48E1-85D2-BD7D8FC07FF6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,10 +26,6 @@ Global
 		{D7A7BB54-2B34-441A-8B18-2F51FE907C62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7A7BB54-2B34-441A-8B18-2F51FE907C62}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7A7BB54-2B34-441A-8B18-2F51FE907C62}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DC314A2D-B48F-48E1-85D2-BD7D8FC07FF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DC314A2D-B48F-48E1-85D2-BD7D8FC07FF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DC314A2D-B48F-48E1-85D2-BD7D8FC07FF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DC314A2D-B48F-48E1-85D2-BD7D8FC07FF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
