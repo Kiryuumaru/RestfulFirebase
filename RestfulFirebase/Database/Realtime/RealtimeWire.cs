@@ -3,6 +3,7 @@ using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -47,6 +48,15 @@ namespace RestfulFirebase.Database.Realtime
         {
             subscription?.Dispose();
             subscription = null;
+        }
+
+        public async Task<bool> WaitForFirstStream(TimeSpan timeout)
+        {
+            return await Task.Run(async delegate
+            {
+                while (!HasFirstStream) { await Task.Delay(100); }
+                return true;
+            }).WithTimeout(timeout, false);
         }
 
         public override void Dispose()

@@ -36,6 +36,11 @@ namespace RestfulFirebase.Database
             return new ChildQuery(App, () => Utils.UrlCombine(App.Config.DatabaseURL, resourceName));
         }
 
+        public void Flush()
+        {
+            OfflineDatabase.Flush();
+        }
+
         public void Dispose()
         {
             OfflineDatabase?.Dispose();
