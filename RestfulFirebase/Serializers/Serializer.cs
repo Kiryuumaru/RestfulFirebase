@@ -254,7 +254,7 @@ namespace RestfulFirebase.Serializers
         public override object DeserializeNullableObject(string data, object defaultValue = default)
         {
             if (data == null) return null;
-            return Deserialize(data, (T)defaultValue);
+            return Deserialize(data, defaultValue == null ? default : (T)defaultValue);
         }
 
         #endregion
