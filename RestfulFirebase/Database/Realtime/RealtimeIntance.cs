@@ -131,6 +131,11 @@ namespace RestfulFirebase.Database.Realtime
             return model;
         }
 
+        public override string ToString()
+        {
+            return Query.GetAbsolutePath();
+        }
+
         internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
             var hasChanges = false;

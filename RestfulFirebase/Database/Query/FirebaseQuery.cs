@@ -251,6 +251,11 @@ namespace RestfulFirebase.Database.Query
             client?.Dispose();
         }
 
+        public override string ToString()
+        {
+            return GetAbsolutePath();
+        }
+
         protected abstract string BuildUrlSegment(FirebaseQuery child);
 
         private string BuildUrl(FirebaseQuery child)

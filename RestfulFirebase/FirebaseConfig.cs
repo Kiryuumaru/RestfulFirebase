@@ -19,7 +19,7 @@ namespace RestfulFirebase
             HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
             DatabaseRequestTimeout = TimeSpan.FromMinutes(2);
-            DatabaseRetryDelay = TimeSpan.FromSeconds(5);
+            DatabaseRetryDelay = TimeSpan.FromSeconds(2);
             DatabaseSyncQueueDelay = TimeSpan.FromSeconds(2);
             StorageRequestTimeout = TimeSpan.FromMinutes(2);
             DatabaseMaxConcurrentSync = 10;

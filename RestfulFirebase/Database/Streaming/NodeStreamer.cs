@@ -78,11 +78,14 @@ namespace RestfulFirebase.Database.Streaming
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
 
-                    using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var stream = await response.Content.ReadAsStreamAsync())
                     using (var reader = new StreamReader(stream))
                     {
-                        reader.Peek(); // Fixes annoying problem
-
+                        try
+                        {
+                            reader.Peek();
+                        }
+                        catch { }
                         while (true)
                         {
                             cancel.Token.ThrowIfCancellationRequested();
@@ -123,7 +126,7 @@ namespace RestfulFirebase.Database.Streaming
                     var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
                     onError?.Invoke(this, fireEx);
                 }
-                await Task.Delay(2000).ConfigureAwait(false);
+                await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
             }
         }
 

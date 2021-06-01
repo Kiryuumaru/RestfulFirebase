@@ -108,4 +108,116 @@ namespace RestfulFirebase.Database.Models
 
         #endregion
     }
+
+    public class FirebasePropertyDictionary<T> : ObservableDictionary<string, T>, IRealtimeModelProxy
+        where T : FirebaseProperty
+    {
+        #region Properties
+
+        internal RealtimeModelWire ModelWire { get; private set; }
+
+        private Func<T> itemInitializer;
+
+        #endregion
+
+        #region Initializer
+
+        public FirebasePropertyDictionary(Func<T> itemInitializer)
+        {
+            this.itemInitializer = itemInitializer;
+        }
+
+        #endregion
+
+        #region Methods
+
+        protected override (string key, T value) ValueFactory(string key, T value)
+        {
+            value.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(value.Property))
+                {
+                    if (value.IsNull())
+                    {
+                        if (this.ContainsKey(key))
+                        {
+                            Remove(key);
+                        }
+                    }
+                    else
+                    {
+                        if (!this.ContainsKey(key))
+                        {
+                            Add(key, value);
+                        }
+                    }
+                }
+            };
+            if (ModelWire != null)
+            {
+                if (value.ModelWire != null) value.ModelWire.Unsubscribe();
+                ModelWire.RealtimeInstance.Child(key).PutModel(value);
+            }
+            return (key, value);
+        }
+
+        protected T PropertyFactory()
+        {
+            return itemInitializer?.Invoke();
+        }
+
+        public void Dispose()
+        {
+            ModelWire?.Unsubscribe();
+            ModelWire = null;
+        }
+
+        void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
+        {
+            if (ModelWire != null)
+            {
+                ModelWire?.Unsubscribe();
+                ModelWire = null;
+            }
+
+            ModelWire = modelWire;
+
+            ModelWire.Subscribe();
+
+            ModelWire.SetOnChanges(args =>
+            {
+                if (!string.IsNullOrEmpty(args.Path))
+                {
+                    var separated = Utils.UrlSeparate(args.Path);
+                    var key = separated[0];
+                    var prop = this.FirstOrDefault(i => i.Key == key);
+                    if (prop.Value == null)
+                    {
+                        var propPair = ValueFactory(key, PropertyFactory());
+                        prop = new KeyValuePair<string, T>(propPair.key, propPair.value);
+                        ModelWire.RealtimeInstance.Child(key).SubModel(prop.Value);
+                    }
+                }
+            });
+
+            var props = this.ToList();
+            var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+
+            foreach (var prop in props)
+            {
+                if (invokeSetFirst) ModelWire.RealtimeInstance.Child(prop.Key).PutModel(prop.Value);
+                else ModelWire.RealtimeInstance.Child(prop.Key).SubModel(prop.Value);
+                paths.RemoveAll(i => i == prop.Key);
+            }
+
+            foreach (var path in paths)
+            {
+                var prop = PropertyFactory();
+                ModelWire.RealtimeInstance.Child(path).SubModel(prop);
+                Add(path, prop);
+            }
+        }
+
+        #endregion
+    }
 }

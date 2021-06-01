@@ -74,7 +74,7 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestObservableObject();
-            //TestRealtimeWire();
+            TestRealtimeWire();
             //TestRealtimeWire2();
             //TestPropertyPut();
             //TestPropertySub();
@@ -83,7 +83,7 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //ExperimentList();
