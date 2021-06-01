@@ -49,7 +49,7 @@ namespace RestfulFirebase.Database.Models
             return (key, value);
         }
 
-        protected FirebaseProperty PropertyFactory()
+        protected FirebaseProperty PropertyFactory(string key)
         {
             return new FirebaseProperty();
         }
@@ -81,7 +81,9 @@ namespace RestfulFirebase.Database.Models
                     var prop = this.FirstOrDefault(i => i.Key == key);
                     if (prop.Value == null)
                     {
-                        var propPair = ValueFactory(key, PropertyFactory());
+                        var item = PropertyFactory(key);
+                        if (item == null) return;
+                        var propPair = ValueFactory(key, item);
                         prop = new KeyValuePair<string, FirebaseProperty>(propPair.key, propPair.value);
                         ModelWire.RealtimeInstance.Child(key).SubModel(prop.Value);
                     }
@@ -100,9 +102,10 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
-                var prop = PropertyFactory();
-                ModelWire.RealtimeInstance.Child(path).SubModel(prop);
-                Add(path, prop);
+                var item = PropertyFactory(path);
+                if (item == null) return;
+                ModelWire.RealtimeInstance.Child(path).SubModel(item);
+                Add(path, item);
             }
         }
 
@@ -193,7 +196,9 @@ namespace RestfulFirebase.Database.Models
                     var prop = this.FirstOrDefault(i => i.Key == key);
                     if (prop.Value == null)
                     {
-                        var propPair = ValueFactory(key, PropertyFactory((key)));
+                        var item = PropertyFactory(key);
+                        if (item == null) return;
+                        var propPair = ValueFactory(key, item);
                         prop = new KeyValuePair<string, T>(propPair.key, propPair.value);
                         ModelWire.RealtimeInstance.Child(key).SubModel(prop.Value);
                     }
@@ -212,9 +217,10 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
-                var prop = PropertyFactory((path));
-                ModelWire.RealtimeInstance.Child(path).SubModel(prop);
-                Add(path, prop);
+                var item = PropertyFactory((path));
+                if (item == null) continue;
+                ModelWire.RealtimeInstance.Child(path).SubModel(item);
+                Add(path, item);
             }
         }
 
