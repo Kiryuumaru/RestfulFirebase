@@ -23,7 +23,6 @@ namespace RestfulFirebase.Serializers.Additionals
             foreach (var num in data)
             {
                 var indexOf = Utils.Base64Charset.IndexOf(num);
-                if (indexOf == -1) throw new Exception("Deserialize error");
                 indexes.Add((uint)indexOf);
             }
             var ticks = Utils.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
