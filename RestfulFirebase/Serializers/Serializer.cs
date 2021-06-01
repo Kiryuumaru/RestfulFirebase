@@ -247,6 +247,7 @@ namespace RestfulFirebase.Serializers
 
         public override string SerializeNullableObject(object value)
         {
+            if (value == null) return null;
             return Serialize((T)value);
         }
 
