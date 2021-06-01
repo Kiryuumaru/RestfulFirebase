@@ -244,6 +244,7 @@ namespace RestfulFirebase.Database.Models
                             }
                         };
                         ModelWire.RealtimeInstance.Child(key).SubModel(item);
+                        Add(key, item);
                     }
                 }
             });
