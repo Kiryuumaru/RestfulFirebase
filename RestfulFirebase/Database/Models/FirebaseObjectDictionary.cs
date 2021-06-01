@@ -18,29 +18,38 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        public void Dispose()
+        {
+            ModelWire?.Unsubscribe();
+            ModelWire = null;
+        }
+
         protected override (string key, FirebaseObject value) ValueFactory(string key, FirebaseObject value)
         {
-            value.PropertyChanged += (s, e) =>
-            {
-                if (value.IsNull())
-                {
-                    if (this.ContainsKey(key))
-                    {
-                        Remove(key);
-                    }
-                }
-                else
-                {
-                    if (!this.ContainsKey(key))
-                    {
-                        Add(key, value);
-                    }
-                }
-            };
             if (ModelWire != null)
             {
-                if (value.ModelWire != null) value.ModelWire.Unsubscribe();
-                ModelWire.RealtimeInstance.Child(key).PutModel(value);
+                if (value.ModelWire == null)
+                {
+                    value.PropertyChanged += (s, e) =>
+                    {
+                        if (value.IsNull())
+                        {
+                            if (this.ContainsKey(key))
+                            {
+                                Remove(key);
+                            }
+                        }
+                        else
+                        {
+                            if (!this.ContainsKey(key))
+                            {
+                                Add(key, value);
+                            }
+                        }
+                    };
+                    ModelWire.RealtimeInstance.Child(key).PutModel(value);
+                }
+                else if (value.ModelWire.RealtimeInstance.Parent != ModelWire.RealtimeInstance) throw new Exception("Item has different existing wire");
             }
             return (key, value);
         }
@@ -48,12 +57,6 @@ namespace RestfulFirebase.Database.Models
         protected FirebaseObject ObjectFactory(string key)
         {
             return new FirebaseObject();
-        }
-
-        public void Dispose()
-        {
-            ModelWire?.Unsubscribe();
-            ModelWire = null;
         }
 
         void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
@@ -79,9 +82,24 @@ namespace RestfulFirebase.Database.Models
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
-                        var objPair = ValueFactory(key, item);
-                        obj = new KeyValuePair<string, FirebaseObject>(objPair.key, objPair.value);
-                        ModelWire.RealtimeInstance.Child(key).SubModel(obj.Value);
+                        item.PropertyChanged += (s, e) =>
+                        {
+                            if (item.IsNull())
+                            {
+                                if (this.ContainsKey(key))
+                                {
+                                    Remove(key);
+                                }
+                            }
+                            else
+                            {
+                                if (!this.ContainsKey(key))
+                                {
+                                    Add(key, item);
+                                }
+                            }
+                        };
+                        ModelWire.RealtimeInstance.Child(key).SubModel(item);
                     }
                 }
             });
@@ -132,27 +150,30 @@ namespace RestfulFirebase.Database.Models
 
         protected override (string key, T value) ValueFactory(string key, T value)
         {
-            value.PropertyChanged += (s, e) =>
-            {
-                if (value.IsNull())
-                {
-                    if (this.ContainsKey(key))
-                    {
-                        Remove(key);
-                    }
-                }
-                else
-                {
-                    if (!this.ContainsKey(key))
-                    {
-                        Add(key, value);
-                    }
-                }
-            };
             if (ModelWire != null)
             {
-                if (value.ModelWire != null) value.ModelWire.Unsubscribe();
-                ModelWire.RealtimeInstance.Child(key).PutModel(value);
+                if (value.ModelWire == null)
+                {
+                    value.PropertyChanged += (s, e) =>
+                    {
+                        if (value.IsNull())
+                        {
+                            if (this.ContainsKey(key))
+                            {
+                                Remove(key);
+                            }
+                        }
+                        else
+                        {
+                            if (!this.ContainsKey(key))
+                            {
+                                Add(key, value);
+                            }
+                        }
+                    };
+                    ModelWire.RealtimeInstance.Child(key).PutModel(value);
+                }
+                else if (value.ModelWire.RealtimeInstance.Parent != ModelWire.RealtimeInstance) throw new Exception("Item has different existing wire");
             }
             return (key, value);
         }
@@ -191,9 +212,24 @@ namespace RestfulFirebase.Database.Models
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
-                        var objPair = ValueFactory(key, item);
-                        obj = new KeyValuePair<string, T>(objPair.key, objPair.value);
-                        ModelWire.RealtimeInstance.Child(key).SubModel(obj.Value);
+                        item.PropertyChanged += (s, e) =>
+                        {
+                            if (item.IsNull())
+                            {
+                                if (this.ContainsKey(key))
+                                {
+                                    Remove(key);
+                                }
+                            }
+                            else
+                            {
+                                if (!this.ContainsKey(key))
+                                {
+                                    Add(key, item);
+                                }
+                            }
+                        };
+                        ModelWire.RealtimeInstance.Child(key).SubModel(item);
                     }
                 }
             });
