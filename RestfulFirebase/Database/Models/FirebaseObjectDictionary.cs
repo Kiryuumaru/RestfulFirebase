@@ -112,13 +112,13 @@ namespace RestfulFirebase.Database.Models
 
         internal RealtimeModelWire ModelWire { get; private set; }
 
-        private Func<T> itemInitializer;
+        private Func<string, T> itemInitializer;
 
         #endregion
 
         #region Initializer
 
-        public FirebaseObjectDictionary(Func<T> itemInitializer)
+        public FirebaseObjectDictionary(Func<string, T> itemInitializer)
         {
             this.itemInitializer = itemInitializer;
         }
@@ -154,9 +154,9 @@ namespace RestfulFirebase.Database.Models
             return (key, value);
         }
 
-        protected T ObjectFactory()
+        protected T ObjectFactory(string key)
         {
-            return itemInitializer?.Invoke();
+            return itemInitializer?.Invoke((key));
         }
 
         public void Dispose()
@@ -186,7 +186,7 @@ namespace RestfulFirebase.Database.Models
                     var obj = this.FirstOrDefault(i => i.Key == key);
                     if (obj.Value == null)
                     {
-                        var objPair = ValueFactory(key, ObjectFactory());
+                        var objPair = ValueFactory(key, ObjectFactory(key));
                         obj = new KeyValuePair<string, T>(objPair.key, objPair.value);
                         ModelWire.RealtimeInstance.Child(key).SubModel(obj.Value);
                     }
@@ -205,7 +205,7 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
-                var prop = ObjectFactory();
+                var prop = ObjectFactory(path);
                 ModelWire.RealtimeInstance.Child(path).SubModel(prop);
                 Add(path, prop);
             }
