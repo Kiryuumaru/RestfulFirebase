@@ -96,7 +96,7 @@ namespace RestfulFirebase.Database.Models
 
             InitializeProperties(false);
 
-            var props = GetRawProperties(nameof(FirebaseObject));
+            var props = GetRawProperties(nameof(FirebaseObject)).ToList();
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var prop in props)
