@@ -11,9 +11,8 @@ namespace RestfulFirebase.Serializers.Primitives
             return value ? "1" : "0";
         }
 
-        public override bool Deserialize(string data, bool defaultValue = default)
+        public override bool Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
             return data.Equals("1");
         }
     }

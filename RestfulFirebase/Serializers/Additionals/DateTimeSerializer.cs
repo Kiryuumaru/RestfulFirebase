@@ -17,15 +17,13 @@ namespace RestfulFirebase.Serializers.Additionals
             return base64;
         }
 
-        public override DateTime Deserialize(string data, DateTime defaultValue = default)
+        public override DateTime Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
-
             var indexes = new List<uint>();
             foreach (var num in data)
             {
                 var indexOf = Utils.Base64Charset.IndexOf(num);
-                if (indexOf == -1) return defaultValue;
+                if (indexOf == -1) throw new Exception("Deserialize error");
                 indexes.Add((uint)indexOf);
             }
             var ticks = Utils.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);

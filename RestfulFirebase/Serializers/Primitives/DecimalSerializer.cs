@@ -11,11 +11,9 @@ namespace RestfulFirebase.Serializers.Primitives
             return value.ToString();
         }
 
-        public override decimal Deserialize(string data, decimal defaultValue = default)
+        public override decimal Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
-            if (decimal.TryParse(data, out decimal result)) return result;
-            return defaultValue;
+            return decimal.Parse(data);
         }
     }
 }

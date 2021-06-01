@@ -11,11 +11,9 @@ namespace RestfulFirebase.Serializers.Primitives
             return value.ToString();
         }
 
-        public override ulong Deserialize(string data, ulong defaultValue = default)
+        public override ulong Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
-            if (ulong.TryParse(data, out ulong result)) return result;
-            return defaultValue;
+            return ulong.Parse(data);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace RestfulFirebase.Serializers.Additionals
             return value;
         }
 
-        public override string Deserialize(string data, string defaultValue = default)
+        public override string Deserialize(string data)
         {
             return data;
         }

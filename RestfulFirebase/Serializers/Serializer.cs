@@ -70,7 +70,17 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder(
                             values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) => conv.DeserializeEnumerableObject(data, defaultValue));
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return conv.DeserializeEnumerableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -83,7 +93,40 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder(
                             values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) => conv.DeserializeEnumerableObject(data, defaultValue));
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return conv.DeserializeEnumerableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
+                    }
+                }
+            }
+            else if (Nullable.GetUnderlyingType(type) != null)
+            {
+                var nullableType = Nullable.GetUnderlyingType(type);
+                foreach (var conv in serializers)
+                {
+                    if (conv.Type == nullableType)
+                    {
+                        return new SerializerHolder(
+                            value => conv.SerializeNullableObject(value),
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return conv.DeserializeNullableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -95,7 +138,17 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder(
                             conv.SerializeObject,
-                            conv.DeserializeObject);
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return conv.DeserializeObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -114,7 +167,17 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder<T>(
                             values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) => (T)conv.DeserializeEnumerableObject(data, defaultValue));
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return (T)conv.DeserializeEnumerableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -127,7 +190,17 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder<T>(
                             values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) => (T)conv.DeserializeEnumerableObject(data, defaultValue));
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return (T)conv.DeserializeEnumerableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -140,7 +213,17 @@ namespace RestfulFirebase.Serializers
                     {
                         return new SerializerHolder<T>(
                             value => conv.SerializeNullableObject(value),
-                            (data, defaultValue) => (T)conv.DeserializeNullableObject(data, defaultValue));
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return (T)conv.DeserializeNullableObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -153,7 +236,17 @@ namespace RestfulFirebase.Serializers
                         var derivedConv = (Serializer<T>)conv;
                         return new SerializerHolder<T>(
                             derivedConv.Serialize,
-                            derivedConv.Deserialize);
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    return derivedConv.Deserialize(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
                     }
                 }
             }
@@ -180,15 +273,15 @@ namespace RestfulFirebase.Serializers
 
         public abstract string SerializeObject(object value);
 
-        public abstract object DeserializeObject(string data, object defaultValue = default);
+        public abstract object DeserializeObject(string data);
 
         public abstract string SerializeEnumerableObject(object value);
 
-        public abstract object DeserializeEnumerableObject(string data, object defaultValue = default);
+        public abstract object DeserializeEnumerableObject(string data);
 
         public abstract string SerializeNullableObject(object value);
 
-        public abstract object DeserializeNullableObject(string data, object defaultValue = default);
+        public abstract object DeserializeNullableObject(string data);
     }
 
     public abstract class Serializer<T> : Serializer
@@ -199,7 +292,7 @@ namespace RestfulFirebase.Serializers
 
         public abstract string Serialize(T value);
 
-        public abstract T Deserialize(string data, T defaultValue = default);
+        public abstract T Deserialize(string data);
 
         public string SerializeEnumerable(IEnumerable<T> values)
         {
@@ -230,9 +323,9 @@ namespace RestfulFirebase.Serializers
             return Serialize((T)value);
         }
 
-        public override object DeserializeObject(string data, object defaultValue = default)
+        public override object DeserializeObject(string data)
         {
-            return Deserialize(data, (T)defaultValue);
+            return Deserialize(data);
         }
 
         public override string SerializeEnumerableObject(object value)
@@ -240,9 +333,9 @@ namespace RestfulFirebase.Serializers
             return SerializeEnumerable((IEnumerable<T>)value);
         }
 
-        public override object DeserializeEnumerableObject(string data, object defaultValue = default)
+        public override object DeserializeEnumerableObject(string data)
         {
-            return DeserializeEnumerable(data, (IEnumerable<T>)defaultValue);
+            return DeserializeEnumerable(data);
         }
 
         public override string SerializeNullableObject(object value)
@@ -251,10 +344,10 @@ namespace RestfulFirebase.Serializers
             return Serialize((T)value);
         }
 
-        public override object DeserializeNullableObject(string data, object defaultValue = default)
+        public override object DeserializeNullableObject(string data)
         {
             if (data == null) return null;
-            return Deserialize(data, defaultValue == null ? default : (T)defaultValue);
+            return Deserialize(data);
         }
 
         #endregion

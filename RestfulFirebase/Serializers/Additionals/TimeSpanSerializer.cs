@@ -11,11 +11,9 @@ namespace RestfulFirebase.Serializers.Additionals
             return value.TotalHours.ToString();
         }
 
-        public override TimeSpan Deserialize(string data, TimeSpan defaultValue = default)
+        public override TimeSpan Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
-            if (double.TryParse(data, out double result)) return TimeSpan.FromHours(result);
-            return defaultValue;
+            return TimeSpan.FromHours(double.Parse(data));
         }
     }
 }

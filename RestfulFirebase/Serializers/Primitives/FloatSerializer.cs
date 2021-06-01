@@ -11,11 +11,9 @@ namespace RestfulFirebase.Serializers.Primitives
             return value.ToString();
         }
 
-        public override float Deserialize(string data, float defaultValue = default)
+        public override float Deserialize(string data)
         {
-            if (string.IsNullOrEmpty(data)) return defaultValue;
-            if (float.TryParse(data, out float result)) return result;
-            return defaultValue;
+            return float.Parse(data);
         }
     }
 }
