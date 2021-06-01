@@ -16,8 +16,8 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.15</Version>
-    <PackageReleaseNotes>* Bug fixes</PackageReleaseNotes>
+    <Version>1.0.16</Version>
+    <PackageReleaseNotes>* Added support for nullable serializers</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
