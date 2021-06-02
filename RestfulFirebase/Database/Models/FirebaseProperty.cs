@@ -106,7 +106,7 @@ namespace RestfulFirebase.Database.Models
         {
             if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                return ModelWire.GetBlob() != null;
+                return ModelWire.GetBlob() == null;
             }
             else
             {
