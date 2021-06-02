@@ -19,11 +19,11 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected virtual bool SetBlob(string blob, string tag = null)
+        protected virtual bool SetBlob(string blob, object parameter = null)
         {
             bool hasChanges = false;
 
-            if (ModelWire != null && tag != UnwiredBlobTag)
+            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 if (ModelWire.RealtimeInstance.SetBlob(blob)) hasChanges = true;
             }
@@ -35,15 +35,15 @@ namespace RestfulFirebase.Database.Models
             return hasChanges;
         }
 
-        protected virtual string GetBlob(string defaultValue = null, string tag = null)
+        protected virtual string GetBlob(string defaultValue = null, object parameter = null)
         {
-            if (ModelWire != null && tag != UnwiredBlobTag)
+            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return ModelWire.GetBlob();
             }
             else
             {
-                var obj = GetObject(defaultValue, tag);
+                var obj = GetObject(defaultValue, parameter);
                 if (obj is string strObj)
                 {
                     return strObj;
@@ -55,12 +55,12 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public override bool SetValue<T>(T value, string tag = null)
+        public override bool SetValue<T>(T value, object parameter = null)
         {
             try
             {
                 var json = Serializer.Serialize(value);
-                return SetBlob(json, tag);
+                return SetBlob(json, parameter);
             }
             catch (Exception ex)
             {
@@ -69,11 +69,11 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public override T GetValue<T>(T defaultValue = default, string tag = null)
+        public override T GetValue<T>(T defaultValue = default, object parameter = null)
         {
             try
             {
-                var str = GetBlob(null, tag);
+                var str = GetBlob(null, parameter);
                 if (str == null)
                 {
                     return defaultValue;
@@ -87,6 +87,30 @@ namespace RestfulFirebase.Database.Models
             {
                 OnError(ex);
                 return defaultValue;
+            }
+        }
+
+        public override bool SetNull(object parameter = null)
+        {
+            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return ModelWire.SetBlob(null);
+            }
+            else
+            {
+                return base.SetNull();
+            }
+        }
+
+        public override bool IsNull(object parameter = null)
+        {
+            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return ModelWire.GetBlob() != null;
+            }
+            else
+            {
+                return base.IsNull();
             }
         }
 
@@ -145,11 +169,11 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        protected override bool SetBlob(string blob, string tag = null)
+        protected override bool SetBlob(string blob, object parameter = null)
         {
             var hasChanges = false;
 
-            if (base.SetBlob(blob, tag)) hasChanges = true;
+            if (base.SetBlob(blob, parameter)) hasChanges = true;
 
             if (hasChanges) OnChanged(nameof(Value));
 

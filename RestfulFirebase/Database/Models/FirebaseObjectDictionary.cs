@@ -54,6 +54,13 @@ namespace RestfulFirebase.Database.Models
             return (key, value);
         }
 
+        protected override bool ValueRemove(string key, out FirebaseObject value)
+        {
+            var result = base.ValueRemove(key, out value);
+            if (result) value.SetNull();
+            return result;
+        }
+
         protected FirebaseObject ObjectFactory(string key)
         {
             return new FirebaseObject();
@@ -203,12 +210,19 @@ namespace RestfulFirebase.Database.Models
             return (key, value);
         }
 
+        protected override bool ValueRemove(string key, out T value)
+        {
+            var result = base.ValueRemove(key, out value);
+            if (result) value.SetNull();
+            return result;
+        }
+
         protected T ObjectFactory(string key)
         {
             return itemInitializer?.Invoke((key));
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             ModelWire?.Unsubscribe();
             ModelWire = null;
