@@ -84,12 +84,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
+                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
                     KeyValuePair<string, FirebaseObject> obj;
                     lock (this)
                     {
                         obj = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (obj.Value == null)
+                    if (obj.Value == null && wireBlob != null)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
@@ -246,12 +247,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
+                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
                     KeyValuePair<string, T> obj;
                     lock (this)
                     {
                         obj = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (obj.Value == null)
+                    if (obj.Value == null && wireBlob != null)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;

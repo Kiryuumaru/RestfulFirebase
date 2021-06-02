@@ -83,12 +83,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
+                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
                     PropertyHolder propHolder = null;
                     lock (PropertyHolders)
                     {
                         propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
                     }
-                    if (propHolder == null)
+                    if (propHolder == null && wireBlob != null)
                     {
                         propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
                         ModelWire.RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);
