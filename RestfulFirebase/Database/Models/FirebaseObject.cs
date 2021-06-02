@@ -83,12 +83,19 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                    PropertyHolder propHolder = null;
+                    lock (PropertyHolders)
+                    {
+                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                    }
                     if (propHolder == null)
                     {
                         propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
                         ModelWire.RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);
-                        PropertyHolders.Add(propHolder);
+                        lock (PropertyHolders)
+                        {
+                            PropertyHolders.Add(propHolder);
+                        }
                     }
                     OnChangedWithKey(key);
                 }
@@ -96,7 +103,11 @@ namespace RestfulFirebase.Database.Models
 
             InitializeProperties(false);
 
-            var props = GetRawProperties(nameof(FirebaseObject)).ToList();
+            List<PropertyHolder> props = new List<PropertyHolder>();
+            lock (PropertyHolders)
+            {
+                props = GetRawProperties(nameof(FirebaseObject)).ToList();
+            }
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var prop in props)
@@ -108,9 +119,16 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
+                lock (PropertyHolders)
+                {
+                    if (PropertyHolders.Any(i => i.Key == path)) continue;
+                }
                 var propHolder = PropertyFactory(path, null, nameof(FirebaseObject));
                 ModelWire.RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
-                PropertyHolders.Add(propHolder);
+                lock (PropertyHolders)
+                {
+                    PropertyHolders.Add(propHolder);
+                }
             }
         }
 

@@ -77,35 +77,49 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var obj = this.FirstOrDefault(i => i.Key == key);
+                    KeyValuePair<string, FirebaseObject> obj;
+                    lock (this)
+                    {
+                        obj = this.FirstOrDefault(i => i.Key == key);
+                    }
                     if (obj.Value == null)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
                         item.PropertyChanged += (s, e) =>
                         {
-                            if (item.IsNull())
+                            lock (this)
                             {
-                                if (this.ContainsKey(key))
+                                if (item.IsNull())
                                 {
-                                    Remove(key);
+                                    if (this.ContainsKey(key))
+                                    {
+                                        Remove(key);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if (!this.ContainsKey(key))
+                                else
                                 {
-                                    Add(key, item);
+                                    if (!this.ContainsKey(key))
+                                    {
+                                        Add(key, item);
+                                    }
                                 }
                             }
                         };
                         ModelWire.RealtimeInstance.Child(key).SubModel(item);
-                        Add(key, item);
+                        lock (this)
+                        {
+                            Add(key, item);
+                        }
                     }
                 }
             });
 
-            var objs = this.ToList();
+            List<KeyValuePair<string, FirebaseObject>> objs = new List<KeyValuePair<string, FirebaseObject>>();
+            lock (this)
+            {
+                objs = this.ToList();
+            }
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var obj in objs)
@@ -117,10 +131,17 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
+                lock (this)
+                {
+                    if (this.Any(i => i.Key == path)) continue;
+                }
                 var item = ObjectFactory(path);
                 if (item == null) return;
                 ModelWire.RealtimeInstance.Child(path).SubModel(item);
-                Add(path, item);
+                lock (this)
+                {
+                    Add(path, item);
+                }
             }
         }
 
@@ -157,18 +178,21 @@ namespace RestfulFirebase.Database.Models
                 {
                     value.PropertyChanged += (s, e) =>
                     {
-                        if (value.IsNull())
+                        lock (this)
                         {
-                            if (this.ContainsKey(key))
+                            if (value.IsNull())
                             {
-                                Remove(key);
+                                if (this.ContainsKey(key))
+                                {
+                                    Remove(key);
+                                }
                             }
-                        }
-                        else
-                        {
-                            if (!this.ContainsKey(key))
+                            else
                             {
-                                Add(key, value);
+                                if (!this.ContainsKey(key))
+                                {
+                                    Add(key, value);
+                                }
                             }
                         }
                     };
@@ -208,35 +232,49 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var obj = this.FirstOrDefault(i => i.Key == key);
+                    KeyValuePair<string, T> obj;
+                    lock (this)
+                    {
+                        obj = this.FirstOrDefault(i => i.Key == key);
+                    }
                     if (obj.Value == null)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
                         item.PropertyChanged += (s, e) =>
                         {
-                            if (item.IsNull())
+                            lock (this)
                             {
-                                if (this.ContainsKey(key))
+                                if (item.IsNull())
                                 {
-                                    Remove(key);
+                                    if (this.ContainsKey(key))
+                                    {
+                                        Remove(key);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if (!this.ContainsKey(key))
+                                else
                                 {
-                                    Add(key, item);
+                                    if (!this.ContainsKey(key))
+                                    {
+                                        Add(key, item);
+                                    }
                                 }
                             }
                         };
                         ModelWire.RealtimeInstance.Child(key).SubModel(item);
-                        Add(key, item);
+                        lock (this)
+                        {
+                            Add(key, item);
+                        }
                     }
                 }
             });
 
-            var objs = this.ToList();
+            List<KeyValuePair<string, T>> objs = new List<KeyValuePair<string, T>>();
+            lock (this)
+            {
+                objs = this.ToList();
+            }
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var obj in objs)
@@ -248,10 +286,17 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
+                lock (this)
+                {
+                    if (this.Any(i => i.Key == path)) continue;
+                }
                 var item = ObjectFactory(path);
                 if (item == null) continue;
                 ModelWire.RealtimeInstance.Child(path).SubModel(item);
-                Add(path, item);
+                lock (this)
+                {
+                    Add(path, item);
+                }
             }
         }
 

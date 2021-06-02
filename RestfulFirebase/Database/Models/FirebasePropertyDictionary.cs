@@ -35,18 +35,21 @@ namespace RestfulFirebase.Database.Models
                     {
                         if (e.PropertyName == nameof(value.Property))
                         {
-                            if (value.IsNull())
+                            lock (this)
                             {
-                                if (this.ContainsKey(key))
+                                if (value.IsNull())
                                 {
-                                    Remove(key);
+                                    if (this.ContainsKey(key))
+                                    {
+                                        Remove(key);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if (!this.ContainsKey(key))
+                                else
                                 {
-                                    Add(key, value);
+                                    if (!this.ContainsKey(key))
+                                    {
+                                        Add(key, value);
+                                    }
                                 }
                             }
                         }
@@ -81,7 +84,11 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var prop = this.FirstOrDefault(i => i.Key == key);
+                    KeyValuePair<string, FirebaseProperty> prop;
+                    lock (this)
+                    {
+                        prop = this.FirstOrDefault(i => i.Key == key);
+                    }
                     if (prop.Value == null)
                     {
                         var item = PropertyFactory(key);
@@ -90,29 +97,39 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (e.PropertyName == nameof(item.Property))
                             {
-                                if (item.IsNull())
+                                lock (this)
                                 {
-                                    if (this.ContainsKey(key))
+                                    if (item.IsNull())
                                     {
-                                        Remove(key);
+                                        if (this.ContainsKey(key))
+                                        {
+                                            Remove(key);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (!this.ContainsKey(key))
+                                    else
                                     {
-                                        Add(key, item);
+                                        if (!this.ContainsKey(key))
+                                        {
+                                            Add(key, item);
+                                        }
                                     }
                                 }
                             }
                         };
                         ModelWire.RealtimeInstance.Child(key).SubModel(item);
-                        Add(key, item);
+                        lock (this)
+                        {
+                            Add(key, item);
+                        }
                     }
                 }
             });
 
-            var props = this.ToList();
+            List<KeyValuePair<string, FirebaseProperty>> props = new List<KeyValuePair<string, FirebaseProperty>>();
+            lock (this)
+            {
+                props = this.ToList();
+            }
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var prop in props)
@@ -124,10 +141,17 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
+                lock (this)
+                {
+                    if (this.Any(i => i.Key == path)) continue;
+                }
                 var item = PropertyFactory(path);
                 if (item == null) return;
                 ModelWire.RealtimeInstance.Child(path).SubModel(item);
-                Add(path, item);
+                lock (this)
+                {
+                    Add(path, item);
+                }
             }
         }
 
@@ -166,18 +190,21 @@ namespace RestfulFirebase.Database.Models
                     {
                         if (e.PropertyName == nameof(value.Property))
                         {
-                            if (value.IsNull())
+                            lock (this)
                             {
-                                if (this.ContainsKey(key))
+                                if (value.IsNull())
                                 {
-                                    Remove(key);
+                                    if (this.ContainsKey(key))
+                                    {
+                                        Remove(key);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                if (!this.ContainsKey(key))
+                                else
                                 {
-                                    Add(key, value);
+                                    if (!this.ContainsKey(key))
+                                    {
+                                        Add(key, value);
+                                    }
                                 }
                             }
                         }
@@ -218,7 +245,11 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var prop = this.FirstOrDefault(i => i.Key == key);
+                    KeyValuePair<string, T> prop;
+                    lock (this)
+                    {
+                        prop = this.FirstOrDefault(i => i.Key == key);
+                    }
                     if (prop.Value == null)
                     {
                         var item = PropertyFactory(key);
@@ -227,18 +258,21 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (e.PropertyName == nameof(item.Property))
                             {
-                                if (item.IsNull())
+                                lock (this)
                                 {
-                                    if (this.ContainsKey(key))
+                                    if (item.IsNull())
                                     {
-                                        Remove(key);
+                                        if (this.ContainsKey(key))
+                                        {
+                                            Remove(key);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (!this.ContainsKey(key))
+                                    else
                                     {
-                                        Add(key, item);
+                                        if (!this.ContainsKey(key))
+                                        {
+                                            Add(key, item);
+                                        }
                                     }
                                 }
                             }
@@ -249,7 +283,11 @@ namespace RestfulFirebase.Database.Models
                 }
             });
 
-            var props = this.ToList();
+            List<KeyValuePair<string, T>> props = new List<KeyValuePair<string, T>>();
+            lock (this)
+            {
+                props = this.ToList();
+            }
             var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var prop in props)
@@ -261,10 +299,17 @@ namespace RestfulFirebase.Database.Models
 
             foreach (var path in paths)
             {
+                lock (this)
+                {
+                    if (this.Any(i => i.Key == path)) continue;
+                }
                 var item = PropertyFactory((path));
                 if (item == null) continue;
                 ModelWire.RealtimeInstance.Child(path).SubModel(item);
-                Add(path, item);
+                lock (this)
+                {
+                    Add(path, item);
+                }
             }
         }
 
