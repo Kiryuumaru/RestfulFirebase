@@ -39,6 +39,16 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), customValueSetter);
         }
 
+        public virtual bool IsPersistableNull(object parameter = null)
+        {
+            List<PropertyHolder> props = new List<PropertyHolder>();
+            lock (PropertyHolders)
+            {
+                props = GetRawProperties(nameof(FirebaseObject)).ToList();
+            }
+            return props.All(i => i.Property.IsNull(parameter));
+        }
+
         public virtual void Dispose()
         {
             ModelWire?.Unsubscribe();
@@ -83,13 +93,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
+                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
                     PropertyHolder propHolder = null;
                     lock (PropertyHolders)
                     {
                         propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
                     }
-                    if (propHolder == null && wireBlob != null)
+                    if (propHolder == null && dataCount != 0)
                     {
                         propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
                         ModelWire.RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);

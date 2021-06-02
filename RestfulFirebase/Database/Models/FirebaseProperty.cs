@@ -94,13 +94,11 @@ namespace RestfulFirebase.Database.Models
         {
             if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                if (!IsNull(parameter)) return ModelWire.SetBlob(null);
-                return false;
+                return ModelWire.SetBlob(null);
             }
             else
             {
-                if (!IsNull(parameter)) return base.SetNull(parameter);
-                return false;
+                return base.SetNull(parameter);
             }
         }
 

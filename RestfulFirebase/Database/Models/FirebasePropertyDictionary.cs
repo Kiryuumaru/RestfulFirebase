@@ -91,13 +91,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
+                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
                     KeyValuePair<string, FirebaseProperty> prop;
                     lock (this)
                     {
                         prop = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (prop.Value == null && wireBlob != null)
+                    if (prop.Value == null && dataCount != 0)
                     {
                         var item = PropertyFactory(key);
                         if (item == null) return;
@@ -260,13 +260,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
+                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
                     KeyValuePair<string, T> prop;
                     lock (this)
                     {
                         prop = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (prop.Value == null && wireBlob != null)
+                    if (prop.Value == null && dataCount != 0)
                     {
                         var item = PropertyFactory(key);
                         if (item == null) return;

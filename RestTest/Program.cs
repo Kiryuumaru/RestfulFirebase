@@ -46,11 +46,20 @@ namespace RestTest
             set => SetPersistableProperty(value, "test");
         }
 
+        public string Dummy
+        {
+            get => GetProperty<string>();
+            set => SetProperty(value);
+        }
+
         #endregion
 
         #region Methods
 
-
+        public TestStorable()
+        {
+            Dummy = "test";
+        }
 
         #endregion
     }
@@ -84,8 +93,11 @@ namespace RestTest
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
             //TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
+            //TestObjectDictionarySub2();
+            TestObjectDictionarySub3();
             //ExperimentList();
         }
 
@@ -322,7 +334,7 @@ namespace RestTest
                         write += obj.Premium.ToString();
                         break;
                     case nameof(TestStorable.Premiums):
-                        write += obj.Premiums.ToString();
+                        write += obj.Premiums?.ToString();
                         break;
                     case nameof(TestStorable.Test):
                         write += obj.Test;
@@ -337,6 +349,17 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.PutModel(obj);
+
+            Console.WriteLine(obj.IsNull() ? "null" : "not null");
+
+            _ = Console.ReadLine();
+
+            obj.SetNull();
+
+            _ = Console.ReadLine();
+
+            Console.WriteLine(obj.IsNull() ? "null" : "not null");
+
             while (true)
             {
                 string line = Console.ReadLine();
@@ -469,6 +492,38 @@ namespace RestTest
             }
         }
 
+        public static void TestPropertyDictionarySub3()
+        {
+            var dict = new FirebasePropertyDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(dict);
+            wire.OnChanges += (s, e) =>
+            {
+                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+            };
+
+            string lin11e = Console.ReadLine();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(i.ToString());
+                dict.Add(i.ToString(), prop);
+            }
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                dict.Remove(line);
+            }
+        }
+
         public static void TestObjectDictionaryPut()
         {
             var dict = new FirebaseObjectDictionary();
@@ -508,20 +563,6 @@ namespace RestTest
             {
                 Console.WriteLine("Count: " + dict.Keys.Count);
             };
-            //var obj1 = new TestStorable();
-            //dict.Add("aaa", obj1);
-            //var obj2 = new TestStorable();
-            //obj2.IsOk = true;
-            //obj2.Premium = TimeSpan.FromSeconds(60);
-            //obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
-            //obj2.Test = "testuuuuu";
-            //dict.Add("bbb", obj2);
-            //var obj3 = new TestStorable();
-            //obj2.IsOk = false;
-            //obj2.Premium = TimeSpan.FromSeconds(3600);
-            //obj2.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(7200) };
-            //obj2.Test = "CLynt";
-            //dict.Add("ccc", obj3);
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
@@ -530,6 +571,61 @@ namespace RestTest
                 string line = Console.ReadLine();
                 var prop = new FirebaseProperty();
                 prop.SetValue(line);
+            }
+        }
+
+        public static void TestObjectDictionarySub2()
+        {
+            var dict = new FirebaseObjectDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(dict);
+
+            string lin11e = Console.ReadLine();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                var obj = new TestStorable();
+                obj.Test = i.ToString();
+                dict.Add(UIDFactory.GenerateSafeUID(), obj);
+            }
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
+            }
+        }
+
+        public static void TestObjectDictionarySub3()
+        {
+            var dict = new FirebaseObjectDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(dict);
+
+            string lin11e = Console.ReadLine();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var obj = new TestStorable();
+                obj.Test = i.ToString();
+                dict.Add(i.ToString(), obj);
+            }
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                dict.Remove(line);
             }
         }
     }

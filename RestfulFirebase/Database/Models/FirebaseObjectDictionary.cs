@@ -32,18 +32,21 @@ namespace RestfulFirebase.Database.Models
                 {
                     value.PropertyChanged += (s, e) =>
                     {
-                        if (value.IsNull())
+                        lock (this)
                         {
-                            if (this.ContainsKey(key))
+                            if (value.IsPersistableNull())
                             {
-                                Remove(key);
+                                if (this.ContainsKey(key))
+                                {
+                                    Remove(key);
+                                }
                             }
-                        }
-                        else
-                        {
-                            if (!this.ContainsKey(key))
+                            else
                             {
-                                Add(key, value);
+                                if (!this.ContainsKey(key))
+                                {
+                                    Add(key, value);
+                                }
                             }
                         }
                     };
@@ -84,13 +87,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
+                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
                     KeyValuePair<string, FirebaseObject> obj;
                     lock (this)
                     {
                         obj = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (obj.Value == null && wireBlob != null)
+                    if (obj.Value == null && dataCount != 0)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
@@ -98,7 +101,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             lock (this)
                             {
-                                if (item.IsNull())
+                                if (item.IsPersistableNull())
                                 {
                                     if (this.ContainsKey(key))
                                     {
@@ -188,7 +191,7 @@ namespace RestfulFirebase.Database.Models
                     {
                         lock (this)
                         {
-                            if (value.IsNull())
+                            if (value.IsPersistableNull())
                             {
                                 if (this.ContainsKey(key))
                                 {
@@ -247,13 +250,13 @@ namespace RestfulFirebase.Database.Models
                 {
                     var separated = Utils.UrlSeparate(args.Path);
                     var key = separated[0];
-                    var wireBlob = ModelWire.RealtimeInstance.Child(key).GetBlob();
+                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
                     KeyValuePair<string, T> obj;
                     lock (this)
                     {
                         obj = this.FirstOrDefault(i => i.Key == key);
                     }
-                    if (obj.Value == null && wireBlob != null)
+                    if (obj.Value == null && dataCount != 0)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
@@ -261,7 +264,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             lock (this)
                             {
-                                if (item.IsNull())
+                                if (item.IsPersistableNull())
                                 {
                                     if (this.ContainsKey(key))
                                     {
