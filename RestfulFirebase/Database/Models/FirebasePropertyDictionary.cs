@@ -19,7 +19,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             ModelWire?.Unsubscribe();
             ModelWire = null;

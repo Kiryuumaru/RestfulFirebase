@@ -90,7 +90,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             ModelWire?.Unsubscribe();
             ModelWire = null;

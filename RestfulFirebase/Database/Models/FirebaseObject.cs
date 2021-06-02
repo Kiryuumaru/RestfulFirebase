@@ -39,7 +39,7 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), customValueSetter);
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             ModelWire?.Unsubscribe();
             ModelWire = null;
