@@ -83,7 +83,7 @@ namespace RestTest
 
             Console.WriteLine("FIN");
             //TestObservableObject();
-            TestRealtimeWire();
+            //TestRealtimeWire();
             //TestRealtimeWire2();
             //TestPropertyPut();
             //TestPropertySub();

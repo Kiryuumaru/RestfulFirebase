@@ -39,7 +39,22 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), customValueSetter);
         }
 
-        public virtual bool IsPersistableNull(object parameter = null)
+        public virtual bool SetPersistablePropertiesNull(object parameter = null)
+        {
+            var hasChanges = false;
+            List<PropertyHolder> props = new List<PropertyHolder>();
+            lock (PropertyHolders)
+            {
+                props = GetRawProperties(nameof(FirebaseObject)).ToList();
+            }
+            foreach (var propHolder in props)
+            {
+                if (propHolder.Property.SetNull(parameter)) hasChanges = true;
+            }
+            return hasChanges;
+        }
+
+        public virtual bool IsPersistablePropertiesNull(object parameter = null)
         {
             List<PropertyHolder> props = new List<PropertyHolder>();
             lock (PropertyHolders)
