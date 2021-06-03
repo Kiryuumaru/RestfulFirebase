@@ -30,7 +30,7 @@ namespace RestfulFirebase.Database.Models
         {
             base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue, args =>
             {
-                return args.property.SetValue(args.property, FirebaseProperty.SerializableTag);
+                return args.property.SetValue(args.value, FirebaseProperty.SerializableTag);
             });
         }
 
@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database.Models
         {
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), args =>
             {
-                return args.property.SetValue(args.property, FirebaseProperty.SerializableTag);
+                return args.property.SetValue(args.value, FirebaseProperty.SerializableTag);
             });
         }
 
