@@ -118,14 +118,20 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe()
         {
-            RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
-            RealtimeInstance.OnInternalError += RealtimeInstance_OnInternalError;
+            if (RealtimeInstance != null)
+            {
+                RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
+                RealtimeInstance.OnInternalError += RealtimeInstance_OnInternalError;
+            }
         }
 
         private void Unsubscribe()
         {
-            RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
-            RealtimeInstance.OnInternalError -= RealtimeInstance_OnInternalError;
+            if (RealtimeInstance != null)
+            {
+                RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
+                RealtimeInstance.OnInternalError -= RealtimeInstance_OnInternalError;
+            }
         }
 
         private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
