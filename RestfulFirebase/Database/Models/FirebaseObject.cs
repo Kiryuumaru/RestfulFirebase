@@ -28,10 +28,7 @@ namespace RestfulFirebase.Database.Models
             [CallerMemberName] string propertyName = null,
             Func<T, T, bool> validateValue = null)
         {
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue, args =>
-            {
-                return args.property.SetValue(args.value, FirebaseProperty.SerializableTag);
-            });
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag, validateValue);
         }
 
         public T GetPersistableProperty<T>(
@@ -39,10 +36,7 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
         {
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), args =>
-            {
-                return args.property.SetValue(args.value, FirebaseProperty.SerializableTag);
-            });
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag);
         }
 
         public virtual bool SetPersistablePropertiesNull(object parameter = null)

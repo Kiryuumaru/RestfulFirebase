@@ -16,7 +16,7 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.34</Version>
+    <Version>1.0.35</Version>
     <PackageReleaseNotes>*Bug fixes</PackageReleaseNotes>
   </PropertyGroup>
 
@@ -37,7 +37,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.0.22" />
+    <PackageReference Include="ObservableHelpers" Version="1.0.23" />
   </ItemGroup>
 
 </Project>
