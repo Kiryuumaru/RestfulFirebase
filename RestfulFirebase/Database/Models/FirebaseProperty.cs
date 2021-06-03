@@ -11,7 +11,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private const string UnwiredBlobTag = "unwired";
+        internal const string UnwiredBlobTag = "unwired";
+        internal const string SerializableTag = "serializable";
 
         internal RealtimeInstance RealtimeInstance { get; private set; }
 
@@ -57,36 +58,50 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetValue<T>(T value, object parameter = null)
         {
-            try
+            if (parameter?.ToString() == SerializableTag)
             {
-                var json = Serializer.Serialize(value);
-                return SetBlob(json, parameter);
+                try
+                {
+                    var json = Serializer.Serialize(value);
+                    return SetBlob(json, parameter);
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
+                    return false;
+                }
             }
-            catch (Exception ex)
+            else
             {
-                OnError(ex);
-                return false;
+                return base.SetValue(value, parameter);
             }
         }
 
         public override T GetValue<T>(T defaultValue = default, object parameter = null)
         {
-            try
+            if (parameter?.ToString() == SerializableTag)
             {
-                var str = GetBlob(null, parameter);
-                if (str == null)
+                try
                 {
+                    var str = GetBlob(null, parameter);
+                    if (str == null)
+                    {
+                        return defaultValue;
+                    }
+                    else
+                    {
+                        return Serializer.Deserialize<T>(str, defaultValue);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnError(ex);
                     return defaultValue;
                 }
-                else
-                {
-                    return Serializer.Deserialize<T>(str, defaultValue);
-                }
             }
-            catch (Exception ex)
+            else
             {
-                OnError(ex);
-                return defaultValue;
+                return base.GetValue(defaultValue, parameter);
             }
         }
 
@@ -184,8 +199,8 @@ namespace RestfulFirebase.Database.Models
 
         public T Value
         {
-            get => base.GetValue<T>();
-            set => base.SetValue(value);
+            get => base.GetValue<T>(default, SerializableTag);
+            set => base.SetValue(value, SerializableTag);
         }
 
         #endregion

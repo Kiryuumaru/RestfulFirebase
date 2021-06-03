@@ -77,11 +77,11 @@ namespace RestTest
         {
             app = new RestfulFirebaseApp(Config.YourConfig());
 
-            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
-            var update = await app.Auth.UpdateProfile("disp", "123123");
+            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "1231231");
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
+
             //TestObservableObject();
             //TestRealtimeWire();
             //TestRealtimeWire2();
@@ -97,8 +97,10 @@ namespace RestTest
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
-            TestObjectDictionarySub3();
+            //TestObjectDictionarySub3();
             //ExperimentList();
+
+            Console.ReadLine();
         }
 
         public static void TestRealtimeWire()
