@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace RestfulFirebase.Database.Realtime
 {
-    public class RealtimeIntance : IDisposable
+    public class RealtimeInstance : IDisposable
     {
         #region Properties
 
@@ -18,7 +18,7 @@ namespace RestfulFirebase.Database.Realtime
 
         public IFirebaseQuery Query { get; }
 
-        public RealtimeIntance Parent { get; }
+        public RealtimeInstance Parent { get; }
 
         public event EventHandler<DataChangesEventArgs> OnChanges;
         public event EventHandler<WireErrorEventArgs> OnError;
@@ -32,13 +32,13 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Initializers
 
-        protected RealtimeIntance(RestfulFirebaseApp app, IFirebaseQuery query)
+        protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query)
         {
             App = app;
             Query = query;
         }
 
-        protected RealtimeIntance(RestfulFirebaseApp app, RealtimeIntance parent, string path)
+        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
         {
             App = app;
             Parent = parent;
@@ -55,9 +55,9 @@ namespace RestfulFirebase.Database.Realtime
             UnsubscribeToParent();
         }
 
-        public RealtimeIntance Child(string path)
+        public RealtimeInstance Child(string path)
         {
-            return new RealtimeIntance(App, this, path);
+            return new RealtimeInstance(App, this, path);
         }
 
         public int GetTotalDataCount()
@@ -76,13 +76,19 @@ namespace RestfulFirebase.Database.Realtime
         {
             var hasChanges = false;
 
+            var affectedUris = new List<string>();
+
             var uri = Query.GetAbsolutePath();
 
             // Delete related changes
             var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
             foreach (var subData in subDatas)
             {
-                if (subData.DeleteChanges()) hasChanges = true;
+                if (subData.DeleteChanges())
+                {
+                    hasChanges = true;
+                    affectedUris.Add(subData.Uri);
+                }
             }
 
             // Make changes
@@ -90,7 +96,12 @@ namespace RestfulFirebase.Database.Realtime
             if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
             {
                 hasChanges = true;
-                InvokeOnChanges(uri);
+                affectedUris.Add(uri);
+            }
+
+            if (hasChanges)
+            {
+                InvokeOnChanges(affectedUris.ToArray());
             }
 
             return hasChanges;
@@ -115,11 +126,52 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetSubUris(uri, false);
         }
 
+        public bool SetNull()
+        {
+            var hasChanges = false;
+
+            var affectedUris = new List<string>();
+
+            var uri = Query.GetAbsolutePath();
+
+            // Delete related changes
+            var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
+            foreach (var subData in subDatas)
+            {
+                if (subData.DeleteChanges())
+                {
+                    hasChanges = true;
+                    affectedUris.Add(subData.Uri);
+                }
+            }
+
+            // Make changes
+            var dataHolder = new DataHolder(App, uri);
+            if (dataHolder.MakeChanges(null, err => OnPutError(dataHolder, err)))
+            {
+                hasChanges = true;
+                affectedUris.Add(uri);
+            }
+
+            if (hasChanges)
+            {
+                InvokeOnChanges(affectedUris.ToArray());
+            }
+
+            return hasChanges;
+        }
+
+        public bool IsNull()
+        {
+            var uri = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
+        }
+
         public T PutModel<T>(T model)
             where T : IRealtimeModel
         {
             var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy), true);
+            modelProxy.StartRealtime(this, true);
             return model;
         }
 
@@ -127,7 +179,7 @@ namespace RestfulFirebase.Database.Realtime
             where T : IRealtimeModel
         {
             var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(new RealtimeModelWire(this, modelProxy), false);
+            modelProxy.StartRealtime(this, false);
             return model;
         }
 

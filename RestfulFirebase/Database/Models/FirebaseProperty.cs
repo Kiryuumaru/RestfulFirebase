@@ -13,7 +13,7 @@ namespace RestfulFirebase.Database.Models
 
         private const string UnwiredBlobTag = "unwired";
 
-        internal RealtimeModelWire ModelWire { get; private set; }
+        internal RealtimeInstance RealtimeInstance { get; private set; }
 
         #endregion
 
@@ -23,9 +23,9 @@ namespace RestfulFirebase.Database.Models
         {
             bool hasChanges = false;
 
-            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                if (ModelWire.RealtimeInstance.SetBlob(blob)) hasChanges = true;
+                if (RealtimeInstance.SetBlob(blob)) hasChanges = true;
             }
             else
             {
@@ -37,9 +37,9 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual string GetBlob(string defaultValue = null, object parameter = null)
         {
-            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                return ModelWire.GetBlob();
+                return RealtimeInstance.GetBlob();
             }
             else
             {
@@ -92,9 +92,9 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetNull(object parameter = null)
         {
-            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                return ModelWire.SetBlob(null);
+                return RealtimeInstance.SetNull();
             }
             else
             {
@@ -104,9 +104,9 @@ namespace RestfulFirebase.Database.Models
 
         public override bool IsNull(object parameter = null)
         {
-            if (ModelWire != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
-                return ModelWire.GetBlob() == null;
+                return RealtimeInstance.IsNull();
             }
             else
             {
@@ -116,32 +116,49 @@ namespace RestfulFirebase.Database.Models
 
         public virtual void Dispose()
         {
-            ModelWire?.Unsubscribe();
-            ModelWire = null;
+            Unsubscribe();
+            RealtimeInstance = null;
         }
 
-        void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
+        private void Subscribe()
         {
-            if (ModelWire != null)
+            RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
+            RealtimeInstance.OnInternalError += RealtimeInstance_OnInternalError;
+        }
+
+        private void Unsubscribe()
+        {
+            RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
+            RealtimeInstance.OnInternalError -= RealtimeInstance_OnInternalError;
+        }
+
+        private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
+        {
+            OnChanged(nameof(Property));
+        }
+
+        private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
+        {
+            OnError(e.Exception);
+        }
+
+        void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (RealtimeInstance != null)
             {
-                ModelWire?.Unsubscribe();
-                ModelWire = null;
+                Unsubscribe();
+                RealtimeInstance = null;
             }
 
-            ModelWire = modelWire;
+            RealtimeInstance = realtimeInstance;
 
-            ModelWire.Subscribe();
-
-            ModelWire.SetOnChanges(args =>
-            {
-                OnChanged(nameof(Property));
-            });
+            Subscribe();
 
             var blob = GetBlob(null, UnwiredBlobTag);
 
             if (invokeSetFirst)
             {
-                ModelWire.SetBlob(blob);
+                RealtimeInstance.SetBlob(blob);
             }
             else
             {

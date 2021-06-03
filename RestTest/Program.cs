@@ -124,7 +124,7 @@ namespace RestTest
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
                         var separated = Utils.SeparateUrl(path);
-                        RealtimeIntance subWire = wire;
+                        RealtimeInstance subWire = wire;
                         for (int i = 0; i < separated.Length; i++)
                         {
                             subWire = subWire.Child(separated[i]);
@@ -135,7 +135,7 @@ namespace RestTest
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
                         var separated = Utils.SeparateUrl(path);
-                        RealtimeIntance subWire = wire;
+                        RealtimeInstance subWire = wire;
                         for (int i = 0; i < separated.Length; i++)
                         {
                             subWire = subWire.Child(separated[i]);
@@ -198,7 +198,7 @@ namespace RestTest
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
                             var separated = Utils.SeparateUrl(path);
-                            RealtimeIntance subWire = subWire1;
+                            RealtimeInstance subWire = subWire1;
                             for (int i = 0; i < separated.Length; i++)
                             {
                                 subWire = subWire.Child(separated[i]);
@@ -209,7 +209,7 @@ namespace RestTest
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
                             var separated = Utils.SeparateUrl(path);
-                            RealtimeIntance subWire = subWire1;
+                            RealtimeInstance subWire = subWire1;
                             for (int i = 0; i < separated.Length; i++)
                             {
                                 subWire = subWire.Child(separated[i]);
@@ -228,7 +228,7 @@ namespace RestTest
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
                             var separated = Utils.SeparateUrl(path);
-                            RealtimeIntance subWire = subWire2;
+                            RealtimeInstance subWire = subWire2;
                             for (int i = 0; i < separated.Length; i++)
                             {
                                 subWire = subWire.Child(separated[i]);
@@ -239,7 +239,7 @@ namespace RestTest
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
                             var separated = Utils.SeparateUrl(path);
-                            RealtimeIntance subWire = subWire2;
+                            RealtimeInstance subWire = subWire2;
                             for (int i = 0; i < separated.Length; i++)
                             {
                                 subWire = subWire.Child(separated[i]);
@@ -505,7 +505,7 @@ namespace RestTest
             wire.SubModel(dict);
             wire.OnChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+                //Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };
 
             string lin11e = Console.ReadLine();

@@ -14,7 +14,9 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        internal RealtimeModelWire ModelWire { get; private set; }
+        private const string UnwiredBlobTag = "unwired";
+
+        internal RealtimeInstance RealtimeInstance { get; private set; }
 
         #endregion
 
@@ -66,8 +68,32 @@ namespace RestfulFirebase.Database.Models
 
         public virtual void Dispose()
         {
-            ModelWire?.Unsubscribe();
-            ModelWire = null;
+            Unsubscribe();
+            RealtimeInstance = null;
+        }
+
+        public override bool SetNull(object parameter = null)
+        {
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return RealtimeInstance.SetNull();
+            }
+            else
+            {
+                return base.SetNull(parameter);
+            }
+        }
+
+        public override bool IsNull(object parameter = null)
+        {
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return RealtimeInstance.IsNull();
+            }
+            else
+            {
+                return base.IsNull(parameter);
+            }
         }
 
         protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
@@ -90,42 +116,59 @@ namespace RestfulFirebase.Database.Models
             return propHolder;
         }
 
-        void IRealtimeModelProxy.StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst)
+        private void Subscribe()
         {
-            if (ModelWire != null)
+            RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
+            RealtimeInstance.OnInternalError += RealtimeInstance_OnInternalError;
+        }
+
+        private void Unsubscribe()
+        {
+            RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
+            RealtimeInstance.OnInternalError -= RealtimeInstance_OnInternalError;
+        }
+
+        private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
+        {
+            if (!string.IsNullOrEmpty(e.Path))
             {
-                ModelWire?.Unsubscribe();
-                ModelWire = null;
-            }
-
-            ModelWire = modelWire;
-
-            ModelWire.Subscribe();
-
-            ModelWire.SetOnChanges(args =>
-            {
-                if (!string.IsNullOrEmpty(args.Path))
+                var separated = Utils.UrlSeparate(e.Path);
+                var key = separated[0];
+                var dataCount = RealtimeInstance.Child(key).GetTotalDataCount();
+                PropertyHolder propHolder = null;
+                lock (PropertyHolders)
                 {
-                    var separated = Utils.UrlSeparate(args.Path);
-                    var key = separated[0];
-                    var dataCount = ModelWire.RealtimeInstance.Child(key).GetTotalDataCount();
-                    PropertyHolder propHolder = null;
+                    propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                }
+                if (propHolder == null && dataCount != 0)
+                {
+                    propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
+                    RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);
                     lock (PropertyHolders)
                     {
-                        propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                        PropertyHolders.Add(propHolder);
                     }
-                    if (propHolder == null && dataCount != 0)
-                    {
-                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
-                        ModelWire.RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);
-                        lock (PropertyHolders)
-                        {
-                            PropertyHolders.Add(propHolder);
-                        }
-                    }
-                    OnChangedWithKey(key);
                 }
-            });
+                OnChangedWithKey(key);
+            }
+        }
+
+        private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
+        {
+            OnError(e.Exception);
+        }
+
+        void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (RealtimeInstance != null)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+
+            RealtimeInstance = realtimeInstance;
+
+            Subscribe();
 
             InitializeProperties(false);
 
@@ -134,12 +177,12 @@ namespace RestfulFirebase.Database.Models
             {
                 props = GetRawProperties(nameof(FirebaseObject)).ToList();
             }
-            var paths = ModelWire.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
             foreach (var prop in props)
             {
-                if (invokeSetFirst) ModelWire.RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
-                else ModelWire.RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
+                if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
+                else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
                 paths.RemoveAll(i => i == prop.Key);
             }
 
@@ -150,7 +193,7 @@ namespace RestfulFirebase.Database.Models
                     if (PropertyHolders.Any(i => i.Key == path)) continue;
                 }
                 var propHolder = PropertyFactory(path, null, nameof(FirebaseObject));
-                ModelWire.RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
+                RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
                 lock (PropertyHolders)
                 {
                     PropertyHolders.Add(propHolder);

@@ -15,6 +15,6 @@ namespace RestfulFirebase.Database.Models
 
     internal interface IRealtimeModelProxy : IRealtimeModel
     {
-        void StartRealtime(RealtimeModelWire modelWire, bool invokeSetFirst);
+        void StartRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
     }
 }

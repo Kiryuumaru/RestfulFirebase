@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
-    public class RealtimeWire : RealtimeIntance
+    public class RealtimeWire : RealtimeInstance
     {
         #region Properties
 
