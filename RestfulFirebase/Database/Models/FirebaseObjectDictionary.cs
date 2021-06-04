@@ -30,14 +30,28 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+            base.Dispose(disposing);
+        }
+
         protected virtual void WireValue(string key, T value, bool invokeSetFirst)
         {
+            VerifyNotDisposed();
+
             if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
             else RealtimeInstance.Child(key).SubModel(value);
         }
 
         protected override (string key, T value) ValueFactory(string key, T value)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 if (value.RealtimeInstance == null)
@@ -51,6 +65,8 @@ namespace RestfulFirebase.Database.Models
 
         protected override bool ValueRemove(string key, out T value)
         {
+            VerifyNotDisposed();
+
             var result = base.ValueRemove(key, out value);
             if (result)
             {
@@ -62,17 +78,15 @@ namespace RestfulFirebase.Database.Models
 
         protected T ObjectFactory(string key)
         {
-            return itemInitializer?.Invoke((key));
-        }
+            VerifyNotDisposed();
 
-        public virtual void Dispose()
-        {
-            Unsubscribe();
-            RealtimeInstance = null;
+            return itemInitializer?.Invoke((key));
         }
 
         private void Subscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
@@ -82,6 +96,8 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
@@ -91,6 +107,8 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
         {
+            VerifyNotDisposed();
+
             if (!string.IsNullOrEmpty(e.Path))
             {
                 var separated = Utils.UrlSeparate(e.Path);
@@ -123,11 +141,15 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
         {
-            OnError(e.Exception);
+            VerifyNotDisposed();
+
+            InvokeOnError(e.Exception);
         }
 
         void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 Unsubscribe();

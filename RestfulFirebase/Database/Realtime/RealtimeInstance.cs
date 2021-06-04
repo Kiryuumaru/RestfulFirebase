@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Database.Models;
+﻿using ObservableHelpers;
+using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
@@ -10,7 +11,7 @@ using System.Threading;
 
 namespace RestfulFirebase.Database.Realtime
 {
-    public class RealtimeInstance : IDisposable
+    public class RealtimeInstance : SyncContext
     {
         #region Properties
 
@@ -25,8 +26,6 @@ namespace RestfulFirebase.Database.Realtime
 
         public event EventHandler<DataChangesEventArgs> OnInternalChanges;
         public event EventHandler<WireErrorEventArgs> OnInternalError;
-
-        private readonly SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
 
         #endregion
 
@@ -50,30 +49,42 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
-        public virtual void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            UnsubscribeToParent();
+            if (disposing)
+            {
+                UnsubscribeToParent();
+            }
+            base.Dispose(disposing);
         }
 
         public RealtimeInstance Child(string path)
         {
+            VerifyNotDisposed();
+
             return new RealtimeInstance(App, this, path);
         }
 
         public int GetTotalDataCount()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
         }
 
         public int GetSyncedDataCount()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
         }
 
         public bool SetBlob(string blob)
         {
+            VerifyNotDisposed();
+
             var hasChanges = false;
 
             var affectedUris = new List<string>();
@@ -109,6 +120,8 @@ namespace RestfulFirebase.Database.Realtime
 
         public string GetBlob()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             var dataHolder = new DataHolder(App, uri);
             return dataHolder.Blob;
@@ -116,18 +129,24 @@ namespace RestfulFirebase.Database.Realtime
 
         public IEnumerable<string> GetSubPaths()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetSubUris(uri, false).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
         }
 
         public IEnumerable<string> GetSubUris()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetSubUris(uri, false);
         }
 
         public bool SetNull()
         {
+            VerifyNotDisposed();
+
             var hasChanges = false;
 
             var affectedUris = new List<string>();
@@ -163,6 +182,8 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool IsNull()
         {
+            VerifyNotDisposed();
+
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
         }
@@ -170,6 +191,8 @@ namespace RestfulFirebase.Database.Realtime
         public T PutModel<T>(T model)
             where T : IRealtimeModel
         {
+            VerifyNotDisposed();
+
             var modelProxy = (IRealtimeModelProxy)model;
             modelProxy.StartRealtime(this, true);
             return model;
@@ -178,6 +201,8 @@ namespace RestfulFirebase.Database.Realtime
         public T SubModel<T>(T model)
             where T : IRealtimeModel
         {
+            VerifyNotDisposed();
+
             var modelProxy = (IRealtimeModelProxy)model;
             modelProxy.StartRealtime(this, false);
             return model;
@@ -185,35 +210,15 @@ namespace RestfulFirebase.Database.Realtime
 
         public override string ToString()
         {
-            return Query.GetAbsolutePath();
-        }
+            VerifyNotDisposed();
 
-        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
-        {
-            var hasChanges = false;
-            if (err.Exception is FirebaseException ex)
-            {
-                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
-                {
-                    if (holder.Sync == null)
-                    {
-                        if (holder.Delete()) hasChanges = true;
-                    }
-                    else
-                    {
-                        if (holder.DeleteChanges()) hasChanges = true;
-                    }
-                }
-            }
-            InvokeOnError(holder.Uri, err.Exception);
-            if (hasChanges)
-            {
-                InvokeOnChanges(holder.Uri);
-            }
+            return Query.GetAbsolutePath();
         }
 
         protected void InvokeOnChanges(params string[] uris)
         {
+            VerifyNotDisposed();
+
             if (Parent == null)
             {
                 var affectedPaths = new List<string>();
@@ -248,6 +253,8 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void InvokeOnError(string uri, Exception exception)
         {
+            VerifyNotDisposed();
+
             if (Parent == null)
             {
                 SelfError(new WireErrorEventArgs(uri, exception));
@@ -258,8 +265,36 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
+        {
+            VerifyNotDisposed();
+
+            var hasChanges = false;
+            if (err.Exception is FirebaseException ex)
+            {
+                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
+                {
+                    if (holder.Sync == null)
+                    {
+                        if (holder.Delete()) hasChanges = true;
+                    }
+                    else
+                    {
+                        if (holder.DeleteChanges()) hasChanges = true;
+                    }
+                }
+            }
+            InvokeOnError(holder.Uri, err.Exception);
+            if (hasChanges)
+            {
+                InvokeOnChanges(holder.Uri);
+            }
+        }
+
         protected void SubscribeToParent()
         {
+            VerifyNotDisposed();
+
             if (Parent != null)
             {
                 Parent.OnInternalChanges += Parent_OnInternalChanges;
@@ -269,6 +304,8 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void UnsubscribeToParent()
         {
+            VerifyNotDisposed();
+
             if (Parent != null)
             {
                 Parent.OnInternalChanges -= Parent_OnInternalChanges;
@@ -278,6 +315,8 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_OnInternalChanges(object sender, DataChangesEventArgs e)
         {
+            VerifyNotDisposed();
+
             string baseUri = Query.GetAbsolutePath();
             if (e.Uri.StartsWith(baseUri))
             {
@@ -288,6 +327,8 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_OnInternalError(object sender, WireErrorEventArgs e)
         {
+            VerifyNotDisposed();
+
             string baseUri = Query.GetAbsolutePath();
             if (e.Uri.StartsWith(baseUri))
             {
@@ -297,20 +338,24 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfChanges(DataChangesEventArgs e)
         {
+            VerifyNotDisposed();
+
             OnInternalChanges?.Invoke(this, e);
-            context.Post(s =>
+            SynchronizationContextPost(delegate 
             {
                 OnChanges?.Invoke(this, e);
-            }, null);
+            });
         }
 
         private void SelfError(WireErrorEventArgs e)
         {
+            VerifyNotDisposed();
+
             OnInternalError?.Invoke(this, e);
-            context.Post(s =>
+            SynchronizationContextPost(delegate
             {
                 OnError?.Invoke(this, e);
-            }, null);
+            });
         }
 
         #endregion

@@ -28,6 +28,8 @@ namespace RestfulFirebase.Database.Models
             [CallerMemberName] string propertyName = null,
             Func<T, T, bool> validateValue = null)
         {
+            VerifyNotDisposed();
+
             base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag, validateValue);
         }
 
@@ -36,11 +38,15 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
         {
+            VerifyNotDisposed();
+
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag);
         }
 
         public virtual bool SetPersistablePropertiesNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             var hasChanges = false;
             List<PropertyHolder> props = new List<PropertyHolder>();
             lock (PropertyHolders)
@@ -56,6 +62,8 @@ namespace RestfulFirebase.Database.Models
 
         public virtual bool IsPersistablePropertiesNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             List<PropertyHolder> props = new List<PropertyHolder>();
             lock (PropertyHolders)
             {
@@ -64,14 +72,10 @@ namespace RestfulFirebase.Database.Models
             return props.All(i => i.Property.IsNull(parameter));
         }
 
-        public virtual void Dispose()
-        {
-            Unsubscribe();
-            RealtimeInstance = null;
-        }
-
         public override bool SetNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return RealtimeInstance.SetNull();
@@ -84,6 +88,8 @@ namespace RestfulFirebase.Database.Models
 
         public override bool IsNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return RealtimeInstance.IsNull();
@@ -94,8 +100,20 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+            base.Dispose(disposing);
+        }
+
         protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
         {
+            VerifyNotDisposed();
+
             var prop = new FirebaseProperty();
             var propHolder = new PropertyHolder()
             {
@@ -104,11 +122,13 @@ namespace RestfulFirebase.Database.Models
                 PropertyName = propertyName,
                 Group = group
             };
-            prop.PropertyChanged += (s, e) =>
+            prop.PropertyChangedInternal += (s, e) =>
             {
+                if (IsDisposedOrDisposing) return;
+
                 if (e.PropertyName == nameof(prop.Property))
                 {
-                    OnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
+                    InvokeOnChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
                 }
             };
             return propHolder;
@@ -116,6 +136,8 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
@@ -125,6 +147,8 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
@@ -134,6 +158,8 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
         {
+            VerifyNotDisposed();
+
             if (!string.IsNullOrEmpty(e.Path))
             {
                 var separated = Utils.UrlSeparate(e.Path);
@@ -153,17 +179,21 @@ namespace RestfulFirebase.Database.Models
                         PropertyHolders.Add(propHolder);
                     }
                 }
-                OnChangedWithKey(key);
+                InvokeOnChangedWithKey(key);
             }
         }
 
         private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
         {
-            OnError(e.Exception);
+            VerifyNotDisposed();
+
+            InvokeOnError(e.Exception);
         }
 
         void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 Unsubscribe();
@@ -174,7 +204,7 @@ namespace RestfulFirebase.Database.Models
 
             Subscribe();
 
-            InitializeProperties(false);
+            InitializeProperties();
 
             List<PropertyHolder> props = new List<PropertyHolder>();
             lock (PropertyHolders)

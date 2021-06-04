@@ -20,8 +20,20 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+            base.Dispose(disposing);
+        }
+
         protected virtual bool SetBlob(string blob, object parameter = null)
         {
+            VerifyNotDisposed();
+
             bool hasChanges = false;
 
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
@@ -38,6 +50,8 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual string GetBlob(string defaultValue = null, object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return RealtimeInstance.GetBlob();
@@ -58,6 +72,8 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetValue<T>(T value, object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (parameter?.ToString() == SerializableTag)
             {
                 try
@@ -67,7 +83,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 catch (Exception ex)
                 {
-                    OnError(ex);
+                    InvokeOnError(ex);
                     return false;
                 }
             }
@@ -79,6 +95,8 @@ namespace RestfulFirebase.Database.Models
 
         public override T GetValue<T>(T defaultValue = default, object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (parameter?.ToString() == SerializableTag)
             {
                 try
@@ -95,7 +113,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 catch (Exception ex)
                 {
-                    OnError(ex);
+                    InvokeOnError(ex);
                     return defaultValue;
                 }
             }
@@ -107,6 +125,8 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return RealtimeInstance.SetNull();
@@ -119,6 +139,8 @@ namespace RestfulFirebase.Database.Models
 
         public override bool IsNull(object parameter = null)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
             {
                 return RealtimeInstance.IsNull();
@@ -129,14 +151,10 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public virtual void Dispose()
-        {
-            Unsubscribe();
-            RealtimeInstance = null;
-        }
-
         private void Subscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
@@ -146,6 +164,8 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
@@ -155,16 +175,22 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
         {
-            OnChanged(nameof(Property));
+            VerifyNotDisposed();
+
+            InvokeOnChanged(nameof(Property));
         }
 
         private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
         {
-            OnError(e.Exception);
+            VerifyNotDisposed();
+
+            InvokeOnError(e.Exception);
         }
 
         void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            VerifyNotDisposed();
+
             if (RealtimeInstance != null)
             {
                 Unsubscribe();
@@ -185,7 +211,7 @@ namespace RestfulFirebase.Database.Models
             {
                 if (blob != GetBlob())
                 {
-                    OnChanged(nameof(Property));
+                    InvokeOnChanged(nameof(Property));
                 }
             }
         }
@@ -209,11 +235,13 @@ namespace RestfulFirebase.Database.Models
 
         protected override bool SetBlob(string blob, object parameter = null)
         {
+            VerifyNotDisposed();
+
             var hasChanges = false;
 
             if (base.SetBlob(blob, parameter)) hasChanges = true;
 
-            if (hasChanges) OnChanged(nameof(Value));
+            if (hasChanges) InvokeOnChanged(nameof(Value));
 
             return hasChanges;
         }

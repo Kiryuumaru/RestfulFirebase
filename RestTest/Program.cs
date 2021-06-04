@@ -77,7 +77,7 @@ namespace RestTest
         {
             app = new RestfulFirebaseApp(Config.YourConfig());
 
-            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "1231231");
+            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
@@ -97,7 +97,7 @@ namespace RestTest
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
-            //TestObjectDictionarySub3();
+            TestObjectDictionarySub3();
             //ExperimentList();
 
             Console.ReadLine();

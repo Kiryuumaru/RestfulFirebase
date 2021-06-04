@@ -40,18 +40,24 @@ namespace RestfulFirebase.Database.Realtime
 
         public void Start()
         {
+            VerifyNotDisposed();
+
             string uri = Query.GetAbsolutePath();
             subscription = new NodeStreamer(App, Query, OnNext, (s, e) => InvokeOnError(uri, e)).Run();
         }
 
         public void Stop()
         {
+            VerifyNotDisposed();
+
             subscription?.Dispose();
             subscription = null;
         }
 
         public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
+            VerifyNotDisposed();
+
             return await Task.Run(async delegate
             {
                 while (!HasFirstStream) { await Task.Delay(100); }
@@ -59,14 +65,20 @@ namespace RestfulFirebase.Database.Realtime
             }).WithTimeout(timeout, false);
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose();
-            Stop();
+            if (disposing)
+            {
+                Stop();
+                UnsubscribeToParent();
+            }
+            base.Dispose(disposing);
         }
 
         private void OnNext(object sender, StreamObject streamObject)
         {
+            if (IsDisposed) return;
+
             var urisToInvoke = new List<string>() { streamObject.Uri };
 
             if (streamObject.Data is null)
