@@ -100,6 +100,12 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        public void DetachRealtime()
+        {
+            Unsubscribe();
+            RealtimeInstance = null;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)

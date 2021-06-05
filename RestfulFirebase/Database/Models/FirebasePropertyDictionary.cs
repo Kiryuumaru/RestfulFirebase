@@ -31,6 +31,12 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        public void DetachRealtime()
+        {
+            Unsubscribe();
+            RealtimeInstance = null;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -72,7 +78,7 @@ namespace RestfulFirebase.Database.Models
             if (result)
             {
                 value.SetNull();
-                value.Dispose();
+                value.DetachRealtime();
             }
             return result;
         }

@@ -10,7 +10,7 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable, IDisposable
     {
-
+        void DetachRealtime();
     }
 
     internal interface IRealtimeModelProxy : IRealtimeModel
