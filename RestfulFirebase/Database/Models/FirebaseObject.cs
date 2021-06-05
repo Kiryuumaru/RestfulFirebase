@@ -10,9 +10,16 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseObject : ObservableObject, IRealtimeModelProxy
+    public class FirebaseObject : ObservableObject, IRealtimeModel
     {
         #region Properties
+
+        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+
+        public event Action OnRealtimeAttached;
+        public event Action OnRealtimeAttachedInternal;
+        public event Action OnRealtimeDetached;
+        public event Action OnRealtimeDetachedInternal;
 
         private const string UnwiredBlobTag = "unwired";
 
@@ -100,20 +107,85 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            VerifyNotDisposed();
+
+            if (RealtimeInstance != null)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+
+            RealtimeInstance = realtimeInstance;
+
+            Subscribe();
+
+            InitializeProperties();
+
+            List<PropertyHolder> props = new List<PropertyHolder>();
+            lock (PropertyHolders)
+            {
+                props = GetRawProperties(nameof(FirebaseObject)).ToList();
+            }
+            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+
+            foreach (var prop in props)
+            {
+                if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
+                else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
+                paths.RemoveAll(i => i == prop.Key);
+            }
+
+            foreach (var path in paths)
+            {
+                lock (PropertyHolders)
+                {
+                    if (PropertyHolders.Any(i => i.Key == path)) continue;
+                }
+                var propHolder = PropertyFactory(path, null, nameof(FirebaseObject));
+                RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
+                lock (PropertyHolders)
+                {
+                    PropertyHolders.Add(propHolder);
+                }
+            }
+
+            InvokeOnRealtimeAttached();
+        }
+
         public void DetachRealtime()
         {
             Unsubscribe();
             RealtimeInstance = null;
+            InvokeOnRealtimeDetached();
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Unsubscribe();
-                RealtimeInstance = null;
+                DetachRealtime();
             }
             base.Dispose(disposing);
+        }
+
+        protected void InvokeOnRealtimeAttached()
+        {
+            OnRealtimeAttached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeAttachedInternal?.Invoke();
+            });
+        }
+
+        protected void InvokeOnRealtimeDetached()
+        {
+            OnRealtimeDetached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeDetachedInternal?.Invoke();
+            });
         }
 
         protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
@@ -194,51 +266,6 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             InvokeOnError(e.Exception);
-        }
-
-        void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance != null)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            Subscribe();
-
-            InitializeProperties();
-
-            List<PropertyHolder> props = new List<PropertyHolder>();
-            lock (PropertyHolders)
-            {
-                props = GetRawProperties(nameof(FirebaseObject)).ToList();
-            }
-            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
-
-            foreach (var prop in props)
-            {
-                if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
-                else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
-                paths.RemoveAll(i => i == prop.Key);
-            }
-
-            foreach (var path in paths)
-            {
-                lock (PropertyHolders)
-                {
-                    if (PropertyHolders.Any(i => i.Key == path)) continue;
-                }
-                var propHolder = PropertyFactory(path, null, nameof(FirebaseObject));
-                RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
-                lock (PropertyHolders)
-                {
-                    PropertyHolders.Add(propHolder);
-                }
-            }
         }
 
         #endregion

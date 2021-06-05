@@ -195,8 +195,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             VerifyNotDisposed();
 
-            var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(this, true);
+            model.AttachRealtime(this, true);
             return model;
         }
 
@@ -205,8 +204,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             VerifyNotDisposed();
 
-            var modelProxy = (IRealtimeModelProxy)model;
-            modelProxy.StartRealtime(this, false);
+            model.AttachRealtime(this, false);
             return model;
         }
 

@@ -9,10 +9,17 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebasePropertyDictionary<T> : ObservableDictionary<string, T>, IRealtimeModelProxy
+    public class FirebasePropertyDictionary<T> : ObservableDictionary<string, T>, IRealtimeModel
         where T : FirebaseProperty
     {
         #region Properties
+
+        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+
+        public event Action OnRealtimeAttached;
+        public event Action OnRealtimeAttachedInternal;
+        public event Action OnRealtimeDetached;
+        public event Action OnRealtimeDetachedInternal;
 
         internal RealtimeInstance RealtimeInstance { get; private set; }
 
@@ -31,20 +38,81 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (RealtimeInstance != null)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+
+            RealtimeInstance = realtimeInstance;
+
+            Subscribe();
+
+            List<KeyValuePair<string, T>> props = new List<KeyValuePair<string, T>>();
+            lock (this)
+            {
+                props = this.ToList();
+            }
+            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+
+            foreach (var prop in props)
+            {
+                WireValue(prop.Key, prop.Value, invokeSetFirst);
+                paths.RemoveAll(i => i == prop.Key);
+            }
+
+            foreach (var path in paths)
+            {
+                lock (this)
+                {
+                    if (this.Any(i => i.Key == path)) continue;
+                }
+                var item = PropertyFactory((path));
+                if (item == null) continue;
+                WireValue(path, item, false);
+                lock (this)
+                {
+                    Add(path, item);
+                }
+            }
+
+            InvokeOnRealtimeAttached();
+        }
+
         public void DetachRealtime()
         {
             Unsubscribe();
             RealtimeInstance = null;
+            InvokeOnRealtimeDetached();
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Unsubscribe();
-                RealtimeInstance = null;
+                DetachRealtime();
             }
             base.Dispose(disposing);
+        }
+
+        protected void InvokeOnRealtimeAttached()
+        {
+            OnRealtimeAttached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeAttachedInternal?.Invoke();
+            });
+        }
+
+        protected void InvokeOnRealtimeDetached()
+        {
+            OnRealtimeDetached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeDetachedInternal?.Invoke();
+            });
         }
 
         protected virtual void WireValue(string key, T value, bool invokeSetFirst)
@@ -151,47 +219,6 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             InvokeOnError(e.Exception);
-        }
-
-        void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            if (RealtimeInstance != null)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            Subscribe();
-
-            List<KeyValuePair<string, T>> props = new List<KeyValuePair<string, T>>();
-            lock (this)
-            {
-                props = this.ToList();
-            }
-            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
-
-            foreach (var prop in props)
-            {
-                WireValue(prop.Key, prop.Value, invokeSetFirst);
-                paths.RemoveAll(i => i == prop.Key);
-            }
-
-            foreach (var path in paths)
-            {
-                lock (this)
-                {
-                    if (this.Any(i => i.Key == path)) continue;
-                }
-                var item = PropertyFactory((path));
-                if (item == null) continue;
-                WireValue(path, item, false);
-                lock (this)
-                {
-                    Add(path, item);
-                }
-            }
         }
 
         #endregion

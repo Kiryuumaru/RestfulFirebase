@@ -7,9 +7,16 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Models
 {
-    public class FirebaseProperty : ObservableProperty, IRealtimeModelProxy
+    public class FirebaseProperty : ObservableProperty, IRealtimeModel
     {
         #region Properties
+
+        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+
+        public event Action OnRealtimeAttached;
+        public event Action OnRealtimeAttachedInternal;
+        public event Action OnRealtimeDetached;
+        public event Action OnRealtimeDetachedInternal;
 
         internal const string UnwiredBlobTag = "unwired";
         internal const string SerializableTag = "serializable";
@@ -20,20 +27,69 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            VerifyNotDisposed();
+
+            if (RealtimeInstance != null)
+            {
+                Unsubscribe();
+                RealtimeInstance = null;
+            }
+
+            RealtimeInstance = realtimeInstance;
+
+            Subscribe();
+
+            var blob = GetBlob(null, UnwiredBlobTag);
+
+            if (invokeSetFirst)
+            {
+                RealtimeInstance.SetBlob(blob);
+            }
+            else
+            {
+                if (blob != GetBlob())
+                {
+                    InvokeOnChanged(nameof(Property));
+                }
+            }
+
+            InvokeOnRealtimeAttached();
+        }
+
         public void DetachRealtime()
         {
             Unsubscribe();
             RealtimeInstance = null;
+            InvokeOnRealtimeDetached();
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Unsubscribe();
-                RealtimeInstance = null;
+                DetachRealtime();
             }
             base.Dispose(disposing);
+        }
+
+        protected void InvokeOnRealtimeAttached()
+        {
+            OnRealtimeAttached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeAttachedInternal?.Invoke();
+            });
+        }
+
+        protected void InvokeOnRealtimeDetached()
+        {
+            OnRealtimeDetached?.Invoke();
+            SynchronizationContextPost(delegate
+            {
+                OnRealtimeDetachedInternal?.Invoke();
+            });
         }
 
         protected virtual bool SetBlob(string blob, object parameter = null)
@@ -191,35 +247,6 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             InvokeOnError(e.Exception);
-        }
-
-        void IRealtimeModelProxy.StartRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance != null)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            Subscribe();
-
-            var blob = GetBlob(null, UnwiredBlobTag);
-
-            if (invokeSetFirst)
-            {
-                RealtimeInstance.SetBlob(blob);
-            }
-            else
-            {
-                if (blob != GetBlob())
-                {
-                    InvokeOnChanged(nameof(Property));
-                }
-            }
         }
 
         #endregion
