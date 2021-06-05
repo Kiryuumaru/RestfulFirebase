@@ -17,9 +17,7 @@ namespace RestfulFirebase.Database.Models
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
         public event Action OnRealtimeAttached;
-        public event Action OnRealtimeAttachedInternal;
         public event Action OnRealtimeDetached;
-        public event Action OnRealtimeDetachedInternal;
 
         private const string UnwiredBlobTag = "unwired";
 
@@ -172,19 +170,17 @@ namespace RestfulFirebase.Database.Models
 
         protected void InvokeOnRealtimeAttached()
         {
-            OnRealtimeAttached?.Invoke();
             SynchronizationContextPost(delegate
             {
-                OnRealtimeAttachedInternal?.Invoke();
+                OnRealtimeAttached?.Invoke();
             });
         }
 
         protected void InvokeOnRealtimeDetached()
         {
-            OnRealtimeDetached?.Invoke();
             SynchronizationContextPost(delegate
             {
-                OnRealtimeDetachedInternal?.Invoke();
+                OnRealtimeDetached?.Invoke();
             });
         }
 
@@ -200,7 +196,7 @@ namespace RestfulFirebase.Database.Models
                 PropertyName = propertyName,
                 Group = group
             };
-            prop.PropertyChangedInternal += (s, e) =>
+            prop.PropertyChanged += (s, e) =>
             {
                 if (IsDisposedOrDisposing) return;
 

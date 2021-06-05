@@ -14,9 +14,7 @@ namespace RestfulFirebase.Database.Models
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
         public event Action OnRealtimeAttached;
-        public event Action OnRealtimeAttachedInternal;
         public event Action OnRealtimeDetached;
-        public event Action OnRealtimeDetachedInternal;
 
         internal const string UnwiredBlobTag = "unwired";
         internal const string SerializableTag = "serializable";
@@ -76,19 +74,17 @@ namespace RestfulFirebase.Database.Models
 
         protected void InvokeOnRealtimeAttached()
         {
-            OnRealtimeAttached?.Invoke();
             SynchronizationContextPost(delegate
             {
-                OnRealtimeAttachedInternal?.Invoke();
+                OnRealtimeAttached?.Invoke();
             });
         }
 
         protected void InvokeOnRealtimeDetached()
         {
-            OnRealtimeDetached?.Invoke();
             SynchronizationContextPost(delegate
             {
-                OnRealtimeDetachedInternal?.Invoke();
+                OnRealtimeDetached?.Invoke();
             });
         }
 
