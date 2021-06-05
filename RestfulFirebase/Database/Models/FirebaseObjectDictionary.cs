@@ -15,8 +15,8 @@ namespace RestfulFirebase.Database.Models
 
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
-        public event Action OnRealtimeAttached;
-        public event Action OnRealtimeDetached;
+        public event EventHandler<RealtimeInstanceEventArgs> OnRealtimeAttached;
+        public event EventHandler<RealtimeInstanceEventArgs> OnRealtimeDetached;
 
         internal RealtimeInstance RealtimeInstance { get; private set; }
 
@@ -77,14 +77,15 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            InvokeOnRealtimeAttached();
+            InvokeOnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
         public void DetachRealtime()
         {
             Unsubscribe();
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
             RealtimeInstance = null;
-            InvokeOnRealtimeDetached();
+            InvokeOnRealtimeDetached(args);
         }
 
         protected override void Dispose(bool disposing)
@@ -96,19 +97,19 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
-        protected void InvokeOnRealtimeAttached()
+        protected void InvokeOnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
             SynchronizationContextPost(delegate
             {
-                OnRealtimeAttached?.Invoke();
+                OnRealtimeAttached?.Invoke(this, args);
             });
         }
 
-        protected void InvokeOnRealtimeDetached()
+        protected void InvokeOnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
             SynchronizationContextPost(delegate
             {
-                OnRealtimeDetached?.Invoke();
+                OnRealtimeDetached?.Invoke(this, args);
             });
         }
 
