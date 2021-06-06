@@ -340,11 +340,6 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
             SynchronizationContextPost(delegate 
             {
                 DataChanges?.Invoke(this, e);
@@ -353,11 +348,6 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
             SynchronizationContextPost(delegate
             {
                 Error?.Invoke(this, e);

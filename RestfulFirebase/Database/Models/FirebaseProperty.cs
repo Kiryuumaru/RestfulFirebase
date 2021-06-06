@@ -75,12 +75,7 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            SynchronizationContextPost(delegate
+            SynchronizationContextSend(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -88,12 +83,7 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            SynchronizationContextPost(delegate
+            SynchronizationContextSend(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });

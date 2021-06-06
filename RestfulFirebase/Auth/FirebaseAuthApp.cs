@@ -283,12 +283,7 @@ namespace RestfulFirebase.Auth
 
         protected void OnAuthRefreshed()
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            SynchronizationContextPost(delegate
+            SynchronizationContextSend(delegate
             {
                 AuthRefreshed?.Invoke();
             });
@@ -296,12 +291,7 @@ namespace RestfulFirebase.Auth
 
         protected void OnAuthenticated()
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            SynchronizationContextPost(delegate
+            SynchronizationContextSend(delegate
             {
                 Authenticated?.Invoke();
             });
