@@ -25,7 +25,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public virtual void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();
 
@@ -56,7 +56,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
-        public void DetachRealtime()
+        public virtual void DetachRealtime()
         {
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
