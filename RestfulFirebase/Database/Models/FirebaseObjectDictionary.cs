@@ -15,8 +15,8 @@ namespace RestfulFirebase.Database.Models
 
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
-        public event EventHandler<RealtimeInstanceEventArgs> OnRealtimeAttached;
-        public event EventHandler<RealtimeInstanceEventArgs> OnRealtimeDetached;
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
 
         internal RealtimeInstance RealtimeInstance { get; private set; }
 
@@ -77,7 +77,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            InvokeOnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
         public void DetachRealtime()
@@ -85,7 +85,7 @@ namespace RestfulFirebase.Database.Models
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
             RealtimeInstance = null;
-            InvokeOnRealtimeDetached(args);
+            OnRealtimeDetached(args);
         }
 
         protected override void Dispose(bool disposing)
@@ -97,19 +97,19 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
-        protected void InvokeOnRealtimeAttached(RealtimeInstanceEventArgs args)
+        protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
             SynchronizationContextPost(delegate
             {
-                OnRealtimeAttached?.Invoke(this, args);
+                RealtimeAttached?.Invoke(this, args);
             });
         }
 
-        protected void InvokeOnRealtimeDetached(RealtimeInstanceEventArgs args)
+        protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
             SynchronizationContextPost(delegate
             {
-                OnRealtimeDetached?.Invoke(this, args);
+                RealtimeDetached?.Invoke(this, args);
             });
         }
 
@@ -162,8 +162,8 @@ namespace RestfulFirebase.Database.Models
 
             if (RealtimeInstance != null)
             {
-                RealtimeInstance.OnInternalChanges += RealtimeInstance_OnInternalChanges;
-                RealtimeInstance.OnInternalError += RealtimeInstance_OnInternalError;
+                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
+                RealtimeInstance.Error += RealtimeInstance_Error;
             }
         }
 
@@ -173,12 +173,12 @@ namespace RestfulFirebase.Database.Models
 
             if (RealtimeInstance != null)
             {
-                RealtimeInstance.OnInternalChanges -= RealtimeInstance_OnInternalChanges;
-                RealtimeInstance.OnInternalError -= RealtimeInstance_OnInternalError;
+                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
+                RealtimeInstance.Error -= RealtimeInstance_Error;
             }
         }
 
-        private void RealtimeInstance_OnInternalChanges(object sender, DataChangesEventArgs e)
+        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
             VerifyNotDisposed();
 
@@ -212,11 +212,11 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_OnInternalError(object sender, WireErrorEventArgs e)
+        private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
         {
             VerifyNotDisposed();
 
-            InvokeOnError(e.Exception);
+            OnError(e.Exception);
         }
 
         #endregion

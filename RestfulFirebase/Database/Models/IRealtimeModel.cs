@@ -10,8 +10,8 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : IObservable, IDisposable
     {
-        event EventHandler<RealtimeInstanceEventArgs> OnRealtimeAttached;
-        event EventHandler<RealtimeInstanceEventArgs> OnRealtimeDetached;
+        event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+        event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
         bool HasAttachedRealtime { get; }
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();

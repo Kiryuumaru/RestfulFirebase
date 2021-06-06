@@ -43,7 +43,7 @@ namespace RestfulFirebase.Database.Realtime
             VerifyNotDisposed();
 
             string uri = Query.GetAbsolutePath();
-            subscription = new NodeStreamer(App, Query, OnNext, (s, e) => InvokeOnError(uri, e)).Run();
+            subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(uri, e)).Run();
         }
 
         public void Stop()
@@ -150,7 +150,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                 }
             }
-            InvokeOnChanges(urisToInvoke.ToArray());
+            OnDataChanges(urisToInvoke.ToArray());
             if (!HasFirstStream) HasFirstStream = true;
         }
 

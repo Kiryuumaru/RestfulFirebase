@@ -106,11 +106,11 @@ namespace RestTest
         public static void TestRealtimeWire()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
-            wire.OnChanges += (s, e) =>
+            wire.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
             };
-            wire.OnError += (s, e) =>
+            wire.Error += (s, e) =>
             {
                 Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
@@ -159,29 +159,29 @@ namespace RestTest
         public static void TestRealtimeWire2()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
-            wire.OnChanges += (s, e) =>
+            wire.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Main Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
             };
-            wire.OnError += (s, e) =>
+            wire.Error += (s, e) =>
             {
                 Console.WriteLine("Main OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             var subWire1 = wire.Child("sub1");
-            subWire1.OnChanges += (s, e) =>
+            subWire1.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Sub1 Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
             };
-            subWire1.OnError += (s, e) =>
+            subWire1.Error += (s, e) =>
             {
                 Console.WriteLine("Sub1 OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             var subWire2 = wire.Child("sub2");
-            subWire2.OnChanges += (s, e) =>
+            subWire2.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Sub2 Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
             };
-            subWire2.OnError += (s, e) =>
+            subWire2.Error += (s, e) =>
             {
                 Console.WriteLine("Sub2 OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
@@ -447,7 +447,7 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.OnChanges += (s, e) =>
+            wire.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };
@@ -471,7 +471,7 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.OnChanges += (s, e) =>
+            wire.DataChanges += (s, e) =>
             {
                 Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };
@@ -505,7 +505,7 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.OnChanges += (s, e) =>
+            wire.DataChanges += (s, e) =>
             {
                 //Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
             };

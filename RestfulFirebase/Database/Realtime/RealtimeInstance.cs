@@ -21,11 +21,8 @@ namespace RestfulFirebase.Database.Realtime
 
         public RealtimeInstance Parent { get; }
 
-        public event EventHandler<DataChangesEventArgs> OnChanges;
-        public event EventHandler<WireErrorEventArgs> OnError;
-
-        public event EventHandler<DataChangesEventArgs> OnInternalChanges;
-        public event EventHandler<WireErrorEventArgs> OnInternalError;
+        public event EventHandler<DataChangesEventArgs> DataChanges;
+        public event EventHandler<WireErrorEventArgs> Error;
 
         public bool Synced { get => GetTotalDataCount() == GetSyncedDataCount(); }
 
@@ -114,7 +111,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (hasChanges)
             {
-                InvokeOnChanges(affectedUris.ToArray());
+                OnDataChanges(affectedUris.ToArray());
             }
 
             return hasChanges;
@@ -176,7 +173,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (hasChanges)
             {
-                InvokeOnChanges(affectedUris.ToArray());
+                OnDataChanges(affectedUris.ToArray());
             }
 
             return hasChanges;
@@ -215,7 +212,7 @@ namespace RestfulFirebase.Database.Realtime
             return Query.GetAbsolutePath();
         }
 
-        protected void InvokeOnChanges(params string[] uris)
+        protected void OnDataChanges(params string[] uris)
         {
             VerifyNotDisposed();
 
@@ -242,16 +239,16 @@ namespace RestfulFirebase.Database.Realtime
                 }
                 foreach (var affectedPath in affectedPaths.OrderByDescending(i => i.Length))
                 {
-                    SelfChanges(new DataChangesEventArgs(baseUri, affectedPath, totalDataCount, syncedDataCount));
+                    SelfDataChanges(new DataChangesEventArgs(baseUri, affectedPath, totalDataCount, syncedDataCount));
                 }
             }
             else
             {
-                Parent.InvokeOnChanges(uris);
+                Parent.OnDataChanges(uris);
             }
         }
 
-        protected void InvokeOnError(string uri, Exception exception)
+        protected void OnError(string uri, Exception exception)
         {
             VerifyNotDisposed();
 
@@ -261,7 +258,7 @@ namespace RestfulFirebase.Database.Realtime
             }
             else
             {
-                Parent.InvokeOnError(uri, exception);
+                Parent.OnError(uri, exception);
             }
         }
 
@@ -284,10 +281,10 @@ namespace RestfulFirebase.Database.Realtime
                     }
                 }
             }
-            InvokeOnError(holder.Uri, err.Exception);
+            OnError(holder.Uri, err.Exception);
             if (hasChanges)
             {
-                InvokeOnChanges(holder.Uri);
+                OnDataChanges(holder.Uri);
             }
         }
 
@@ -297,8 +294,8 @@ namespace RestfulFirebase.Database.Realtime
 
             if (Parent != null)
             {
-                Parent.OnInternalChanges += Parent_OnInternalChanges;
-                Parent.OnInternalError += Parent_OnInternalError;
+                Parent.DataChanges += Parent_DataChanges;
+                Parent.Error += Parent_Error;
             }
         }
 
@@ -308,12 +305,12 @@ namespace RestfulFirebase.Database.Realtime
 
             if (Parent != null)
             {
-                Parent.OnInternalChanges -= Parent_OnInternalChanges;
-                Parent.OnInternalError -= Parent_OnInternalError;
+                Parent.DataChanges -= Parent_DataChanges;
+                Parent.Error -= Parent_Error;
             }
         }
 
-        private void Parent_OnInternalChanges(object sender, DataChangesEventArgs e)
+        private void Parent_DataChanges(object sender, DataChangesEventArgs e)
         {
             VerifyNotDisposed();
 
@@ -321,11 +318,11 @@ namespace RestfulFirebase.Database.Realtime
             if (e.Uri.StartsWith(baseUri))
             {
                 var path = e.Uri.Replace(baseUri, "");
-                SelfChanges(new DataChangesEventArgs(baseUri, path, GetTotalDataCount(), GetSyncedDataCount()));
+                SelfDataChanges(new DataChangesEventArgs(baseUri, path, GetTotalDataCount(), GetSyncedDataCount()));
             }
         }
 
-        private void Parent_OnInternalError(object sender, WireErrorEventArgs e)
+        private void Parent_Error(object sender, WireErrorEventArgs e)
         {
             VerifyNotDisposed();
 
@@ -336,14 +333,13 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        private void SelfChanges(DataChangesEventArgs e)
+        private void SelfDataChanges(DataChangesEventArgs e)
         {
             VerifyNotDisposed();
 
-            OnInternalChanges?.Invoke(this, e);
             SynchronizationContextPost(delegate 
             {
-                OnChanges?.Invoke(this, e);
+                DataChanges?.Invoke(this, e);
             });
         }
 
@@ -351,10 +347,9 @@ namespace RestfulFirebase.Database.Realtime
         {
             VerifyNotDisposed();
 
-            OnInternalError?.Invoke(this, e);
             SynchronizationContextPost(delegate
             {
-                OnError?.Invoke(this, e);
+                Error?.Invoke(this, e);
             });
         }
 
