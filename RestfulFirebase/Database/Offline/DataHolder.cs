@@ -81,10 +81,10 @@ namespace RestfulFirebase.Database.Offline
 
         #region Initializers
 
-        public DataHolder(RestfulFirebaseApp app, string Uri)
+        public DataHolder(RestfulFirebaseApp app, string uri)
         {
             App = app;
-            this.Uri = Uri.EndsWith("/") ? Uri : Uri + "/";
+            Uri = uri.EndsWith("/") ? uri : uri + "/";
         }
 
         #endregion
@@ -126,11 +126,18 @@ namespace RestfulFirebase.Database.Offline
 
             if (Sync == null)
             {
-                Changes = new DataChanges(
-                    blob,
-                    blob == null ? DataChangesType.None : DataChangesType.Create);
-
-                Put(onError);
+                if (blob == null)
+                {
+                    Changes = null;
+                    Put(onError);
+                }
+                else
+                {
+                    Changes = new DataChanges(
+                        blob,
+                        DataChangesType.Create);
+                    Put(onError);
+                }
             }
             else if (Changes == null || oldBlob != blob)
             {

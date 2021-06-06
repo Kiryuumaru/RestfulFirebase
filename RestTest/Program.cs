@@ -612,12 +612,16 @@ namespace RestTest
                 Console.WriteLine("Count: " + dict.Keys.Count);
             };
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.DataChanges += (s, e) =>
+            {
+                Console.WriteLine("Sync: " + e.SyncedDataCount + "/" + e.TotalDataCount);
+            };
             wire.Start();
             wire.SubModel(dict);
 
             string lin11e = Console.ReadLine();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var obj = new TestStorable();
                 obj.Test = i.ToString();

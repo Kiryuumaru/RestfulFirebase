@@ -142,7 +142,7 @@ namespace RestfulFirebase.Database.Models
             var result = base.ValueRemove(key, out value);
             if (result)
             {
-                value.SetNull();
+                if (!value.IsNull()) value.SetNull();
                 value.DetachRealtime();
             }
             return result;

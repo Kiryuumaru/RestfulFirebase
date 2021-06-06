@@ -95,12 +95,12 @@ namespace RestfulFirebase.Database.Realtime
             if (streamObject.Data is null)
             {
                 // Delete all
-                var datas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
-                foreach (var data in datas)
+                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
+                foreach (var subData in subDatas)
                 {
-                    if (data?.MakeSync(null, err => OnPutError(data, err)) ?? false)
+                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, data.Uri))) urisToInvoke.Add(data.Uri);
+                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri))) urisToInvoke.Add(subData.Uri);
                     }
                 }
             }

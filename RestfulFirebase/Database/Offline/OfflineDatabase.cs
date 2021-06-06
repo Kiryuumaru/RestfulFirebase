@@ -135,9 +135,19 @@ namespace RestfulFirebase.Database.Offline
             var paths = new List<string>();
             foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)))
             {
-                paths.Add(subPath.Substring(ShortPath.Length));
+                string subUri = subPath.Substring(ShortPath.Length);
+                if (Utils.UrlCompare(subUri, uri))
+                {
+                    if (includeOriginIfExists)
+                    {
+                        paths.Add(subUri);
+                    }
+                }
+                else
+                {
+                    paths.Add(subUri);
+                }
             }
-            if (GetData(uri) != null && includeOriginIfExists) paths.Add(uri);
             return paths;
         }
 
@@ -145,10 +155,8 @@ namespace RestfulFirebase.Database.Offline
         {
             if (string.IsNullOrEmpty(baseUri)) baseUri = App.Config.DatabaseURL;
 
-            uri = uri.Trim();
-            uri = uri.Trim('/');
-            baseUri = baseUri.Trim();
-            baseUri = baseUri.Trim('/');
+            uri = uri.Trim().Trim('/');
+            baseUri = baseUri.Trim().Trim('/');
 
             if (!uri.StartsWith(baseUri)) throw new Exception("URI not related");
 
