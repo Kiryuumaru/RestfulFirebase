@@ -171,6 +171,11 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
+
             SynchronizationContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
@@ -179,6 +184,11 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
+
             SynchronizationContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
@@ -199,8 +209,6 @@ namespace RestfulFirebase.Database.Models
             };
             prop.PropertyChanged += (s, e) =>
             {
-                if (IsDisposedOrDisposing) return;
-
                 if (e.PropertyName == nameof(prop.Property))
                 {
                     OnPropertyChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);

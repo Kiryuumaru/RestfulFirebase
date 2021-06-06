@@ -214,7 +214,10 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnDataChanges(params string[] uris)
         {
-            VerifyNotDisposed();
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
 
             if (Parent == null)
             {
@@ -250,7 +253,10 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnError(string uri, Exception exception)
         {
-            VerifyNotDisposed();
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
 
             if (Parent == null)
             {
@@ -259,32 +265,6 @@ namespace RestfulFirebase.Database.Realtime
             else
             {
                 Parent.OnError(uri, exception);
-            }
-        }
-
-        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
-        {
-            VerifyNotDisposed();
-
-            var hasChanges = false;
-            if (err.Exception is FirebaseException ex)
-            {
-                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
-                {
-                    if (holder.Sync == null)
-                    {
-                        if (holder.Delete()) hasChanges = true;
-                    }
-                    else
-                    {
-                        if (holder.DeleteChanges()) hasChanges = true;
-                    }
-                }
-            }
-            OnError(holder.Uri, err.Exception);
-            if (hasChanges)
-            {
-                OnDataChanges(holder.Uri);
             }
         }
 
@@ -310,10 +290,37 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
+        {
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
+
+            var hasChanges = false;
+            if (err.Exception is FirebaseException ex)
+            {
+                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
+                {
+                    if (holder.Sync == null)
+                    {
+                        if (holder.Delete()) hasChanges = true;
+                    }
+                    else
+                    {
+                        if (holder.DeleteChanges()) hasChanges = true;
+                    }
+                }
+            }
+            OnError(holder.Uri, err.Exception);
+            if (hasChanges)
+            {
+                OnDataChanges(holder.Uri);
+            }
+        }
+
         private void Parent_DataChanges(object sender, DataChangesEventArgs e)
         {
-            VerifyNotDisposed();
-
             string baseUri = Query.GetAbsolutePath();
             if (e.Uri.StartsWith(baseUri))
             {
@@ -324,8 +331,6 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_Error(object sender, WireErrorEventArgs e)
         {
-            VerifyNotDisposed();
-
             string baseUri = Query.GetAbsolutePath();
             if (e.Uri.StartsWith(baseUri))
             {
@@ -335,7 +340,10 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
 
             SynchronizationContextPost(delegate 
             {
@@ -345,7 +353,10 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
 
             SynchronizationContextPost(delegate
             {

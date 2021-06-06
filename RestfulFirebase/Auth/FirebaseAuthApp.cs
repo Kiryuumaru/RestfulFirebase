@@ -12,10 +12,11 @@ using RestfulFirebase.Extensions.Http;
 using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ObservableHelpers;
 
 namespace RestfulFirebase.Auth
 {
-    public class FirebaseAuthApp : IDisposable
+    public class FirebaseAuthApp : SyncContext
     {
         #region Properties
 
@@ -33,7 +34,6 @@ namespace RestfulFirebase.Auth
         private const string ProfileDeleteDisplayName = "DISPLAY_NAME";
         private const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
-        private SynchronizationContext context = AsyncOperationManager.SynchronizationContext;
         private IHttpClientProxy client;
         private Session session;
 
@@ -283,18 +283,28 @@ namespace RestfulFirebase.Auth
 
         protected void InvokeAuthRefreshed()
         {
-            context.Post(s =>
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
+
+            SynchronizationContextPost(delegate
             {
                 OnAuthRefreshed?.Invoke();
-            }, null);
+            });
         }
 
         protected void InvokeOnAuthenticated()
         {
-            context.Post(s =>
+            if (IsDisposedOrDisposing)
+            {
+                return;
+            }
+
+            SynchronizationContextPost(delegate
             {
                 OnAuthenticated?.Invoke();
-            }, null);
+            });
         }
 
         public async Task<CallResult> CreateUserWithEmailAndPassword(string email, string password, string displayName = "", bool sendVerificationEmail = false)
