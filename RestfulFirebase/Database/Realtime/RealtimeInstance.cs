@@ -24,7 +24,7 @@ namespace RestfulFirebase.Database.Realtime
         public event EventHandler<DataChangesEventArgs> DataChanges;
         public event EventHandler<WireErrorEventArgs> Error;
 
-        public bool Synced { get => GetTotalDataCount() == GetSyncedDataCount(); }
+        public bool IsSynced { get => GetTotalDataCount() == GetSyncedDataCount(); }
 
         #endregion
 

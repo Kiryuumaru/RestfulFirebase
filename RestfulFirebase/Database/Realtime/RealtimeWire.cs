@@ -71,7 +71,7 @@ namespace RestfulFirebase.Database.Realtime
 
             return await Task.Run(async delegate
             {
-                while (!Synced) { await Task.Delay(1000); }
+                while (!IsSynced) { await Task.Delay(1000); }
                 return true;
             }).WithTimeout(timeout, false);
         }
