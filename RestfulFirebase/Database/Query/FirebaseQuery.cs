@@ -218,7 +218,7 @@ namespace RestfulFirebase.Database.Query
                 token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
             }
 
-            if (App.Auth.Authenticated && AuthenticateRequests)
+            if (App.Auth.IsAuthenticated && AuthenticateRequests)
             {
                 return await Task.Run(delegate
                 {

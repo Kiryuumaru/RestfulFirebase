@@ -98,7 +98,7 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
@@ -111,7 +111,7 @@ namespace RestfulFirebase.Database.Models
 
         protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }

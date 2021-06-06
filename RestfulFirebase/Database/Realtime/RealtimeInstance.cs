@@ -214,7 +214,7 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnDataChanges(params string[] uris)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
@@ -253,7 +253,7 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnError(string uri, Exception exception)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
@@ -292,7 +292,7 @@ namespace RestfulFirebase.Database.Realtime
 
         internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
@@ -340,7 +340,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
@@ -353,7 +353,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }

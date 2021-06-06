@@ -39,10 +39,10 @@ namespace RestfulFirebase.Auth
 
         public RestfulFirebaseApp App { get; private set; }
         public Session Session => session.Exist ? session : null;
-        public bool Authenticated => Session != null;
+        public bool IsAuthenticated => Session != null;
 
-        public event Action OnAuthRefreshed;
-        public event Action OnAuthenticated;
+        public event Action AuthRefreshed;
+        public event Action Authenticated;
 
         #endregion
 
@@ -257,7 +257,7 @@ namespace RestfulFirebase.Auth
 
                     session.UpdateAuth(auth);
 
-                    InvokeAuthRefreshed();
+                    OnAuthRefreshed();
 
                     return CallResult.Success(user);
                 }
@@ -281,29 +281,29 @@ namespace RestfulFirebase.Auth
 
         #region Methods
 
-        protected void InvokeAuthRefreshed()
+        protected void OnAuthRefreshed()
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
 
             SynchronizationContextPost(delegate
             {
-                OnAuthRefreshed?.Invoke();
+                AuthRefreshed?.Invoke();
             });
         }
 
-        protected void InvokeOnAuthenticated()
+        protected void OnAuthenticated()
         {
-            if (IsDisposedOrDisposing)
+            if (IsDisposed)
             {
                 return;
             }
 
             SynchronizationContextPost(delegate
             {
-                OnAuthenticated?.Invoke();
+                Authenticated?.Invoke();
             });
         }
 
@@ -328,7 +328,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 if (sendVerificationEmail)
                 {
@@ -355,7 +355,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -377,7 +377,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -399,7 +399,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -421,7 +421,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -449,7 +449,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -470,7 +470,7 @@ namespace RestfulFirebase.Auth
                 var refreshResult = await RefreshUserInfo(auth).ConfigureAwait(false);
                 if (!refreshResult.IsSuccess) return refreshResult;
 
-                InvokeOnAuthenticated();
+                OnAuthenticated();
 
                 return CallResult.Success();
             }
@@ -767,7 +767,7 @@ namespace RestfulFirebase.Auth
 
                         session.UpdateAuth(auth);
 
-                        InvokeAuthRefreshed();
+                        OnAuthRefreshed();
                     }
                     catch (OperationCanceledException ex)
                     {
@@ -861,7 +861,7 @@ namespace RestfulFirebase.Auth
         {
             try
             {
-                if (!Authenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                if (!IsAuthenticated) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
                 session.Purge();
 
@@ -873,9 +873,13 @@ namespace RestfulFirebase.Auth
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            client.Dispose();
+            if (disposing)
+            {
+                client.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         #endregion
