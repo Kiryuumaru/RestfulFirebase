@@ -3,12 +3,14 @@ using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
@@ -79,6 +81,17 @@ namespace RestfulFirebase.Database.Realtime
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
+        }
+
+        public async Task<bool> WaitForSynced(TimeSpan timeout)
+        {
+            VerifyNotDisposed();
+
+            return await Task.Run(async delegate
+            {
+                while (!IsSynced) { await Task.Delay(1000); }
+                return true;
+            }).WithTimeout(timeout, false);
         }
 
         public bool SetBlob(string blob)

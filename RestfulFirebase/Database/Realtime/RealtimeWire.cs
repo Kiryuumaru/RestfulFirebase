@@ -65,17 +65,6 @@ namespace RestfulFirebase.Database.Realtime
             }).WithTimeout(timeout, false);
         }
 
-        public async Task<bool> WaitForSynced(TimeSpan timeout)
-        {
-            VerifyNotDisposed();
-
-            return await Task.Run(async delegate
-            {
-                while (!IsSynced) { await Task.Delay(1000); }
-                return true;
-            }).WithTimeout(timeout, false);
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
