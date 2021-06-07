@@ -6,6 +6,7 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -223,8 +224,6 @@ namespace RestfulFirebase.Database.Realtime
             {
                 var affectedPaths = new List<string>();
                 var baseUri = Query.GetAbsolutePath();
-                var totalDataCount = GetTotalDataCount();
-                var syncedDataCount = GetSyncedDataCount();
                 affectedPaths.Add("");
                 foreach (var u in uris)
                 {
@@ -242,7 +241,7 @@ namespace RestfulFirebase.Database.Realtime
                 }
                 foreach (var affectedPath in affectedPaths.OrderByDescending(i => i.Length))
                 {
-                    SelfDataChanges(new DataChangesEventArgs(baseUri, affectedPath, totalDataCount, syncedDataCount));
+                    SelfDataChanges(new DataChangesEventArgs(baseUri, affectedPath));
                 }
             }
             else
@@ -325,7 +324,7 @@ namespace RestfulFirebase.Database.Realtime
             if (e.Uri.StartsWith(baseUri))
             {
                 var path = e.Uri.Replace(baseUri, "");
-                SelfDataChanges(new DataChangesEventArgs(baseUri, path, GetTotalDataCount(), GetSyncedDataCount()));
+                SelfDataChanges(new DataChangesEventArgs(baseUri, path));
             }
         }
 

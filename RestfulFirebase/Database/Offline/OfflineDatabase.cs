@@ -42,6 +42,8 @@ namespace RestfulFirebase.Database.Offline
             public void Run()
             {
                 HasPendingWrite = true;
+                if (IsWritting) return;
+                IsWritting = true;
                 Task.Run(async delegate
                 {
                     await Write();
@@ -52,11 +54,9 @@ namespace RestfulFirebase.Database.Offline
                 });
             }
 
-            public async Task Write()
+            private async Task Write()
             {
                 if (CancellationSource.IsCancellationRequested) return;
-                if (IsWritting) return;
-                IsWritting = true;
                 while (HasPendingWrite)
                 {
                     if (CancellationSource.IsCancellationRequested) return;

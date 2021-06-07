@@ -108,7 +108,7 @@ namespace RestTest
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
+                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -161,7 +161,7 @@ namespace RestTest
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Main Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
+                Console.WriteLine("Main Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -170,7 +170,7 @@ namespace RestTest
             var subWire1 = wire.Child("sub1");
             subWire1.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub1 Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
+                Console.WriteLine("Sub1 Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
             };
             subWire1.Error += (s, e) =>
             {
@@ -179,7 +179,7 @@ namespace RestTest
             var subWire2 = wire.Child("sub2");
             subWire2.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub2 Sync: " + e.SyncedDataCount.ToString() + "/" + e.TotalDataCount.ToString() + " Path: " + e.Path);
+                Console.WriteLine("Sub2 Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
             };
             subWire2.Error += (s, e) =>
             {
@@ -416,9 +416,9 @@ namespace RestTest
             var prop1 = new FirebaseProperty();
             prop1.SetValue("111");
             dict.Add("aaa", prop1);
-            var prop2 = new FirebaseProperty();
-            prop2.SetValue("222");
-            dict.Add("bbb", prop2);
+            //var prop2 = new FirebaseProperty();
+            //prop2.SetValue("222");
+            //dict.Add("bbb", prop2);
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.PutModel(dict);
@@ -449,7 +449,7 @@ namespace RestTest
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+                Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
             };
             while (true)
             {
@@ -468,12 +468,26 @@ namespace RestTest
                 //Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
+            bool isRun = false;
+            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+                toRun = true;
+                if (isRun) return;
+                isRun = true;
+                Task.Run(async delegate
+                {
+                    while (toRun)
+                    {
+                        toRun = false;
+                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        await Task.Delay(500);
+                    }
+                    isRun = false;
+                });
             };
 
             string lin11e = Console.ReadLine();
@@ -499,15 +513,15 @@ namespace RestTest
             var dict = new FirebasePropertyDictionary();
             dict.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Count: " + dict.Keys.Count);
+                //Console.WriteLine("Count: " + dict.Keys.Count);
             };
-
+            
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                //Console.WriteLine("Total: " + e.TotalDataCount.ToString() + " Sync: " + e.SyncedDataCount.ToString());
+                Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
             };
 
             string lin11e = Console.ReadLine();
@@ -614,7 +628,7 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + e.SyncedDataCount + "/" + e.TotalDataCount);
+                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount());
             };
             wire.Start();
             wire.SubModel(dict);
