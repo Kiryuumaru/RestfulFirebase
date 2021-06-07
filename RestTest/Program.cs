@@ -92,12 +92,12 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
-            TestObjectDictionarySub3();
+            //TestObjectDictionarySub3();
             //ExperimentList();
 
             Console.ReadLine();
@@ -150,7 +150,7 @@ namespace RestTest
                     var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
                     foreach (var pair in db)
                     {
-                        Console.WriteLine("Key: " + pair.Key + " Value: " + pair.Value);
+                        Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
                     }
                 }
             }
@@ -255,7 +255,7 @@ namespace RestTest
                     var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
                     foreach (var pair in db)
                     {
-                        Console.WriteLine("Key: " + pair.Key + " Value: " + pair.Value);
+                        Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
                     }
                 }
             }
