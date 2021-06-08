@@ -49,30 +49,23 @@ namespace RestfulFirebase.Database.Models
 
             Subscribe();
 
-            List<KeyValuePair<string, T>> props = new List<KeyValuePair<string, T>>();
             lock (this)
             {
-                props = this.ToList();
-            }
-            var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+                List<KeyValuePair<string, T>> props = this.ToList();
+                var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
 
-            foreach (var prop in props)
-            {
-                WireValue(prop.Key, prop.Value, invokeSetFirst);
-                paths.RemoveAll(i => i == prop.Key);
-            }
+                foreach (var prop in props)
+                {
+                    WireValue(prop.Key, prop.Value, invokeSetFirst);
+                    paths.RemoveAll(i => i == prop.Key);
+                }
 
-            foreach (var path in paths)
-            {
-                lock (this)
+                foreach (var path in paths)
                 {
                     if (this.Any(i => i.Key == path)) continue;
-                }
-                var item = PropertyFactory((path));
-                if (item == null) continue;
-                WireValue(path, item, false);
-                lock (this)
-                {
+                    var item = PropertyFactory((path));
+                    if (item == null) continue;
+                    WireValue(path, item, false);
                     Add(path, item);
                 }
             }
@@ -99,19 +92,27 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
-        protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
+        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextSend(delegate
+            SynchronizationContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
         }
 
-        protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
+        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextSend(delegate
+            SynchronizationContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
+            });
+        }
+
+        protected virtual void OnWireError(WireErrorEventArgs args)
+        {
+            SynchronizationContextPost(delegate
+            {
+                WireError?.Invoke(this, args);
             });
         }
 
@@ -158,14 +159,6 @@ namespace RestfulFirebase.Database.Models
             return itemInitializer?.Invoke(key);
         }
 
-        protected virtual void OnWireError(WireErrorEventArgs args)
-        {
-            SynchronizationContextSend(delegate
-            {
-                WireError?.Invoke(this, args);
-            });
-        }
-
         private void Subscribe()
         {
             VerifyNotDisposed();
@@ -196,25 +189,18 @@ namespace RestfulFirebase.Database.Models
             {
                 var separated = Utils.UrlSeparate(e.Path);
                 var key = separated[0];
-                KeyValuePair<string, T> prop;
                 lock (this)
                 {
-                    prop = this.FirstOrDefault(i => i.Key == key);
-                }
-                var isNull = RealtimeInstance.Child(key).IsNull();
-                if (prop.Value == null && !isNull)
-                {
-                    var item = PropertyFactory(key);
-                    if (item == null) return;
-                    WireValue(key, item, false);
-                    lock (this)
+                    KeyValuePair<string, T> prop = this.FirstOrDefault(i => i.Key == key);
+                    var isNull = RealtimeInstance.Child(key).IsNull();
+                    if (prop.Value == null && !isNull)
                     {
+                        var item = PropertyFactory(key);
+                        if (item == null) return;
+                        WireValue(key, item, false);
                         Add(key, item);
                     }
-                }
-                else if (prop.Value != null && isNull)
-                {
-                    lock (this)
+                    else if (prop.Value != null && isNull)
                     {
                         Remove(key);
                     }

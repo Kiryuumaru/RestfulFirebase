@@ -40,6 +40,24 @@ namespace RestTest
             set => SetPersistableProperty(value, "premiums");
         }
 
+        public decimal Num1
+        {
+            get => GetPersistableProperty<decimal>("num1");
+            set => SetPersistableProperty(value, "num1");
+        }
+
+        public decimal Num2
+        {
+            get => GetPersistableProperty<decimal>("num2");
+            set => SetPersistableProperty(value, "num2");
+        }
+
+        public decimal Num3
+        {
+            get => GetPersistableProperty<decimal>("num3");
+            set => SetPersistableProperty(value, "num3");
+        }
+
         public string Test
         {
             get => GetPersistableProperty<string>("test");
@@ -59,6 +77,7 @@ namespace RestTest
         public TestStorable()
         {
             Dummy = "test";
+            InitializeProperties();
         }
 
         #endregion
@@ -95,10 +114,11 @@ namespace RestTest
             //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
-            //TestObjectDictionarySub();
-            TestObjectDictionarySub2();
+            TestObjectDictionarySub();
+            //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
+            //await TestDef();
 
             Console.ReadLine();
         }
@@ -667,6 +687,50 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 dict.Remove(line);
+            }
+        }
+
+        public static async Task TestDef()
+        {
+            var obj = new TestStorable();
+            obj.IsOk = true;
+            obj.Premium = TimeSpan.FromSeconds(60);
+            obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+            obj.Test = "testuuuuu";
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.PutModel(obj);
+            wire.DataChanges += (s, e) =>
+            {
+                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount());
+            };
+
+            await wire.WaitForSynced();
+
+            Console.WriteLine("Put Done");
+
+            Console.ReadLine();
+
+            obj.IsOk = false;
+            obj.Premium = default;
+            obj.Premiums = default;
+            obj.Test = default;
+            obj.Num1 = default;
+            obj.Num2 = default;
+            obj.Num3 = default;
+
+            Console.WriteLine("All mod");
+
+            await wire.WaitForSynced();
+
+            Console.WriteLine("Modify Done");
+
+            Console.ReadLine();
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                obj.Test = string.IsNullOrEmpty(line) ? null : line;
             }
         }
     }

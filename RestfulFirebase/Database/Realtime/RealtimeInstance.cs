@@ -89,7 +89,7 @@ namespace RestfulFirebase.Database.Realtime
 
             await Task.Run(async delegate
             {
-                while (!IsSynced) { await Task.Delay(1000); }
+                while (!IsSynced) { await Task.Delay(500); }
             });
         }
 
@@ -99,7 +99,7 @@ namespace RestfulFirebase.Database.Realtime
 
             return await Task.Run(async delegate
             {
-                while (!IsSynced) { await Task.Delay(1000); }
+                while (!IsSynced) { await Task.Delay(500); }
                 return true;
             }).WithTimeout(timeout, false);
         }
@@ -362,21 +362,15 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            Task.Run(delegate
+            SynchronizationContextPost(delegate
             {
-                lock (this)
-                {
-                    SynchronizationContextSend(delegate
-                    {
-                        DataChanges?.Invoke(this, e);
-                    });
-                }
+                DataChanges?.Invoke(this, e);
             });
         }
 
         private void SelfError(WireErrorEventArgs e)
         {
-            SynchronizationContextSend(delegate
+            SynchronizationContextPost(delegate
             {
                 Error?.Invoke(this, e);
             });

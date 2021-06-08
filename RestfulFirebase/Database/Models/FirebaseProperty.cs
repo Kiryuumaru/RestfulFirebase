@@ -142,19 +142,27 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
-        protected void OnRealtimeAttached(RealtimeInstanceEventArgs args)
+        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextSend(delegate
+            SynchronizationContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
         }
 
-        protected void OnRealtimeDetached(RealtimeInstanceEventArgs args)
+        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextSend(delegate
+            SynchronizationContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
+            });
+        }
+
+        protected virtual void OnWireError(WireErrorEventArgs args)
+        {
+            SynchronizationContextPost(delegate
+            {
+                WireError?.Invoke(this, args);
             });
         }
 
@@ -196,14 +204,6 @@ namespace RestfulFirebase.Database.Models
                     return defaultValue;
                 }
             }
-        }
-
-        protected virtual void OnWireError(WireErrorEventArgs args)
-        {
-            SynchronizationContextSend(delegate
-            {
-                WireError?.Invoke(this, args);
-            });
         }
 
         private void Subscribe()

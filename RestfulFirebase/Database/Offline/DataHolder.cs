@@ -129,7 +129,7 @@ namespace RestfulFirebase.Database.Offline
                 if (blob == null)
                 {
                     Changes = null;
-                    Put(onError);
+                    //Put(onError);
                 }
                 else
                 {
@@ -139,14 +139,17 @@ namespace RestfulFirebase.Database.Offline
                     Put(onError);
                 }
             }
-            else if (Changes == null || oldBlob != blob)
+            else if (oldBlob != blob)
             {
                 Changes = new DataChanges(
                     blob,
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
-
                 Put(onError);
             }
+            //else
+            //{
+            //    Put(onError);
+            //}
 
             return oldBlob != Blob;
         }
