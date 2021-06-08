@@ -92,10 +92,10 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
-            //TestObjectDictionarySub();
+            TestObjectDictionarySub();
             //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
@@ -574,7 +574,10 @@ namespace RestTest
 
         public static void TestObjectDictionarySub()
         {
-            var dict = new FirebaseObjectDictionary();
+            var dict = new FirebaseObjectDictionary<TestStorable>(key =>
+            {
+                return new TestStorable();
+            });
             dict.CollectionChanged += (s, e) =>
             {
                 Console.WriteLine("Count: " + dict.Keys.Count);

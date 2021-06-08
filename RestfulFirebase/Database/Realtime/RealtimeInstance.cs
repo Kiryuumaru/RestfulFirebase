@@ -352,7 +352,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            SynchronizationContextPost(delegate 
+            SynchronizationContextSend(delegate 
             {
                 DataChanges?.Invoke(this, e);
             });
@@ -360,7 +360,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationContextSend(delegate
             {
                 Error?.Invoke(this, e);
             });
