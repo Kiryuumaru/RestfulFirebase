@@ -118,7 +118,7 @@ namespace RestfulFirebase.Database.Realtime
             var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
             foreach (var subData in subDatas)
             {
-                if (subData.DeleteChanges())
+                if (subData.MakeChanges(blob, err => OnPutError(subData, err)))
                 {
                     hasChanges = true;
                     affectedUris.Add(subData.Uri);
@@ -139,6 +139,11 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             return hasChanges;
+        }
+
+        public bool SetNull()
+        {
+            return SetBlob(null);
         }
 
         public string GetBlob()
@@ -164,43 +169,6 @@ namespace RestfulFirebase.Database.Realtime
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetSubUris(uri, false);
-        }
-
-        public bool SetNull()
-        {
-            VerifyNotDisposed();
-
-            var hasChanges = false;
-
-            var affectedUris = new List<string>();
-
-            var uri = Query.GetAbsolutePath();
-
-            // Delete related changes
-            var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
-            foreach (var subData in subDatas)
-            {
-                if (subData.DeleteChanges())
-                {
-                    hasChanges = true;
-                    affectedUris.Add(subData.Uri);
-                }
-            }
-
-            // Make changes
-            var dataHolder = new DataHolder(App, uri);
-            if (dataHolder.MakeChanges(null, err => OnPutError(dataHolder, err)))
-            {
-                hasChanges = true;
-                affectedUris.Add(uri);
-            }
-
-            if (hasChanges)
-            {
-                OnDataChanges(affectedUris.ToArray());
-            }
-
-            return hasChanges;
         }
 
         public bool IsNull()
