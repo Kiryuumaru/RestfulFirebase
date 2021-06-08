@@ -89,8 +89,8 @@ namespace RestfulFirebase.Database.Realtime
 
             await Task.Run(async delegate
             {
-                while (!IsSynced) { await Task.Delay(500); }
-            });
+                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
+            }).ConfigureAwait(false);
         }
 
         public async Task<bool> WaitForSynced(TimeSpan timeout)
@@ -99,9 +99,9 @@ namespace RestfulFirebase.Database.Realtime
 
             return await Task.Run(async delegate
             {
-                while (!IsSynced) { await Task.Delay(500); }
+                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
                 return true;
-            }).WithTimeout(timeout, false);
+            }).WithTimeout(timeout, false).ConfigureAwait(false);
         }
 
         public bool SetBlob(string blob)

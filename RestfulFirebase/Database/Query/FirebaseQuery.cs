@@ -92,7 +92,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 else
                 {
-                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, invokeToken);
+                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, invokeToken).ConfigureAwait(false);
                 }
             };
 
@@ -111,7 +111,7 @@ namespace RestfulFirebase.Database.Query
                         recursiveToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
                     }
 
-                    await invoke(jsonData, recursiveToken);
+                    await invoke(jsonData, recursiveToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -119,18 +119,18 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry)
                     {
-                        await Task.Delay(App.Config.DatabaseRetryDelay);
-                        await recursive();
+                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        await recursive().ConfigureAwait(false);
                     }
                 }
             }
 
-            await recursive();
+            await recursive().ConfigureAwait(false);
         }
 
         public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            await Put(() => jsonData, token, onException);
+            await Put(() => jsonData, token, onException).ConfigureAwait(false);
         }
 
         public async Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
@@ -184,7 +184,7 @@ namespace RestfulFirebase.Database.Query
                         recursiveToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
                     }
 
-                    return await invoke(recursiveToken);
+                    return await invoke(recursiveToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -193,13 +193,13 @@ namespace RestfulFirebase.Database.Query
                     if (retryEx.Retry)
                     {
                         await Task.Delay(App.Config.DatabaseRetryDelay);
-                        await recursive();
+                        await recursive().ConfigureAwait(false);
                     }
                     return null;
                 }
             }
 
-            return await recursive();
+            return await recursive().ConfigureAwait(false);
         }
 
         public RealtimeWire AsRealtimeWire()
@@ -228,7 +228,7 @@ namespace RestfulFirebase.Database.Query
                         if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
                         return getTokenResult.Result.Result;
                     }).BuildUrl(null);
-                }, token.Value);
+                }, token.Value).ConfigureAwait(false);
             }
 
             return BuildUrl(null);

@@ -39,14 +39,14 @@ namespace RestfulFirebase.Storage
 
         public async Task<FirebaseMetaData> GetMetaDataAsync(TimeSpan? timeout = null)
         {
-            var data = await PerformFetch<FirebaseMetaData>(timeout);
+            var data = await PerformFetch<FirebaseMetaData>(timeout).ConfigureAwait(false);
 
             return data;
         }
 
         public async Task<string> GetDownloadUrlAsync(TimeSpan? timeout = null)
         {
-            var data = await PerformFetch<Dictionary<string, object>>(timeout);
+            var data = await PerformFetch<Dictionary<string, object>>(timeout).ConfigureAwait(false);
 
             if (!data.TryGetValue("downloadTokens", out object downloadTokens))
             {
@@ -93,7 +93,7 @@ namespace RestfulFirebase.Storage
             {
                 using (var http = App.Storage.CreateHttpClientAsync(timeout))
                 {
-                    var result = await http.GetAsync(url);
+                    var result = await http.GetAsync(url).ConfigureAwait(false);
                     resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var data = JsonConvert.DeserializeObject<T>(resultContent);
 

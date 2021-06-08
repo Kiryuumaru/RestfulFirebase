@@ -95,7 +95,7 @@ namespace RestfulFirebase.Storage
         {
             while (!uploadTask.IsCompleted)
             {
-                await Task.Delay(ProgressReportDelayMiliseconds);
+                await Task.Delay(ProgressReportDelayMiliseconds).ConfigureAwait(false);
 
                 try
                 { 

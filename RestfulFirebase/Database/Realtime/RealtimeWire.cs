@@ -60,9 +60,9 @@ namespace RestfulFirebase.Database.Realtime
 
             return await Task.Run(async delegate
             {
-                while (!HasFirstStream) { await Task.Delay(100); }
+                while (!HasFirstStream) { await Task.Delay(100).ConfigureAwait(false); }
                 return true;
-            }).WithTimeout(timeout, false);
+            }).WithTimeout(timeout, false).ConfigureAwait(false);
         }
 
         protected override void Dispose(bool disposing)

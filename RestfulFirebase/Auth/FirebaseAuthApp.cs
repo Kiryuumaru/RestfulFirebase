@@ -784,7 +784,7 @@ namespace RestfulFirebase.Auth
                 var session = Session;
                 if (session == null) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
 
-                var refresh = await GetFreshToken();
+                var refresh = await GetFreshToken().ConfigureAwait(false);
                 if (!refresh.IsSuccess) return refresh;
 
                 var auth = new FirebaseAuth()
@@ -855,11 +855,11 @@ namespace RestfulFirebase.Auth
 
                 session.Purge();
 
-                return await Task.FromResult(CallResult.Success());
+                return await Task.FromResult(CallResult.Success()).ConfigureAwait(false);
             }
             catch (FirebaseException ex)
             {
-                return await Task.FromResult(CallResult.Error(ex));
+                return await Task.FromResult(CallResult.Error(ex)).ConfigureAwait(false);
             }
         }
 

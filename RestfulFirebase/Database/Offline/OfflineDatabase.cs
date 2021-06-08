@@ -48,12 +48,12 @@ namespace RestfulFirebase.Database.Offline
                 IsWritting = true;
                 Task.Run(async delegate
                 {
-                    await Write();
+                    await Write().ConfigureAwait(false);
                     lock (App.Database.OfflineDatabase.writeTasks)
                     {
                         App.Database.OfflineDatabase.writeTasks.Remove(this);
                     }
-                });
+                }).ConfigureAwait(false);
             }
 
             private async Task Write()
@@ -63,7 +63,7 @@ namespace RestfulFirebase.Database.Offline
                 {
                     if (CancellationSource.IsCancellationRequested) return;
                     HasPendingWrite = false;
-                    await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync();
+                    await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync().ConfigureAwait(false);
                     await Query.Put(() =>
                     {
                         var blob = Data.Changes?.Blob;
@@ -95,7 +95,7 @@ namespace RestfulFirebase.Database.Offline
                         {
                             OnError(err);
                         }
-                    });
+                    }).ConfigureAwait(false);
                     App.Database.OfflineDatabase.semaphoreSlim.Release();
                 }
                 IsWritting = false;
