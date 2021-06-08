@@ -12,6 +12,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
+        public RealtimeInstance RealtimeInstance { get; private set; }
+
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
@@ -20,8 +22,6 @@ namespace RestfulFirebase.Database.Models
 
         internal const string UnwiredBlobTag = "unwired";
         internal const string SerializableTag = "serializable";
-
-        internal RealtimeInstance RealtimeInstance { get; private set; }
 
         #endregion
 
@@ -131,24 +131,6 @@ namespace RestfulFirebase.Database.Models
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
             RealtimeInstance = null;
             OnRealtimeDetached(args);
-        }
-
-        public async Task WaitForSynced()
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
-
-            await RealtimeInstance.WaitForSynced();
-        }
-
-        public async Task<bool> WaitForSynced(TimeSpan timeout)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
-
-            return await RealtimeInstance.WaitForSynced(timeout);
         }
 
         protected override void Dispose(bool disposing)

@@ -16,15 +16,13 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
+        public RealtimeInstance RealtimeInstance { get; private set; }
+
         public bool HasAttachedRealtime { get => RealtimeInstance != null; }
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
         public event EventHandler<WireErrorEventArgs> WireError;
-
-        private const string UnwiredBlobTag = "unwired";
-
-        internal RealtimeInstance RealtimeInstance { get; private set; }
 
         #endregion
 
@@ -84,7 +82,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != FirebaseProperty.UnwiredBlobTag)
             {
                 return RealtimeInstance.SetNull();
             }
@@ -98,7 +96,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            if (RealtimeInstance != null && parameter?.ToString() != FirebaseProperty.UnwiredBlobTag)
             {
                 return RealtimeInstance.IsNull();
             }
@@ -163,24 +161,6 @@ namespace RestfulFirebase.Database.Models
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
             RealtimeInstance = null;
             OnRealtimeDetached(args);
-        }
-
-        public async Task WaitForSynced()
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
-
-            await RealtimeInstance.WaitForSynced();
-        }
-
-        public async Task<bool> WaitForSynced(TimeSpan timeout)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
-
-            return await RealtimeInstance.WaitForSynced(timeout);
         }
 
         protected override void Dispose(bool disposing)

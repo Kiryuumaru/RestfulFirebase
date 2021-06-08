@@ -12,13 +12,14 @@ namespace RestfulFirebase.Database.Models
 {
     public interface IRealtimeModel : INotifyPropertyChanged, IDisposable
     {
+        RealtimeInstance RealtimeInstance { get; }
+        bool HasAttachedRealtime { get; }
+
         event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
         event EventHandler<WireErrorEventArgs> WireError;
-        bool HasAttachedRealtime { get; }
+
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();
-        Task WaitForSynced();
-        Task<bool> WaitForSynced(TimeSpan timeout);
     }
 }

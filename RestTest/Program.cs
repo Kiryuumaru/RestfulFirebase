@@ -92,11 +92,11 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
-            //TestObjectDictionarySub2();
+            TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
 
@@ -598,15 +598,33 @@ namespace RestTest
             var dict = new FirebaseObjectDictionary();
             dict.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Count: " + dict.Keys.Count);
+                //Console.WriteLine("Count: " + dict.Keys.Count);
             };
+            bool isRun = false;
+            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
+            wire.DataChanges += (s, e) =>
+            {
+                toRun = true;
+                if (isRun) return;
+                isRun = true;
+                Task.Run(async delegate
+                {
+                    while (toRun)
+                    {
+                        toRun = false;
+                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        await Task.Delay(500);
+                    }
+                    isRun = false;
+                }).ConfigureAwait(false);
+            };
 
             string lin11e = Console.ReadLine();
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 100; i++)
             {
                 var obj = new TestStorable();
                 obj.Test = i.ToString();
