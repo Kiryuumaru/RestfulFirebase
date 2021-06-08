@@ -16,6 +16,7 @@ namespace RestfulFirebase.Database.Models
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+        public event EventHandler<WireErrorEventArgs> WireError;
 
         internal const string UnwiredBlobTag = "unwired";
         internal const string SerializableTag = "serializable";
@@ -57,6 +58,71 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
+        public override bool SetValue<T>(T value, object parameter = null)
+        {
+            VerifyNotDisposed();
+
+            if (parameter?.ToString() == SerializableTag)
+            {
+                var json = Serializer.Serialize(value);
+                return SetBlob(json, parameter);
+            }
+            else
+            {
+                return base.SetValue(value, parameter);
+            }
+        }
+
+        public override T GetValue<T>(T defaultValue = default, object parameter = null)
+        {
+            VerifyNotDisposed();
+
+            if (parameter?.ToString() == SerializableTag)
+            {
+                var str = GetBlob(null, parameter);
+                if (str == null)
+                {
+                    return defaultValue;
+                }
+                else
+                {
+                    return Serializer.Deserialize<T>(str, defaultValue);
+                }
+            }
+            else
+            {
+                return base.GetValue(defaultValue, parameter);
+            }
+        }
+
+        public override bool SetNull(object parameter = null)
+        {
+            VerifyNotDisposed();
+
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return RealtimeInstance.SetNull();
+            }
+            else
+            {
+                return base.SetNull(parameter);
+            }
+        }
+
+        public override bool IsNull(object parameter = null)
+        {
+            VerifyNotDisposed();
+
+            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
+            {
+                return RealtimeInstance.IsNull();
+            }
+            else
+            {
+                return base.IsNull(parameter);
+            }
+        }
+
         public virtual void DetachRealtime()
         {
             VerifyNotDisposed();
@@ -70,6 +136,8 @@ namespace RestfulFirebase.Database.Models
         public async Task<bool> WaitForSynced(TimeSpan timeout)
         {
             VerifyNotDisposed();
+
+            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
 
             return await RealtimeInstance.WaitForSynced(timeout);
         }
@@ -139,85 +207,12 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        public override bool SetValue<T>(T value, object parameter = null)
+        protected virtual void OnWireError(WireErrorEventArgs args)
         {
-            VerifyNotDisposed();
-
-            if (parameter?.ToString() == SerializableTag)
+            SynchronizationContextSend(delegate
             {
-                try
-                {
-                    var json = Serializer.Serialize(value);
-                    return SetBlob(json, parameter);
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                    return false;
-                }
-            }
-            else
-            {
-                return base.SetValue(value, parameter);
-            }
-        }
-
-        public override T GetValue<T>(T defaultValue = default, object parameter = null)
-        {
-            VerifyNotDisposed();
-
-            if (parameter?.ToString() == SerializableTag)
-            {
-                try
-                {
-                    var str = GetBlob(null, parameter);
-                    if (str == null)
-                    {
-                        return defaultValue;
-                    }
-                    else
-                    {
-                        return Serializer.Deserialize<T>(str, defaultValue);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    OnError(ex);
-                    return defaultValue;
-                }
-            }
-            else
-            {
-                return base.GetValue(defaultValue, parameter);
-            }
-        }
-
-        public override bool SetNull(object parameter = null)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
-            {
-                return RealtimeInstance.SetNull();
-            }
-            else
-            {
-                return base.SetNull(parameter);
-            }
-        }
-
-        public override bool IsNull(object parameter = null)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance != null && parameter?.ToString() != UnwiredBlobTag)
-            {
-                return RealtimeInstance.IsNull();
-            }
-            else
-            {
-                return base.IsNull(parameter);
-            }
+                WireError?.Invoke(this, args);
+            });
         }
 
         private void Subscribe()
@@ -253,7 +248,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            OnError(e.Exception);
+            OnWireError(e);
         }
 
         #endregion

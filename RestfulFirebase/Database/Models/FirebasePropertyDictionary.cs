@@ -18,6 +18,7 @@ namespace RestfulFirebase.Database.Models
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+        public event EventHandler<WireErrorEventArgs> WireError;
 
         internal RealtimeInstance RealtimeInstance { get; private set; }
 
@@ -93,6 +94,8 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
+            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
+
             return await RealtimeInstance.WaitForSynced(timeout);
         }
 
@@ -164,6 +167,14 @@ namespace RestfulFirebase.Database.Models
             return itemInitializer?.Invoke(key);
         }
 
+        protected virtual void OnWireError(WireErrorEventArgs args)
+        {
+            SynchronizationContextSend(delegate
+            {
+                WireError?.Invoke(this, args);
+            });
+        }
+
         private void Subscribe()
         {
             VerifyNotDisposed();
@@ -224,7 +235,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            OnError(e.Exception);
+            OnWireError(e);
         }
 
         #endregion

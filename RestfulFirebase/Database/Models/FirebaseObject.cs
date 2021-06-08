@@ -20,6 +20,7 @@ namespace RestfulFirebase.Database.Models
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+        public event EventHandler<WireErrorEventArgs> WireError;
 
         private const string UnwiredBlobTag = "unwired";
 
@@ -168,7 +169,9 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            return await RealtimeInstance.WaitForSynced(timeout);
+            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
+
+            return await RealtimeInstance?.WaitForSynced(timeout);
         }
 
         protected override void Dispose(bool disposing)
@@ -216,6 +219,14 @@ namespace RestfulFirebase.Database.Models
                 }
             };
             return propHolder;
+        }
+
+        protected virtual void OnWireError(WireErrorEventArgs args)
+        {
+            SynchronizationContextSend(delegate
+            {
+                WireError?.Invoke(this, args);
+            });
         }
 
         private void Subscribe()
@@ -271,7 +282,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            OnError(e.Exception);
+            OnWireError(e);
         }
 
         #endregion
