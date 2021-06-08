@@ -352,9 +352,15 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            SynchronizationContextSend(delegate 
+            Task.Run(delegate
             {
-                DataChanges?.Invoke(this, e);
+                lock (this)
+                {
+                    SynchronizationContextSend(delegate
+                    {
+                        DataChanges?.Invoke(this, e);
+                    });
+                }
             });
         }
 

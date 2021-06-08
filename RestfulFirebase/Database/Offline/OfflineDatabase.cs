@@ -14,6 +14,8 @@ namespace RestfulFirebase.Database.Offline
     {
         #region Helper Classes
 
+        private static readonly int MaxConcurrentWrites = 10;
+
         private class WriteTask
         {
             public RestfulFirebaseApp App { get; }
@@ -61,6 +63,7 @@ namespace RestfulFirebase.Database.Offline
                 {
                     if (CancellationSource.IsCancellationRequested) return;
                     HasPendingWrite = false;
+                    await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync();
                     await Query.Put(() =>
                     {
                         var blob = Data.Changes?.Blob;
@@ -93,6 +96,7 @@ namespace RestfulFirebase.Database.Offline
                             OnError(err);
                         }
                     });
+                    App.Database.OfflineDatabase.semaphoreSlim.Release();
                 }
                 IsWritting = false;
             }
@@ -110,6 +114,8 @@ namespace RestfulFirebase.Database.Offline
         public RestfulFirebaseApp App { get; }
 
         private List<WriteTask> writeTasks = new List<WriteTask>();
+
+        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(MaxConcurrentWrites, MaxConcurrentWrites);
 
         #endregion
 

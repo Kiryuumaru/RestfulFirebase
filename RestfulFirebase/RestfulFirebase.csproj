@@ -16,7 +16,7 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.58</Version>
+    <Version>1.0.59</Version>
     <PackageReleaseNotes>*Bug fixes</PackageReleaseNotes>
   </PropertyGroup>
 

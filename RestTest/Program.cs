@@ -92,10 +92,10 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
-            TestObjectDictionarySub();
+            //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
@@ -487,7 +487,7 @@ namespace RestTest
                         await Task.Delay(500);
                     }
                     isRun = false;
-                });
+                }).ConfigureAwait(false);
             };
 
             string lin11e = Console.ReadLine();
