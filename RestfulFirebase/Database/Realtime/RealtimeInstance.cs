@@ -118,7 +118,7 @@ namespace RestfulFirebase.Database.Realtime
             var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
             foreach (var subData in subDatas)
             {
-                if (subData.MakeChanges(blob, err => OnPutError(subData, err)))
+                if (subData.MakeChanges(null, err => OnPutError(subData, err)))
                 {
                     hasChanges = true;
                     affectedUris.Add(subData.Uri);
