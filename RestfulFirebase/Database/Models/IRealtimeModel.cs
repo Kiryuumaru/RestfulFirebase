@@ -5,6 +5,7 @@ using RestfulFirebase.Database.Streaming;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -15,5 +16,6 @@ namespace RestfulFirebase.Database.Models
         bool HasAttachedRealtime { get; }
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();
+        Task<bool> WaitForSynced(TimeSpan timeout);
     }
 }

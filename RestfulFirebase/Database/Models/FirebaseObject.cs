@@ -2,11 +2,13 @@
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -154,10 +156,19 @@ namespace RestfulFirebase.Database.Models
 
         public virtual void DetachRealtime()
         {
+            VerifyNotDisposed();
+
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
             RealtimeInstance = null;
             OnRealtimeDetached(args);
+        }
+
+        public async Task<bool> WaitForSynced(TimeSpan timeout)
+        {
+            VerifyNotDisposed();
+
+            return await RealtimeInstance.WaitForSynced(timeout);
         }
 
         protected override void Dispose(bool disposing)
