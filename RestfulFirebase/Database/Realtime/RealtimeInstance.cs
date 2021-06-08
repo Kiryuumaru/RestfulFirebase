@@ -83,6 +83,16 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
         }
 
+        public async Task WaitForSynced()
+        {
+            VerifyNotDisposed();
+
+            await Task.Run(async delegate
+            {
+                while (!IsSynced) { await Task.Delay(1000); }
+            });
+        }
+
         public async Task<bool> WaitForSynced(TimeSpan timeout)
         {
             VerifyNotDisposed();

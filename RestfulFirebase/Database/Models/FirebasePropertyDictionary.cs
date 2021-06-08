@@ -90,6 +90,15 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
+        public async Task WaitForSynced()
+        {
+            VerifyNotDisposed();
+
+            if (RealtimeInstance == null) throw new Exception("Model not wired to realtime wire");
+
+            await RealtimeInstance.WaitForSynced();
+        }
+
         public async Task<bool> WaitForSynced(TimeSpan timeout)
         {
             VerifyNotDisposed();

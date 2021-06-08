@@ -18,6 +18,7 @@ namespace RestfulFirebase.Database.Models
         bool HasAttachedRealtime { get; }
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();
+        Task WaitForSynced();
         Task<bool> WaitForSynced(TimeSpan timeout);
     }
 }
