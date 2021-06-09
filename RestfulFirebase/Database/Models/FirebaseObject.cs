@@ -36,7 +36,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag, validateValue);
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue);
         }
 
         public T GetPersistableProperty<T>(
@@ -46,7 +46,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), FirebaseProperty.SerializableTag);
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
         public virtual bool SetPersistablePropertiesNull(object parameter = null)

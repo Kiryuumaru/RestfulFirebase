@@ -14,13 +14,16 @@ namespace RestfulFirebase.Database.Offline
     {
         #region Helper Classes
 
-        private static readonly int MaxConcurrentWrites = 10;
+        private const int MaxWriteTokenCount = 1000;
+        private int lastMaxConcurrentWrites = 0;
 
         private class WriteTask
         {
             public RestfulFirebaseApp App { get; }
 
-            public DataHolder Data { get; }
+            public string Uri { get; }
+
+            public string Blob { get; }
 
             public Action<RetryExceptionEventArgs> OnError { get; set; }
 
@@ -28,24 +31,49 @@ namespace RestfulFirebase.Database.Offline
 
             public bool IsWritting { get; private set; }
 
-            public bool HasPendingWrite { get; set; }
-
             public CancellationTokenSource CancellationSource { get; private set; }
 
-            public WriteTask(RestfulFirebaseApp app, DataHolder data, Action<RetryExceptionEventArgs> onError)
+            public WriteTask(RestfulFirebaseApp app, string uri, string blob, Action<RetryExceptionEventArgs> onError)
             {
                 App = app;
-                Data = data;
+                Uri = uri;
+                Blob = blob;
                 OnError = onError;
-                Query = new ChildQuery(app, () => data.Uri);
+                Query = new ChildQuery(app, () => uri);
                 CancellationSource = new CancellationTokenSource();
             }
 
             public void Run()
             {
-                HasPendingWrite = true;
                 if (IsWritting) return;
                 IsWritting = true;
+
+                Task.Run(async delegate
+                {
+                    await App.Database.OfflineDatabase.semaphoreSlimControl.WaitAsync();
+                    try
+                    {
+                        if (App.Config.DatabaseMaxConcurrentWrites > MaxWriteTokenCount) throw new Exception("DatabaseMaxConcurrentWrites exceeds MaxWriteTokenCount");
+                        if (App.Database.OfflineDatabase.lastMaxConcurrentWrites < App.Config.DatabaseMaxConcurrentWrites)
+                        {
+                            int tokenToRelease = App.Config.DatabaseMaxConcurrentWrites - App.Database.OfflineDatabase.lastMaxConcurrentWrites;
+                            App.Database.OfflineDatabase.lastMaxConcurrentWrites = App.Config.DatabaseMaxConcurrentWrites;
+                            App.Database.OfflineDatabase.semaphoreSlim.Release(tokenToRelease);
+                        }
+                        else if (App.Database.OfflineDatabase.lastMaxConcurrentWrites > App.Config.DatabaseMaxConcurrentWrites)
+                        {
+                            int tokenToWait = App.Database.OfflineDatabase.lastMaxConcurrentWrites - App.Config.DatabaseMaxConcurrentWrites;
+                            App.Database.OfflineDatabase.lastMaxConcurrentWrites = App.Config.DatabaseMaxConcurrentWrites;
+                            for (int i = 0; i < tokenToWait; i++)
+                            {
+                                await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync();
+                            }
+                        }
+                    }
+                    catch { }
+                    App.Database.OfflineDatabase.semaphoreSlimControl.Release();
+                });
+
                 Task.Run(async delegate
                 {
                     await Write().ConfigureAwait(false);
@@ -59,16 +87,10 @@ namespace RestfulFirebase.Database.Offline
             private async Task Write()
             {
                 if (CancellationSource.IsCancellationRequested) return;
-                while (HasPendingWrite)
+                await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                if (!CancellationSource.IsCancellationRequested)
                 {
-                    if (CancellationSource.IsCancellationRequested) return;
-                    HasPendingWrite = false;
-                    await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                    await Query.Put(() =>
-                    {
-                        var blob = Data.Changes?.Blob;
-                        return blob == null ? null : JsonConvert.SerializeObject(blob);
-                    }, CancellationSource.Token, err =>
+                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), CancellationSource.Token, err =>
                     {
                         if (CancellationSource.IsCancellationRequested) return;
                         Type exType = err.Exception.GetType();
@@ -96,8 +118,8 @@ namespace RestfulFirebase.Database.Offline
                             OnError(err);
                         }
                     }).ConfigureAwait(false);
-                    App.Database.OfflineDatabase.semaphoreSlim.Release();
                 }
+                App.Database.OfflineDatabase.semaphoreSlim.Release();
                 IsWritting = false;
             }
         }
@@ -106,16 +128,19 @@ namespace RestfulFirebase.Database.Offline
 
         #region Properties
 
+        public RestfulFirebaseApp App { get; }
+
+        public int WriteTaskCount => writeTasks.Count;
+
         internal const string Root = "offdb";
         internal static readonly string ShortPath = Utils.UrlCombine(Root, "short");
         internal static readonly string SyncBlobPath = Utils.UrlCombine(Root, "blob");
         internal static readonly string ChangesPath = Utils.UrlCombine(Root, "changes");
 
-        public RestfulFirebaseApp App { get; }
-
         private List<WriteTask> writeTasks = new List<WriteTask>();
 
-        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(MaxConcurrentWrites, MaxConcurrentWrites);
+        private SemaphoreSlim semaphoreSlim;
+        private SemaphoreSlim semaphoreSlimControl;
 
         #endregion
 
@@ -124,6 +149,8 @@ namespace RestfulFirebase.Database.Offline
         public OfflineDatabase(RestfulFirebaseApp app)
         {
             App = app;
+            semaphoreSlim = new SemaphoreSlim(0, MaxWriteTokenCount);
+            semaphoreSlimControl = new SemaphoreSlim(1, 1);
         }
 
         #endregion
@@ -236,30 +263,24 @@ namespace RestfulFirebase.Database.Offline
             WriteTask existing = null;
             lock (writeTasks)
             {
-                existing = writeTasks.FirstOrDefault(i => i.Data.Uri == data.Uri);
+                existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
                 if (existing != null)
                 {
-                    existing.HasPendingWrite = true;
-                    existing.OnError = onError;
+                    existing.CancellationSource.Cancel();
                 }
-                else
-                {
-                    var newWriteTask = new WriteTask(App, data, onError);
-                    writeTasks.Add(newWriteTask);
-                    newWriteTask.Run();
-                }
+                var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
+                writeTasks.Add(newWriteTask);
+                newWriteTask.Run();
             }
         }
 
         internal void CancelPut(DataHolder data)
         {
-            WriteTask existing = null;
             lock (writeTasks)
             {
-                existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Data.Uri, data.Uri));
-                if (existing != null)
+                foreach (WriteTask task in writeTasks.Where(i => Utils.UrlCompare(i.Uri, data.Uri)))
                 {
-                    existing.CancellationSource.Cancel();
+                    task.CancellationSource.Cancel();
                 }
             }
         }

@@ -102,7 +102,7 @@ namespace RestTest
             Console.WriteLine("FIN");
 
             //TestObservableObject();
-            TestRealtimeWire();
+            //TestRealtimeWire();
             //TestRealtimeWire2();
             //TestPropertyPut();
             //TestPropertySub();
@@ -119,6 +119,7 @@ namespace RestTest
             //TestObjectDictionarySub3();
             //ExperimentList();
             //await TestDef();
+            await TestRoutineWrite();
 
             Console.ReadLine();
         }
@@ -635,6 +636,7 @@ namespace RestTest
                     while (toRun)
                     {
                         toRun = false;
+                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
                         Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
                         await Task.Delay(500);
                     }
@@ -731,6 +733,42 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 obj.Test = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public static async Task TestRoutineWrite()
+        {
+            var dict = new FirebasePropertyDictionary();
+            dict.CollectionChanged += (s, e) =>
+            {
+                //Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(dict);
+
+            string lin11e = Console.ReadLine();
+
+            for (int i = 0; i < 20; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(UIDFactory.GenerateSafeUID());
+                dict.Add(i.ToString(), prop);
+            }
+
+            await wire.WaitForSynced();
+
+            Stopwatch watch = new Stopwatch();
+            while (true)
+            {
+                watch.Restart();
+                foreach (var prop in dict)
+                {
+                    prop.Value.SetValue(UIDFactory.GenerateSafeUID());
+                }
+                await wire.WaitForSynced();
+                Console.WriteLine("DURATION: " + watch.ElapsedMilliseconds);
             }
         }
     }

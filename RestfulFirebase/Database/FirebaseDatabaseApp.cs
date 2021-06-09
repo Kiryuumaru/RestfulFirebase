@@ -15,6 +15,9 @@ namespace RestfulFirebase.Database
         #region Properties
 
         public RestfulFirebaseApp App { get; private set; }
+
+        public int PendingWrites { get => OfflineDatabase.WriteTaskCount; }
+
         internal OfflineDatabase OfflineDatabase { get; private set; }
 
         #endregion

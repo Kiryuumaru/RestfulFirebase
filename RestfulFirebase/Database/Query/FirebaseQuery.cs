@@ -54,7 +54,7 @@ namespace RestfulFirebase.Database.Query
 
         public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            async Task invoke(Func<string> invokeJsonData, CancellationToken? invokeToken)
+            async Task invoke(Func<string> invokeJsonData)
             {
                 string url;
                 var responseData = string.Empty;
@@ -65,7 +65,7 @@ namespace RestfulFirebase.Database.Query
                     throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
                 }
 
-                url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
+                url = await BuildUrlAsync(token).ConfigureAwait(false);
 
                 var c = GetClient();
 
@@ -75,7 +75,18 @@ namespace RestfulFirebase.Database.Query
                 {
                     try
                     {
-                        var result = await c.DeleteAsync(url, invokeToken.Value).ConfigureAwait(false);
+                        CancellationToken invokeToken;
+
+                        if (token == null)
+                        {
+                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                        }
+                        else
+                        {
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                        }
+
+                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
                         statusCode = result.StatusCode;
                         responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -92,7 +103,7 @@ namespace RestfulFirebase.Database.Query
                 }
                 else
                 {
-                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, invokeToken).ConfigureAwait(false);
+                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
                 }
             };
 
@@ -100,18 +111,7 @@ namespace RestfulFirebase.Database.Query
             {
                 try
                 {
-                    CancellationToken recursiveToken;
-
-                    if (token == null)
-                    {
-                        recursiveToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-                    }
-                    else
-                    {
-                        recursiveToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-                    }
-
-                    await invoke(jsonData, recursiveToken).ConfigureAwait(false);
+                    await invoke(jsonData).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -135,7 +135,7 @@ namespace RestfulFirebase.Database.Query
 
         public async Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            async Task<string> invoke(CancellationToken? invokeToken)
+            async Task<string> invoke()
             {
                 var url = string.Empty;
                 var responseData = string.Empty;
@@ -146,11 +146,22 @@ namespace RestfulFirebase.Database.Query
                     throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
                 }
 
-                url = await BuildUrlAsync(invokeToken).ConfigureAwait(false);
+                url = await BuildUrlAsync(token).ConfigureAwait(false);
 
                 try
                 {
-                    var response = await GetClient().GetAsync(url).ConfigureAwait(false);
+                    CancellationToken invokeToken;
+
+                    if (token == null)
+                    {
+                        invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                    }
+                    else
+                    {
+                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                    }
+
+                    var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
                     statusCode = response.StatusCode;
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -173,18 +184,8 @@ namespace RestfulFirebase.Database.Query
             {
                 try
                 {
-                    CancellationToken recursiveToken;
 
-                    if (token == null)
-                    {
-                        recursiveToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-                    }
-                    else
-                    {
-                        recursiveToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-                    }
-
-                    return await invoke(recursiveToken).ConfigureAwait(false);
+                    return await invoke().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -282,15 +283,6 @@ namespace RestfulFirebase.Database.Query
 
         private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
         {
-            if (token == null)
-            {
-                token = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-            }
-            else
-            {
-                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-            }
-
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
             var requestData = data;
@@ -306,8 +298,18 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
+                CancellationToken invokeToken;
+                if (token == null)
+                {
+                    invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                }
+                else
+                {
+                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                }
+
                 HttpResponseMessage result = null;
-                result = await client.SendAsync(message, token.Value).ConfigureAwait(false);
+                result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
                 statusCode = result.StatusCode;
                 responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 

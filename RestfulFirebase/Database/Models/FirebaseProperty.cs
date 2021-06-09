@@ -21,7 +21,7 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<WireErrorEventArgs> WireError;
 
         internal const string UnwiredBlobTag = "unwired";
-        internal const string SerializableTag = "serializable";
+        internal const string NonSerializableTag = "non_serializable";
 
         #endregion
 
@@ -62,7 +62,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (parameter?.ToString() == SerializableTag)
+            if (parameter?.ToString() != NonSerializableTag)
             {
                 var json = Serializer.Serialize(value);
                 return SetBlob(json, parameter);
@@ -77,7 +77,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (parameter?.ToString() == SerializableTag)
+            if (parameter?.ToString() != NonSerializableTag)
             {
                 var str = GetBlob(null, parameter);
                 if (str == null)
@@ -251,8 +251,8 @@ namespace RestfulFirebase.Database.Models
 
         public T Value
         {
-            get => base.GetValue<T>(default, SerializableTag);
-            set => base.SetValue(value, SerializableTag);
+            get => base.GetValue<T>(default);
+            set => base.SetValue(value);
         }
 
         #endregion

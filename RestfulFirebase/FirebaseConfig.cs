@@ -20,9 +20,8 @@ namespace RestfulFirebase
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
             DatabaseRequestTimeout = TimeSpan.FromSeconds(10);
             DatabaseRetryDelay = TimeSpan.FromSeconds(2);
-            DatabaseSyncQueueDelay = TimeSpan.FromSeconds(2);
             StorageRequestTimeout = TimeSpan.FromMinutes(2);
-            DatabaseMaxConcurrentSync = 10;
+            DatabaseMaxConcurrentWrites = 10;
         }
 
         public string ApiKey { get; set; }
@@ -41,8 +40,6 @@ namespace RestfulFirebase
 
         public TimeSpan DatabaseRetryDelay { get; set; }
 
-        public TimeSpan DatabaseSyncQueueDelay { get; set; }
-
         public TimeSpan StorageRequestTimeout { get; set; }
 
         public ILocalDatabase LocalDatabase { get; set; }
@@ -53,6 +50,6 @@ namespace RestfulFirebase
 
         public bool OfflineMode { get; set; }
 
-        public int DatabaseMaxConcurrentSync { get; set; }
+        public int DatabaseMaxConcurrentWrites { get; set; }
     }
 }
