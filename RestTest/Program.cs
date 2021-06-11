@@ -99,6 +99,18 @@ namespace RestTest
             set => SetPersistableProperty(value, "storable2");
         }
 
+        public FirebaseDictionary<FirebaseProperty> PropertyDictionary
+        {
+            get => GetPersistableProperty<FirebaseDictionary<FirebaseProperty>>("props", new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty()));
+            set => SetPersistableProperty(value, "storable2");
+        }
+
+        public FirebaseDictionary<TestStorable> ObjectDictionary
+        {
+            get => GetPersistableProperty<FirebaseDictionary<TestStorable>>("objs", new FirebaseDictionary<TestStorable>(key => new TestStorable()));
+            set => SetPersistableProperty(value, "storable2");
+        }
+
         public string Test
         {
             get => GetPersistableProperty<string>("test");
@@ -145,12 +157,12 @@ namespace RestTest
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
-            TestObjectDictionarySub2();
+            //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
             //await TestDef();
             //await TestRoutineWrite();
-            //TestCascadeObject();
+            TestCascadeObject();
 
             Console.ReadLine();
         }
@@ -798,33 +810,80 @@ namespace RestTest
             var obj = new CascadeStorable();
             obj.PropertyChanged += (s, e) =>
             {
-                var write = "Prop: " + e.PropertyName;
-                Console.WriteLine(write);
+                Console.WriteLine("Main: " + e.PropertyName);
+            };
+            obj.Storable1.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Storable1: " + e.PropertyName);
             };
             obj.Storable2.PropertyChanged += (s, e) =>
             {
-                var write = "Prop2: " + e.PropertyName;
-                Console.WriteLine(write);
+                Console.WriteLine("Storable2: " + e.PropertyName);
+            };
+            obj.PropertyDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("PropertyDictionary: " + obj.PropertyDictionary.Count);
+            };
+            obj.ObjectDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
             };
 
+            bool isRun = false;
+            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.DataChanges += (s, e) =>
+            {
+                toRun = true;
+                if (isRun) return;
+                isRun = true;
+                Task.Run(async delegate
+                {
+                    while (toRun)
+                    {
+                        toRun = false;
+                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        await Task.Delay(500);
+                    }
+                    isRun = false;
+                }).ConfigureAwait(false);
+            };
             wire.Start();
+
             wire.PutModel(obj);
 
-            var storable1 = new TestStorable();
-            storable1.PropertyChanged += (s, e) =>
-            {
-                var write = "Prop1: " + e.PropertyName;
-                Console.WriteLine(write);
-            };
-            obj.Storable1 = storable1;
-
             obj.Test = "cscs";
+
+            for (int i = 0; i < 100; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(i.ToString());
+                obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
+            }
+
+            for (int i = 0; i < 25; i++)
+            {
+                var stor = new TestStorable();
+                stor.Test = i.ToString();
+                obj.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
+            }
 
             while (true)
             {
                 string line = Console.ReadLine();
-                obj.Test = string.IsNullOrEmpty(line) ? null : line;
+                if (line == "view")
+                {
+                    var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
+                    foreach (var pair in db)
+                    {
+                        Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
+                    }
+                }
+                else
+                {
+                    obj.Test = string.IsNullOrEmpty(line) ? null : line;
+                }
             }
         }
     }

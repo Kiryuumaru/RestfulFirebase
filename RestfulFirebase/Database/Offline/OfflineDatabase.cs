@@ -29,7 +29,9 @@ namespace RestfulFirebase.Database.Offline
 
             public bool IsWritting { get; private set; }
 
-            public CancellationTokenSource CancellationSource { get; private set; }
+            public bool IsCancelled { get; private set; }
+
+            private CancellationTokenSource cancellationSource;
 
             private Action<RetryExceptionEventArgs> error;
 
@@ -43,7 +45,7 @@ namespace RestfulFirebase.Database.Offline
                 Uri = uri;
                 Blob = blob;
                 Query = new ChildQuery(app, () => uri);
-                CancellationSource = new CancellationTokenSource();
+                cancellationSource = new CancellationTokenSource();
                 this.error = error;
             }
 
@@ -88,15 +90,28 @@ namespace RestfulFirebase.Database.Offline
                 }).ConfigureAwait(false);
             }
 
+            public void Cancel()
+            {
+                if (!IsCancelled)
+                {
+                    IsCancelled = true;
+                    lock (App.Database.OfflineDatabase.writeTasks)
+                    {
+                        App.Database.OfflineDatabase.writeTasks.Remove(this);
+                    }
+                    cancellationSource.Cancel();
+                }
+            }
+
             private async Task Write()
             {
-                if (CancellationSource.IsCancellationRequested) return;
+                if (IsCancelled) return;
                 await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                if (!CancellationSource.IsCancellationRequested)
+                if (!IsCancelled)
                 {
-                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), CancellationSource.Token, err =>
+                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
                     {
-                        if (CancellationSource.IsCancellationRequested) return;
+                        if (IsCancelled) return;
                         Type exType = err.Exception.GetType();
                         if (err.Exception is FirebaseException firEx)
                         {
@@ -246,7 +261,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 foreach (var writeTask in writeTasks)
                 {
-                    writeTask.CancellationSource.Cancel();
+                    writeTask.Cancel();
                 }
             }
         }
@@ -264,17 +279,25 @@ namespace RestfulFirebase.Database.Offline
                 CancelPut(subData);
             }
 
-            WriteTask existing = null;
             lock (writeTasks)
             {
-                existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
+                var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
                 if (existing != null)
                 {
-                    existing.CancellationSource.Cancel();
+                    if (existing.Blob != data.Blob)
+                    {
+                        existing.Cancel();
+                        var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
+                        writeTasks.Add(newWriteTask);
+                        newWriteTask.Run();
+                    }
                 }
-                var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
-                writeTasks.Add(newWriteTask);
-                newWriteTask.Run();
+                else
+                {
+                    var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
+                    writeTasks.Add(newWriteTask);
+                    newWriteTask.Run();
+                }
             }
         }
 
@@ -284,7 +307,23 @@ namespace RestfulFirebase.Database.Offline
             {
                 foreach (WriteTask task in writeTasks.Where(i => Utils.UrlCompare(i.Uri, data.Uri)))
                 {
-                    task.CancellationSource.Cancel();
+                    task.Cancel();
+                }
+            }
+        }
+
+        internal bool IsWriting(DataHolder data)
+        {
+            lock (writeTasks)
+            {
+                var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
+                if (existing != null)
+                {
+                    return !existing.IsCancelled;
+                }
+                else
+                {
+                    return false;
                 }
             }
         }

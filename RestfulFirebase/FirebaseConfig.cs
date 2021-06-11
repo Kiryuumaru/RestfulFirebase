@@ -18,10 +18,10 @@ namespace RestfulFirebase
             HttpClientFactory = new DefaultHttpClientFactory();
             HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
-            DatabaseRequestTimeout = TimeSpan.FromSeconds(30);
+            DatabaseRequestTimeout = TimeSpan.FromSeconds(10);
             DatabaseRetryDelay = TimeSpan.FromSeconds(2);
             StorageRequestTimeout = TimeSpan.FromMinutes(2);
-            DatabaseMaxConcurrentWrites = 10;
+            DatabaseMaxConcurrentWrites = 100;
         }
 
         public string ApiKey { get; set; }

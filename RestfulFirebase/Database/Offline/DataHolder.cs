@@ -43,7 +43,11 @@ namespace RestfulFirebase.Database.Offline
             get => Exist ? DataChanges.Parse(Get(OfflineDatabase.ChangesPath, Short)) : null;
             internal set
             {
-                if (Short == null) Short = GetUniqueShort();
+                if (Short == null)
+                {
+                    if (value == null) return;
+                    Short = GetUniqueShort();
+                }
                 Set(value?.ToData(), OfflineDatabase.ChangesPath, Short);
             }
         }
