@@ -259,7 +259,7 @@ namespace RestfulFirebase.Database.Offline
         {
             lock (writeTasks)
             {
-                foreach (var writeTask in writeTasks)
+                foreach (var writeTask in writeTasks.ToList())
                 {
                     writeTask.Cancel();
                 }
@@ -305,7 +305,7 @@ namespace RestfulFirebase.Database.Offline
         {
             lock (writeTasks)
             {
-                foreach (WriteTask task in writeTasks.Where(i => Utils.UrlCompare(i.Uri, data.Uri)))
+                foreach (WriteTask task in writeTasks.Where(i => Utils.UrlCompare(i.Uri, data.Uri)).ToList())
                 {
                     task.Cancel();
                 }
