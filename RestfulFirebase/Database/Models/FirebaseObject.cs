@@ -112,9 +112,8 @@ namespace RestfulFirebase.Database.Models
 
                 foreach (var prop in props)
                 {
-                    var subWire = RealtimeInstance.Child(prop.Key);
-                    if (invokeSetFirst) subWire.PutModel((FirebaseProperty)prop.Property);
-                    else subWire.SubModel((FirebaseProperty)prop.Property);
+                    if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
+                    else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
                     supPaths.RemoveAll(i => i == prop.Key);
                 }
 
@@ -219,8 +218,7 @@ namespace RestfulFirebase.Database.Models
                 lock (this)
                 {
                     NamedProperty namedProperty = GetCore(key, null);
-                    bool isNull = RealtimeInstance.Child(key).IsNull();
-                    if (namedProperty == null && !isNull)
+                    if (namedProperty == null && !RealtimeInstance.Child(key, false).IsNull())
                     {
                         namedProperty = MakeNamedProperty(key, null, nameof(FirebaseObject));
                         RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);

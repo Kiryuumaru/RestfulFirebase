@@ -202,7 +202,7 @@ namespace RestfulFirebase.Database.Models
                 lock (this)
                 {
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var isNull = RealtimeInstance.Child(key).IsNull();
+                    var isNull = RealtimeInstance.Child(key, false).IsNull();
                     if (obj.Value == null && !isNull)
                     {
                         var item = ObjectFactory(key);
@@ -422,7 +422,7 @@ namespace RestfulFirebase.Database.Models
                 lock (this)
                 {
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var isNull = RealtimeInstance.Child(key).IsNull();
+                    var isNull = RealtimeInstance.Child(key, false).IsNull();
                     if (obj.Value == null && !isNull)
                     {
                         var item = ObjectFactory(key);

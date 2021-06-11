@@ -70,7 +70,6 @@ namespace RestfulFirebase.Database.Realtime
             if (disposing)
             {
                 Stop();
-                UnsubscribeToParent();
             }
             base.Dispose(disposing);
         }

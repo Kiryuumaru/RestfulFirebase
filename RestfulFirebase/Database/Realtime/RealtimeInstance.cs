@@ -39,12 +39,15 @@ namespace RestfulFirebase.Database.Realtime
             Query = query;
         }
 
-        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
+        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path, bool subscribeToParent = true)
         {
             App = app;
             Parent = parent;
             Query = parent.Query.Child(path);
-            SubscribeToParent();
+            if (subscribeToParent)
+            {
+                SubscribeToParent();
+            }
         }
 
         #endregion
@@ -60,11 +63,11 @@ namespace RestfulFirebase.Database.Realtime
             base.Dispose(disposing);
         }
 
-        public RealtimeInstance Child(string path)
+        public RealtimeInstance Child(string path, bool subscribeToParent = true)
         {
             VerifyNotDisposed();
 
-            return new RealtimeInstance(App, this, path);
+            return new RealtimeInstance(App, this, path, subscribeToParent);
         }
 
         public int GetTotalDataCount()
