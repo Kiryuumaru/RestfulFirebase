@@ -78,7 +78,7 @@ namespace RestfulFirebase.Database.Streaming
                     statusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
 
-                    using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (var stream = await response.Content.ReadAsStreamAsync())
                     using (var reader = new StreamReader(stream))
                     {
                         try
@@ -90,7 +90,7 @@ namespace RestfulFirebase.Database.Streaming
                         {
                             cancel.Token.ThrowIfCancellationRequested();
 
-                            line = (await reader.ReadLineAsync().ConfigureAwait(false))?.Trim();
+                            line = (await reader.ReadLineAsync())?.Trim();
 
                             if (string.IsNullOrWhiteSpace(line))
                             {

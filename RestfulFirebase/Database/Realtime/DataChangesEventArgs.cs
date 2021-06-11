@@ -11,12 +11,13 @@ namespace RestfulFirebase.Database.Realtime
 
         public string Path { get; }
 
-        public string Uri => (string.IsNullOrEmpty(Path) ? BaseUri : Utils.UrlCombine(BaseUri, Path)).Trim().Trim('/');
+        public string Uri { get; }
 
         public DataChangesEventArgs(string baseUri, string path)
         {
             BaseUri = baseUri.Trim().Trim('/');
             Path = path.Trim().Trim('/');
+            Uri = (string.IsNullOrEmpty(Path) ? BaseUri : Utils.UrlCombine(BaseUri, Path)).Trim().Trim('/');
         }
     }
 }

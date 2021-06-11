@@ -16,8 +16,8 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.66</Version>
-    <PackageReleaseNotes>*Bug fixes</PackageReleaseNotes>
+    <Version>1.0.67</Version>
+    <PackageReleaseNotes>*Added cascade observables support</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,7 +37,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.0.43" />
+    <PackageReference Include="ObservableHelpers" Version="1.0.54" />
   </ItemGroup>
 
 </Project>

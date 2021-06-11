@@ -21,5 +21,8 @@ namespace RestfulFirebase.Database.Models
 
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();
+
+        bool SetNull();
+        bool IsNull();
     }
 }

@@ -31,12 +31,11 @@ namespace RestfulFirebase.Database.Models
         public void SetPersistableProperty<T>(
             T value,
             string key,
-            [CallerMemberName] string propertyName = null,
-            Func<T, T, bool> validateValue = null)
+            [CallerMemberName] string propertyName = null)
         {
             VerifyNotDisposed();
 
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validateValue);
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
         }
 
         public T GetPersistableProperty<T>(
@@ -46,61 +45,42 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            {
+                if (!(defaultValue is IRealtimeModel))
+                {
+                    throw new Exception("Cascade IRealtimeModel should have default value");
+                }
+            }
+
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
-        public virtual bool SetPersistablePropertiesNull(object parameter = null)
+        public override bool SetNull()
         {
             VerifyNotDisposed();
 
-            lock (PropertyHolders)
-            {
-                var hasChanges = false;
-                List<PropertyHolder> props = GetRawProperties(nameof(FirebaseObject)).ToList();
-                foreach (var propHolder in props)
-                {
-                    if (propHolder.Property.SetNull(parameter)) hasChanges = true;
-                }
-                return hasChanges;
-            }
-        }
-
-        public virtual bool IsPersistablePropertiesNull(object parameter = null)
-        {
-            VerifyNotDisposed();
-
-            lock (PropertyHolders)
-            {
-                List<PropertyHolder> props = GetRawProperties(nameof(FirebaseObject)).ToList();
-                return props.All(i => i.Property.IsNull(parameter));
-            }
-        }
-
-        public override bool SetNull(object parameter = null)
-        {
-            VerifyNotDisposed();
-
-            if (RealtimeInstance != null && parameter?.ToString() != FirebaseProperty.UnwiredBlobTag)
+            if (HasAttachedRealtime)
             {
                 return RealtimeInstance.SetNull();
             }
             else
             {
-                return base.SetNull(parameter);
+                return base.SetNull();
             }
         }
 
-        public override bool IsNull(object parameter = null)
+        public override bool IsNull()
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null && parameter?.ToString() != FirebaseProperty.UnwiredBlobTag)
+            if (HasAttachedRealtime)
             {
                 return RealtimeInstance.IsNull();
             }
             else
             {
-                return base.IsNull(parameter);
+                return base.IsNull();
             }
         }
 
@@ -120,28 +100,47 @@ namespace RestfulFirebase.Database.Models
 
             InitializeProperties();
 
-            lock (PropertyHolders)
+            lock (this)
             {
-                List<PropertyHolder> props = GetRawProperties(nameof(FirebaseObject)).ToList();
-                var paths = RealtimeInstance.GetSubPaths().Select(i => Utils.UrlSeparate(i)[0]).ToList();
+                IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
+                List<string> supPaths = new List<string>();
+                foreach (var path in RealtimeInstance.GetSubPaths())
+                {
+                    var separatedPath = Utils.UrlSeparate(path);
+                    supPaths.Add(separatedPath[0]);
+                }
 
                 foreach (var prop in props)
                 {
-                    if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
-                    else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
-                    paths.RemoveAll(i => i == prop.Key);
+                    var subWire = RealtimeInstance.Child(prop.Key);
+                    if (invokeSetFirst) subWire.PutModel((FirebaseProperty)prop.Property);
+                    else subWire.SubModel((FirebaseProperty)prop.Property);
+                    supPaths.RemoveAll(i => i == prop.Key);
                 }
 
-                foreach (var path in paths)
+                foreach (var path in supPaths)
                 {
-                    if (PropertyHolders.Any(i => i.Key == path)) continue;
-                    var propHolder = PropertyFactory(path, null, nameof(FirebaseObject));
-                    RealtimeInstance.Child(path).SubModel((FirebaseProperty)propHolder.Property);
-                    PropertyHolders.Add(propHolder);
+                    if (ExistsCore(path, null)) continue;
+                    var namedProperty = MakeNamedProperty(path, null, nameof(FirebaseObject));
+                    RealtimeInstance.Child(path).SubModel((FirebaseProperty)namedProperty.Property);
+                    AddCore(namedProperty);
                 }
             }
 
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+        }
+
+        protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
+        {
+            VerifyNotDisposed();
+
+            return new NamedProperty()
+            {
+                Property = new FirebaseProperty(),
+                Key = key,
+                PropertyName = propertyName,
+                Group = group
+            };
         }
 
         public virtual void DetachRealtime()
@@ -187,28 +186,6 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        protected override PropertyHolder PropertyFactory(string key, string propertyName, string group)
-        {
-            VerifyNotDisposed();
-
-            var prop = new FirebaseProperty();
-            var propHolder = new PropertyHolder()
-            {
-                Property = prop,
-                Key = key,
-                PropertyName = propertyName,
-                Group = group
-            };
-            prop.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(prop.Property))
-                {
-                    OnPropertyChanged(propHolder.Key, propHolder.PropertyName, propHolder.Group);
-                }
-            };
-            return propHolder;
-        }
-
         private void Subscribe()
         {
             VerifyNotDisposed();
@@ -239,18 +216,17 @@ namespace RestfulFirebase.Database.Models
             {
                 var separated = Utils.UrlSeparate(e.Path);
                 var key = separated[0];
-                lock (PropertyHolders)
+                lock (this)
                 {
-                    PropertyHolder propHolder = PropertyHolders.FirstOrDefault(i => i.Key == key);
+                    NamedProperty namedProperty = GetCore(key, null);
                     bool isNull = RealtimeInstance.Child(key).IsNull();
-                    if (propHolder == null && !isNull)
+                    if (namedProperty == null && !isNull)
                     {
-                        propHolder = PropertyFactory(key, null, nameof(FirebaseObject));
-                        RealtimeInstance.Child(key).SubModel((FirebaseProperty)propHolder.Property);
-                        PropertyHolders.Add(propHolder);
+                        namedProperty = MakeNamedProperty(key, null, nameof(FirebaseObject));
+                        RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);
+                        AddCore(namedProperty);
                     }
                 }
-                OnPropertyChangedWithKey(key);
             }
         }
 

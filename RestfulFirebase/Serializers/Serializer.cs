@@ -263,6 +263,32 @@ namespace RestfulFirebase.Serializers
             return GetSerializer<T>().Deserialize(data, defaultValue);
         }
 
+        public static bool CanSerialize<T>(T value)
+        {
+            try
+            {
+                _ = GetSerializer<T>();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool CanSerialize<T>()
+        {
+            try
+            {
+                _ = GetSerializer<T>();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public static void Register(Serializer serializer)
         {
             serializers.RemoveAll(i => i.Type == serializer.Type);

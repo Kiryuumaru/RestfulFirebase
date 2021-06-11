@@ -89,9 +89,9 @@ namespace RestfulFirebase.Database.Offline
 
         #endregion
 
-        private void Put(Action<RetryExceptionEventArgs> onError)
+        private void Put(Action<RetryExceptionEventArgs> error)
         {
-            App.Database.OfflineDatabase.Put(this, onError);
+            App.Database.OfflineDatabase.Put(this, error);
         }
 
         protected string GetUniqueShort()
@@ -120,7 +120,7 @@ namespace RestfulFirebase.Database.Offline
             else App.LocalDatabase.Set(combined, data);
         }
 
-        internal bool MakeChanges(string blob, Action<RetryExceptionEventArgs> onError)
+        internal bool MakeChanges(string blob, Action<RetryExceptionEventArgs> error)
         {
             var oldBlob = Blob;
 
@@ -136,7 +136,7 @@ namespace RestfulFirebase.Database.Offline
                     Changes = new DataChanges(
                         blob,
                         DataChangesType.Create);
-                    Put(onError);
+                    Put(error);
                 }
             }
             else if (oldBlob != blob)
@@ -144,7 +144,7 @@ namespace RestfulFirebase.Database.Offline
                 Changes = new DataChanges(
                     blob,
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
-                Put(onError);
+                Put(error);
             }
             //else
             //{
@@ -154,7 +154,7 @@ namespace RestfulFirebase.Database.Offline
             return oldBlob != Blob;
         }
 
-        internal bool MakeSync(string blob, Action<RetryExceptionEventArgs> onError)
+        internal bool MakeSync(string blob, Action<RetryExceptionEventArgs> error)
         {
             var oldBlob = Blob;
 
@@ -175,7 +175,7 @@ namespace RestfulFirebase.Database.Offline
                     case DataChangesType.Create:
                         if (blob == null)
                         {
-                            Put(onError);
+                            Put(error);
                         }
                         else
                         {
@@ -190,7 +190,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         else if (Sync == blob)
                         {
-                            Put(onError);
+                            Put(error);
                         }
                         else
                         {
@@ -205,7 +205,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         if (Sync == blob)
                         {
-                            Put(onError);
+                            Put(error);
                         }
                         else
                         {

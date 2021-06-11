@@ -25,22 +25,26 @@ namespace RestfulFirebase.Database.Offline
 
             public string Blob { get; }
 
-            public Action<RetryExceptionEventArgs> OnError { get; set; }
-
             public IFirebaseQuery Query { get; }
 
             public bool IsWritting { get; private set; }
 
             public CancellationTokenSource CancellationSource { get; private set; }
 
-            public WriteTask(RestfulFirebaseApp app, string uri, string blob, Action<RetryExceptionEventArgs> onError)
+            private Action<RetryExceptionEventArgs> error;
+
+            public WriteTask(
+                RestfulFirebaseApp app,
+                string uri,
+                string blob,
+                Action<RetryExceptionEventArgs> error)
             {
                 App = app;
                 Uri = uri;
                 Blob = blob;
-                OnError = onError;
                 Query = new ChildQuery(app, () => uri);
                 CancellationSource = new CancellationTokenSource();
+                this.error = error;
             }
 
             public void Run()
@@ -110,12 +114,12 @@ namespace RestfulFirebase.Database.Offline
                             }
                             else
                             {
-                                OnError(err);
+                                error(err);
                             }
                         }
                         else
                         {
-                            OnError(err);
+                            error(err);
                         }
                     }).ConfigureAwait(false);
                 }

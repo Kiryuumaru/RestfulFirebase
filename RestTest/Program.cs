@@ -83,6 +83,36 @@ namespace RestTest
         #endregion
     }
 
+    public class CascadeStorable : FirebaseObject
+    {
+        #region Properties
+
+        public TestStorable Storable1
+        {
+            get => GetPersistableProperty<TestStorable>("storable1", new TestStorable());
+            set => SetPersistableProperty(value, "storable1");
+        }
+
+        public TestStorable Storable2
+        {
+            get => GetPersistableProperty<TestStorable>("storable2", new TestStorable());
+            set => SetPersistableProperty(value, "storable2");
+        }
+
+        public string Test
+        {
+            get => GetPersistableProperty<string>("test");
+            set => SetPersistableProperty(value, "test");
+        }
+
+        #endregion
+
+        #region Methods
+
+
+        #endregion
+    }
+
     public class Program
     {
         private static RestfulFirebaseApp app;
@@ -115,11 +145,12 @@ namespace RestTest
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
-            //TestObjectDictionarySub2();
+            TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
             //await TestDef();
-            await TestRoutineWrite();
+            //await TestRoutineWrite();
+            //TestCascadeObject();
 
             Console.ReadLine();
         }
@@ -373,16 +404,6 @@ namespace RestTest
             wire.Start();
             wire.PutModel(obj);
 
-            Console.WriteLine(obj.IsNull() ? "null" : "not null");
-
-            _ = Console.ReadLine();
-
-            obj.SetNull();
-
-            _ = Console.ReadLine();
-
-            Console.WriteLine(obj.IsNull() ? "null" : "not null");
-
             while (true)
             {
                 string line = Console.ReadLine();
@@ -405,7 +426,7 @@ namespace RestTest
                         write += obj.Premium.ToString();
                         break;
                     case nameof(TestStorable.Premiums):
-                        write += obj.Premiums.ToString();
+                        write += obj.Premiums?.ToString();
                         break;
                     case nameof(TestStorable.Test):
                         write += obj.Test;
@@ -429,7 +450,7 @@ namespace RestTest
 
         public static void TestPropertyDictionaryPut()
         {
-            var dict = new FirebasePropertyDictionary();
+            var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
                 Console.WriteLine("Count: " + dict.Keys.Count);
@@ -454,7 +475,7 @@ namespace RestTest
 
         public static void TestPropertyDictionarySub()
         {
-            var dict = new FirebasePropertyDictionary();
+            var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
@@ -483,7 +504,7 @@ namespace RestTest
 
         public static void TestPropertyDictionarySub2()
         {
-            var dict = new FirebasePropertyDictionary();
+            var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
@@ -531,7 +552,7 @@ namespace RestTest
 
         public static void TestPropertyDictionarySub3()
         {
-            var dict = new FirebasePropertyDictionary();
+            var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
@@ -563,7 +584,7 @@ namespace RestTest
 
         public static void TestObjectDictionaryPut()
         {
-            var dict = new FirebaseObjectDictionary();
+            var dict = new FirebaseDictionary<FirebaseObject>(key => new FirebaseObject());
             dict.CollectionChanged += (s, e) =>
             {
                 Console.WriteLine("Count: " + dict.Keys.Count);
@@ -595,7 +616,7 @@ namespace RestTest
 
         public static void TestObjectDictionarySub()
         {
-            var dict = new FirebaseObjectDictionary<TestStorable>(key =>
+            var dict = new FirebaseDictionary<TestStorable>(key =>
             {
                 return new TestStorable();
             });
@@ -616,7 +637,7 @@ namespace RestTest
 
         public static void TestObjectDictionarySub2()
         {
-            var dict = new FirebaseObjectDictionary();
+            var dict = new FirebaseDictionary<FirebaseObject>(key => new FirebaseObject());
             dict.CollectionChanged += (s, e) =>
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
@@ -663,7 +684,7 @@ namespace RestTest
 
         public static void TestObjectDictionarySub3()
         {
-            var dict = new FirebaseObjectDictionary();
+            var dict = new FirebaseDictionary<FirebaseObject>(key => new FirebaseObject());
             dict.CollectionChanged += (s, e) =>
             {
                 Console.WriteLine("Count: " + dict.Keys.Count);
@@ -738,7 +759,7 @@ namespace RestTest
 
         public static async Task TestRoutineWrite()
         {
-            var dict = new FirebasePropertyDictionary();
+            var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
@@ -750,7 +771,7 @@ namespace RestTest
 
             string lin11e = Console.ReadLine();
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(UIDFactory.GenerateSafeUID());
@@ -769,6 +790,41 @@ namespace RestTest
                 }
                 await wire.WaitForSynced();
                 Console.WriteLine("DURATION: " + watch.ElapsedMilliseconds);
+            }
+        }
+
+        public static void TestCascadeObject()
+        {
+            var obj = new CascadeStorable();
+            obj.PropertyChanged += (s, e) =>
+            {
+                var write = "Prop: " + e.PropertyName;
+                Console.WriteLine(write);
+            };
+            obj.Storable2.PropertyChanged += (s, e) =>
+            {
+                var write = "Prop2: " + e.PropertyName;
+                Console.WriteLine(write);
+            };
+
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.PutModel(obj);
+
+            var storable1 = new TestStorable();
+            storable1.PropertyChanged += (s, e) =>
+            {
+                var write = "Prop1: " + e.PropertyName;
+                Console.WriteLine(write);
+            };
+            obj.Storable1 = storable1;
+
+            obj.Test = "cscs";
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                obj.Test = string.IsNullOrEmpty(line) ? null : line;
             }
         }
     }

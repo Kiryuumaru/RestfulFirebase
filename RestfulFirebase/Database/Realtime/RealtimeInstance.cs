@@ -311,7 +311,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_DataChanges(object sender, DataChangesEventArgs e)
         {
-            string baseUri = Query.GetAbsolutePath();
+            string baseUri = Query.GetAbsolutePath().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
                 var path = e.Uri.Replace(baseUri, "");
@@ -321,7 +321,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_Error(object sender, WireErrorEventArgs e)
         {
-            string baseUri = Query.GetAbsolutePath();
+            string baseUri = Query.GetAbsolutePath().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
                 SelfError(e);
