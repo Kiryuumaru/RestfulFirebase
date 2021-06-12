@@ -174,7 +174,7 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             T item = itemInitializer.Invoke((key));
-            item.SynchronizationOperation.SetContext(this);
+            item?.SynchronizationOperation.SetContext(this);
 
             return item;
         }
