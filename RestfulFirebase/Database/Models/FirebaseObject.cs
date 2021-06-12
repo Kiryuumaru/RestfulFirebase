@@ -98,10 +98,10 @@ namespace RestfulFirebase.Database.Models
 
             Subscribe();
 
-            InitializeProperties();
-
             lock (this)
             {
+                InitializeProperties();
+
                 IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
                 List<string> supPaths = new List<string>();
                 foreach (var path in RealtimeInstance.GetSubPaths())
