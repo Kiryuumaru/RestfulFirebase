@@ -18,7 +18,8 @@ namespace RestfulFirebase
             HttpClientFactory = new DefaultHttpClientFactory();
             HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
-            DatabaseRequestTimeout = TimeSpan.FromSeconds(10);
+            DatabaseRequestTimeout = TimeSpan.FromSeconds(15);
+            DatabaseColdStreamTimeout = TimeSpan.FromMinutes(1);
             DatabaseRetryDelay = TimeSpan.FromSeconds(2);
             StorageRequestTimeout = TimeSpan.FromMinutes(2);
             DatabaseMaxConcurrentWrites = 100;
@@ -37,6 +38,8 @@ namespace RestfulFirebase
         public TimeSpan AuthRequestTimeout { get; set; }
 
         public TimeSpan DatabaseRequestTimeout { get; set; }
+
+        public TimeSpan DatabaseColdStreamTimeout { get; set; }
 
         public TimeSpan DatabaseRetryDelay { get; set; }
 

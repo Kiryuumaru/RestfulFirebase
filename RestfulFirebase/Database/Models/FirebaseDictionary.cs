@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.Extensions;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -99,7 +100,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationOperation.ContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -107,7 +108,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationOperation.ContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });
@@ -115,7 +116,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnWireError(WireErrorEventArgs args)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationOperation.ContextPost(delegate
             {
                 WireError?.Invoke(this, args);
             });
@@ -133,6 +134,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
+            value.SynchronizationOperation.SetContext(this);
             if (RealtimeInstance != null)
             {
                 if (value.RealtimeInstance == null)
@@ -171,7 +173,10 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            return itemInitializer.Invoke((key));
+            T item = itemInitializer.Invoke((key));
+            item.SynchronizationOperation.SetContext(this);
+
+            return item;
         }
 
         private void Subscribe()

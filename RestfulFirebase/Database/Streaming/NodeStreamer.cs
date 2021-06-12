@@ -13,6 +13,7 @@ using ObservableHelpers;
 using RestfulFirebase.Extensions;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -71,7 +72,16 @@ namespace RestfulFirebase.Database.Streaming
 
                     var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
 
-                    var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
+                    HttpResponseMessage response = null;
+
+                    if (await Task.Run(async delegate
+                    {
+                        response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
+                        return false;
+                    }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
+                    {
+                        continue;
+                    }
 
                     var serverEvent = ServerEventType.KeepAlive;
 
@@ -90,7 +100,16 @@ namespace RestfulFirebase.Database.Streaming
                         {
                             cancel.Token.ThrowIfCancellationRequested();
 
-                            line = (await reader.ReadLineAsync())?.Trim();
+                            line = string.Empty;
+
+                            if (await Task.Run(async delegate
+                                {
+                                    line = (await reader.ReadLineAsync().ConfigureAwait(false))?.Trim();
+                                    return false;
+                                }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
+                            {
+                                break;
+                            }
 
                             if (string.IsNullOrWhiteSpace(line))
                             {

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
-    public interface IRealtimeModel : INotifyPropertyChanged, IDisposable
+    public interface IRealtimeModel : ISynchronizationObject, INullableObject, INotifyPropertyChanged, IDisposable
     {
         RealtimeInstance RealtimeInstance { get; }
         bool HasAttachedRealtime { get; }
@@ -21,8 +21,5 @@ namespace RestfulFirebase.Database.Models
 
         void AttachRealtime(RealtimeInstance modelWire, bool invokeSetFirst);
         void DetachRealtime();
-
-        bool SetNull();
-        bool IsNull();
     }
 }

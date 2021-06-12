@@ -12,6 +12,7 @@ using System.Threading;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
 using System.Collections.Concurrent;
+using RestfulFirebase.Extensions;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -65,8 +66,6 @@ namespace RestfulFirebase.Database.Query
                     throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
                 }
 
-                url = await BuildUrlAsync(token).ConfigureAwait(false);
-
                 var c = GetClient();
 
                 var currentJsonToInvoke = invokeJsonData();
@@ -75,6 +74,8 @@ namespace RestfulFirebase.Database.Query
                 {
                     try
                     {
+                        url = await BuildUrlAsync(token).ConfigureAwait(false);
+
                         CancellationToken invokeToken;
 
                         if (token == null)
@@ -96,6 +97,10 @@ namespace RestfulFirebase.Database.Query
                     {
                         throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                     }
+                    catch (FirebaseException ex)
+                    {
+                        throw ex;
+                    }
                     catch (Exception ex)
                     {
                         throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
@@ -115,12 +120,18 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (Exception ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs(ex);
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry)
+                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                     {
                         await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                        await recursive().ConfigureAwait(false);
+                        return false;
+                    }));
+                    onException?.Invoke(retryEx);
+                    if (retryEx.Retry != null)
+                    {
+                        if (await retryEx.Retry)
+                        {
+                            await recursive().ConfigureAwait(false);
+                        }
                     }
                 }
             }
@@ -146,10 +157,10 @@ namespace RestfulFirebase.Database.Query
                     throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
                 }
 
-                url = await BuildUrlAsync(token).ConfigureAwait(false);
-
                 try
                 {
+                    url = await BuildUrlAsync(token).ConfigureAwait(false);
+
                     CancellationToken invokeToken;
 
                     if (token == null)
@@ -174,6 +185,10 @@ namespace RestfulFirebase.Database.Query
                 {
                     throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
                 }
+                catch (FirebaseException ex)
+                {
+                    throw ex;
+                }
                 catch (Exception ex)
                 {
                     throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
@@ -189,12 +204,18 @@ namespace RestfulFirebase.Database.Query
                 }
                 catch (Exception ex)
                 {
-                    var retryEx = new RetryExceptionEventArgs(ex);
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry)
+                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                     {
-                        await Task.Delay(App.Config.DatabaseRetryDelay);
-                        await recursive().ConfigureAwait(false);
+                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        return false;
+                    }));
+                    onException?.Invoke(retryEx);
+                    if (retryEx.Retry != null)
+                    {
+                        if (await retryEx.Retry)
+                        {
+                            await recursive().ConfigureAwait(false);
+                        }
                     }
                     return null;
                 }
@@ -219,17 +240,32 @@ namespace RestfulFirebase.Database.Query
                 token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
             }
 
-            if (App.Auth.IsAuthenticated && AuthenticateRequests)
+            try
             {
-                return await Task.Run(delegate
+                if (App.Auth.IsAuthenticated && AuthenticateRequests)
                 {
-                    return WithAuth(() =>
+                    return await Task.Run(delegate
                     {
-                        var getTokenResult = App.Auth.GetFreshToken();
-                        if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
-                        return getTokenResult.Result.Result;
-                    }).BuildUrl(null);
-                }, token.Value).ConfigureAwait(false);
+                        return WithAuth(() =>
+                        {
+                            var getTokenResult = App.Auth.GetFreshToken();
+                            if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
+                            return getTokenResult.Result.Result;
+                        }).BuildUrl(null);
+                    }, token.Value).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException ex)
+            {
+                throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+            }
+            catch (FirebaseException ex)
+            {
+                throw ex;
+            }
+            catch (Exception ex)
+            {
+                throw new FirebaseException(FirebaseExceptionReason.DatabaseUndefined, ex);
             }
 
             return BuildUrl(null);
@@ -289,15 +325,15 @@ namespace RestfulFirebase.Database.Query
 
             string url;
 
-            url = await BuildUrlAsync(token).ConfigureAwait(false);
-
-            var message = new HttpRequestMessage(method, url)
-            {
-                Content = new StringContent(requestData)
-            };
-
             try
             {
+                url = await BuildUrlAsync(token).ConfigureAwait(false);
+
+                var message = new HttpRequestMessage(method, url)
+                {
+                    Content = new StringContent(requestData)
+                };
+
                 CancellationToken invokeToken;
                 if (token == null)
                 {
@@ -320,6 +356,10 @@ namespace RestfulFirebase.Database.Query
             catch (OperationCanceledException ex)
             {
                 throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+            }
+            catch (FirebaseException ex)
+            {
+                throw ex;
             }
             catch (Exception ex)
             {

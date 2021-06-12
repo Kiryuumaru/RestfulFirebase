@@ -40,10 +40,9 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path, bool subscribeToParent = true)
+           : this (app, parent.Query.Child(path))
         {
-            App = app;
             Parent = parent;
-            Query = parent.Query.Child(path);
             if (subscribeToParent)
             {
                 SubscribeToParent();
@@ -186,7 +185,7 @@ namespace RestfulFirebase.Database.Realtime
             where T : IRealtimeModel
         {
             VerifyNotDisposed();
-
+            model.SynchronizationOperation.SetContext(this);
             model.AttachRealtime(this, true);
             return model;
         }
@@ -195,7 +194,7 @@ namespace RestfulFirebase.Database.Realtime
             where T : IRealtimeModel
         {
             VerifyNotDisposed();
-
+            model.SynchronizationOperation.SetContext(this);
             model.AttachRealtime(this, false);
             return model;
         }
@@ -333,7 +332,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationOperation.ContextPost(delegate
             {
                 DataChanges?.Invoke(this, e);
             });
@@ -341,7 +340,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            SynchronizationContextPost(delegate
+            SynchronizationOperation.ContextPost(delegate
             {
                 Error?.Invoke(this, e);
             });

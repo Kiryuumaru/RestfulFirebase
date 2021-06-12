@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Database.Query;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,9 +14,6 @@ namespace RestfulFirebase.Database.Offline
     internal class OfflineDatabase : IDisposable
     {
         #region Helper Classes
-
-        private const int MaxWriteTokenCount = 1000;
-        private int lastMaxConcurrentWrites = 0;
 
         private class WriteTask
         {
@@ -54,32 +52,8 @@ namespace RestfulFirebase.Database.Offline
                 if (IsWritting) return;
                 IsWritting = true;
 
-                Task.Run(async delegate
-                {
-                    await App.Database.OfflineDatabase.semaphoreSlimControl.WaitAsync();
-                    try
-                    {
-                        if (App.Config.DatabaseMaxConcurrentWrites > MaxWriteTokenCount) throw new Exception("DatabaseMaxConcurrentWrites exceeds MaxWriteTokenCount");
-                        if (App.Database.OfflineDatabase.lastMaxConcurrentWrites < App.Config.DatabaseMaxConcurrentWrites)
-                        {
-                            int tokenToRelease = App.Config.DatabaseMaxConcurrentWrites - App.Database.OfflineDatabase.lastMaxConcurrentWrites;
-                            App.Database.OfflineDatabase.lastMaxConcurrentWrites = App.Config.DatabaseMaxConcurrentWrites;
-                            App.Database.OfflineDatabase.semaphoreSlim.Release(tokenToRelease);
-                        }
-                        else if (App.Database.OfflineDatabase.lastMaxConcurrentWrites > App.Config.DatabaseMaxConcurrentWrites)
-                        {
-                            int tokenToWait = App.Database.OfflineDatabase.lastMaxConcurrentWrites - App.Config.DatabaseMaxConcurrentWrites;
-                            App.Database.OfflineDatabase.lastMaxConcurrentWrites = App.Config.DatabaseMaxConcurrentWrites;
-                            for (int i = 0; i < tokenToWait; i++)
-                            {
-                                await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync();
-                            }
-                        }
-                    }
-                    catch { }
-                    App.Database.OfflineDatabase.semaphoreSlimControl.Release();
-                });
-
+                App.Database.OfflineDatabase.writeTaskPutControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                
                 Task.Run(async delegate
                 {
                     await Write().ConfigureAwait(false);
@@ -106,39 +80,60 @@ namespace RestfulFirebase.Database.Offline
             private async Task Write()
             {
                 if (IsCancelled) return;
-                await App.Database.OfflineDatabase.semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                if (!IsCancelled)
+                await App.Database.OfflineDatabase.writeTaskPutControl.SendAsync(async delegate
                 {
-                    await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
+                    if (IsCancelled) return;
+                    try
                     {
-                        if (IsCancelled) return;
-                        Type exType = err.Exception.GetType();
-                        if (err.Exception is FirebaseException firEx)
+                        App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                        await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
                         {
-                            if (firEx.Reason == FirebaseExceptionReason.OfflineMode)
+                            if (IsCancelled) return;
+                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
+                            Type exType = err.Exception.GetType();
+                            if (err.Exception is FirebaseException firEx)
                             {
-                                err.Retry = true;
-                            }
-                            else if (firEx.Reason == FirebaseExceptionReason.OperationCancelled)
-                            {
-                                err.Retry = true;
-                            }
-                            else if (firEx.Reason == FirebaseExceptionReason.Auth)
-                            {
-                                err.Retry = true;
+                                if (firEx.Reason == FirebaseExceptionReason.OfflineMode)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay);
+                                        return true;
+                                    });
+                                }
+                                else if (firEx.Reason == FirebaseExceptionReason.OperationCancelled)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay);
+                                        return true;
+                                    });
+                                }
+                                else if (firEx.Reason == FirebaseExceptionReason.Auth)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay);
+                                        return true;
+                                    });
+                                }
+                                else
+                                {
+                                    error(err);
+                                }
                             }
                             else
                             {
                                 error(err);
                             }
-                        }
-                        else
+                        }).ConfigureAwait(false);
+                        if (!IsCancelled)
                         {
-                            error(err);
+                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
                         }
-                    }).ConfigureAwait(false);
-                }
-                App.Database.OfflineDatabase.semaphoreSlim.Release();
+                    }
+                    catch { }
+                });
                 IsWritting = false;
             }
         }
@@ -158,8 +153,8 @@ namespace RestfulFirebase.Database.Offline
 
         private List<WriteTask> writeTasks = new List<WriteTask>();
 
-        private SemaphoreSlim semaphoreSlim;
-        private SemaphoreSlim semaphoreSlimControl;
+        private OperationInvoker writeTaskPutControl;
+        private OperationInvoker writeTaskErrorControl;
 
         #endregion
 
@@ -168,8 +163,8 @@ namespace RestfulFirebase.Database.Offline
         public OfflineDatabase(RestfulFirebaseApp app)
         {
             App = app;
-            semaphoreSlim = new SemaphoreSlim(0, MaxWriteTokenCount);
-            semaphoreSlimControl = new SemaphoreSlim(1, 1);
+            writeTaskPutControl = new OperationInvoker(0);
+            writeTaskErrorControl = new OperationInvoker(0);
         }
 
         #endregion

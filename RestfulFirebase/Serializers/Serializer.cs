@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Serializers.Additionals;
+﻿using RestfulFirebase.Extensions;
+using RestfulFirebase.Serializers.Additionals;
 using RestfulFirebase.Serializers.Primitives;
 using System;
 using System.Collections;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions
 {
     public static class UIDFactory
     {

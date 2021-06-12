@@ -150,10 +150,10 @@ namespace RestfulFirebase.Database.Offline
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
                 Put(error);
             }
-            //else
-            //{
-            //    Put(onError);
-            //}
+            else
+            {
+                Put(error);
+            }
 
             return oldBlob != Blob;
         }

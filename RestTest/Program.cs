@@ -15,6 +15,7 @@ using System.Threading;
 using ObservableHelpers;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.Extensions;
 
 namespace RestTest
 {
@@ -856,14 +857,14 @@ namespace RestTest
 
             obj.Test = "cscs";
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(i.ToString());
                 obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
             }
 
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < 50; i++)
             {
                 var stor = new TestStorable();
                 stor.Test = i.ToString();

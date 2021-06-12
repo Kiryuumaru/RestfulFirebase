@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions
 {
     internal static class Utils
     {

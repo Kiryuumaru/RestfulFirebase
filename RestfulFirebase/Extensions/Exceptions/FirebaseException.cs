@@ -2,7 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase
+namespace RestfulFirebase.Extensions
 {
     public class FirebaseException : Exception
     {
