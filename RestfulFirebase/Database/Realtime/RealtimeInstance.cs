@@ -245,11 +245,6 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnError(string uri, Exception exception)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
             if (Parent == null)
             {
                 SelfError(new WireErrorEventArgs(uri, exception));
@@ -284,11 +279,6 @@ namespace RestfulFirebase.Database.Realtime
 
         internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
-
             var hasChanges = false;
             if (err.Exception is FirebaseException ex)
             {
@@ -332,7 +322,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfDataChanges(DataChangesEventArgs e)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 DataChanges?.Invoke(this, e);
             });
@@ -340,7 +330,7 @@ namespace RestfulFirebase.Database.Realtime
 
         private void SelfError(WireErrorEventArgs e)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 Error?.Invoke(this, e);
             });

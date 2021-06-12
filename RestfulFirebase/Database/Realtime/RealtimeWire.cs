@@ -76,7 +76,10 @@ namespace RestfulFirebase.Database.Realtime
 
         private void OnNext(object sender, StreamObject streamObject)
         {
-            if (IsDisposed) return;
+            if (IsDisposed)
+            {
+                return;
+            }
 
             var urisToInvoke = new List<string>() { streamObject.Uri };
 

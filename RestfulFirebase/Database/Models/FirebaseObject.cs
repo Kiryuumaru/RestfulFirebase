@@ -163,7 +163,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -171,7 +171,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });
@@ -179,7 +179,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnWireError(WireErrorEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 WireError?.Invoke(this, args);
             });

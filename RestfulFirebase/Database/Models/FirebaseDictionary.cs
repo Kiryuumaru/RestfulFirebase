@@ -100,7 +100,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -108,7 +108,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });
@@ -116,7 +116,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnWireError(WireErrorEventArgs args)
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 WireError?.Invoke(this, args);
             });
@@ -163,7 +163,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            foreach (var item in this)
+            foreach (var item in this.ToList())
             {
                 ValueRemove(item.Key, out _);
             }

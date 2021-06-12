@@ -283,7 +283,7 @@ namespace RestfulFirebase.Auth
 
         protected void OnAuthRefreshed()
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 AuthRefreshed?.Invoke();
             });
@@ -291,7 +291,7 @@ namespace RestfulFirebase.Auth
 
         protected void OnAuthenticated()
         {
-            SynchronizationOperation.ContextPost(delegate
+            ContextPost(delegate
             {
                 Authenticated?.Invoke();
             });
