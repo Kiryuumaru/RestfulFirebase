@@ -54,6 +54,17 @@ namespace RestfulFirebase.Database.Realtime
             subscription = null;
         }
 
+        public async Task WaitForFirstStream()
+        {
+            VerifyNotDisposed();
+
+            await Task.Run(async delegate
+            {
+                while (!HasFirstStream) { await Task.Delay(100).ConfigureAwait(false); }
+                return true;
+            }).ConfigureAwait(false);
+        }
+
         public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
             VerifyNotDisposed();

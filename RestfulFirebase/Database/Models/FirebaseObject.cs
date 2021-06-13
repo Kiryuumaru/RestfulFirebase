@@ -18,7 +18,7 @@ namespace RestfulFirebase.Database.Models
 
         public RealtimeInstance RealtimeInstance { get; private set; }
 
-        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
@@ -96,7 +96,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 Unsubscribe();
                 RealtimeInstance = null;
@@ -156,7 +156,9 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
+
             OnRealtimeDetached(args);
         }
 
@@ -197,7 +199,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
@@ -208,7 +210,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
                 RealtimeInstance.Error -= RealtimeInstance_Error;
@@ -226,7 +228,7 @@ namespace RestfulFirebase.Database.Models
                 lock (this)
                 {
                     NamedProperty namedProperty = GetCore(key, null);
-                    if (namedProperty == null && !RealtimeInstance.Child(key, false).IsNull())
+                    if (namedProperty == null && RealtimeInstance.HasChild(key))
                     {
                         namedProperty = MakeNamedProperty(key, null, nameof(FirebaseObject));
                         RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);

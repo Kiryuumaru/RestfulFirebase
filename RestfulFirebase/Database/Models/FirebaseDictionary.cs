@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database.Models
 
         public RealtimeInstance RealtimeInstance { get; private set; }
 
-        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
@@ -40,7 +40,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 Unsubscribe();
                 RealtimeInstance = null;
@@ -85,7 +85,9 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
+
             OnRealtimeDetached(args);
         }
 
@@ -135,13 +137,9 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             value.SynchronizationOperation.SetContext(this);
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
-                if (value.RealtimeInstance == null)
-                {
-                    WireValue(key, value, true);
-                }
-                else if (value.RealtimeInstance.Parent != RealtimeInstance) throw new Exception("Item has different existing wire");
+                WireValue(key, value, true);
             }
             return (key, value);
         }
@@ -183,7 +181,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
@@ -194,7 +192,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
                 RealtimeInstance.Error -= RealtimeInstance_Error;
@@ -212,15 +210,15 @@ namespace RestfulFirebase.Database.Models
                 lock (this)
                 {
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var isNull = RealtimeInstance.Child(key, false).IsNull();
-                    if (obj.Value == null && !isNull)
+                    var hasChild = RealtimeInstance.HasChild(key);
+                    if (obj.Value == null && hasChild)
                     {
                         var item = ObjectFactory(key);
                         if (item == null) return;
                         WireValue(key, item, false);
                         Add(key, item);
                     }
-                    else if (obj.Value != null && isNull)
+                    else if (obj.Value != null && !hasChild)
                     {
                         Remove(key);
                     }

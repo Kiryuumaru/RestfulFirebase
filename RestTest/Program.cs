@@ -16,6 +16,8 @@ using ObservableHelpers;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Extensions;
+using System.ComponentModel;
+using System.Windows.Threading;
 
 namespace RestTest
 {
@@ -130,6 +132,8 @@ namespace RestTest
     {
         private static RestfulFirebaseApp app;
         private static ChildQuery userNode;
+
+
         public static void Main(string[] args)
         {
             Run().GetAwaiter().GetResult();
@@ -137,6 +141,8 @@ namespace RestTest
 
         public static async Task Run()
         {
+            await Task.Delay(2000);
+
             app = new RestfulFirebaseApp(Config.YourConfig());
 
             var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
@@ -166,7 +172,10 @@ namespace RestTest
             TestCascadeObjectPut();
             //TestCascadeObjectSub();
 
-            Console.ReadLine();
+            while (true)
+            {
+                Console.ReadLine();
+            }
         }
 
         public static void TestRealtimeWire()

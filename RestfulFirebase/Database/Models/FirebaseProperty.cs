@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database.Models
 
         public RealtimeInstance RealtimeInstance { get; private set; }
 
-        public bool HasAttachedRealtime { get => RealtimeInstance != null; }
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
@@ -29,7 +29,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 Unsubscribe();
                 RealtimeInstance = null;
@@ -87,6 +87,7 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
 
             if (GetObject() is IRealtimeModel model)
@@ -144,17 +145,26 @@ namespace RestfulFirebase.Database.Models
             {
                 if (obj is IRealtimeModel model)
                 {
+                    model.SynchronizationOperation.SetContext(this);
                     if (model is T value)
                     {
                         return value;
                     }
                     else
                     {
+                        if (defaultValue is IRealtimeModel defaultModel)
+                        {
+                            defaultModel.SynchronizationOperation.SetContext(this);
+                        }
                         return defaultValue;
                     }
                 }
                 else
                 {
+                    if (defaultValue is IRealtimeModel defaultModel)
+                    {
+                        defaultModel.SynchronizationOperation.SetContext(this);
+                    }
                     return defaultValue;
                 }
             }
@@ -194,7 +204,10 @@ namespace RestfulFirebase.Database.Models
             {
                 if (SetObject(null))
                 {
-                    RealtimeInstance.SetBlob(null);
+                    if (HasAttachedRealtime)
+                    {
+                        RealtimeInstance.SetBlob(null);
+                    }
                     return true;
                 }
                 else
@@ -264,7 +277,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
@@ -275,7 +288,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (RealtimeInstance != null)
+            if (HasAttachedRealtime)
             {
                 RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
                 RealtimeInstance.Error -= RealtimeInstance_Error;
