@@ -103,10 +103,13 @@ namespace RestfulFirebase.Database.Models
 
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
-                if (HasAttachedRealtime && value is IRealtimeModel model)
+                if (value is IRealtimeModel model)
                 {
                     model.SynchronizationOperation.SetContext(this);
-                    model.AttachRealtime(RealtimeInstance, true);
+                    if (HasAttachedRealtime)
+                    {
+                        model.AttachRealtime(RealtimeInstance, true);
+                    }
                 }
 
                 return SetObject(value);

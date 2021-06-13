@@ -35,6 +35,14 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            {
+                if (!(value is IRealtimeModel))
+                {
+                    throw new Exception("Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.");
+                }
+            }
+
             base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
         }
 
