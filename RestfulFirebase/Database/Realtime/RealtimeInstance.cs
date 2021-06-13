@@ -77,7 +77,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             VerifyNotDisposed();
             var childWire = new RealtimeInstance(App, this, path);
-            childWire.SynchronizationOperation.SetContext(this);
+            childWire.SyncOperation.SetContext(this);
             return childWire;
         }
 
@@ -197,7 +197,6 @@ namespace RestfulFirebase.Database.Realtime
             where T : IRealtimeModel
         {
             VerifyNotDisposed();
-            model.SynchronizationOperation.SetContext(this);
             model.AttachRealtime(this, true);
             return model;
         }
@@ -206,7 +205,6 @@ namespace RestfulFirebase.Database.Realtime
             where T : IRealtimeModel
         {
             VerifyNotDisposed();
-            model.SynchronizationOperation.SetContext(this);
             model.AttachRealtime(this, false);
             return model;
         }

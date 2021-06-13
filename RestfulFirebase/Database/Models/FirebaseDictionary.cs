@@ -136,7 +136,6 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            value.SynchronizationOperation.SetContext(this);
             if (HasAttachedRealtime)
             {
                 WireValue(key, value, true);
@@ -171,10 +170,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            T item = itemInitializer.Invoke((key));
-            item?.SynchronizationOperation.SetContext(this);
-
-            return item;
+            return itemInitializer.Invoke((key));
         }
 
         private void Subscribe()

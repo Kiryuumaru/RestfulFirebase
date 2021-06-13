@@ -64,34 +64,6 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
-        public override bool SetNull()
-        {
-            VerifyNotDisposed();
-
-            if (HasAttachedRealtime)
-            {
-                return RealtimeInstance.SetNull();
-            }
-            else
-            {
-                return base.SetNull();
-            }
-        }
-
-        public override bool IsNull()
-        {
-            VerifyNotDisposed();
-
-            if (HasAttachedRealtime)
-            {
-                return RealtimeInstance.IsNull();
-            }
-            else
-            {
-                return base.IsNull();
-            }
-        }
-
         public virtual void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();

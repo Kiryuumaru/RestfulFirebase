@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
-    public interface IRealtimeModel : ISynchronizationObject, INullableObject, INotifyPropertyChanged, IDisposable
+    public interface IRealtimeModel : IObservable
     {
         RealtimeInstance RealtimeInstance { get; }
         bool HasAttachedRealtime { get; }

@@ -71,10 +71,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 else
                 {
-                    if (!SetObject(RealtimeInstance.GetBlob()))
-                    {
-                        OnPropertyChanged(nameof(Property));
-                    }
+                    SetObject(RealtimeInstance.GetBlob());
                 }
             }
 
@@ -85,15 +82,15 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            Unsubscribe();
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance?.Dispose();
-            RealtimeInstance = null;
-
             if (GetObject() is IRealtimeModel model)
             {
                 model.DetachRealtime();
             }
+
+            Unsubscribe();
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+            RealtimeInstance?.Dispose();
+            RealtimeInstance = null;
 
             OnRealtimeDetached(args);
         }
@@ -106,7 +103,6 @@ namespace RestfulFirebase.Database.Models
             {
                 if (value is IRealtimeModel model)
                 {
-                    model.SynchronizationOperation.SetContext(this);
                     if (HasAttachedRealtime)
                     {
                         model.AttachRealtime(RealtimeInstance, true);
@@ -120,12 +116,14 @@ namespace RestfulFirebase.Database.Models
                 if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
 
                 var blob = Serializer.Serialize(value);
+
                 if (SetObject(blob))
                 {
                     if (HasAttachedRealtime)
                     {
                         RealtimeInstance.SetBlob(blob);
                     }
+
                     return true;
                 }
                 else
@@ -139,38 +137,15 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            var obj = GetObject();
-
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
-                if (obj is IRealtimeModel model)
-                {
-                    model.SynchronizationOperation.SetContext(this);
-                    if (model is T value)
-                    {
-                        return value;
-                    }
-                    else
-                    {
-                        if (defaultValue is IRealtimeModel defaultModel)
-                        {
-                            defaultModel.SynchronizationOperation.SetContext(this);
-                        }
-                        return defaultValue;
-                    }
-                }
-                else
-                {
-                    if (defaultValue is IRealtimeModel defaultModel)
-                    {
-                        defaultModel.SynchronizationOperation.SetContext(this);
-                    }
-                    return defaultValue;
-                }
+                return base.GetValue(defaultValue);
             }
             else
             {
                 if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
+
+                var obj = GetObject();
 
                 string blob = null;
                 if (obj is string objBlob)
@@ -194,15 +169,9 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            var obj = GetObject();
-
-            if (obj is IRealtimeModel model)
+            if (GetObject() is IRealtimeModel)
             {
-                return model.SetNull();
-            }
-            else
-            {
-                if (SetObject(null))
+                if (base.SetNull())
                 {
                     if (HasAttachedRealtime)
                     {
@@ -215,21 +184,9 @@ namespace RestfulFirebase.Database.Models
                     return false;
                 }
             }
-        }
-
-        public override bool IsNull()
-        {
-            VerifyNotDisposed();
-
-            var obj = GetObject();
-
-            if (obj is IRealtimeModel model)
-            {
-                return model.IsNull();
-            }
             else
             {
-                return GetObject() == null;
+                return base.SetNull();
             }
         }
 
@@ -238,13 +195,6 @@ namespace RestfulFirebase.Database.Models
             if (disposing)
             {
                 DetachRealtime();
-
-                var obj = GetObject();
-
-                if (obj is IRealtimeModel model)
-                {
-                    model.Dispose();
-                }
             }
             base.Dispose(disposing);
         }
@@ -303,9 +253,7 @@ namespace RestfulFirebase.Database.Models
 
             if (path.Length == 0)
             {
-                var obj = GetObject();
-
-                if (!(obj is IRealtimeModel))
+                if (!(GetObject() is IRealtimeModel))
                 {
                     SetObject(RealtimeInstance.GetBlob());
                 }
@@ -315,11 +263,6 @@ namespace RestfulFirebase.Database.Models
         private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
         {
             VerifyNotDisposed();
-
-            if (GetObject() is IRealtimeModel)
-            {
-                return;
-            }
 
             OnWireError(e);
         }
