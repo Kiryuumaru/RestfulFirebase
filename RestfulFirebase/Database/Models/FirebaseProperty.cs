@@ -35,7 +35,7 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance = null;
             }
 
-            var obj = GetObject();
+            var obj = GetObjectCore();
 
             if (obj is IRealtimeModel model)
             {
@@ -71,7 +71,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 else
                 {
-                    SetObject(RealtimeInstance.GetBlob());
+                    SetObjectCore(RealtimeInstance.GetBlob());
                 }
             }
 
@@ -82,7 +82,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (GetObject() is IRealtimeModel model)
+            if (GetObjectCore() is IRealtimeModel model)
             {
                 model.DetachRealtime();
             }
@@ -109,7 +109,7 @@ namespace RestfulFirebase.Database.Models
                     }
                 }
 
-                return SetObject(value);
+                return SetObjectCore(value);
             }
             else
             {
@@ -117,7 +117,7 @@ namespace RestfulFirebase.Database.Models
 
                 var blob = Serializer.Serialize(value);
 
-                if (SetObject(blob))
+                if (SetObjectCore(blob))
                 {
                     if (HasAttachedRealtime)
                     {
@@ -145,7 +145,7 @@ namespace RestfulFirebase.Database.Models
             {
                 if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
 
-                var obj = GetObject();
+                var obj = GetObjectCore();
 
                 string blob = null;
                 if (obj is string objBlob)
@@ -169,7 +169,7 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (GetObject() is IRealtimeModel)
+            if (GetObjectCore() is IRealtimeModel)
             {
                 if (base.SetNull())
                 {
@@ -253,9 +253,9 @@ namespace RestfulFirebase.Database.Models
 
             if (path.Length == 0)
             {
-                if (!(GetObject() is IRealtimeModel))
+                if (!(GetObjectCore() is IRealtimeModel))
                 {
-                    SetObject(RealtimeInstance.GetBlob());
+                    SetObjectCore(RealtimeInstance.GetBlob());
                 }
             }
         }

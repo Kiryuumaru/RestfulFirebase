@@ -136,11 +136,14 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
+            var fromBase = base.ValueFactory(key, value);
+
             if (HasAttachedRealtime)
             {
-                WireValue(key, value, true);
+                WireValue(fromBase.key, fromBase.value, true);
             }
-            return (key, value);
+
+            return fromBase;
         }
 
         protected override bool ValueRemove(string key, out T value)
@@ -153,6 +156,7 @@ namespace RestfulFirebase.Database.Models
                 if (!value.IsNull()) value.SetNull();
                 value.DetachRealtime();
             }
+
             return result;
         }
 
@@ -160,9 +164,12 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            foreach (var item in this.ToList())
+            lock (this)
             {
-                ValueRemove(item.Key, out _);
+                foreach (var item in this.ToList())
+                {
+                    ValueRemove(item.Key, out _);
+                }
             }
         }
 
@@ -212,7 +219,10 @@ namespace RestfulFirebase.Database.Models
                         var item = ObjectFactory(key);
                         if (item == null) return;
                         WireValue(key, item, false);
-                        Add(key, item);
+                        if (TryAddCore(key, item))
+                        {
+                            NotifyObserversOfChange();
+                        }
                     }
                     else if (obj.Value != null && !hasChild)
                     {

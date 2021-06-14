@@ -169,8 +169,8 @@ namespace RestTest
             //ExperimentList();
             //await TestDef();
             //await TestRoutineWrite();
-            TestCascadeObjectPut();
-            //TestCascadeObjectSub();
+            //TestCascadeObjectPut();
+            TestCascadeObjectSub();
 
             while (true)
             {
