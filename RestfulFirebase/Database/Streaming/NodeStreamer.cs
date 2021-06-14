@@ -89,11 +89,11 @@ namespace RestfulFirebase.Database.Streaming
                     response.EnsureSuccessStatusCode();
 
                     using (var stream = await response.Content.ReadAsStreamAsync())
-                    using (var reader = new StreamReader(stream))
+                    using (var reader = new NonBlockingStreamReader(stream))
                     {
                         try
                         {
-                            reader.Peek();
+                            reader.Peek(); // ReadlineAsync bug fix (no idea)
                         }
                         catch { }
                         while (true)

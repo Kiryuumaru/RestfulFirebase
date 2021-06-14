@@ -170,6 +170,7 @@ namespace RestTest
             //await TestDef();
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
+            //TestCascadeObjectMassPut();
             TestCascadeObjectSub();
 
             while (true)
@@ -866,6 +867,88 @@ namespace RestTest
 
             obj.Test = "cscs";
 
+            for (int i = 0; i < 10; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(i.ToString());
+                obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                var stor = new TestStorable();
+                stor.Test = i.ToString();
+                obj.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
+            }
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                if (line == "view")
+                {
+                    var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
+                    foreach (var pair in db)
+                    {
+                        Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
+                    }
+                }
+                else
+                {
+                    obj.Test = string.IsNullOrEmpty(line) ? null : line;
+                }
+            }
+        }
+
+        public static void TestCascadeObjectMassPut()
+        {
+            var obj = new CascadeStorable();
+            obj.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Main: " + e.PropertyName);
+            };
+            obj.Storable1.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Storable1: " + e.PropertyName);
+            };
+            obj.Storable2.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Storable2: " + e.PropertyName);
+            };
+            obj.PropertyDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("PropertyDictionary: " + obj.PropertyDictionary.Count);
+            };
+            obj.ObjectDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
+            };
+
+            bool isRun = false;
+            bool toRun = false;
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.DataChanges += (s, e) =>
+            {
+                toRun = true;
+                if (isRun) return;
+                isRun = true;
+                Task.Run(async delegate
+                {
+                    while (toRun)
+                    {
+                        toRun = false;
+                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        await Task.Delay(500);
+                    }
+                    isRun = false;
+                }).ConfigureAwait(false);
+            };
+            wire.Start();
+
+            wire.PutModel(obj);
+
+            obj.Test = "cscs";
+
             for (int i = 0; i < 1000; i++)
             {
                 var prop = new FirebaseProperty();
@@ -944,7 +1027,9 @@ namespace RestTest
             };
             wire.Start();
 
+            Console.WriteLine("STARTSUB");
             wire.SubModel(obj);
+            Console.WriteLine("DONESUB");
 
             //obj.Test = "cscs";
 

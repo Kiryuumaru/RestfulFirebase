@@ -16,7 +16,7 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.81</Version>
+    <Version>1.0.82</Version>
     <PackageReleaseNotes>*Bug fixes</PackageReleaseNotes>
   </PropertyGroup>
 
@@ -32,6 +32,7 @@
     <None Remove="Database\Offline\OfflineDatabase.cs~RF1f4578c1.TMP" />
     <None Remove="Database\Realtime\RealtimeWire.cs~RF123265c.TMP" />
     <None Remove="Database\Realtime\RealtimeWire.cs~RFf20d81e.TMP" />
+    <None Remove="Database\Streaming\NodeStreamer.cs~RF674bce4.TMP" />
     <None Remove="Extensions\Http\DefaultHttpStreamFactory.cs~RFcdef18d.TMP" />
   </ItemGroup>
 
