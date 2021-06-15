@@ -114,6 +114,8 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
+            value.SyncOperation.SetContext(this);
+
             if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
             else RealtimeInstance.Child(key).SubModel(value);
         }

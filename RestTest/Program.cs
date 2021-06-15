@@ -1070,6 +1070,26 @@ namespace RestTest
         public static async Task DisposableTest()
         {
             var obj = new CascadeStorable();
+            obj.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Main: " + e.PropertyName);
+            };
+            obj.Storable1.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Storable1: " + e.PropertyName);
+            };
+            obj.Storable2.PropertyChanged += (s, e) =>
+            {
+                Console.WriteLine("Storable2: " + e.PropertyName);
+            };
+            obj.PropertyDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("PropertyDictionary: " + obj.PropertyDictionary.Count);
+            };
+            obj.ObjectDictionary.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
+            };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
@@ -1104,6 +1124,8 @@ namespace RestTest
             Console.WriteLine("DISPOSED");
 
             // Writes on disposed wire
+            obj.PropertyDictionary.SetNull();
+            obj.ObjectDictionary.SetNull();
             obj.SetNull();
 
             Console.WriteLine("SET NULL");
@@ -1112,9 +1134,9 @@ namespace RestTest
             var wire2 = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire2.Start();
 
-            Console.WriteLine("SUB BACK");
-
             wire2.SubModel(obj);
+
+            Console.WriteLine("SUB BACK");
 
             while (true)
             {
