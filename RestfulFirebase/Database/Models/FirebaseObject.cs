@@ -64,7 +64,7 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
-        public virtual void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();
 
@@ -109,6 +109,18 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
+        public void DetachRealtime()
+        {
+            VerifyNotDisposed();
+
+            Unsubscribe();
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+            RealtimeInstance?.Dispose();
+            RealtimeInstance = null;
+
+            OnRealtimeDetached(args);
+        }
+
         protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
         {
             VerifyNotDisposed();
@@ -122,22 +134,17 @@ namespace RestfulFirebase.Database.Models
             };
         }
 
-        public virtual void DetachRealtime()
-        {
-            VerifyNotDisposed();
-
-            Unsubscribe();
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance?.Dispose();
-            RealtimeInstance = null;
-
-            OnRealtimeDetached(args);
-        }
-
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
+                foreach (var item in GetRawProperties())
+                {
+                    if (item.Property is IRealtimeModel model)
+                    {
+                        model.Dispose();
+                    }
+                }
                 DetachRealtime();
             }
             base.Dispose(disposing);

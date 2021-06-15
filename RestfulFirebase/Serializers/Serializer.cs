@@ -254,14 +254,37 @@ namespace RestfulFirebase.Serializers
             throw new Exception(typeof(T).Name + " data type not supported");
         }
 
+        public static string Serialize(object value, Type type)
+        {
+            return GetSerializer(type).Serialize(value);
+        }
+
         public static string Serialize<T>(T value)
         {
             return GetSerializer<T>().Serialize(value);
         }
 
+        public static object Deserialize(string data, Type type, object defaultValue = default)
+        {
+            return GetSerializer(type).Deserialize(data, defaultValue);
+        }
+
         public static T Deserialize<T>(string data, T defaultValue = default)
         {
             return GetSerializer<T>().Deserialize(data, defaultValue);
+        }
+
+        public static bool CanSerialize(Type type)
+        {
+            try
+            {
+                _ = GetSerializer(type);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static bool CanSerialize<T>(T value)

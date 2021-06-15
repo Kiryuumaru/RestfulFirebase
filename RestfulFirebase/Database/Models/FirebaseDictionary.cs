@@ -36,7 +36,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public virtual void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();
 
@@ -79,7 +79,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
-        public virtual void DetachRealtime()
+        public void DetachRealtime()
         {
             VerifyNotDisposed();
 
@@ -91,13 +91,19 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
-        protected override void Dispose(bool disposing)
+        protected T ObjectFactory(string key)
         {
-            if (disposing)
-            {
-                DetachRealtime();
-            }
-            base.Dispose(disposing);
+            VerifyNotDisposed();
+
+            return itemInitializer.Invoke((key));
+        }
+
+        protected void WireValue(string key, T value, bool invokeSetFirst)
+        {
+            VerifyNotDisposed();
+
+            if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
+            else RealtimeInstance.Child(key).SubModel(value);
         }
 
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
@@ -124,60 +130,74 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        protected virtual void WireValue(string key, T value, bool invokeSetFirst)
+        protected override bool ValidateSetItem(string key, T value)
         {
             VerifyNotDisposed();
 
-            if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
-            else RealtimeInstance.Child(key).SubModel(value);
-        }
+            var baseValidation = base.ValidateSetItem(key, value);
 
-        protected override (string key, T value) ValueFactory(string key, T value)
-        {
-            VerifyNotDisposed();
-
-            var fromBase = base.ValueFactory(key, value);
-
-            if (HasAttachedRealtime)
+            if (baseValidation)
             {
-                WireValue(fromBase.key, fromBase.value, true);
+                if (HasAttachedRealtime)
+                {
+                    WireValue(key, value, true);
+                }
             }
 
-            return fromBase;
+            return baseValidation;
         }
 
-        protected override bool ValueRemove(string key, out T value)
+        protected override bool ValidateRemoveItem(string key)
         {
             VerifyNotDisposed();
 
-            var result = base.ValueRemove(key, out value);
-            if (result)
+            var baseValidation = base.ValidateRemoveItem(key);
+
+            if (baseValidation)
             {
-                if (!value.IsNull()) value.SetNull();
-                value.DetachRealtime();
+                if (TryGetValueCore(key, out T value))
+                {
+                    if (!value.IsNull()) value.SetNull();
+                    value.Dispose();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
 
-            return result;
+            return baseValidation;
         }
 
-        public override void Clear()
+        protected override bool ValidateClear()
         {
             VerifyNotDisposed();
 
-            lock (this)
+            var baseValidation = base.ValidateClear();
+
+            if (baseValidation)
             {
                 foreach (var item in this.ToList())
                 {
-                    ValueRemove(item.Key, out _);
+                    ValidateRemoveItem(item.Key);
                 }
             }
+
+            return baseValidation;
         }
 
-        protected T ObjectFactory(string key)
+        protected override void Dispose(bool disposing)
         {
-            VerifyNotDisposed();
-
-            return itemInitializer.Invoke((key));
+            if (disposing)
+            {
+                foreach (var item in this.ToList())
+                {
+                    item.Value.Dispose();
+                }
+                DetachRealtime();
+            }
+            base.Dispose(disposing);
         }
 
         private void Subscribe()

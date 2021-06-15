@@ -25,7 +25,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public virtual void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();
 
@@ -78,7 +78,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
-        public virtual void DetachRealtime()
+        public void DetachRealtime()
         {
             VerifyNotDisposed();
 
@@ -194,6 +194,10 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
+                if (GetObjectCore() is IRealtimeModel model)
+                {
+                    model.Dispose();
+                }
                 DetachRealtime();
             }
             base.Dispose(disposing);
@@ -282,24 +286,16 @@ namespace RestfulFirebase.Database.Models
 
         #endregion
 
-        #region Initializers
-
-        public FirebaseProperty()
-        {
-            PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(Property))
-                {
-                    OnPropertyChanged(nameof(Value));
-                }
-            };
-        }
-
-        #endregion
-
         #region Methods
 
-
+        protected override void OnPropertyChanged(string propertyName)
+        {
+            base.OnPropertyChanged(propertyName);
+            if (propertyName == nameof(Property))
+            {
+                base.OnPropertyChanged(nameof(Value));
+            }
+        }
 
         #endregion
     }
