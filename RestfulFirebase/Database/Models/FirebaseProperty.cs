@@ -35,6 +35,8 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance = null;
             }
 
+            realtimeInstance.Disposing += RealtimeInstance_Disposing;
+
             var obj = GetObjectCore();
 
             if (obj is IRealtimeModel model)
@@ -89,10 +91,14 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
 
             OnRealtimeDetached(args);
+        }
+
+        private void RealtimeInstance_Disposing(object sender, EventArgs e)
+        {
+            Dispose();
         }
 
         public override bool SetValue<T>(T value)
@@ -194,11 +200,12 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
-                if (GetObjectCore() is IRealtimeModel model)
+                DetachRealtime();
+                if (GetObjectCore() is IDisposable model)
                 {
                     model.Dispose();
                 }
-                DetachRealtime();
+                SetObjectCore(null);
             }
             base.Dispose(disposing);
         }

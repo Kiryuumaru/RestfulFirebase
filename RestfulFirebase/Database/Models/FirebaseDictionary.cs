@@ -46,6 +46,8 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance = null;
             }
 
+            realtimeInstance.Disposing += RealtimeInstance_Disposing;
+
             RealtimeInstance = realtimeInstance;
 
             Subscribe();
@@ -85,10 +87,14 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
 
             OnRealtimeDetached(args);
+        }
+
+        private void RealtimeInstance_Disposing(object sender, EventArgs e)
+        {
+            Dispose();
         }
 
         protected T ObjectFactory(string key)
@@ -191,11 +197,12 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
+                DetachRealtime();
                 foreach (var item in this.ToList())
                 {
                     item.Value.Dispose();
+                    TryRemoveCore(item.Key, out _);
                 }
-                DetachRealtime();
             }
             base.Dispose(disposing);
         }

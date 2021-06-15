@@ -28,42 +28,6 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        public void SetPersistableProperty<T>(
-            T value,
-            string key,
-            [CallerMemberName] string propertyName = null)
-        {
-            VerifyNotDisposed();
-
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
-            {
-                if (!(value is IRealtimeModel))
-                {
-                    throw new Exception("Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.");
-                }
-            }
-
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
-        }
-
-        public T GetPersistableProperty<T>(
-            string key,
-            T defaultValue = default,
-            [CallerMemberName] string propertyName = null)
-        {
-            VerifyNotDisposed();
-
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
-            {
-                if (!(defaultValue is IRealtimeModel))
-                {
-                    throw new Exception("Cascade IRealtimeModel should have default value");
-                }
-            }
-
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
-        }
-
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             VerifyNotDisposed();
@@ -73,6 +37,8 @@ namespace RestfulFirebase.Database.Models
                 Unsubscribe();
                 RealtimeInstance = null;
             }
+
+            realtimeInstance.Disposing += RealtimeInstance_Disposing;
 
             RealtimeInstance = realtimeInstance;
 
@@ -115,10 +81,50 @@ namespace RestfulFirebase.Database.Models
 
             Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance?.Dispose();
             RealtimeInstance = null;
 
             OnRealtimeDetached(args);
+        }
+
+        private void RealtimeInstance_Disposing(object sender, EventArgs e)
+        {
+            Dispose();
+        }
+
+        public void SetPersistableProperty<T>(
+            T value,
+            string key,
+            [CallerMemberName] string propertyName = null)
+        {
+            VerifyNotDisposed();
+
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            {
+                if (!(value is IRealtimeModel))
+                {
+                    throw new Exception("Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.");
+                }
+            }
+
+            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
+        }
+
+        public T GetPersistableProperty<T>(
+            string key,
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = null)
+        {
+            VerifyNotDisposed();
+
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            {
+                if (!(defaultValue is IRealtimeModel))
+                {
+                    throw new Exception("Cascade IRealtimeModel should have default value");
+                }
+            }
+
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
         protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
@@ -138,14 +144,15 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
+                DetachRealtime();
                 foreach (var item in GetRawProperties())
                 {
-                    if (item.Property is IRealtimeModel model)
+                    if (item.Property is IDisposable model)
                     {
                         model.Dispose();
                     }
+                    RemoveCore(item.Key, null);
                 }
-                DetachRealtime();
             }
             base.Dispose(disposing);
         }
