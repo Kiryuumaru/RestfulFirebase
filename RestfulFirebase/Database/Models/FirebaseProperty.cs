@@ -29,49 +29,40 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (HasAttachedRealtime)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
             var obj = GetObjectCore();
 
-            if (obj is IRealtimeModel model)
+            lock (this)
             {
-                RealtimeInstance = realtimeInstance;
+                Subscribe(realtimeInstance);
 
-                model.AttachRealtime(realtimeInstance, invokeSetFirst);
-
-                Subscribe();
-            }
-            else
-            {
-                string blob = null;
-                if (obj is string objBlob)
+                if (obj is IRealtimeModel model)
                 {
-                    blob = objBlob;
-                }
-                else if (obj is null)
-                {
-                    blob = null;
+                    model.AttachRealtime(realtimeInstance, invokeSetFirst);
                 }
                 else
                 {
-                    throw new Exception("Object is not serializable");
-                }
+                    string blob = null;
+                    if (obj is string objBlob)
+                    {
+                        blob = objBlob;
+                    }
+                    else if (obj is null)
+                    {
+                        blob = null;
+                    }
+                    else
+                    {
+                        throw new Exception("Object is not serializable");
+                    }
 
-                RealtimeInstance = realtimeInstance;
-
-                Subscribe();
-
-                if (invokeSetFirst)
-                {
-                    RealtimeInstance.SetBlob(blob);
-                }
-                else
-                {
-                    SetObjectCore(RealtimeInstance.GetBlob());
+                    if (invokeSetFirst)
+                    {
+                        RealtimeInstance.SetBlob(blob);
+                    }
+                    else
+                    {
+                        SetObjectCore(RealtimeInstance.GetBlob());
+                    }
                 }
             }
 
@@ -87,9 +78,9 @@ namespace RestfulFirebase.Database.Models
                 model.DetachRealtime();
             }
 
-            Unsubscribe();
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance = null;
+
+            Unsubscribe();
 
             OnRealtimeDetached(args);
         }
@@ -227,9 +218,16 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        private void Subscribe()
+        private void Subscribe(RealtimeInstance realtimeInstance)
         {
             VerifyNotDisposed();
+
+            if (HasAttachedRealtime)
+            {
+                Unsubscribe();
+            }
+
+            RealtimeInstance = realtimeInstance;
 
             if (HasAttachedRealtime)
             {
@@ -249,6 +247,8 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance.Error -= RealtimeInstance_Error;
                 RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
             }
+
+            RealtimeInstance = null;
         }
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
@@ -259,9 +259,12 @@ namespace RestfulFirebase.Database.Models
 
             if (path.Length == 0)
             {
-                if (!(GetObjectCore() is IRealtimeModel))
+                lock (this)
                 {
-                    SetObjectCore(RealtimeInstance.GetBlob());
+                    if (!(GetObjectCore() is IRealtimeModel))
+                    {
+                        SetObjectCore(RealtimeInstance.GetBlob());
+                    }
                 }
             }
         }

@@ -40,18 +40,10 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (HasAttachedRealtime)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            Subscribe();
-
             lock (this)
             {
+                Subscribe(realtimeInstance);
+
                 List<KeyValuePair<string, T>> objs = this.ToList();
                 List<string> supPaths = new List<string>();
                 foreach (var path in RealtimeInstance.GetSubPaths())
@@ -83,9 +75,17 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            Unsubscribe();
+            foreach (var item in this.ToList())
+            {
+                if (!item.Value.IsDisposed)
+                {
+                    item.Value.DetachRealtime();
+                }
+            }
+
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance = null;
+
+            Unsubscribe();
 
             OnRealtimeDetached(args);
         }
@@ -200,9 +200,16 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
-        private void Subscribe()
+        private void Subscribe(RealtimeInstance realtimeInstance)
         {
             VerifyNotDisposed();
+
+            if (HasAttachedRealtime)
+            {
+                Unsubscribe();
+            }
+
+            RealtimeInstance = realtimeInstance;
 
             if (HasAttachedRealtime)
             {
@@ -222,6 +229,8 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance.Error -= RealtimeInstance_Error;
                 RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
             }
+
+            RealtimeInstance = null;
         }
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)

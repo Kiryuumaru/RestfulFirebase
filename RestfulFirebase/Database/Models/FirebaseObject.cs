@@ -32,18 +32,10 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            if (HasAttachedRealtime)
-            {
-                Unsubscribe();
-                RealtimeInstance = null;
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            Subscribe();
-
             lock (this)
             {
+                Subscribe(realtimeInstance);
+
                 InitializeProperties();
 
                 IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
@@ -77,9 +69,20 @@ namespace RestfulFirebase.Database.Models
         {
             VerifyNotDisposed();
 
-            Unsubscribe();
+            foreach (var item in GetRawProperties())
+            {
+                if (item.Property is IRealtimeModel model)
+                {
+                    if (!model.IsDisposed)
+                    {
+                        model.DetachRealtime();
+                    }
+                }
+            }
+
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-            RealtimeInstance = null;
+
+            Unsubscribe();
 
             OnRealtimeDetached(args);
         }
@@ -144,7 +147,7 @@ namespace RestfulFirebase.Database.Models
                     {
                         model.Dispose();
                     }
-                    RemoveCore(item.Key, null);
+                    RemoveCore(item.Key, item.PropertyName);
                 }
             }
             base.Dispose(disposing);
@@ -174,9 +177,16 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        private void Subscribe()
+        private void Subscribe(RealtimeInstance realtimeInstance)
         {
             VerifyNotDisposed();
+
+            if (HasAttachedRealtime)
+            {
+                Unsubscribe();
+            }
+
+            RealtimeInstance = realtimeInstance;
 
             if (HasAttachedRealtime)
             {
@@ -196,6 +206,8 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance.Error -= RealtimeInstance_Error;
                 RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
             }
+
+            RealtimeInstance = null;
         }
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
