@@ -40,7 +40,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public void Start()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             string uri = Query.GetAbsolutePath();
             subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(uri, e)).Run();
@@ -48,7 +51,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public void Stop()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             subscription?.Dispose();
             subscription = null;
@@ -56,7 +62,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public async Task WaitForFirstStream()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             await Task.Run(async delegate
             {
@@ -67,7 +76,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             return await Task.Run(async delegate
             {

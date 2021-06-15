@@ -30,7 +30,10 @@ namespace RestfulFirebase.Database.Models
 
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             lock (this)
             {
@@ -67,16 +70,16 @@ namespace RestfulFirebase.Database.Models
 
         public void DetachRealtime()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             foreach (var item in GetRawProperties())
             {
                 if (item.Property is IRealtimeModel model)
                 {
-                    if (!model.IsDisposed)
-                    {
-                        model.DetachRealtime();
-                    }
+                    model.DetachRealtime();
                 }
             }
 
@@ -87,12 +90,15 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
-        public void SetPersistableProperty<T>(
+        public bool SetPersistableProperty<T>(
             T value,
             string key,
             [CallerMemberName] string propertyName = null)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
@@ -102,7 +108,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
+            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
         }
 
         public T GetPersistableProperty<T>(
@@ -110,7 +116,10 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return defaultValue;
+            }
 
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
@@ -125,7 +134,10 @@ namespace RestfulFirebase.Database.Models
 
         protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return null;
+            }
 
             return new NamedProperty()
             {
@@ -143,11 +155,7 @@ namespace RestfulFirebase.Database.Models
                 DetachRealtime();
                 foreach (var item in GetRawProperties())
                 {
-                    if (item.Property is IDisposable model)
-                    {
-                        model.Dispose();
-                    }
-                    RemoveCore(item.Key, item.PropertyName);
+                    item.Property.Dispose();
                 }
             }
             base.Dispose(disposing);
@@ -179,7 +187,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe(RealtimeInstance realtimeInstance)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -198,7 +209,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -212,7 +226,10 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (!string.IsNullOrEmpty(e.Path))
             {
@@ -224,6 +241,10 @@ namespace RestfulFirebase.Database.Models
                     if (namedProperty == null && RealtimeInstance.HasChild(key))
                     {
                         namedProperty = MakeNamedProperty(key, null, nameof(FirebaseObject));
+                        if (namedProperty == null)
+                        {
+                            return;
+                        }
                         RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);
                         AddCore(namedProperty);
                     }
@@ -233,13 +254,21 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             OnWireError(e);
         }
 
         private void RealtimeInstance_Disposing(object sender, EventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             DetachRealtime();
         }
 

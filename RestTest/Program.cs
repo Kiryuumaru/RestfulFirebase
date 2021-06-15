@@ -143,6 +143,7 @@ namespace RestTest
         {
             await Task.Delay(2000);
 
+            // Attach your config
             app = new RestfulFirebaseApp(Config.YourConfig());
 
             var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");

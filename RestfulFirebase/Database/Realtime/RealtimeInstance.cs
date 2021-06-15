@@ -63,7 +63,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool HasChild(string path)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             var uri = Utils.UrlCombine(Query.GetAbsolutePath().Trim('/'), path);
             return App.Database.OfflineDatabase.GetDatas(uri, true).Any(i => i.Blob != null);
@@ -71,7 +74,11 @@ namespace RestfulFirebase.Database.Realtime
 
         public RealtimeInstance Child(string path)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return default;
+            }
+
             var childWire = new RealtimeInstance(App, this, path);
             childWire.SyncOperation.SetContext(this);
             return childWire;
@@ -79,7 +86,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public int GetTotalDataCount()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return 0;
+            }
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
@@ -87,7 +97,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public int GetSyncedDataCount()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return 0;
+            }
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
@@ -95,7 +108,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public async Task WaitForSynced()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             await Task.Run(async delegate
             {
@@ -105,7 +121,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public async Task<bool> WaitForSynced(TimeSpan timeout)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             return await Task.Run(async delegate
             {
@@ -116,7 +135,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool SetBlob(string blob)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             var hasChanges = false;
 
@@ -158,7 +180,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public string GetBlob()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return default;
+            }
 
             var uri = Query.GetAbsolutePath();
             var dataHolder = new DataHolder(App, uri);
@@ -167,7 +192,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public IEnumerable<string> GetSubPaths()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return null;
+            }
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetSubUris(uri, false).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
@@ -175,7 +203,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public IEnumerable<string> GetSubUris()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return null;
+            }
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetSubUris(uri, false);
@@ -183,7 +214,10 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool IsNull()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return true;
+            }
 
             var uri = Query.GetAbsolutePath();
             return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
@@ -192,7 +226,11 @@ namespace RestfulFirebase.Database.Realtime
         public T PutModel<T>(T model)
             where T : IRealtimeModel
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return model;
+            }
+
             model.AttachRealtime(this, true);
             return model;
         }
@@ -200,15 +238,17 @@ namespace RestfulFirebase.Database.Realtime
         public T SubModel<T>(T model)
             where T : IRealtimeModel
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return model;
+            }
+
             model.AttachRealtime(this, false);
             return model;
         }
 
         public override string ToString()
         {
-            VerifyNotDisposed();
-
             return Query.GetAbsolutePath();
         }
 
@@ -251,6 +291,11 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void OnError(string uri, Exception exception)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             if (Parent == null)
             {
                 SelfError(new WireErrorEventArgs(uri, exception));
@@ -263,7 +308,10 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void SubscribeToParent()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (Parent != null)
             {
@@ -274,7 +322,10 @@ namespace RestfulFirebase.Database.Realtime
 
         protected void UnsubscribeToParent()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (Parent != null)
             {
@@ -285,6 +336,11 @@ namespace RestfulFirebase.Database.Realtime
 
         internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             var hasChanges = false;
             if (err.Exception is FirebaseException ex)
             {
@@ -309,6 +365,11 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_DataChanges(object sender, DataChangesEventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             string baseUri = Query.GetAbsolutePath().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
@@ -319,6 +380,11 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_Error(object sender, WireErrorEventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             string baseUri = Query.GetAbsolutePath().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
@@ -328,6 +394,11 @@ namespace RestfulFirebase.Database.Realtime
 
         private void Parent_Disposing(object sender, EventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             Dispose();
         }
 

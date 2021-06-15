@@ -27,9 +27,12 @@ namespace RestfulFirebase.Database.Models
 
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
-            var obj = GetObjectCore();
+            var obj = GetObject();
 
             lock (this)
             {
@@ -61,7 +64,7 @@ namespace RestfulFirebase.Database.Models
                     }
                     else
                     {
-                        SetObjectCore(RealtimeInstance.GetBlob());
+                        SetObject(RealtimeInstance.GetBlob());
                     }
                 }
             }
@@ -71,9 +74,12 @@ namespace RestfulFirebase.Database.Models
 
         public void DetachRealtime()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
-            if (GetObjectCore() is IRealtimeModel model)
+            if (GetObject() is IRealtimeModel model)
             {
                 model.DetachRealtime();
             }
@@ -87,7 +93,10 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetValue<T>(T value)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
@@ -99,7 +108,7 @@ namespace RestfulFirebase.Database.Models
                     }
                 }
 
-                return SetObjectCore(value);
+                return SetObject(value);
             }
             else
             {
@@ -107,7 +116,7 @@ namespace RestfulFirebase.Database.Models
 
                 var blob = Serializer.Serialize(value);
 
-                if (SetObjectCore(blob))
+                if (SetObject(blob))
                 {
                     if (HasAttachedRealtime)
                     {
@@ -125,7 +134,10 @@ namespace RestfulFirebase.Database.Models
 
         public override T GetValue<T>(T defaultValue = default)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return defaultValue;
+            }
 
             if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
@@ -135,7 +147,7 @@ namespace RestfulFirebase.Database.Models
             {
                 if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
 
-                var obj = GetObjectCore();
+                var obj = GetObject();
 
                 string blob = null;
                 if (obj is string objBlob)
@@ -157,9 +169,12 @@ namespace RestfulFirebase.Database.Models
 
         public override bool SetNull()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
-            if (GetObjectCore() is IRealtimeModel)
+            if (GetObject() is IRealtimeModel)
             {
                 if (base.SetNull())
                 {
@@ -184,12 +199,17 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
-                DetachRealtime();
-                if (GetObjectCore() is IDisposable model)
+                if (GetObject() is IDisposable model)
                 {
+                    DetachRealtime();
+                    SetObject(null);
                     model.Dispose();
                 }
-                SetObjectCore(null);
+                else
+                {
+                    DetachRealtime();
+                    SetObject(null);
+                }
             }
             base.Dispose(disposing);
         }
@@ -220,7 +240,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe(RealtimeInstance realtimeInstance)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -239,7 +262,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -253,7 +279,10 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             var path = Utils.UrlSeparate(e.Path);
 
@@ -261,9 +290,9 @@ namespace RestfulFirebase.Database.Models
             {
                 lock (this)
                 {
-                    if (!(GetObjectCore() is IRealtimeModel))
+                    if (!(GetObject() is IRealtimeModel))
                     {
-                        SetObjectCore(RealtimeInstance.GetBlob());
+                        SetObject(RealtimeInstance.GetBlob());
                     }
                 }
             }
@@ -271,13 +300,21 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             OnWireError(e);
         }
 
         private void RealtimeInstance_Disposing(object sender, EventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             DetachRealtime();
         }
 

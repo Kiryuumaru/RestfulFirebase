@@ -38,7 +38,10 @@ namespace RestfulFirebase.Database.Models
 
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             lock (this)
             {
@@ -73,14 +76,14 @@ namespace RestfulFirebase.Database.Models
 
         public void DetachRealtime()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             foreach (var item in this.ToList())
             {
-                if (!item.Value.IsDisposed)
-                {
-                    item.Value.DetachRealtime();
-                }
+                item.Value.DetachRealtime();
             }
 
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
@@ -92,14 +95,20 @@ namespace RestfulFirebase.Database.Models
 
         protected T ObjectFactory(string key)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return default;
+            }
 
             return itemInitializer.Invoke((key));
         }
 
         protected void WireValue(string key, T value, bool invokeSetFirst)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
             else RealtimeInstance.Child(key).SubModel(value);
@@ -131,7 +140,10 @@ namespace RestfulFirebase.Database.Models
 
         protected override bool ValidateSetItem(string key, T value)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             var baseValidation = base.ValidateSetItem(key, value);
 
@@ -148,7 +160,10 @@ namespace RestfulFirebase.Database.Models
 
         protected override bool ValidateRemoveItem(string key)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             var baseValidation = base.ValidateRemoveItem(key);
 
@@ -171,7 +186,10 @@ namespace RestfulFirebase.Database.Models
 
         protected override bool ValidateClear()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return false;
+            }
 
             var baseValidation = base.ValidateClear();
 
@@ -193,8 +211,8 @@ namespace RestfulFirebase.Database.Models
                 DetachRealtime();
                 foreach (var item in this.ToList())
                 {
+                    TryRemoveWithNotification(item.Key, out _);
                     item.Value.Dispose();
-                    TryRemoveCore(item.Key, out _);
                 }
             }
             base.Dispose(disposing);
@@ -202,7 +220,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe(RealtimeInstance realtimeInstance)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -221,7 +242,10 @@ namespace RestfulFirebase.Database.Models
 
         private void Unsubscribe()
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (HasAttachedRealtime)
             {
@@ -235,7 +259,10 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             if (!string.IsNullOrEmpty(e.Path))
             {
@@ -248,7 +275,10 @@ namespace RestfulFirebase.Database.Models
                     if (obj.Value == null && hasChild)
                     {
                         var item = ObjectFactory(key);
-                        if (item == null) return;
+                        if (item == null)
+                        {
+                            return;
+                        }
                         WireValue(key, item, false);
                         if (TryAddCore(key, item))
                         {
@@ -265,13 +295,21 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
         {
-            VerifyNotDisposed();
+            if (IsDisposed)
+            {
+                return;
+            }
 
             OnWireError(e);
         }
 
         private void RealtimeInstance_Disposing(object sender, EventArgs e)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             DetachRealtime();
         }
 
