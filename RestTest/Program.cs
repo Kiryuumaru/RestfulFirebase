@@ -172,7 +172,8 @@ namespace RestTest
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
             //TestCascadeObjectMassPut();
-            TestCascadeObjectSub();
+            //TestCascadeObjectSub();
+            await DisposableTest();
 
             while (true)
             {
@@ -1047,6 +1048,73 @@ namespace RestTest
             //    stor.Test = i.ToString();
             //    obj.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
             //}
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                if (line == "view")
+                {
+                    var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
+                    foreach (var pair in db)
+                    {
+                        Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
+                    }
+                }
+                else
+                {
+                    obj.Test = string.IsNullOrEmpty(line) ? null : line;
+                }
+            }
+        }
+
+        public static async Task DisposableTest()
+        {
+            var obj = new CascadeStorable();
+
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+
+            wire.PutModel(obj);
+
+            obj.Test = "cscs";
+
+            for (int i = 0; i < 15; i++)
+            {
+                var prop = new FirebaseProperty();
+                prop.SetValue(i.ToString());
+                obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                var stor = new TestStorable();
+                stor.Test = i.ToString();
+                obj.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
+            }
+
+            await wire.WaitForSynced();
+
+            Console.WriteLine("DONE SYNC");
+
+            // Dispose
+            
+            wire.Dispose();
+            wire = null;
+
+            Console.WriteLine("DISPOSED");
+
+            // Writes on disposed wire
+            obj.SetNull();
+
+            Console.WriteLine("SET NULL");
+
+            // Sub
+            var wire2 = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire2.Start();
+
+            Console.WriteLine("SUB BACK");
+
+            wire2.SubModel(obj);
 
             while (true)
             {

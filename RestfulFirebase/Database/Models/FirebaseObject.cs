@@ -46,7 +46,8 @@ namespace RestfulFirebase.Database.Models
                 foreach (var path in RealtimeInstance.GetSubPaths())
                 {
                     var separatedPath = Utils.UrlSeparate(path);
-                    supPaths.Add(separatedPath[0]);
+                    var key = separatedPath[0];
+                    if (!supPaths.Contains(key)) supPaths.Add(key);
                 }
 
                 foreach (var prop in props)

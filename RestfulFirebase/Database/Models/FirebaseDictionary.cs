@@ -52,7 +52,8 @@ namespace RestfulFirebase.Database.Models
                 foreach (var path in RealtimeInstance.GetSubPaths())
                 {
                     var separatedPath = Utils.UrlSeparate(path);
-                    supPaths.Add(separatedPath[0]);
+                    var key = separatedPath[0];
+                    if (!supPaths.Contains(key)) supPaths.Add(key);
                 }
 
                 foreach (var obj in objs)
@@ -67,7 +68,10 @@ namespace RestfulFirebase.Database.Models
                     var item = ObjectFactory(path);
                     if (item == null) continue;
                     WireValue(path, item, false);
-                    Add(path, item);
+                    if (TryAddCore(path, item))
+                    {
+                        NotifyObserversOfChange();
+                    }
                 }
             }
 
