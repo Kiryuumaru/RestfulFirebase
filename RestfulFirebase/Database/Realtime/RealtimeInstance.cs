@@ -44,11 +44,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             Parent = parent;
 
-            Parent.Disposing += (s, e) =>
-            {
-                Dispose();
-            };
-
+            Parent.Disposing += Parent_Disposing;
             SubscribeToParent();
         }
 
@@ -328,6 +324,11 @@ namespace RestfulFirebase.Database.Realtime
             {
                 SelfError(e);
             }
+        }
+
+        private void Parent_Disposing(object sender, EventArgs e)
+        {
+            Dispose();
         }
 
         private void SelfDataChanges(DataChangesEventArgs e)

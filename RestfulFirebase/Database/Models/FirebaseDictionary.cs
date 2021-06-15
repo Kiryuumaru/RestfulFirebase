@@ -46,8 +46,6 @@ namespace RestfulFirebase.Database.Models
                 RealtimeInstance = null;
             }
 
-            realtimeInstance.Disposing += RealtimeInstance_Disposing;
-
             RealtimeInstance = realtimeInstance;
 
             Subscribe();
@@ -90,11 +88,6 @@ namespace RestfulFirebase.Database.Models
             RealtimeInstance = null;
 
             OnRealtimeDetached(args);
-        }
-
-        private void RealtimeInstance_Disposing(object sender, EventArgs e)
-        {
-            Dispose();
         }
 
         protected T ObjectFactory(string key)
@@ -215,6 +208,7 @@ namespace RestfulFirebase.Database.Models
             {
                 RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
+                RealtimeInstance.Disposing += RealtimeInstance_Disposing;
             }
         }
 
@@ -226,6 +220,7 @@ namespace RestfulFirebase.Database.Models
             {
                 RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
                 RealtimeInstance.Error -= RealtimeInstance_Error;
+                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
             }
         }
 
@@ -264,6 +259,11 @@ namespace RestfulFirebase.Database.Models
             VerifyNotDisposed();
 
             OnWireError(e);
+        }
+
+        private void RealtimeInstance_Disposing(object sender, EventArgs e)
+        {
+            Dispose();
         }
 
         #endregion
