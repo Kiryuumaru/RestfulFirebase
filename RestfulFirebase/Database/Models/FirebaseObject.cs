@@ -240,7 +240,7 @@ namespace RestfulFirebase.Database.Models
 
         private void RealtimeInstance_Disposing(object sender, EventArgs e)
         {
-            Dispose();
+            DetachRealtime();
         }
 
         #endregion
