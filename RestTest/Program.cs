@@ -1124,8 +1124,8 @@ namespace RestTest
             Console.WriteLine("DISPOSED");
 
             // Writes on disposed wire
-            obj.PropertyDictionary.SetNull();
-            obj.ObjectDictionary.SetNull();
+            obj.PropertyDictionary.Clear();
+            obj.ObjectDictionary.Clear();
             obj.SetNull();
 
             Console.WriteLine("SET NULL");

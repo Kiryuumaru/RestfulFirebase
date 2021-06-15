@@ -27,6 +27,14 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializer
 
+        public FirebaseDictionary()
+        {
+            if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+            {
+                throw new Exception("FirebaseDictionary item with no parameterless constructor should have an item initializer.");
+            }
+        }
+
         public FirebaseDictionary(Func<string, T> itemInitializer)
         {
             this.itemInitializer = itemInitializer;
@@ -104,7 +112,14 @@ namespace RestfulFirebase.Database.Models
                 return default;
             }
 
-            return itemInitializer.Invoke((key));
+            if (itemInitializer == null)
+            {
+                return (T)Activator.CreateInstance(typeof(T));
+            }
+            else
+            {
+                return itemInitializer.Invoke((key));
+            }
         }
 
         protected void WireValue(string key, T value, bool invokeSetFirst)
