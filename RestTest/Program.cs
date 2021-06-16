@@ -84,6 +84,15 @@ namespace RestTest
         }
 
         #endregion
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+
+            }
+            base.Dispose(disposing);
+        }
     }
 
     public class CascadeStorable : FirebaseObject
@@ -160,6 +169,7 @@ namespace RestTest
             //TestObservableObject();
             //TestRealtimeWire();
             //TestRealtimeWire2();
+            await TestModelAttachDetach();
             //TestPropertyPut();
             //TestPropertySub();
             //TestPropertySub2();
@@ -179,7 +189,7 @@ namespace RestTest
             //TestCascadeObjectPut();
             //TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
-            await TestCascadeObjectSetNull();
+            //await TestCascadeObjectSetNull();
 
             while (true)
             {
@@ -343,6 +353,49 @@ namespace RestTest
                     }
                 }
             }
+        }
+
+        public static async Task TestModelAttachDetach()
+        {
+            var objs = new FirebaseDictionary<TestStorable>();
+            objs.RealtimeAttached += (s, e) =>
+            {
+                Console.WriteLine("Main: Observable model ATTACHED to wire");
+            };
+            objs.RealtimeDetached += (s, e) =>
+            {
+                Console.WriteLine("Main: Observable model DETACHED to wire");
+            };
+
+            for (int i = 0; i < 2; i++)
+            {
+                var obj = new TestStorable();
+                var iteration = i.ToString();
+                obj.RealtimeAttached += (s, e) =>
+                {
+                    Console.WriteLine(iteration + ": Observable model ATTACHED to wire");
+                };
+                obj.RealtimeDetached += (s, e) =>
+                {
+                    Console.WriteLine(iteration + ": Observable model DETACHED to wire");
+                };
+                obj.IsOk = true;
+                obj.Premium = TimeSpan.FromSeconds(60);
+                obj.Premiums = new List<TimeSpan>() { TimeSpan.FromSeconds(30) };
+                obj.Test = iteration;
+                objs.Add(iteration, obj);
+            }
+
+            var wire = userNode.Child("testing").Child("mock").Child("test").AsRealtimeWire();
+
+            wire.Start();
+
+            wire.Child("wire_child1").Child("wire_child2").PutModel(objs);
+
+            await wire.WaitForSynced();
+
+            wire.Dispose();
+            objs.Clear();
         }
 
         public static void TestPropertyPut()

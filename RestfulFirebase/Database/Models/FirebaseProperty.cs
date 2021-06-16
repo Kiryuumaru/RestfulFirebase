@@ -74,7 +74,7 @@ namespace RestfulFirebase.Database.Models
 
         public void DetachRealtime()
         {
-            if (IsDisposed)
+            if (IsDisposed || !HasAttachedRealtime)
             {
                 return;
             }
@@ -199,16 +199,14 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
-                if (GetObject() is IDisposable model)
+                var obj = GetObject();
+
+                DetachRealtime();
+                SetObject(null);
+
+                if (obj is IDisposable model)
                 {
-                    DetachRealtime();
-                    SetObject(null);
                     model.Dispose();
-                }
-                else
-                {
-                    DetachRealtime();
-                    SetObject(null);
                 }
             }
             base.Dispose(disposing);
@@ -216,7 +214,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            ContextPost(delegate
+            ContextSend(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -224,7 +222,7 @@ namespace RestfulFirebase.Database.Models
 
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            ContextPost(delegate
+            ContextSend(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });
