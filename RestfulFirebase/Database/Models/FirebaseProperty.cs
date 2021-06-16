@@ -176,6 +176,10 @@ namespace RestfulFirebase.Database.Models
 
             if (GetObject() is IRealtimeModel)
             {
+                return base.SetNull();
+            }
+            else
+            {
                 if (base.SetNull())
                 {
                     if (HasAttachedRealtime)
@@ -188,10 +192,6 @@ namespace RestfulFirebase.Database.Models
                 {
                     return false;
                 }
-            }
-            else
-            {
-                return base.SetNull();
             }
         }
 

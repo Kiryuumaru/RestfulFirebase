@@ -179,7 +179,7 @@ namespace RestTest
             //TestCascadeObjectPut();
             //TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
-            await DisposableTest();
+            await TestCascadeObjectSetNull();
 
             while (true)
             {
@@ -1073,7 +1073,7 @@ namespace RestTest
             }
         }
 
-        public static async Task DisposableTest()
+        public static async Task TestCascadeObjectSetNull()
         {
             var obj = new CascadeStorable();
             obj.PropertyChanged += (s, e) =>
@@ -1096,26 +1096,41 @@ namespace RestTest
             {
                 Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
             };
-            obj.CascadeDictionary.CollectionChanged += (s, e) =>
-            {
-                Console.WriteLine("CascadeDictionary: " + obj.ObjectDictionary.Count);
-            };
 
+            bool isRun = false;
+            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.DataChanges += (s, e) =>
+            {
+                toRun = true;
+                if (isRun) return;
+                isRun = true;
+                Task.Run(async delegate
+                {
+                    while (toRun)
+                    {
+                        toRun = false;
+                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        await Task.Delay(500);
+                    }
+                    isRun = false;
+                }).ConfigureAwait(false);
+            };
             wire.Start();
 
             wire.PutModel(obj);
 
             obj.Test = "cscs";
 
-            for (int i = 0; i < 15; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(i.ToString());
                 obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var stor = new TestStorable();
                 stor.Test = i.ToString();
@@ -1125,50 +1140,34 @@ namespace RestTest
             for (int i = 0; i < 5; i++)
             {
                 var cas = new CascadeStorable();
-                for (int j = 0; j < 15; j++)
+                cas.Test = i.ToString();
+
+                for (int j = 0; j < 10; j++)
                 {
                     var prop = new FirebaseProperty();
                     prop.SetValue(j.ToString());
                     cas.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
                 }
 
-                for (int j = 0; j < 5; j++)
+                for (int j = 0; j < 3; j++)
                 {
                     var stor = new TestStorable();
                     stor.Test = j.ToString();
                     cas.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
                 }
-                cas.Test = i.ToString();
-                obj.CascadeDictionary.Add(UIDFactory.GenerateSafeUID(), cas);
+
+                obj.CascadeDictionary.Add(i.ToString(), cas);
             }
 
             await wire.WaitForSynced();
 
-            Console.WriteLine("DONE SYNC");
-
-            // Dispose
-            
-            wire.Dispose();
-            wire = null;
-
-            Console.WriteLine("DISPOSED");
-
-            // Writes on disposed wire
-            obj.PropertyDictionary.Clear();
-            obj.ObjectDictionary.Clear();
+            Console.WriteLine("ISNULL: " + (obj.IsNull() ? "Yes" : "No"));
+            Console.WriteLine("SETNULL");
             obj.SetNull();
-
-            Console.WriteLine("SET NULL");
-
-            await Task.Delay(5000);
-
-            // Sub
-            var wire2 = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire2.Start();
-
-            wire2.SubModel(obj);
-
-            Console.WriteLine("SUB BACK");
+            Console.WriteLine("ISNULL: " + (obj.IsNull() ? "Yes" : "No"));
+            Console.WriteLine("WAIT");
+            await wire.WaitForSynced();
+            Console.WriteLine("ISNULL: " + (obj.IsNull() ? "Yes" : "No"));
 
             while (true)
             {
