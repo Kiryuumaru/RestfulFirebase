@@ -91,7 +91,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
-        public bool SetPersistableProperty<T>(
+        protected bool SetFirebaseProperty<T>(
             T value,
             string key,
             [CallerMemberName] string propertyName = null)
@@ -112,7 +112,7 @@ namespace RestfulFirebase.Database.Models
             return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
         }
 
-        public T GetPersistableProperty<T>(
+        protected T GetFirebaseProperty<T>(
             string key,
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
@@ -126,7 +126,11 @@ namespace RestfulFirebase.Database.Models
             {
                 if (!(defaultValue is IRealtimeModel))
                 {
-                    throw new Exception("Cascade IRealtimeModel should have default value");
+                    if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+                    {
+                        throw new Exception("Cascade IRealtimeModel with no parameterless constructor should have a default value.");
+                    }
+                    defaultValue = (T)Activator.CreateInstance(typeof(T));
                 }
             }
 

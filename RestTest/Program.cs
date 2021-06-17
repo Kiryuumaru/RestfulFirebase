@@ -27,44 +27,44 @@ namespace RestTest
 
         public bool IsOk
         {
-            get => GetPersistableProperty<bool>("isOk");
-            set => SetPersistableProperty(value, "isOk");
+            get => GetFirebaseProperty<bool>("isOk");
+            set => SetFirebaseProperty(value, "isOk");
         }
 
         public TimeSpan Premium
         {
-            get => GetPersistableProperty<TimeSpan>("premium");
-            set => SetPersistableProperty(value, "premium");
+            get => GetFirebaseProperty<TimeSpan>("premium");
+            set => SetFirebaseProperty(value, "premium");
         }
 
         public IEnumerable<TimeSpan> Premiums
         {
-            get => GetPersistableProperty<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
-            set => SetPersistableProperty(value, "premiums");
+            get => GetFirebaseProperty<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
+            set => SetFirebaseProperty(value, "premiums");
         }
 
         public decimal Num1
         {
-            get => GetPersistableProperty<decimal>("num1");
-            set => SetPersistableProperty(value, "num1");
+            get => GetFirebaseProperty<decimal>("num1");
+            set => SetFirebaseProperty(value, "num1");
         }
 
         public decimal Num2
         {
-            get => GetPersistableProperty<decimal>("num2");
-            set => SetPersistableProperty(value, "num2");
+            get => GetFirebaseProperty<decimal>("num2");
+            set => SetFirebaseProperty(value, "num2");
         }
 
         public decimal Num3
         {
-            get => GetPersistableProperty<decimal>("num3");
-            set => SetPersistableProperty(value, "num3");
+            get => GetFirebaseProperty<decimal>("num3");
+            set => SetFirebaseProperty(value, "num3");
         }
 
         public string Test
         {
-            get => GetPersistableProperty<string>("test");
-            set => SetPersistableProperty(value, "test");
+            get => GetFirebaseProperty<string>("test");
+            set => SetFirebaseProperty(value, "test");
         }
 
         public string Dummy
@@ -101,38 +101,38 @@ namespace RestTest
 
         public TestStorable Storable1
         {
-            get => GetPersistableProperty<TestStorable>("storable1", new TestStorable());
-            set => SetPersistableProperty(value, "storable1");
+            get => GetFirebaseProperty<TestStorable>("storable1");
+            set => SetFirebaseProperty(value, "storable1");
         }
 
         public TestStorable Storable2
         {
-            get => GetPersistableProperty<TestStorable>("storable2", new TestStorable());
-            set => SetPersistableProperty(value, "storable2");
+            get => GetFirebaseProperty<TestStorable>("storable2");
+            set => SetFirebaseProperty(value, "storable2");
         }
 
         public FirebaseDictionary<FirebaseProperty> PropertyDictionary
         {
-            get => GetPersistableProperty<FirebaseDictionary<FirebaseProperty>>("props", new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty()));
-            set => SetPersistableProperty(value, "storable2");
+            get => GetFirebaseProperty<FirebaseDictionary<FirebaseProperty>>("props");
+            set => SetFirebaseProperty(value, "storable2");
         }
 
         public FirebaseDictionary<TestStorable> ObjectDictionary
         {
-            get => GetPersistableProperty<FirebaseDictionary<TestStorable>>("objs", new FirebaseDictionary<TestStorable>(key => new TestStorable()));
-            set => SetPersistableProperty(value, "storable2");
+            get => GetFirebaseProperty<FirebaseDictionary<TestStorable>>("objs");
+            set => SetFirebaseProperty(value, "storable2");
         }
 
         public FirebaseDictionary<CascadeStorable> CascadeDictionary
         {
-            get => GetPersistableProperty<FirebaseDictionary<CascadeStorable>>("cascade", new FirebaseDictionary<CascadeStorable>(key => new CascadeStorable()));
-            set => SetPersistableProperty(value, "cascade");
+            get => GetFirebaseProperty<FirebaseDictionary<CascadeStorable>>("cascade");
+            set => SetFirebaseProperty(value, "cascade");
         }
 
         public string Test
         {
-            get => GetPersistableProperty<string>("test");
-            set => SetPersistableProperty(value, "test");
+            get => GetFirebaseProperty<string>("test");
+            set => SetFirebaseProperty(value, "test");
         }
 
         #endregion
