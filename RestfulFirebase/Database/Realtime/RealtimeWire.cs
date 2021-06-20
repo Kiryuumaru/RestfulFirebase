@@ -22,6 +22,8 @@ namespace RestfulFirebase.Database.Realtime
 
         public bool Started => subscription != null;
 
+        public EventHandler<StreamObject> Next;
+
         private IDisposable subscription;
 
         #endregion
@@ -58,6 +60,25 @@ namespace RestfulFirebase.Database.Realtime
 
             subscription?.Dispose();
             subscription = null;
+        }
+
+        public override RealtimeInstance Clone()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            var clone = new RealtimeWire(App, Query);
+            clone.SyncOperation.SetContext(this);
+            Next += clone.OnNext;
+            Disposing += delegate
+            {
+                Next -= clone.OnNext;
+                clone.Dispose();
+            };
+
+            return clone;
         }
 
         public async Task WaitForFirstStream()
@@ -103,6 +124,8 @@ namespace RestfulFirebase.Database.Realtime
             {
                 return;
             }
+
+            Next?.Invoke(sender, streamObject);
 
             var urisToInvoke = new List<string>() { streamObject.Uri };
 

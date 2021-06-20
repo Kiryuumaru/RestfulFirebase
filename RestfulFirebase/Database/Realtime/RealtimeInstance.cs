@@ -39,13 +39,19 @@ namespace RestfulFirebase.Database.Realtime
             Query = query;
         }
 
-        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
-           : this (app, parent.Query.Child(path))
+        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, IFirebaseQuery query)
+           : this(app, query)
         {
             Parent = parent;
 
             Parent.Disposing += Parent_Disposing;
             SubscribeToParent();
+        }
+
+        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
+           : this(app, parent, parent.Query.Child(path))
+        {
+
         }
 
         #endregion
@@ -59,6 +65,19 @@ namespace RestfulFirebase.Database.Realtime
                 UnsubscribeToParent();
             }
             base.Dispose(disposing);
+        }
+
+        public virtual RealtimeInstance Clone()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            var clone = new RealtimeInstance(App, Parent, Query);
+            clone.SyncOperation.SetContext(this);
+
+            return clone;
         }
 
         public bool HasChild(string path)
@@ -81,6 +100,7 @@ namespace RestfulFirebase.Database.Realtime
 
             var childWire = new RealtimeInstance(App, this, path);
             childWire.SyncOperation.SetContext(this);
+
             return childWire;
         }
 
