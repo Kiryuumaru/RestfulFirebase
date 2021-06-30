@@ -7,18 +7,18 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Company>Kiryuumaru</Company>
     <Authors>Kiryuumaru</Authors>
-    <Description>Firebase REST API wired with MVVM observables</Description>
+    <Description>Firebase REST API wrapper wired with MVVM observables.</Description>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Copyright>Kiryuumaru</Copyright>
     <PackageProjectUrl>https://github.com/Kiryuumaru/RestfulFirebase</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
-    <PackageTags>Firebase, REST, Firebase REST API</PackageTags>
+    <PackageTags>Firebase REST API, Authentication, Realtime Database, Storage, Observable</PackageTags>
   </PropertyGroup>
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.98</Version>
-    <PackageReleaseNotes>* Added RealtimeInstance Clone</PackageReleaseNotes>
+    <Version>1.0.99</Version>
+    <PackageReleaseNotes>* Added code documentation</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
