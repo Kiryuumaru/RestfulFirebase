@@ -27,44 +27,44 @@ namespace RestTest
 
         public bool IsOk
         {
-            get => GetFirebaseProperty<bool>("isOk");
-            set => SetFirebaseProperty(value, "isOk");
+            get => GetFirebasePropertyWithKey<bool>("isOk");
+            set => SetFirebasePropertyWithKey(value, "isOk");
         }
 
         public TimeSpan Premium
         {
-            get => GetFirebaseProperty<TimeSpan>("premium");
-            set => SetFirebaseProperty(value, "premium");
+            get => GetFirebasePropertyWithKey<TimeSpan>("premium");
+            set => SetFirebasePropertyWithKey(value, "premium");
         }
 
         public IEnumerable<TimeSpan> Premiums
         {
-            get => GetFirebaseProperty<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
-            set => SetFirebaseProperty(value, "premiums");
+            get => GetFirebasePropertyWithKey<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
+            set => SetFirebasePropertyWithKey(value, "premiums");
         }
 
         public decimal Num1
         {
-            get => GetFirebaseProperty<decimal>("num1");
-            set => SetFirebaseProperty(value, "num1");
+            get => GetFirebasePropertyWithKey<decimal>("num1");
+            set => SetFirebasePropertyWithKey(value, "num1");
         }
 
         public decimal Num2
         {
-            get => GetFirebaseProperty<decimal>("num2");
-            set => SetFirebaseProperty(value, "num2");
+            get => GetFirebasePropertyWithKey<decimal>("num2");
+            set => SetFirebasePropertyWithKey(value, "num2");
         }
 
         public decimal Num3
         {
-            get => GetFirebaseProperty<decimal>("num3");
-            set => SetFirebaseProperty(value, "num3");
+            get => GetFirebasePropertyWithKey<decimal>("num3");
+            set => SetFirebasePropertyWithKey(value, "num3");
         }
 
         public string Test
         {
-            get => GetFirebaseProperty<string>("test");
-            set => SetFirebaseProperty(value, "test");
+            get => GetFirebasePropertyWithKey<string>("test");
+            set => SetFirebasePropertyWithKey(value, "test");
         }
 
         public string Dummy
@@ -101,38 +101,38 @@ namespace RestTest
 
         public TestStorable Storable1
         {
-            get => GetFirebaseProperty<TestStorable>("storable1");
-            set => SetFirebaseProperty(value, "storable1");
+            get => GetFirebasePropertyWithKey<TestStorable>("storable1");
+            set => SetFirebasePropertyWithKey(value, "storable1");
         }
 
         public TestStorable Storable2
         {
-            get => GetFirebaseProperty<TestStorable>("storable2");
-            set => SetFirebaseProperty(value, "storable2");
+            get => GetFirebasePropertyWithKey<TestStorable>("storable2");
+            set => SetFirebasePropertyWithKey(value, "storable2");
         }
 
         public FirebaseDictionary<FirebaseProperty> PropertyDictionary
         {
-            get => GetFirebaseProperty<FirebaseDictionary<FirebaseProperty>>("props");
-            set => SetFirebaseProperty(value, "storable2");
+            get => GetFirebasePropertyWithKey<FirebaseDictionary<FirebaseProperty>>("props");
+            set => SetFirebasePropertyWithKey(value, "storable2");
         }
 
         public FirebaseDictionary<TestStorable> ObjectDictionary
         {
-            get => GetFirebaseProperty<FirebaseDictionary<TestStorable>>("objs");
-            set => SetFirebaseProperty(value, "storable2");
+            get => GetFirebasePropertyWithKey<FirebaseDictionary<TestStorable>>("objs");
+            set => SetFirebasePropertyWithKey(value, "storable2");
         }
 
         public FirebaseDictionary<CascadeStorable> CascadeDictionary
         {
-            get => GetFirebaseProperty<FirebaseDictionary<CascadeStorable>>("cascade");
-            set => SetFirebaseProperty(value, "cascade");
+            get => GetFirebasePropertyWithKey<FirebaseDictionary<CascadeStorable>>("cascade");
+            set => SetFirebasePropertyWithKey(value, "cascade");
         }
 
         public string Test
         {
-            get => GetFirebaseProperty<string>("test");
-            set => SetFirebaseProperty(value, "test");
+            get => GetFirebasePropertyWithKey<string>("test");
+            set => SetFirebasePropertyWithKey(value, "test");
         }
 
         #endregion
@@ -206,7 +206,7 @@ namespace RestTest
             };
             wire.Error += (s, e) =>
             {
-                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
+                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.InnerException.Message);
             };
             wire.Start();
             while (true)
@@ -259,7 +259,7 @@ namespace RestTest
             };
             wire.Error += (s, e) =>
             {
-                Console.WriteLine("Main OnError: " + e.Uri + " Message: " + e.Exception.Message);
+                Console.WriteLine("Main OnError: " + e.Uri + " Message: " + e.InnerException.Message);
             };
             var subWire1 = wire.Child("sub1");
             subWire1.DataChanges += (s, e) =>
@@ -268,7 +268,7 @@ namespace RestTest
             };
             subWire1.Error += (s, e) =>
             {
-                Console.WriteLine("Sub1 OnError: " + e.Uri + " Message: " + e.Exception.Message);
+                Console.WriteLine("Sub1 OnError: " + e.Uri + " Message: " + e.InnerException.Message);
             };
             var subWire2 = wire.Child("sub2");
             subWire2.DataChanges += (s, e) =>
@@ -277,7 +277,7 @@ namespace RestTest
             };
             subWire2.Error += (s, e) =>
             {
-                Console.WriteLine("Sub2 OnError: " + e.Uri + " Message: " + e.Exception.Message);
+                Console.WriteLine("Sub2 OnError: " + e.Uri + " Message: " + e.InnerException.Message);
             };
             wire.Start();
             while (true)
