@@ -1,6 +1,6 @@
 # RestfulFirebase
 
-Firebase REST API wired with MVVM observers
+Firebase REST API wrapper with streaming API wired with MVVM observers.
 
 **NuGets**
 
@@ -8,10 +8,24 @@ Firebase REST API wired with MVVM observers
 | ------------------- | :------------------: |
 |RestfulFirebase|[![NuGet](https://buildstats.info/nuget/RestfulFirebase?includePreReleases=true)](https://www.nuget.org/packages/RestfulFirebase/)|
 
+## Installation
+```csharp
+// Install release version
+Install-Package RestfulFirebase
+
+// Install pre-release version
+Install-Package RestfulFirebase -pre
+```
+
+## Supported frameworks
+.NET Standard 2.0 - see https://github.com/dotnet/standard/blob/master/docs/versions.md for compatibility matrix
+
 ## Get Started
 
 All firebase observable events are executed on thread that was used to create the object instance.
 To use in UI safe updates, create the firebase object instances at the UI thread or manually configure the ISyncObject.SyncOperation to use UI thread.
+
+## Usage
 
 ### App Module Sample
 ```csharp
