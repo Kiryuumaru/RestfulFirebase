@@ -12,13 +12,13 @@
     <Copyright>Kiryuumaru</Copyright>
     <PackageProjectUrl>https://github.com/Kiryuumaru/RestfulFirebase</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
-    <PackageTags>Firebase REST API, Authentication, Realtime Database, Storage, Observable</PackageTags>
+    <PackageTags>Firebase REST API, Authentication, Realtime Database, Storage, MVVM Observable</PackageTags>
   </PropertyGroup>
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.0.99</Version>
-    <PackageReleaseNotes>* Added code documentation</PackageReleaseNotes>
+    <Version>1.1.0</Version>
+    <PackageReleaseNotes>* Updated dependencies</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,7 +39,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.0.81" />
+    <PackageReference Include="ObservableHelpers" Version="1.0.84" />
   </ItemGroup>
 
 </Project>
