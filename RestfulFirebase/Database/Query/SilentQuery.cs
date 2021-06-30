@@ -1,13 +1,17 @@
 ﻿namespace RestfulFirebase.Database.Query
 {
+    /// <summary>
+    /// Appends print=silent to the url.
+    /// </summary>
     public class SilentQuery : ParameterQuery
     {
-        public SilentQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
+        internal SilentQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
             : base(app, parent, () => "print")
         {
         }
 
-        protected override string BuildUrlParameter(FirebaseQuery child)
+        /// <inheritdoc/>
+        protected override string BuildUrlParameter()
         {
             return "silent";
         }

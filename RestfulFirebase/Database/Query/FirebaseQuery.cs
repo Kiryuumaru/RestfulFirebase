@@ -13,46 +13,50 @@ using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
 using System.Collections.Concurrent;
 using RestfulFirebase.Extensions;
+using Newtonsoft.Json;
 
 namespace RestfulFirebase.Database.Query
 {
+    /// <summary>
+    /// The base implementation for firebase query operations.
+    /// </summary>
     public abstract class FirebaseQuery : IFirebaseQuery, IDisposable
     {
         private IHttpClientProxy client;
 
-        protected readonly FirebaseQuery Parent;
+        /// <summary>
+        /// The parent of the query.
+        /// </summary>
+        protected FirebaseQuery Parent { get; }
 
-        protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
+        private protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
         {
             App = app;
             Parent = parent;
             AuthenticateRequests = true;
         }
 
-        internal AuthQuery WithAuth(Func<string> tokenFactory)
-        {
-            return new AuthQuery(App, this, tokenFactory);
-        }
-
-        internal SilentQuery Silent()
-        {
-            return new SilentQuery(App, this);
-        }
-
+        /// <summary>
+        /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
+        /// </summary>
         public bool AuthenticateRequests { get; set; }
 
+        /// <inheritdoc/>
         public RestfulFirebaseApp App { get; }
 
+        /// <inheritdoc/>
         public ChildQuery Child(Func<string> pathFactory)
         {
             return new ChildQuery(App, this, pathFactory);
         }
 
+        /// <inheritdoc/>
         public ChildQuery Child(string path)
         {
             return Child(() => path);
         }
 
+        /// <inheritdoc/>
         public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task invoke(Func<string> invokeJsonData)
@@ -74,7 +78,7 @@ namespace RestfulFirebase.Database.Query
                 {
                     try
                     {
-                        url = await BuildUrlAsync(token).ConfigureAwait(false);
+                        url = await BuildUrl(token).ConfigureAwait(false);
 
                         CancellationToken invokeToken;
 
@@ -139,11 +143,135 @@ namespace RestfulFirebase.Database.Query
             await recursive().ConfigureAwait(false);
         }
 
+        /// <inheritdoc/>
         public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             await Put(() => jsonData, token, onException).ConfigureAwait(false);
         }
 
+        /// <inheritdoc/>
+        public async Task Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            async Task invoke(Func<string> invokeJsonData)
+            {
+                string url;
+                var responseData = string.Empty;
+                var statusCode = HttpStatusCode.OK;
+
+                if (App.Config.OfflineMode)
+                {
+                    throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
+                }
+
+                var c = GetClient();
+
+                var currentJsonToInvoke = invokeJsonData();
+
+                if (currentJsonToInvoke == null)
+                {
+                    try
+                    {
+                        url = await BuildUrl(token).ConfigureAwait(false);
+
+                        CancellationToken invokeToken;
+
+                        if (token == null)
+                        {
+                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                        }
+                        else
+                        {
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                        }
+
+                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                        statusCode = result.StatusCode;
+                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                        result.EnsureSuccessStatusCode();
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
+                    }
+                    catch (FirebaseException ex)
+                    {
+                        throw ex;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                    }
+                }
+                else
+                {
+                    await Silent().SendAsync(c, currentJsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
+                }
+            };
+
+            async Task recursive()
+            {
+                try
+                {
+                    await invoke(jsonData).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
+                    {
+                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        return false;
+                    }));
+                    onException?.Invoke(retryEx);
+                    if (retryEx.Retry != null)
+                    {
+                        if (await retryEx.Retry)
+                        {
+                            await recursive().ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+
+            await recursive().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            await Patch(() => jsonData, token, onException).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            if (relativePaths == null)
+            {
+                throw new ArgumentNullException(nameof(relativePaths));
+            }
+
+            await Patch(() =>
+            {
+                var fanoutObject = new Dictionary<string, object>(relativePaths.Length);
+
+                var json = jsonData();
+
+                foreach (var path in relativePaths)
+                {
+                    fanoutObject.Add(path, JsonConvert.DeserializeObject(json));
+                }
+
+                return JsonConvert.SerializeObject(fanoutObject);
+            }, token, onException);
+        }
+
+        /// <inheritdoc/>
+        public async Task FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            await FanOut(() => jsonData, relativePaths, token, onException);
+        }
+
+        /// <inheritdoc/>
         public async Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task<string> invoke()
@@ -159,7 +287,7 @@ namespace RestfulFirebase.Database.Query
 
                 try
                 {
-                    url = await BuildUrlAsync(token).ConfigureAwait(false);
+                    url = await BuildUrl(token).ConfigureAwait(false);
 
                     CancellationToken invokeToken;
 
@@ -224,12 +352,14 @@ namespace RestfulFirebase.Database.Query
             return await recursive().ConfigureAwait(false);
         }
 
+        /// <inheritdoc/>
         public RealtimeWire AsRealtimeWire()
         {
             return new RealtimeWire(App, this);
         }
 
-        public async Task<string> BuildUrlAsync(CancellationToken? token = null)
+        /// <inheritdoc/>
+        public async Task<string> BuildUrl(CancellationToken? token = null)
         {
             if (token == null)
             {
@@ -248,10 +378,10 @@ namespace RestfulFirebase.Database.Query
                     {
                         return WithAuth(() =>
                         {
-                            var getTokenResult = App.Auth.GetFreshToken();
+                            var getTokenResult = App.Auth.Session.GetFreshToken();
                             if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
                             return getTokenResult.Result.Result;
-                        }).BuildUrl(null);
+                        }).BuildUrl((FirebaseQuery)null);
                     }, token.Value).ConfigureAwait(false);
                 }
             }
@@ -268,9 +398,10 @@ namespace RestfulFirebase.Database.Query
                 throw new FirebaseException(FirebaseExceptionReason.DatabaseUndefined, ex);
             }
 
-            return BuildUrl(null);
+            return BuildUrl((FirebaseQuery)null);
         }
 
+        /// <inheritdoc/>
         public string GetAbsolutePath()
         {
             var url = BuildUrlSegment(this);
@@ -283,17 +414,30 @@ namespace RestfulFirebase.Database.Query
             return url;
         }
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             client?.Dispose();
         }
 
+        /// <inheritdoc/>
         public override string ToString()
         {
             return GetAbsolutePath();
         }
 
+        /// <inheritdoc/>
         protected abstract string BuildUrlSegment(FirebaseQuery child);
+
+        internal AuthQuery WithAuth(Func<string> tokenFactory)
+        {
+            return new AuthQuery(App, this, tokenFactory);
+        }
+
+        internal SilentQuery Silent()
+        {
+            return new SilentQuery(App, this);
+        }
 
         private string BuildUrl(FirebaseQuery child)
         {
@@ -327,7 +471,7 @@ namespace RestfulFirebase.Database.Query
 
             try
             {
-                url = await BuildUrlAsync(token).ConfigureAwait(false);
+                url = await BuildUrl(token).ConfigureAwait(false);
 
                 var message = new HttpRequestMessage(method, url)
                 {

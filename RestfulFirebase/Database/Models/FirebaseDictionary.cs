@@ -8,18 +8,31 @@ using RestfulFirebase.Extensions;
 
 namespace RestfulFirebase.Database.Models
 {
+    /// <summary>
+    /// Provides an observable model for the firebase realtime instance for an observable dictionary.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The undelying type of the dictionary item value.
+    /// </typeparam>
     public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IRealtimeModel
         where T : IRealtimeModel
     {
         #region Properties
 
+        /// <inheritdoc/>
         public RealtimeInstance RealtimeInstance { get; private set; }
 
+        /// <inheritdoc/>
         public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-        public event EventHandler<WireErrorEventArgs> WireError;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireException> WireError;
 
         private Func<string, T> itemInitializer;
 
@@ -27,6 +40,9 @@ namespace RestfulFirebase.Database.Models
 
         #region Initializer
 
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseDictionary{T}"/> class.
+        /// </summary>
         public FirebaseDictionary()
         {
             if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
@@ -35,6 +51,12 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseDictionary{T}"/> class.
+        /// </summary>
+        /// <param name="itemInitializer">
+        /// A function item initializer for each item added from the firebase. The function passes the key of the object and returns the <typeparamref name="T"/> item object.
+        /// </param>
         public FirebaseDictionary(Func<string, T> itemInitializer)
         {
             this.itemInitializer = itemInitializer;
@@ -44,6 +66,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        /// <inheritdoc/>
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
@@ -86,6 +109,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
+        /// <inheritdoc/>
         public void DetachRealtime()
         {
             if (IsDisposed || !HasAttachedRealtime)
@@ -105,6 +129,15 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
+        /// <summary>
+        /// Factory used for creating the item object.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the <typeparamref name="T"/> item object.
+        /// </param>
+        /// <returns>
+        /// The created <typeparamref name="T"/> item object.
+        /// </returns>
         protected T ObjectFactory(string key)
         {
             if (IsDisposed)
@@ -122,6 +155,18 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        /// <summary>
+        /// Wires the provided <paramref name="value"/> to the realtime instance of the model.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the <typeparamref name="T"/> item object to wire.
+        /// </param>
+        /// <param name="value">
+        /// The value to wire.
+        /// </param>
+        /// <param name="invokeSetFirst">
+        /// Specify <c>true</c> whether the value should be put and subscribe to the realtime instance; otherwise <c>false</c> to only subscribe to the realtime instance.
+        /// </param>
         protected void WireValue(string key, T value, bool invokeSetFirst)
         {
             if (IsDisposed)
@@ -135,6 +180,12 @@ namespace RestfulFirebase.Database.Models
             else RealtimeInstance.Child(key).SubModel(value);
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -143,6 +194,12 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -151,7 +208,13 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        protected virtual void OnWireError(WireErrorEventArgs args)
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireException args)
         {
             ContextPost(delegate
             {
@@ -159,6 +222,7 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
+        /// <inheritdoc/>
         protected override bool ValidateSetItem(string key, T value)
         {
             if (IsDisposed)
@@ -179,6 +243,7 @@ namespace RestfulFirebase.Database.Models
             return baseValidation;
         }
 
+        /// <inheritdoc/>
         protected override bool ValidateRemoveItem(string key)
         {
             if (IsDisposed)
@@ -205,6 +270,7 @@ namespace RestfulFirebase.Database.Models
             return baseValidation;
         }
 
+        /// <inheritdoc/>
         protected override bool ValidateClear()
         {
             if (IsDisposed)
@@ -225,6 +291,7 @@ namespace RestfulFirebase.Database.Models
             return baseValidation;
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -314,7 +381,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
+        private void RealtimeInstance_Error(object sender, WireException e)
         {
             if (IsDisposed)
             {

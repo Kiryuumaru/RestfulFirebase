@@ -6,29 +6,29 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public class StreamData
+    internal class StreamData
     {
-        internal StreamData()
+        protected StreamData()
         {
 
         }
     }
 
-    public class SingleStreamData : StreamData
+    internal class SingleStreamData : StreamData
     {
         public string Blob { get; }
 
-        internal SingleStreamData(string blob)
+        public SingleStreamData(string blob)
         {
             Blob = blob;
         }
     }
 
-    public class MultiStreamData : StreamData
+    internal class MultiStreamData : StreamData
     {
         public Dictionary<string, StreamData> Blobs { get; }
 
-        internal MultiStreamData(Dictionary<string, StreamData> blobs)
+        public MultiStreamData(Dictionary<string, StreamData> blobs)
         {
             Blobs = blobs;
         }

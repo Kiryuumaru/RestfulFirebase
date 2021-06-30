@@ -68,7 +68,7 @@ namespace RestfulFirebase.Database.Streaming
                 {
                     cancel.Token.ThrowIfCancellationRequested();
 
-                    url = await query.BuildUrlAsync().ConfigureAwait(false);
+                    url = await query.BuildUrl().ConfigureAwait(false);
 
                     var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
 

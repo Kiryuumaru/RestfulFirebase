@@ -11,16 +11,38 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Storage
 {
+    /// <summary>
+    /// Provides progress tracker of the upload.
+    /// </summary>
     public class FirebaseStorageTask
     {
+        #region Properties
+
         private const int ProgressReportDelayMiliseconds = 500;
 
-        private readonly Task<string> uploadTask;
+        private readonly Task<CallResult<string>> uploadTask;
         private readonly Stream stream;
 
+        /// <summary>
+        /// Gets the <see cref="RestfulFirebaseApp"/> used by this progress tracker.
+        /// </summary>
         public RestfulFirebaseApp App { get; }
 
-        public FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        /// <summary>
+        /// Gets the <see cref="FirebaseStorageProgress"/> of the upload task.
+        /// </summary>
+        public Progress<FirebaseStorageProgress> Progress { get; private set; }
+
+        /// <summary>
+        /// Gets the target url of the upload file.
+        /// </summary>
+        public string TargetUrl { get; private set; }
+
+        #endregion
+
+        #region Initializers
+
+        internal FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             App = app;
             TargetUrl = url;
@@ -31,25 +53,22 @@ namespace RestfulFirebase.Storage
             Task.Factory.StartNew(ReportProgressLoop);
         }
 
-        public Progress<FirebaseStorageProgress> Progress
-        {
-            get;
-            private set;
-        }
+        #endregion
 
+        #region Methods
 
-        public string TargetUrl
-        {
-            get;
-            private set;
-        }
-
-        public TaskAwaiter<string> GetAwaiter()
+        /// <summary>
+        /// Gets the awaiter of the specified upload task.
+        /// </summary>
+        /// <returns>
+        /// The awaiter of the specified upload task.
+        /// </returns>
+        public TaskAwaiter<CallResult<string>> GetAwaiter()
         {
             return uploadTask.GetAwaiter();
         }
 
-        private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        private async Task<CallResult<string>> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             var responseData = "N/A";
 
@@ -73,21 +92,16 @@ namespace RestfulFirebase.Storage
                     response.EnsureSuccessStatusCode();
                     var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
 
-                    return downloadUrl + data["downloadTokens"];
+                    return CallResult.Success(downloadUrl + data["downloadTokens"]);
                 }
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException ex)
             {
-                if (App.Config.StorageThrowOnCancel)
-                {
-                    throw;
-                }
-
-                return string.Empty;
+                return CallResult.Error<string>(new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex));
             }
             catch (Exception ex)
             {
-                throw new FirebaseStorageException(url, responseData, ex);
+                return CallResult.Error<string>(new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex));
             }
         }
 
@@ -113,5 +127,7 @@ namespace RestfulFirebase.Storage
         {
             (Progress as IProgress<FirebaseStorageProgress>).Report(progress);
         }
+
+        #endregion
     }
 }

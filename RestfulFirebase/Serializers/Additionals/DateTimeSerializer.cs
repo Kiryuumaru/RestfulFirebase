@@ -5,8 +5,10 @@ using System.Text;
 
 namespace RestfulFirebase.Serializers.Additionals
 {
+    /// <inheritdoc/>
     public class DateTimeSerializer : Serializer<DateTime>
     {
+        /// <inheritdoc/>
         public override string Serialize(DateTime value)
         {
             var bytes = Utils.ToUnsignedArbitraryBaseSystem((ulong)value.Ticks, 64);
@@ -18,6 +20,7 @@ namespace RestfulFirebase.Serializers.Additionals
             return base64;
         }
 
+        /// <inheritdoc/>
         public override DateTime Deserialize(string data)
         {
             var indexes = new List<uint>();

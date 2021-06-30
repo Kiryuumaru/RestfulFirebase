@@ -9,22 +9,45 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
+    /// <summary>
+    /// Provides an observable model for the firebase realtime instance for an observable property.
+    /// </summary>
     public class FirebaseProperty : ObservableProperty, IRealtimeModel
     {
         #region Properties
 
+        /// <inheritdoc/>
         public RealtimeInstance RealtimeInstance { get; private set; }
 
+        /// <inheritdoc/>
         public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-        public event EventHandler<WireErrorEventArgs> WireError;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireException> WireError;
+
+        #endregion
+
+        #region Initializers
+
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseProperty"/> class.
+        /// </summary>
+        public FirebaseProperty()
+        {
+
+        }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
@@ -72,6 +95,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
+        /// <inheritdoc/>
         public void DetachRealtime()
         {
             if (IsDisposed || !HasAttachedRealtime)
@@ -91,6 +115,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
+        /// <inheritdoc/>
         public override bool SetValue<T>(T value)
         {
             if (IsDisposed)
@@ -132,6 +157,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        /// <inheritdoc/>
         public override T GetValue<T>(T defaultValue = default)
         {
             if (IsDisposed)
@@ -167,6 +193,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        /// <inheritdoc/>
         public override bool SetNull()
         {
             if (IsDisposed)
@@ -195,6 +222,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -212,6 +240,12 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -220,6 +254,12 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -228,7 +268,13 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        protected virtual void OnWireError(WireErrorEventArgs args)
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireException args)
         {
             ContextPost(delegate
             {
@@ -296,7 +342,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
+        private void RealtimeInstance_Error(object sender, WireException e)
         {
             if (IsDisposed)
             {
@@ -319,10 +365,14 @@ namespace RestfulFirebase.Database.Models
         #endregion
     }
 
+    /// <inheritdoc/>
     public class FirebaseProperty<T> : FirebaseProperty
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the value of the property.
+        /// </summary>
         public T Value
         {
             get => base.GetValue<T>(default);
@@ -333,6 +383,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void OnPropertyChanged(string propertyName)
         {
             base.OnPropertyChanged(propertyName);

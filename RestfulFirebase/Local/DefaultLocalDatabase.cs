@@ -6,15 +6,18 @@ using System.Text;
 
 namespace RestfulFirebase.Local
 {
-    public class SimpleLocalDatabase : ILocalDatabase
+    /// <inheritdoc/>
+    public class DefaultLocalDatabase : ILocalDatabase
     {
         private static Dictionary<string, string> db = new Dictionary<string, string>();
 
+        /// <inheritdoc/>
         public bool ContainsKey(string key)
         {
             return db.ContainsKey(key);
         }
 
+        /// <inheritdoc/>
         public string Get(string key)
         {
             try
@@ -28,6 +31,7 @@ namespace RestfulFirebase.Local
             }
         }
 
+        /// <inheritdoc/>
         public void Set(string key, string value)
         {
             lock (db)
@@ -37,6 +41,7 @@ namespace RestfulFirebase.Local
             }
         }
 
+        /// <inheritdoc/>
         public void Delete(string key)
         {
             lock (db)
@@ -45,6 +50,7 @@ namespace RestfulFirebase.Local
             }
         }
 
+        /// <inheritdoc/>
         public void Clear()
         {
             lock (db)

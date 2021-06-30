@@ -4,6 +4,9 @@ using System.Text;
 
 namespace RestfulFirebase.Extensions
 {
+    /// <summary>
+    /// Provides UID generators.
+    /// </summary>
     public static class UIDFactory
     {
         private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Utils.Base64Charset));
@@ -13,6 +16,16 @@ namespace RestfulFirebase.Extensions
 
         private static long lastPushTime;
 
+        /// <summary>
+        /// Generates randomized UID.
+        /// </summary>
+        /// <param name="length">
+        /// The length of the UID to generate.
+        /// </param>
+        /// <param name="charset">
+        /// The charset used by the randomizer.
+        /// </param>
+        /// <returns></returns>
         public static string GenerateUID(int length = 10, string charset = Utils.Base64Charset)
         {
             string id = "";
@@ -23,6 +36,10 @@ namespace RestfulFirebase.Extensions
             return id;
         }
 
+        /// <summary>
+        /// Generates safe and non coliding randomized UID.
+        /// </summary>
+        /// <returns></returns>
         public static string GenerateSafeUID()
         {
             var id = new StringBuilder(20);

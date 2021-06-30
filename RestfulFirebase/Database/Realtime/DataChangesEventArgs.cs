@@ -6,15 +6,27 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Realtime
 {
+    /// <summary>
+    /// Event arguments for data changes invokes.
+    /// </summary>
     public class DataChangesEventArgs : EventArgs
     {
+        /// <summary>
+        /// The base uri of the data changes.
+        /// </summary>
         public string BaseUri { get; }
 
+        /// <summary>
+        /// The path of the data changes.
+        /// </summary>
         public string Path { get; }
 
+        /// <summary>
+        /// The uri of the data changes.
+        /// </summary>
         public string Uri { get; }
 
-        public DataChangesEventArgs(string baseUri, string path)
+        internal DataChangesEventArgs(string baseUri, string path)
         {
             BaseUri = baseUri.Trim().Trim('/');
             Path = path.Trim().Trim('/');

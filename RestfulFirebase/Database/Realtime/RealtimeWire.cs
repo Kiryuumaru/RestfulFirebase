@@ -14,15 +14,24 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
+    /// <summary>
+    /// The base query subscribing fluid implementations for firebase realtime database.
+    /// </summary>
     public class RealtimeWire : RealtimeInstance
     {
         #region Properties
 
+        /// <summary>
+        /// Gets <c>true</c> whether the wire has first stream since creation; otherwise, <c>false</c>.
+        /// </summary>
         public bool HasFirstStream { get; private set; }
 
+        /// <summary>
+        /// Gets <c>true</c> whether the wire has started the node subscription; otherwise, <c>false</c>.
+        /// </summary>
         public bool Started => subscription != null;
 
-        public EventHandler<StreamObject> Next;
+        internal EventHandler<StreamObject> Next;
 
         private IDisposable subscription;
 
@@ -30,7 +39,7 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Initializers
 
-        public RealtimeWire(RestfulFirebaseApp app, IFirebaseQuery query)
+        internal RealtimeWire(RestfulFirebaseApp app, IFirebaseQuery query)
             : base(app, query)
         {
 
@@ -40,6 +49,9 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
+        /// <summary>
+        /// Start to subscribe the wire to the node.
+        /// </summary>
         public void Start()
         {
             if (IsDisposed)
@@ -51,6 +63,9 @@ namespace RestfulFirebase.Database.Realtime
             subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(uri, e)).Run();
         }
 
+        /// <summary>
+        /// Unsubscribe the wire to the node.
+        /// </summary>
         public void Stop()
         {
             if (IsDisposed)
@@ -62,6 +77,7 @@ namespace RestfulFirebase.Database.Realtime
             subscription = null;
         }
 
+        /// <inheritdoc/>
         public override RealtimeInstance Clone()
         {
             if (IsDisposed)
@@ -81,6 +97,12 @@ namespace RestfulFirebase.Database.Realtime
             return clone;
         }
 
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the first stream status.
+        /// </returns>
         public async Task WaitForFirstStream()
         {
             if (IsDisposed)
@@ -95,6 +117,38 @@ namespace RestfulFirebase.Database.Realtime
             }).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the first stream status.
+        /// </returns>
+        public async Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
+        {
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            return await Task.Run(async delegate
+            {
+                while (!HasFirstStream) { await Task.Delay(100).ConfigureAwait(false); }
+                return true;
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        /// </summary>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the first stream status.
+        /// </returns>
         public async Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
             if (IsDisposed)
@@ -109,6 +163,7 @@ namespace RestfulFirebase.Database.Realtime
             }).WithTimeout(timeout, false).ConfigureAwait(false);
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)

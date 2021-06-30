@@ -14,32 +14,54 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Realtime
 {
-    public class RealtimeInstance : SyncContext
+    /// <summary>
+    /// Provides fluid implementations for firebase realtime database.
+    /// </summary>
+    public class RealtimeInstance : SyncContext, INullableObject
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the underlying <see cref="RestfulFirebaseApp"/> the module uses.
+        /// </summary>
         public RestfulFirebaseApp App { get; }
 
+        /// <summary>
+        /// The firebase query of the instance.
+        /// </summary>
         public IFirebaseQuery Query { get; }
 
+        /// <summary>
+        /// The parent realtime instance of the instance.
+        /// </summary>
         public RealtimeInstance Parent { get; }
 
+        /// <summary>
+        /// Event raised on the current context when there is data changes on the node or sub nodes.
+        /// </summary>
         public event EventHandler<DataChangesEventArgs> DataChanges;
-        public event EventHandler<WireErrorEventArgs> Error;
 
+        /// <summary>
+        /// Event raised on the current context when there is an error occured.
+        /// </summary>
+        public event EventHandler<WireException> Error;
+
+        /// <summary>
+        /// Gets the status of the syncing. Returnes <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// </summary>
         public bool IsSynced { get => GetTotalDataCount() == GetSyncedDataCount(); }
 
         #endregion
 
         #region Initializers
 
-        protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query)
+        private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query)
         {
             App = app;
             Query = query;
         }
 
-        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, IFirebaseQuery query)
+        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, IFirebaseQuery query)
            : this(app, query)
         {
             Parent = parent;
@@ -48,7 +70,7 @@ namespace RestfulFirebase.Database.Realtime
             SubscribeToParent();
         }
 
-        protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
+        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeInstance parent, string path)
            : this(app, parent, parent.Query.Child(path))
         {
 
@@ -58,6 +80,7 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -67,6 +90,12 @@ namespace RestfulFirebase.Database.Realtime
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Creates a close of the instance.
+        /// </summary>
+        /// <returns>
+        /// The created clone of the instance.
+        /// </returns>
         public virtual RealtimeInstance Clone()
         {
             if (IsDisposed)
@@ -80,6 +109,15 @@ namespace RestfulFirebase.Database.Realtime
             return clone;
         }
 
+        /// <summary>
+        /// Checks whether the instance has a child with a provided <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the child to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the instance has a child with a provided <paramref name="path"/>; otherwise, <c>false</c>.
+        /// </returns>
         public bool HasChild(string path)
         {
             if (IsDisposed)
@@ -91,6 +129,15 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetDatas(uri, true).Any(i => i.Blob != null);
         }
 
+        /// <summary>
+        /// Creates new child instance with the provided <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the child instance to create.
+        /// </param>
+        /// <returns>
+        /// The created child instance.
+        /// </returns>
         public RealtimeInstance Child(string path)
         {
             if (IsDisposed)
@@ -104,6 +151,12 @@ namespace RestfulFirebase.Database.Realtime
             return childWire;
         }
 
+        /// <summary>
+        /// Gets the total data cached of the instance.
+        /// </summary>
+        /// <returns>
+        /// The total data count.
+        /// </returns>
         public int GetTotalDataCount()
         {
             if (IsDisposed)
@@ -115,6 +168,12 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
         }
 
+        /// <summary>
+        /// Gets the total synced data cached of node instance.
+        /// </summary>
+        /// <returns>
+        /// The total synced data count.
+        /// </returns>
         public int GetSyncedDataCount()
         {
             if (IsDisposed)
@@ -126,6 +185,12 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
         }
 
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
         public async Task WaitForSynced()
         {
             if (IsDisposed)
@@ -139,6 +204,37 @@ namespace RestfulFirebase.Database.Realtime
             }).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public async Task WaitForSynced(CancellationToken cancellationToken)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            await Task.Run(async delegate
+            {
+                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
         public async Task<bool> WaitForSynced(TimeSpan timeout)
         {
             if (IsDisposed)
@@ -153,6 +249,15 @@ namespace RestfulFirebase.Database.Realtime
             }).WithTimeout(timeout, false).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Sets blob to the specified node.
+        /// </summary>
+        /// <param name="blob">
+        /// The blob to set.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the blob was set; otherwise, <c>false</c>.
+        /// </returns>
         public bool SetBlob(string blob)
         {
             if (IsDisposed)
@@ -193,11 +298,25 @@ namespace RestfulFirebase.Database.Realtime
             return hasChanges;
         }
 
+        /// <inheritdoc/>
         public bool SetNull()
         {
             return SetBlob(null);
         }
 
+        /// <inheritdoc/>
+        public bool IsNull()
+        {
+            if (IsDisposed)
+            {
+                return true;
+            }
+
+            var uri = Query.GetAbsolutePath();
+            return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
+        }
+
+        /// <inheritdoc/>
         public string GetBlob()
         {
             if (IsDisposed)
@@ -210,6 +329,12 @@ namespace RestfulFirebase.Database.Realtime
             return dataHolder.Blob;
         }
 
+        /// <summary>
+        /// Gets the cached sub paths of the instance.
+        /// </summary>
+        /// <returns>
+        /// The cached sub paths.
+        /// </returns>
         public IEnumerable<string> GetSubPaths()
         {
             if (IsDisposed)
@@ -221,6 +346,12 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetSubUris(uri, false).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
         }
 
+        /// <summary>
+        /// Gets the cached sub uris of the instance.
+        /// </summary>
+        /// <returns>
+        /// The cached sub path of the instance.
+        /// </returns>
         public IEnumerable<string> GetSubUris()
         {
             if (IsDisposed)
@@ -232,17 +363,18 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetSubUris(uri, false);
         }
 
-        public bool IsNull()
-        {
-            if (IsDisposed)
-            {
-                return true;
-            }
-
-            var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
-        }
-
+        /// <summary>
+        /// Writes and subscribes realtime model to the node instance.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the realtime model.
+        /// </typeparam>
+        /// <param name="model">
+        /// The realtime model to write and subscribe.
+        /// </param>
+        /// <returns>
+        /// The provided <paramref name="model"/>.
+        /// </returns>
         public T PutModel<T>(T model)
             where T : IRealtimeModel
         {
@@ -255,6 +387,18 @@ namespace RestfulFirebase.Database.Realtime
             return model;
         }
 
+        /// <summary>
+        /// Subscribes realtime model to the node instance.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the realtime model.
+        /// </typeparam>
+        /// <param name="model">
+        /// The realtime model to subscribe.
+        /// </param>
+        /// <returns>
+        /// The provided <paramref name="model"/>.
+        /// </returns>
         public T SubModel<T>(T model)
             where T : IRealtimeModel
         {
@@ -267,11 +411,23 @@ namespace RestfulFirebase.Database.Realtime
             return model;
         }
 
+        /// <summary>
+        /// Gets the <see cref="string"/> representation of the instance.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="string"/> representation of the instance.
+        /// </returns>
         public override string ToString()
         {
             return Query.GetAbsolutePath();
         }
 
+        /// <summary>
+        /// Invokes <see cref="DataChanges"/> event to the instance and to the parent instance.
+        /// </summary>
+        /// <param name="uris">
+        /// The uris of the data that has changes.
+        /// </param>
         protected void OnDataChanges(params string[] uris)
         {
             if (IsDisposed)
@@ -309,6 +465,15 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        /// <summary>
+        /// Invokes <see cref="Error"/> event to instance and parent instance.
+        /// </summary>
+        /// <param name="uri">
+        /// The affected uri of the error.
+        /// </param>
+        /// <param name="exception">
+        /// The exception of the error.
+        /// </param>
         protected void OnError(string uri, Exception exception)
         {
             if (IsDisposed)
@@ -318,7 +483,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (Parent == null)
             {
-                SelfError(new WireErrorEventArgs(uri, exception));
+                SelfError(new WireException(uri, exception));
             }
             else
             {
@@ -326,6 +491,9 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        /// <summary>
+        /// Subscribes instance events to parent instance if theres any.
+        /// </summary>
         protected void SubscribeToParent()
         {
             if (IsDisposed)
@@ -340,6 +508,9 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        /// <summary>
+        /// Unsubscribes instance events to parent instance if theres any.
+        /// </summary>
         protected void UnsubscribeToParent()
         {
             if (IsDisposed)
@@ -398,7 +569,7 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        private void Parent_Error(object sender, WireErrorEventArgs e)
+        private void Parent_Error(object sender, WireException e)
         {
             if (IsDisposed)
             {
@@ -430,7 +601,7 @@ namespace RestfulFirebase.Database.Realtime
             });
         }
 
-        private void SelfError(WireErrorEventArgs e)
+        private void SelfError(WireException e)
         {
             ContextPost(delegate
             {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ObservableHelpers;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,21 +7,46 @@ using System.Text;
 
 namespace RestfulFirebase.Storage
 {
-    public class FirebaseStorageApp : IDisposable
+    /// <summary>
+    /// App module that provides firebase storage implementations
+    /// </summary>
+    public class FirebaseStorageApp : Disposable
     {
+        #region Properties
+
+        /// <summary>
+        /// Gets the <see cref="RestfulFirebaseApp"/> the module uses.
+        /// </summary>
         public RestfulFirebaseApp App { get; }
+
+        #endregion
+
+        #region Initializers
 
         internal FirebaseStorageApp(RestfulFirebaseApp app)
         {
             App = app;
         }
 
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseStorageReference"/> child reference.
+        /// </summary>
+        /// <param name="childRoot">
+        /// The child reference name or file name.
+        /// </param>
+        /// <returns>
+        /// The instance of <see cref="FirebaseStorageReference"/> child reference.
+        /// </returns>
         public FirebaseStorageReference Child(string childRoot)
         {
             return new FirebaseStorageReference(App, childRoot);
         }
 
-        public HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)
+        internal HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)
         {
             var client = App.Config.HttpClientFactory.GetHttpClient(timeout).GetHttpClient();
 
@@ -32,9 +58,6 @@ namespace RestfulFirebase.Storage
             return client;
         }
 
-        public void Dispose()
-        {
-
-        }
+        #endregion
     }
 }

@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public class NonBlockingStreamReader : TextReader
+    internal class NonBlockingStreamReader : TextReader
     {
         private const int DefaultBufferSize = 16000;
 

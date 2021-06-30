@@ -8,43 +8,103 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace RestfulFirebase.Storage
 {
+    /// <summary>
+    /// Provides firebase storage reference node implementations.
+    /// </summary>
     public class FirebaseStorageReference
     {
+        #region Properties
+
         private const string FirebaseStorageEndpoint = "https://firebasestorage.googleapis.com/v0/b/";
 
         private readonly List<string> children;
 
+        /// <summary>
+        /// Gets the <see cref="RestfulFirebaseApp"/> this reference uses.
+        /// </summary>
         public RestfulFirebaseApp App { get; }
+
+        #endregion
+
+        #region Initializers
 
         internal FirebaseStorageReference(RestfulFirebaseApp app, string childRoot)
         {
-            children = new List<string>();
-
             App = app;
+
+            children = new List<string>();
             children.Add(childRoot);
         }
 
-        public FirebaseStorageTask PutAsync(Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        internal FirebaseStorageReference(RestfulFirebaseApp app, IEnumerable<string> children)
+        {
+            App = app;
+
+            this.children = children.ToList();
+        }
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Starts uploading given stream to target location.
+        /// </summary>
+        /// <param name="stream">
+        /// Stream to upload.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Cancellation token which can be used to cancel the operation.
+        /// </param>
+        /// <param name="mimeType">
+        /// Optional type of data being uploaded, will be used to set HTTP Content-Type header.
+        /// </param>
+        /// <returns>
+        /// The <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload.
+        /// </returns>
+        public FirebaseStorageTask Put(Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
         }
 
-        public FirebaseStorageTask PutAsync(Stream fileStream)
+        /// <summary>
+        /// Starts uploading given stream to target location.
+        /// </summary>
+        /// <param name="fileStream">
+        /// Stream to upload.
+        /// </param>
+        /// <returns>
+        /// The <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload.
+        /// </returns>
+        public FirebaseStorageTask Put(Stream fileStream)
         {
-            return PutAsync(fileStream, CancellationToken.None);
+            return Put(fileStream, CancellationToken.None);
         }
 
-        public async Task<FirebaseMetaData> GetMetaDataAsync(TimeSpan? timeout = null)
+        /// <summary>
+        /// Gets the meta data for given file.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> which results a <see cref="FirebaseMetaData"/> of this reference.
+        /// </returns>
+        public async Task<FirebaseMetaData> GetMetaData(TimeSpan? timeout = null)
         {
             var data = await PerformFetch<FirebaseMetaData>(timeout).ConfigureAwait(false);
 
             return data;
         }
 
-        public async Task<string> GetDownloadUrlAsync(TimeSpan? timeout = null)
+        /// <summary>
+        /// Gets the meta data for given file.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> which results a <see cref="string"/> that represents the download url of the reference.
+        /// </returns>
+        public async Task<string> GetDownloadUrl(TimeSpan? timeout = null)
         {
             var data = await PerformFetch<Dictionary<string, object>>(timeout).ConfigureAwait(false);
 
@@ -56,7 +116,14 @@ namespace RestfulFirebase.Storage
             return GetFullDownloadUrl() + downloadTokens;
         }
 
-        public async Task DeleteAsync(TimeSpan? timeout = null)
+        /// <summary>
+        /// Deletes the file of this reference.
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents a proxy for the task returned by deletion.
+        /// </returns>
+        public async Task Delete(TimeSpan? timeout = null)
         {
             var url = GetDownloadUrl();
             var resultContent = "N/A";
@@ -74,14 +141,24 @@ namespace RestfulFirebase.Storage
             }
             catch (Exception ex)
             {
-                throw new FirebaseStorageException(url, resultContent, ex);
+                throw new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex);
             }
         }
 
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseStorageReference"/> child reference to the file.
+        /// </summary>
+        /// <param name="name">
+        /// The child reference name or file name.
+        /// </param>
+        /// <returns>
+        /// The instance of <see cref="FirebaseStorageReference"/> child reference.
+        /// </returns>
         public FirebaseStorageReference Child(string name)
         {
+            var children = new List<string>(this.children);
             children.Add(name);
-            return this;
+            return new FirebaseStorageReference(App, children);
         }
 
         private async Task<T> PerformFetch<T>(TimeSpan? timeout = null)
@@ -104,7 +181,7 @@ namespace RestfulFirebase.Storage
             }
             catch (Exception ex)
             {
-                throw new FirebaseStorageException(url, resultContent, ex);
+                throw new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex);
             }
         }
 
@@ -127,5 +204,7 @@ namespace RestfulFirebase.Storage
         {
             return Uri.EscapeDataString(string.Join("/", children));
         }
+
+        #endregion
     }
 }

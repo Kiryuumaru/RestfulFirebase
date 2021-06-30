@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Database.Offline;
+﻿using ObservableHelpers;
+using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Extensions;
@@ -11,12 +12,21 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database
 {
-    public class FirebaseDatabaseApp : IDisposable
+    /// <summary>
+    /// App module that provides firebase realtime database implementations.
+    /// </summary>
+    public class FirebaseDatabaseApp : Disposable
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the underlying <see cref="RestfulFirebaseApp"/> the module uses.
+        /// </summary>
         public RestfulFirebaseApp App { get; private set; }
 
+        /// <summary>
+        /// Gets the pending write tasks count on syncer.
+        /// </summary>
         public int PendingWrites { get => OfflineDatabase.WriteTaskCount; }
 
         internal OfflineDatabase OfflineDatabase { get; private set; }
@@ -35,19 +45,36 @@ namespace RestfulFirebase.Database
 
         #region Methods
 
+        /// <summary>
+        /// Creates new instance of <see cref="ChildQuery"/> node with the specified child <paramref name="resourceName"/>.
+        /// </summary>
+        /// <param name="resourceName">
+        /// The resource name of the node.
+        /// </param>
+        /// <returns>
+        /// The created <see cref="ChildQuery"/> node.
+        /// </returns>
         public ChildQuery Child(string resourceName)
         {
             return new ChildQuery(App, () => Utils.UrlCombine(App.Config.DatabaseURL, resourceName));
         }
 
+        /// <summary>
+        /// Flush all data of the offline database.
+        /// </summary>
         public void Flush()
         {
             OfflineDatabase.Flush();
         }
 
-        public void Dispose()
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
-            OfflineDatabase?.Dispose();
+            if (disposing)
+            {
+                OfflineDatabase?.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         #endregion

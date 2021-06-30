@@ -5,13 +5,13 @@ using System.Text;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    public class StreamObject
+    internal class StreamObject
     {
         public StreamData Data { get; }
 
         public string Uri { get; }
 
-        internal StreamObject(StreamData data, string uri)
+        public StreamObject(StreamData data, string uri)
         {
             Data = data;
             Uri = uri;

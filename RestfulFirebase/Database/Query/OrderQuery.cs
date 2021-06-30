@@ -2,17 +2,21 @@ using System;
 
 namespace RestfulFirebase.Database.Query
 {
+    /// <summary>
+    /// Represents a firebase ordering query, e.g. "?OrderBy=Foo".
+    /// </summary>
     public class OrderQuery : ParameterQuery
     {
         private readonly Func<string> propertyNameFactory;
 
-        public OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
+        internal OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
             : base(app, parent, () => "orderBy")
         {
             this.propertyNameFactory = propertyNameFactory;
         }
 
-        protected override string BuildUrlParameter(FirebaseQuery child)
+        /// <inheritdoc/>
+        protected override string BuildUrlParameter()
         {
             return $"\"{propertyNameFactory()}\"";
         }

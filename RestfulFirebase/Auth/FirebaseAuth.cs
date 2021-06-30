@@ -3,8 +3,14 @@ using System;
 
 namespace RestfulFirebase.Auth
 {
+    /// <summary>
+    /// Provides raw firebase auth JSON properties.
+    /// </summary>
     public class FirebaseAuth
     {
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseAuth"/>
+        /// </summary>
         public FirebaseAuth()
         {
             Created = DateTime.Now;
@@ -31,7 +37,7 @@ namespace RestfulFirebase.Auth
         }
 
         /// <summary>
-        /// Gets or sets the numbers of seconds since <see cref="Created"/> when the token expires.
+        /// Gets or sets the numbers of seconds since the token is created.
         /// </summary>
         [JsonProperty("expiresIn")]
         public int? ExpiresIn
@@ -58,6 +64,12 @@ namespace RestfulFirebase.Auth
             set;
         }
 
+        /// <summary>
+        /// Check if the token is expired.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if the token is expired; otherwise, <c>false</c>.
+        /// </returns>
         public bool IsExpired()
         {
             if (!Created.HasValue || !ExpiresIn.HasValue) return true;

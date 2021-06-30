@@ -1,13 +1,17 @@
 ﻿namespace RestfulFirebase.Database.Query
 {
+    /// <summary>
+    /// Appends shallow=true to the url.
+    /// </summary>
     public class ShallowQuery : ParameterQuery
     {
-        public ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
+        internal ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
             : base(app, parent, () => "shallow")
         {
         }
 
-        protected override string BuildUrlParameter(FirebaseQuery child)
+        /// <inheritdoc/>
+        protected override string BuildUrlParameter()
         {
             return "true";
         }

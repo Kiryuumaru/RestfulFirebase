@@ -9,24 +9,57 @@ using System.Text;
 
 namespace RestfulFirebase.Serializers
 {
+    #region SerializerProxy
+
+    /// <summary>
+    /// Provides implementation holder for serializer and deserializer.
+    /// </summary>
     public class SerializerHolder
     {
         private readonly Func<object, string> serialize;
         private readonly Func<string, object, object> deserialize;
 
-        public SerializerHolder(Func<object, string> serialize, Func<string, object, object> deserialize)
+        internal SerializerHolder(Func<object, string> serialize, Func<string, object, object> deserialize)
         {
             this.serialize = serialize;
             this.deserialize = deserialize;
         }
 
+        /// <summary>
+        /// Object serializer implementation proxy.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public string Serialize(object value) => serialize(value);
+
+        /// <summary>
+        /// Data deserializer implementation proxy.
+        /// </summary>
+        /// <param name="data">
+        /// Data to deserialized
+        /// </param>
+        /// <param name="defaultValue">
+        /// The default value returned if deserialize throws an exception.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public object Deserialize(string data, object defaultValue = default) => deserialize(data, defaultValue);
     }
 
+    /// <summary>
+    /// Provides implementation holder for serializer and deserializer.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The underlying type of the value to serialize and deserialize.
+    /// </typeparam>
     public class SerializerHolder<T> : SerializerHolder
     {
-        public SerializerHolder(Func<T, string> serialize, Func<string, T, T> deserialize)
+        internal SerializerHolder(Func<T, string> serialize, Func<string, T, T> deserialize)
             : base(
                   new Func<object, string>(obj => serialize((T)obj)),
                   new Func<string, object, object>((data, defaultValue) => deserialize(data, (T)defaultValue)))
@@ -34,10 +67,37 @@ namespace RestfulFirebase.Serializers
 
         }
 
+        /// <summary>
+        /// Object serializer implementation proxy.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public string Serialize(T value) => base.Serialize(value);
+
+        /// <summary>
+        /// Data deserializer implementation proxy.
+        /// </summary>
+        /// <param name="data">
+        /// Data to deserialized
+        /// </param>
+        /// <param name="defaultValue">
+        /// The default value returned if deserialize throws an exception.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public T Deserialize(string data, T defaultValue = default) => (T)base.Deserialize(data, defaultValue);
     }
 
+    #endregion
+
+    /// <summary>
+    /// Provides implementation for value serializer and deserializer.
+    /// </summary>
     public abstract class Serializer
     {
         private static readonly List<Serializer> serializers = new List<Serializer>()
@@ -60,6 +120,18 @@ namespace RestfulFirebase.Serializers
             new TimeSpanSerializer()
         };
 
+        /// <summary>
+        /// Gets the serializer for the provided type <paramref name="type"/>.
+        /// </summary>
+        /// <param name="type">
+        /// The type of the serializer to get.
+        /// </param>
+        /// <returns>
+        /// The serializer proxy of the provided type <paramref name="type"/>.
+        /// </returns>
+        /// <exception cref="FirebaseException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static SerializerHolder GetSerializer(Type type)
         {
             if (type.IsArray)
@@ -153,9 +225,21 @@ namespace RestfulFirebase.Serializers
                     }
                 }
             }
-            throw new Exception(type.Name + " data type not supported");
+            throw new FirebaseException(FirebaseExceptionReason.SerializerNotSupported);
         }
 
+        /// <summary>
+        /// Gets the serializer for the provided type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">
+        /// Underlying type of the serializer.
+        /// </typeparam>
+        /// <returns>
+        /// The serializer proxy of the provided type <typeparamref name="T"/>.
+        /// </returns>
+        /// <exception cref="FirebaseException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static SerializerHolder<T> GetSerializer<T>()
         {
             var type = typeof(T);
@@ -251,29 +335,92 @@ namespace RestfulFirebase.Serializers
                     }
                 }
             }
-            throw new Exception(typeof(T).Name + " data type not supported");
+            throw new FirebaseException(FirebaseExceptionReason.SerializerNotSupported);
         }
 
+        /// <summary>
+        /// Serialize the provided <paramref name="value"/> with the specified type <paramref name="type"/>.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <param name="type">
+        /// The type of the value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public static string Serialize(object value, Type type)
         {
             return GetSerializer(type).Serialize(value);
         }
 
+        /// <summary>
+        /// Serialize the provided <paramref name="value"/> with the specified type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type of the value to serialize.
+        /// </typeparam>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public static string Serialize<T>(T value)
         {
             return GetSerializer<T>().Serialize(value);
         }
 
+        /// <summary>
+        /// Deserialize the provided <paramref name="data"/> with the specified type <paramref name="type"/>.
+        /// </summary>
+        /// <param name="data">
+        /// The data to deserialize.
+        /// </param>
+        /// <param name="type">
+        /// The type of the value to deserialize.
+        /// </param>
+        /// <param name="defaultValue">
+        /// The default value return if the serializer throws an exception.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public static object Deserialize(string data, Type type, object defaultValue = default)
         {
             return GetSerializer(type).Deserialize(data, defaultValue);
         }
 
+        /// <summary>
+        /// Deserialize the provided <paramref name="data"/> with the specified type <typeparamref name="T"/>.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type of the value to deserialize.
+        /// </typeparam>
+        /// <param name="data">
+        /// The data to deserialize.
+        /// </param>
+        /// <param name="defaultValue">
+        /// The default value return if the serializer throws an exception.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public static T Deserialize<T>(string data, T defaultValue = default)
         {
             return GetSerializer<T>().Deserialize(data, defaultValue);
         }
 
+        /// <summary>
+        /// Check if the type can be serialize.
+        /// </summary>
+        /// <param name="type">
+        /// The type to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the <paramref name="type"/> can be serialize; otherwise, <c>false</c>.
+        /// </returns>
         public static bool CanSerialize(Type type)
         {
             try
@@ -287,6 +434,18 @@ namespace RestfulFirebase.Serializers
             }
         }
 
+        /// <summary>
+        /// Check if the value can be serialize.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type of the value to check.
+        /// </typeparam>
+        /// <param name="value">
+        /// The value to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the <paramref name="value"/> can be serialize; otherwise, <c>false</c>.
+        /// </returns>
         public static bool CanSerialize<T>(T value)
         {
             try
@@ -300,6 +459,15 @@ namespace RestfulFirebase.Serializers
             }
         }
 
+        /// <summary>
+        /// Check if the type can be serialize.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The type to check.
+        /// </typeparam>
+        /// <returns>
+        /// <c>true</c> if the <typeparamref name="T"/> can be serialize; otherwise, <c>false</c>.
+        /// </returns>
         public static bool CanSerialize<T>()
         {
             try
@@ -313,37 +481,114 @@ namespace RestfulFirebase.Serializers
             }
         }
 
+        /// <summary>
+        /// Globally register a <see cref="Serializer"/>.
+        /// </summary>
+        /// <param name="serializer">
+        /// The <see cref="Serializer"/> to register.
+        /// </param>
         public static void Register(Serializer serializer)
         {
             serializers.RemoveAll(i => i.Type == serializer.Type);
             serializers.Add(serializer);
         }
 
+        /// <summary>
+        /// The type of the serializer.
+        /// </summary>
         public abstract Type Type { get; }
 
+        /// <summary>
+        /// Serialize the provided <paramref name="value"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public abstract string SerializeObject(object value);
 
+        /// <summary>
+        /// Deserialize the provided <paramref name="data"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="data">
+        /// The data to deserialize.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public abstract object DeserializeObject(string data);
 
+        /// <summary>
+        /// Serialize the provided <see cref="IEnumerable"/> <paramref name="value"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data
+        /// </returns>
         public abstract string SerializeEnumerableObject(object value);
 
+        /// <summary>
+        /// Deserialize the provided <see cref="IEnumerable"/> <paramref name="data"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="data">
+        /// The data to deserialize.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public abstract object DeserializeEnumerableObject(string data);
 
+        /// <summary>
+        /// Serialize the provided nullable <paramref name="value"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="value">
+        /// The value to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized data.
+        /// </returns>
         public abstract string SerializeNullableObject(object value);
 
+        /// <summary>
+        /// Deserialize the provided nullable <paramref name="data"/> with the specified type <see cref="Type"/>.
+        /// </summary>
+        /// <param name="data">
+        /// The data to deserialize.
+        /// </param>
+        /// <returns>
+        /// The deserialized value.
+        /// </returns>
         public abstract object DeserializeNullableObject(string data);
     }
 
+    /// <summary>
+    /// Provides implementation for value serializer and deserializer.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The specified type of the serializer.
+    /// </typeparam>
     public abstract class Serializer<T> : Serializer
     {
         #region Properties
 
+        /// <inheritdoc/>
         public override Type Type { get => typeof(T); }
 
+        #endregion
+
+        #region Methods
+
+        /// <inheritdoc/>
         public abstract string Serialize(T value);
 
+        /// <inheritdoc/>
         public abstract T Deserialize(string data);
 
+        /// <inheritdoc/>
         public string SerializeEnumerable(IEnumerable<T> values)
         {
             if (values == null) return null;
@@ -356,6 +601,7 @@ namespace RestfulFirebase.Serializers
             return Utils.SerializeString(encodedValues);
         }
 
+        /// <inheritdoc/>
         public IEnumerable<T> DeserializeEnumerable(string data, IEnumerable<T> defaultValue = default)
         {
             var encodedValues = Utils.DeserializeString(data);
@@ -368,32 +614,38 @@ namespace RestfulFirebase.Serializers
             return decodedValues;
         }
 
+        /// <inheritdoc/>
         public override string SerializeObject(object value)
         {
             return Serialize((T)value);
         }
 
+        /// <inheritdoc/>
         public override object DeserializeObject(string data)
         {
             return Deserialize(data);
         }
 
+        /// <inheritdoc/>
         public override string SerializeEnumerableObject(object value)
         {
             return SerializeEnumerable((IEnumerable<T>)value);
         }
 
+        /// <inheritdoc/>
         public override object DeserializeEnumerableObject(string data)
         {
             return DeserializeEnumerable(data);
         }
 
+        /// <inheritdoc/>
         public override string SerializeNullableObject(object value)
         {
             if (value == null) return null;
             return Serialize((T)value);
         }
 
+        /// <inheritdoc/>
         public override object DeserializeNullableObject(string data)
         {
             if (data == null) return null;

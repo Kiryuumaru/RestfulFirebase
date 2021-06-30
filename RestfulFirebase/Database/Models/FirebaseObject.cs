@@ -12,22 +12,45 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
 {
+    /// <summary>
+    /// Provides an observable model for the firebase realtime instance for an observable object.
+    /// </summary>
     public class FirebaseObject : ObservableObject, IRealtimeModel
     {
         #region Properties
 
+        /// <inheritdoc/>
         public RealtimeInstance RealtimeInstance { get; private set; }
 
+        /// <inheritdoc/>
         public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
 
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-        public event EventHandler<WireErrorEventArgs> WireError;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireException> WireError;
+
+        #endregion
+
+        #region Initializers
+
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseObject"/> class.
+        /// </summary>
+        public FirebaseObject()
+        {
+
+        }
 
         #endregion
 
         #region Methods
 
+        /// <inheritdoc/>
         public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
@@ -60,7 +83,12 @@ namespace RestfulFirebase.Database.Models
                 foreach (var path in supPaths)
                 {
                     if (ExistsCore(path, null)) continue;
-                    var namedProperty = MakeNamedProperty(path, null, nameof(FirebaseObject));
+                    var namedProperty = NamedPropertyFactory(path, null, nameof(FirebaseObject));
+                    if (namedProperty == null)
+                    {
+                        continue;
+                    }
+                    WireNamedProperty(namedProperty);
                     RealtimeInstance.Child(path).SubModel((FirebaseProperty)namedProperty.Property);
                     AddCore(namedProperty);
                 }
@@ -69,6 +97,7 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
+        /// <inheritdoc/>
         public void DetachRealtime()
         {
             if (IsDisposed || !HasAttachedRealtime)
@@ -91,7 +120,25 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
-        protected bool SetFirebaseProperty<T>(
+        /// <summary>
+        /// Sets a property for the firebase object.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the <paramref name="value"/> of the property.
+        /// </typeparam>
+        /// <param name="value">
+        /// The value of the property.
+        /// </param>
+        /// <param name="key">
+        /// The key of the property.
+        /// </param>
+        /// <param name="propertyName">
+        /// The name of the property.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
+        /// </returns>
+        protected bool SetFirebasePropertyWithKey<T>(
             T value,
             string key,
             [CallerMemberName] string propertyName = null)
@@ -112,7 +159,25 @@ namespace RestfulFirebase.Database.Models
             return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
         }
 
-        protected T GetFirebaseProperty<T>(
+        /// <summary>
+        /// Sets a property for the firebase object.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the property to get.
+        /// </typeparam>
+        /// <param name="key">
+        /// The key of the property.
+        /// </param>
+        /// <param name="defaultValue">
+        /// The default value of the property to set and return if the property is empty.
+        /// </param>
+        /// <param name="propertyName">
+        /// The name of the property.
+        /// </param>
+        /// <returns>
+        /// The value of the property.
+        /// </returns>
+        protected T GetFirebasePropertyWithKey<T>(
             string key,
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
@@ -137,6 +202,51 @@ namespace RestfulFirebase.Database.Models
             return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
         }
 
+        /// <summary>
+        /// Sets a property for the firebase object.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the <paramref name="value"/> of the property.
+        /// </typeparam>
+        /// <param name="value">
+        /// The value of the property.
+        /// </param>
+        /// <param name="propertyName">
+        /// The name of the property.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
+        /// </returns>
+        protected bool SetFirebaseProperty<T>(
+            T value,
+            [CallerMemberName] string propertyName = null)
+        {
+            return SetFirebasePropertyWithKey(value, propertyName, propertyName);
+        }
+
+        /// <summary>
+        /// Sets a property for the firebase object.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the property to get.
+        /// </typeparam>
+        /// <param name="defaultValue">
+        /// The default value of the property to set and return if the property is empty.
+        /// </param>
+        /// <param name="propertyName">
+        /// The name of the property.
+        /// </param>
+        /// <returns>
+        /// The value of the property.
+        /// </returns>
+        protected T GetFirebaseProperty<T>(
+            T defaultValue = default,
+            [CallerMemberName] string propertyName = null)
+        {
+            return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName);
+        }
+
+        /// <inheritdoc/>
         protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
         {
             if (IsDisposed)
@@ -153,6 +263,7 @@ namespace RestfulFirebase.Database.Models
             };
         }
 
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -166,6 +277,12 @@ namespace RestfulFirebase.Database.Models
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -174,6 +291,12 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
             ContextSend(delegate
@@ -182,7 +305,13 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        protected virtual void OnWireError(WireErrorEventArgs args)
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireException args)
         {
             ContextPost(delegate
             {
@@ -245,11 +374,12 @@ namespace RestfulFirebase.Database.Models
                     NamedProperty namedProperty = GetCore(key, null);
                     if (namedProperty == null && RealtimeInstance.HasChild(key))
                     {
-                        namedProperty = MakeNamedProperty(key, null, nameof(FirebaseObject));
+                        namedProperty = NamedPropertyFactory(key, null, nameof(FirebaseObject));
                         if (namedProperty == null)
                         {
                             return;
                         }
+                        WireNamedProperty(namedProperty);
                         RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);
                         AddCore(namedProperty);
                     }
@@ -257,7 +387,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireErrorEventArgs e)
+        private void RealtimeInstance_Error(object sender, WireException e)
         {
             if (IsDisposed)
             {
