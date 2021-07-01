@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Database.Query;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Concurrent;
@@ -91,36 +92,29 @@ namespace RestfulFirebase.Database.Offline
                             if (IsCancelled) return;
                             App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
                             Type exType = err.Exception.GetType();
-                            if (err.Exception is FirebaseException firEx)
+                            if (err.Exception is OfflineModeException)
                             {
-                                if (firEx.Reason == FirebaseExceptionReason.OfflineMode)
+                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
                                 {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                    {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay);
-                                        return true;
-                                    });
-                                }
-                                else if (firEx.Reason == FirebaseExceptionReason.OperationCancelled)
+                                    await Task.Delay(App.Config.DatabaseRetryDelay);
+                                    return true;
+                                });
+                            }
+                            else if (err.Exception is OperationCanceledException)
+                            {
+                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
                                 {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                    {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay);
-                                        return true;
-                                    });
-                                }
-                                else if (firEx.Reason == FirebaseExceptionReason.Auth)
+                                    await Task.Delay(App.Config.DatabaseRetryDelay);
+                                    return true;
+                                });
+                            }
+                            else if (err.Exception is AuthException)
+                            {
+                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
                                 {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                    {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay);
-                                        return true;
-                                    });
-                                }
-                                else
-                                {
-                                    error(err);
-                                }
+                                    await Task.Delay(App.Config.DatabaseRetryDelay);
+                                    return true;
+                                });
                             }
                             else
                             {

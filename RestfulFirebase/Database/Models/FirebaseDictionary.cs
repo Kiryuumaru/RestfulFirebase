@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 
 namespace RestfulFirebase.Database.Models
@@ -32,7 +33,7 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
 
         /// <inheritdoc/>
-        public event EventHandler<WireException> WireError;
+        public event EventHandler<WireExceptionEventArgs> WireError;
 
         private Func<string, T> itemInitializer;
 
@@ -214,7 +215,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="args">
         /// The event arguments for the event to invoke.
         /// </param>
-        protected virtual void OnWireError(WireException args)
+        protected virtual void OnWireError(WireExceptionEventArgs args)
         {
             ContextPost(delegate
             {
@@ -381,7 +382,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireException e)
+        private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
         {
             if (IsDisposed)
             {

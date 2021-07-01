@@ -1,7 +1,9 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Exceptions;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
@@ -32,7 +34,7 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
 
         /// <inheritdoc/>
-        public event EventHandler<WireException> WireError;
+        public event EventHandler<WireExceptionEventArgs> WireError;
 
         #endregion
 
@@ -138,6 +140,15 @@ namespace RestfulFirebase.Database.Models
         /// <returns>
         /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
         /// </returns>
+        /// <exception cref="PropertyKeyAndNameNullException">
+        /// Throws when both <paramref name="key"/> and <paramref name="propertyName"/> are not provided.
+        /// </exception>
+        /// <exception cref="DatabaseNullCascadeRealtimeModelException">
+        /// Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         protected bool SetFirebasePropertyWithKey<T>(
             T value,
             string key,
@@ -152,7 +163,7 @@ namespace RestfulFirebase.Database.Models
             {
                 if (!(value is IRealtimeModel))
                 {
-                    throw new Exception("Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.");
+                    throw new DatabaseNullCascadeRealtimeModelException();
                 }
             }
 
@@ -177,6 +188,15 @@ namespace RestfulFirebase.Database.Models
         /// <returns>
         /// The value of the property.
         /// </returns>
+        /// <exception cref="PropertyKeyAndNameNullException">
+        /// Throws when both <paramref name="key"/> and <paramref name="propertyName"/> are not provided.
+        /// </exception>
+        /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
+        /// Cascade IRealtimeModel with no parameterless constructor should have a default value.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         protected T GetFirebasePropertyWithKey<T>(
             string key,
             T defaultValue = default,
@@ -193,7 +213,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
                     {
-                        throw new Exception("Cascade IRealtimeModel with no parameterless constructor should have a default value.");
+                        throw new DatabaseInvalidCascadeRealtimeModelException();
                     }
                     defaultValue = (T)Activator.CreateInstance(typeof(T));
                 }
@@ -217,6 +237,15 @@ namespace RestfulFirebase.Database.Models
         /// <returns>
         /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
         /// </returns>
+        /// <exception cref="PropertyKeyAndNameNullException">
+        /// Throws when <paramref name="propertyName"/> is not provided.
+        /// </exception>
+        /// <exception cref="DatabaseNullCascadeRealtimeModelException">
+        /// Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         protected bool SetFirebaseProperty<T>(
             T value,
             [CallerMemberName] string propertyName = null)
@@ -239,6 +268,15 @@ namespace RestfulFirebase.Database.Models
         /// <returns>
         /// The value of the property.
         /// </returns>
+        /// <exception cref="PropertyKeyAndNameNullException">
+        /// Throws when <paramref name="propertyName"/> is not provided.
+        /// </exception>
+        /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
+        /// Cascade IRealtimeModel with no parameterless constructor should have a default value.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         protected T GetFirebaseProperty<T>(
             T defaultValue = default,
             [CallerMemberName] string propertyName = null)
@@ -311,7 +349,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="args">
         /// The event arguments for the event to invoke.
         /// </param>
-        protected virtual void OnWireError(WireException args)
+        protected virtual void OnWireError(WireExceptionEventArgs args)
         {
             ContextPost(delegate
             {
@@ -387,7 +425,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireException e)
+        private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
         {
             if (IsDisposed)
             {

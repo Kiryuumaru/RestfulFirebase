@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Linq;
+using RestfulFirebase.Exceptions;
 
 namespace RestfulFirebase.Storage
 {
@@ -141,7 +142,7 @@ namespace RestfulFirebase.Storage
             }
             catch (Exception ex)
             {
-                throw new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex);
+                throw new StorageUndefinedException(ex);
             }
         }
 
@@ -181,7 +182,7 @@ namespace RestfulFirebase.Storage
             }
             catch (Exception ex)
             {
-                throw new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex);
+                throw new StorageUndefinedException(ex);
             }
         }
 

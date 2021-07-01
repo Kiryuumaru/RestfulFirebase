@@ -3,6 +3,7 @@ using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,28 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Event raised on the current context when there is an error occured.
         /// </summary>
-        public event EventHandler<WireException> Error;
+        /// <remarks>
+        /// <para>Possible Exceptions:</para>
+        /// <para><see cref="OfflineModeException"/> - Offline mode is enabled.</para>
+        /// <para><see cref="DatabaseException"/> - A realtime database exception has occured.</para>
+        /// <para><see cref="DatabaseInternalServerErrorException"/> - An internal server error occured.</para>
+        /// <para><see cref="DatabaseNotFoundException"/> - The specified Realtime Database was not found.</para>
+        /// <para><see cref="DatabasePreconditionFailedException"/> - The request's specified ETag value in the if-match header did not match the server's value.</para>
+        /// <para><see cref="DatabaseServiceUnavailableException"/> - The specified Firebase Realtime Database is temporarily unavailable, which means the request was not attempted.</para>
+        /// <para><see cref="DatabaseUnauthorizedException"/> - The request is not authorized by database rules.</para>
+        /// <para><see cref="DatabaseUndefinedException"/> - An unidentified error occured.</para>
+        /// <para><see cref="AuthException"/> - An authentication exception has occured.</para>
+        /// <para><see cref="AuthAPIKeyNotValidException"/> - API key not valid. Please pass a valid API key.</para>
+        /// <para><see cref="AuthTokenExpiredException"/> - The user's credential is no longer valid. The user must sign in again.</para>
+        /// <para><see cref="AuthUserDisabledException"/> - The user account has been disabled by an administrator.</para>
+        /// <para><see cref="AuthUserNotFoundException"/> - The user corresponding to the refresh token was not found. It is likely the user was deleted.</para>
+        /// <para><see cref="AuthInvalidIDTokenException"/> - The user's credential is no longer valid. The user must sign in again.</para>
+        /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
+        /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
+        /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
+        /// </remarks>
+        public event EventHandler<WireExceptionEventArgs> Error;
 
         /// <summary>
         /// Gets the status of the syncing. Returnes <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
@@ -483,7 +505,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (Parent == null)
             {
-                SelfError(new WireException(uri, exception));
+                SelfError(new WireExceptionEventArgs(uri, exception));
             }
             else
             {
@@ -533,20 +555,18 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var hasChanges = false;
-            if (err.Exception is FirebaseException ex)
+            if (err.Exception is DatabaseUnauthorizedException ex)
             {
-                if (ex.Reason == FirebaseExceptionReason.DatabaseUnauthorized)
+                if (holder.Sync == null)
                 {
-                    if (holder.Sync == null)
-                    {
-                        if (holder.Delete()) hasChanges = true;
-                    }
-                    else
-                    {
-                        if (holder.DeleteChanges()) hasChanges = true;
-                    }
+                    if (holder.Delete()) hasChanges = true;
+                }
+                else
+                {
+                    if (holder.DeleteChanges()) hasChanges = true;
                 }
             }
+
             OnError(holder.Uri, err.Exception);
             if (hasChanges)
             {
@@ -569,7 +589,7 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        private void Parent_Error(object sender, WireException e)
+        private void Parent_Error(object sender, WireExceptionEventArgs e)
         {
             if (IsDisposed)
             {
@@ -601,7 +621,7 @@ namespace RestfulFirebase.Database.Realtime
             });
         }
 
-        private void SelfError(WireException e)
+        private void SelfError(WireExceptionEventArgs e)
         {
             ContextPost(delegate
             {

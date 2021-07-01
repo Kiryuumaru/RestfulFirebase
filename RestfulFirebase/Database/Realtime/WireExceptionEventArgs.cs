@@ -6,19 +6,24 @@ using System.Text;
 namespace RestfulFirebase.Database.Realtime
 {
     /// <summary>
-    /// The exception class for realtime wire errors.
+    /// Occurs when there`s a realtime instance error.
     /// </summary>
-    public class WireException : Exception
+    public class WireExceptionEventArgs : EventArgs
     {
         /// <summary>
         /// The Uri of the exception
         /// </summary>
         public string Uri { get; }
 
-        internal WireException(string uri, Exception exception)
-            : base("An error occured with realtime wire: " + uri, exception)
+        /// <summary>
+        /// The exception occured.
+        /// </summary>
+        public Exception Exception { get; }
+
+        internal WireExceptionEventArgs(string uri, Exception exception)
         {
             Uri = uri;
+            Exception = exception;
         }
     }
 }

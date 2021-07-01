@@ -14,6 +14,7 @@ using RestfulFirebase.Database.Realtime;
 using System.Collections.Concurrent;
 using RestfulFirebase.Extensions;
 using Newtonsoft.Json;
+using RestfulFirebase.Exceptions;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -67,7 +68,7 @@ namespace RestfulFirebase.Database.Query
 
                 if (App.Config.OfflineMode)
                 {
-                    throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
+                    throw new OfflineModeException();
                 }
 
                 var c = GetClient();
@@ -76,10 +77,10 @@ namespace RestfulFirebase.Database.Query
 
                 if (currentJsonToInvoke == null)
                 {
+                    url = await BuildUrl(token).ConfigureAwait(false);
+
                     try
                     {
-                        url = await BuildUrl(token).ConfigureAwait(false);
-
                         CancellationToken invokeToken;
 
                         if (token == null)
@@ -97,17 +98,13 @@ namespace RestfulFirebase.Database.Query
 
                         result.EnsureSuccessStatusCode();
                     }
-                    catch (OperationCanceledException ex)
+                    catch (OperationCanceledException)
                     {
-                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                    }
-                    catch (FirebaseException ex)
-                    {
-                        throw ex;
+                        throw;
                     }
                     catch (Exception ex)
                     {
-                        throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                        throw ExceptionHelpers.GetException(statusCode, ex);
                     }
                 }
                 else
@@ -160,7 +157,7 @@ namespace RestfulFirebase.Database.Query
 
                 if (App.Config.OfflineMode)
                 {
-                    throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
+                    throw new OfflineModeException();
                 }
 
                 var c = GetClient();
@@ -169,10 +166,10 @@ namespace RestfulFirebase.Database.Query
 
                 if (currentJsonToInvoke == null)
                 {
+                    url = await BuildUrl(token).ConfigureAwait(false);
+
                     try
                     {
-                        url = await BuildUrl(token).ConfigureAwait(false);
-
                         CancellationToken invokeToken;
 
                         if (token == null)
@@ -190,17 +187,13 @@ namespace RestfulFirebase.Database.Query
 
                         result.EnsureSuccessStatusCode();
                     }
-                    catch (OperationCanceledException ex)
+                    catch (OperationCanceledException)
                     {
-                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                    }
-                    catch (FirebaseException ex)
-                    {
-                        throw ex;
+                        throw;
                     }
                     catch (Exception ex)
                     {
-                        throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                        throw ExceptionHelpers.GetException(statusCode, ex);
                     }
                 }
                 else
@@ -282,13 +275,13 @@ namespace RestfulFirebase.Database.Query
 
                 if (App.Config.OfflineMode)
                 {
-                    throw new FirebaseException(FirebaseExceptionReason.OfflineMode, new Exception("Offline mode"));
+                    throw new OfflineModeException();
                 }
+
+                url = await BuildUrl(token).ConfigureAwait(false);
 
                 try
                 {
-                    url = await BuildUrl(token).ConfigureAwait(false);
-
                     CancellationToken invokeToken;
 
                     if (token == null)
@@ -309,17 +302,13 @@ namespace RestfulFirebase.Database.Query
 
                     return responseData;
                 }
-                catch (OperationCanceledException ex)
+                catch (OperationCanceledException)
                 {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (FirebaseException ex)
-                {
-                    throw ex;
+                    throw;
                 }
                 catch (Exception ex)
                 {
-                    throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                    throw ExceptionHelpers.GetException(statusCode, ex);
                 }
             }
 
@@ -327,7 +316,6 @@ namespace RestfulFirebase.Database.Query
             {
                 try
                 {
-
                     return await invoke().ConfigureAwait(false);
                 }
                 catch (Exception ex)
@@ -370,32 +358,12 @@ namespace RestfulFirebase.Database.Query
                 token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
             }
 
-            try
+            if (App.Auth.IsAuthenticated && AuthenticateRequests)
             {
-                if (App.Auth.IsAuthenticated && AuthenticateRequests)
+                return await Task.Run(delegate
                 {
-                    return await Task.Run(delegate
-                    {
-                        return WithAuth(() =>
-                        {
-                            var getTokenResult = App.Auth.Session.GetFreshToken();
-                            if (!getTokenResult.Result.IsSuccess) throw getTokenResult.Result.Exception;
-                            return getTokenResult.Result.Result;
-                        }).BuildUrl((FirebaseQuery)null);
-                    }, token.Value).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException ex)
-            {
-                throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-            }
-            catch (FirebaseException ex)
-            {
-                throw ex;
-            }
-            catch (Exception ex)
-            {
-                throw new FirebaseException(FirebaseExceptionReason.DatabaseUndefined, ex);
+                    return WithAuth(() => App.Auth.Session.GetFreshToken().Result).BuildUrl((FirebaseQuery)null);
+                }, token.Value).ConfigureAwait(false);
             }
 
             return BuildUrl((FirebaseQuery)null);
@@ -469,10 +437,10 @@ namespace RestfulFirebase.Database.Query
 
             string url;
 
+            url = await BuildUrl(token).ConfigureAwait(false);
+
             try
             {
-                url = await BuildUrl(token).ConfigureAwait(false);
-
                 var message = new HttpRequestMessage(method, url)
                 {
                     Content = new StringContent(requestData)
@@ -497,17 +465,13 @@ namespace RestfulFirebase.Database.Query
 
                 return responseData;
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-            }
-            catch (FirebaseException ex)
-            {
-                throw ex;
+                throw;
             }
             catch (Exception ex)
             {
-                throw new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
+                throw ExceptionHelpers.GetException(statusCode, ex);
             }
         }
     }

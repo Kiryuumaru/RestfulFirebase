@@ -20,7 +20,7 @@ namespace RestfulFirebase.Storage
 
         private const int ProgressReportDelayMiliseconds = 500;
 
-        private readonly Task<CallResult<string>> uploadTask;
+        private readonly Task<string> uploadTask;
         private readonly Stream stream;
 
         /// <summary>
@@ -63,45 +63,34 @@ namespace RestfulFirebase.Storage
         /// <returns>
         /// The awaiter of the specified upload task.
         /// </returns>
-        public TaskAwaiter<CallResult<string>> GetAwaiter()
+        public TaskAwaiter<string> GetAwaiter()
         {
             return uploadTask.GetAwaiter();
         }
 
-        private async Task<CallResult<string>> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
+        private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string mimeType = null)
         {
             var responseData = "N/A";
 
-            try
+            using (var client = App.Storage.CreateHttpClientAsync())
             {
-                using (var client = App.Storage.CreateHttpClientAsync())
+                var request = new HttpRequestMessage(HttpMethod.Post, url)
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = new StreamContent(stream)
-                    };
+                    Content = new StreamContent(stream)
+                };
 
-                    if (!string.IsNullOrEmpty(mimeType))
-                    {
-                        request.Content.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
-                    }
-
-                    var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                    var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
-
-                    return CallResult.Success(downloadUrl + data["downloadTokens"]);
+                if (!string.IsNullOrEmpty(mimeType))
+                {
+                    request.Content.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
                 }
-            }
-            catch (TaskCanceledException ex)
-            {
-                return CallResult.Error<string>(new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex));
-            }
-            catch (Exception ex)
-            {
-                return CallResult.Error<string>(new FirebaseException(FirebaseExceptionReason.StorageUndefined, ex));
+
+                var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                response.EnsureSuccessStatusCode();
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseData);
+
+                return downloadUrl + data["downloadTokens"];
             }
         }
 

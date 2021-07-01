@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using RestfulFirebase.Serializers;
 using System;
@@ -175,25 +176,30 @@ namespace RestfulFirebase.Auth
         /// The new email.
         /// </param>
         /// <returns>
-        /// The <see cref="FirebaseAuth"/>.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> ChangeUserEmail(string newEmail)
+        /// <exception cref="AuthEmailExistsException">
+        /// The email address is already in use by another account.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task ChangeUserEmail(string newEmail)
         {
-            try
-            {
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{newEmail}\",\"returnSecureToken\":true}}";
+            var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{newEmail}\",\"returnSecureToken\":true}}";
 
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -203,65 +209,72 @@ namespace RestfulFirebase.Auth
         /// The new password.
         /// </param>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> ChangeUserPassword(string password)
+        /// <exception cref="AuthWeakPasswordException">
+        /// The password must be 6 characters long or more.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task ChangeUserPassword(string password)
         {
-            try
-            {
-                var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+            var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Delete the authenticated user
+        /// Delete the authenticated user.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> DeleteUser()
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task DeleteUser()
         {
+            var responseData = "N/A";
+
             try
             {
                 var content = $"{{ \"idToken\": \"{FirebaseToken}\" }}";
-                var responseData = "N/A";
+                var response = await App.Auth.GetClient().PostAsync(
+                    new Uri(string.Format(FirebaseAuthApp.GoogleDeleteUserUrl, App.Config.ApiKey)),
+                    new StringContent(content, Encoding.UTF8, "Application/json"),
+                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                try
-                {
-                    var response = await App.Auth.GetClient().PostAsync(
-                        new Uri(string.Format(FirebaseAuthApp.GoogleDeleteUserUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = FirebaseAuthApp.GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
+                response.EnsureSuccessStatusCode();
             }
-            catch (FirebaseException ex)
+            catch (OperationCanceledException)
             {
-                return CallResult.Error(ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionHelpers.GetException(responseData, ex);
             }
         }
 
@@ -269,43 +282,48 @@ namespace RestfulFirebase.Auth
         /// Send email verification to the authenticated user`s email.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> SendEmailVerification()
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task SendEmailVerification()
         {
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new AuthNotAuthenticatedException();
+            }
+
+            var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
+            var responseData = "N/A";
+
             try
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                var response = await App.Auth.GetClient().PostAsync(
+                    new Uri(string.Format(FirebaseAuthApp.GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                    new StringContent(content, Encoding.UTF8, "Application/json"),
+                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
-                var responseData = "N/A";
-
-                try
-                {
-                    var response = await App.Auth.GetClient().PostAsync(
-                        new Uri(string.Format(FirebaseAuthApp.GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    response.EnsureSuccessStatusCode();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = FirebaseAuthApp.GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success();
+                response.EnsureSuccessStatusCode();
             }
-            catch (FirebaseException ex)
+            catch (OperationCanceledException)
             {
-                return CallResult.Error(ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionHelpers.GetException(responseData, ex);
             }
         }
 
@@ -319,28 +337,42 @@ namespace RestfulFirebase.Auth
         /// The account`s password to be linked.
         /// </param>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> LinkAccounts(string email, string password)
+        /// <exception cref="AuthLoginCredentialsTooOldException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthWeakPasswordException">
+        /// The password must be 6 characters long or more.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task LinkAccounts(string email, string password)
         {
-            try
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
-
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
-
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
+                throw new AuthNotAuthenticatedException();
             }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
+
+            var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
+
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -353,29 +385,46 @@ namespace RestfulFirebase.Auth
         /// The token of the provided <paramref name="authType"/> to be linked.
         /// </param>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> LinkAccounts(FirebaseAuthType authType, string oauthAccessToken)
+        /// <exception cref="AuthOperationNotAllowedException">
+        /// The corresponding provider is disabled for this project.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDPResponseException">
+        /// The supplied auth credential is malformed or has expired.
+        /// </exception>
+        /// <exception cref="AuthEmailExistsException">
+        /// The email address is already in use by another account.
+        /// </exception>
+        /// <exception cref="AuthAlreadyLinkedException">
+        /// This credential is already associated with a different user account.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task LinkAccounts(FirebaseAuthType authType, string oauthAccessToken)
         {
-            try
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                var providerId = App.Auth.GetProviderId(authType);
-                var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
-
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
+                throw new AuthNotAuthenticatedException();
             }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
+
+            var providerId = App.Auth.GetProviderId(authType);
+            var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
+
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -385,88 +434,98 @@ namespace RestfulFirebase.Auth
         /// The <see cref="FirebaseAuthType"/> to unlink.
         /// </param>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> UnlinkAccounts(FirebaseAuthType authType)
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task UnlinkAccounts(FirebaseAuthType authType)
         {
-            try
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                string providerId;
-                if (authType == FirebaseAuthType.EmailAndPassword)
-                {
-                    providerId = authType.ToEnumString();
-                }
-                else
-                {
-                    providerId = App.Auth.GetProviderId(authType);
-                }
-
-                var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
-
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
-
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
+                throw new AuthNotAuthenticatedException();
             }
-            catch (FirebaseException ex)
+
+            string providerId;
+            if (authType == FirebaseAuthType.EmailAndPassword)
             {
-                return CallResult.Error(ex);
+                providerId = authType.ToEnumString();
             }
+            else
+            {
+                providerId = App.Auth.GetProviderId(authType);
+            }
+
+            var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
+
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
         /// Gets all linked accounts of the authenticated account.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/>{<see cref="ProviderQueryResult"/>} proxy of the specified task.
         /// </returns>
-        public async Task<CallResult<ProviderQueryResult>> GetLinkedAccounts()
+        /// <exception cref="AuthInvalidEmailAddressException">
+        /// The email address is badly formatted.
+        /// </exception>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task<ProviderQueryResult> GetLinkedAccounts()
         {
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new AuthNotAuthenticatedException();
+            }
+            var email = Email;
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new AuthMissingEmailException();
+            }
+
+            string responseData = "N/A";
+
             try
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-                var email = Email;
-                if (string.IsNullOrEmpty(email)) throw new FirebaseException(FirebaseExceptionReason.AuthMissingEmail, new Exception("Email not found"));
-
                 string content = $"{{\"identifier\":\"{email}\", \"continueUri\": \"http://localhost\"}}";
-                string responseData = "N/A";
+                var response = await App.Auth.GetClient().PostAsync(
+                    new Uri(string.Format(FirebaseAuthApp.GoogleCreateAuthUrl, App.Config.ApiKey)),
+                    new StringContent(content, Encoding.UTF8, "Application/json"),
+                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                ProviderQueryResult data;
+                response.EnsureSuccessStatusCode();
 
-                try
-                {
-                    var response = await App.Auth.GetClient().PostAsync(
-                        new Uri(string.Format(FirebaseAuthApp.GoogleCreateAuthUrl, App.Config.ApiKey)),
-                        new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                ProviderQueryResult data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
+                data.Email = email;
 
-                    response.EnsureSuccessStatusCode();
-
-                    data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
-                    data.Email = email;
-                }
-                catch (OperationCanceledException ex)
-                {
-                    throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                }
-                catch (Exception ex)
-                {
-                    FirebaseExceptionReason errorReason = FirebaseAuthApp.GetFailureReason(responseData);
-                    throw new FirebaseException(errorReason, ex);
-                }
-
-                return CallResult.Success<ProviderQueryResult>(data);
+                return data;
             }
-            catch (FirebaseException ex)
+            catch (OperationCanceledException)
             {
-                return CallResult.Error<ProviderQueryResult>(ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionHelpers.GetException(responseData, ex);
             }
         }
 
@@ -474,90 +533,129 @@ namespace RestfulFirebase.Auth
         /// Gets the fresh token of the authenticated account.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult<string>> GetFreshToken()
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task<string> GetFreshToken()
         {
-            try
+            var token = RefreshToken;
+            if (string.IsNullOrEmpty(token))
             {
-                var token = RefreshToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
+                throw new AuthNotAuthenticatedException();
+            }
 
-                if (IsExpired())
+            if (IsExpired())
+            {
+                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{token}\"}}";
+                var responseData = "N/A";
+
+                try
                 {
-                    var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{token}\"}}";
-                    var responseData = "N/A";
+                    HttpResponseMessage response = null;
+                    response = await App.Auth.GetClient().PostAsync(
+                        new Uri(string.Format(FirebaseAuthApp.GoogleRefreshAuth, App.Config.ApiKey)),
+                        new StringContent(content, Encoding.UTF8, "Application/json"),
+                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
-                    try
+                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+
+                    var auth = new FirebaseAuth
                     {
-                        HttpResponseMessage response = null;
-                        response = await App.Auth.GetClient().PostAsync(
-                            new Uri(string.Format(FirebaseAuthApp.GoogleRefreshAuth, App.Config.ApiKey)),
-                            new StringContent(content, Encoding.UTF8, "Application/json"),
-                            new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                        ExpiresIn = refreshAuth.ExpiresIn,
+                        RefreshToken = refreshAuth.RefreshToken,
+                        FirebaseToken = refreshAuth.AccessToken
+                    };
 
-                        responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+                    UpdateAuth(auth);
 
-                        var auth = new FirebaseAuth
-                        {
-                            ExpiresIn = refreshAuth.ExpiresIn,
-                            RefreshToken = refreshAuth.RefreshToken,
-                            FirebaseToken = refreshAuth.AccessToken
-                        };
-
-                        UpdateAuth(auth);
-
-                        App.Auth.OnAuthRefreshed();
-                    }
-                    catch (OperationCanceledException ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.OperationCancelled, ex);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new FirebaseException(FirebaseExceptionReason.AuthUndefined, ex);
-                    }
+                    App.Auth.OnAuthRefreshed();
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    throw ExceptionHelpers.GetException(responseData, ex);
+                }
+            }
 
-                return CallResult.Success(FirebaseToken);
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error<string>(ex);
-            }
+            return FirebaseToken;
         }
 
         /// <summary>
         /// Refreshes the token of the authenticated account.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> RefreshAuth()
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task RefreshAuth()
         {
-            try
+            await GetFreshToken().ConfigureAwait(false);
+
+            var auth = new FirebaseAuth()
             {
-                var refresh = await GetFreshToken().ConfigureAwait(false);
-                if (!refresh.IsSuccess) return refresh;
+                FirebaseToken = FirebaseToken,
+                RefreshToken = RefreshToken,
+                ExpiresIn = ExpiresIn,
+                Created = Created
+            };
 
-                var auth = new FirebaseAuth()
-                {
-                    FirebaseToken = FirebaseToken,
-                    RefreshToken = RefreshToken,
-                    ExpiresIn = ExpiresIn,
-                    Created = Created
-                };
-
-                var refreshResult = await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
-                if (!refreshResult.IsSuccess) return refreshResult;
-
-                return CallResult.Success();
-            }
-            catch (FirebaseException ex)
-            {
-                return CallResult.Error(ex);
-            }
+            await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -570,67 +668,58 @@ namespace RestfulFirebase.Auth
         /// The new photo url of the account.
         /// </param>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> UpdateProfile(string displayName, string photoUrl)
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        public async Task UpdateProfile(string displayName, string photoUrl)
         {
-            try
+            var token = FirebaseToken;
+            if (string.IsNullOrEmpty(token))
             {
-                var token = FirebaseToken;
-                if (string.IsNullOrEmpty(token)) throw new FirebaseException(FirebaseExceptionReason.AuthNotAuthenticated, new Exception("Not authenticated"));
-
-                StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{token}\"");
-                if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))
-                {
-                    sb.Append($",\"displayName\":\"{displayName}\",\"photoUrl\":\"{photoUrl}\"");
-                }
-                else if (!string.IsNullOrWhiteSpace(displayName))
-                {
-                    sb.Append($",\"displayName\":\"{displayName}\"");
-                    sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
-                }
-                else if (!string.IsNullOrWhiteSpace(photoUrl))
-                {
-                    sb.Append($",\"photoUrl\":\"{photoUrl}\"");
-                    sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\"]");
-                }
-                else
-                {
-                    sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\",\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
-                }
-
-                sb.Append($",\"returnSecureToken\":true}}");
-
-                var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
-
-                UpdateAuth(auth);
-
-                return CallResult.Success();
+                throw new AuthNotAuthenticatedException();
             }
-            catch (FirebaseException ex)
+
+            StringBuilder sb = new StringBuilder($"{{\"idToken\":\"{token}\"");
+            if (!string.IsNullOrWhiteSpace(displayName) && !string.IsNullOrWhiteSpace(photoUrl))
             {
-                return CallResult.Error(ex);
+                sb.Append($",\"displayName\":\"{displayName}\",\"photoUrl\":\"{photoUrl}\"");
             }
+            else if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                sb.Append($",\"displayName\":\"{displayName}\"");
+                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
+            }
+            else if (!string.IsNullOrWhiteSpace(photoUrl))
+            {
+                sb.Append($",\"photoUrl\":\"{photoUrl}\"");
+                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\"]");
+            }
+            else
+            {
+                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\",\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
+            }
+
+            sb.Append($",\"returnSecureToken\":true}}");
+
+            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
+
+            UpdateAuth(auth);
         }
 
         /// <summary>
         /// Sign out the authentcated account.
         /// </summary>
         /// <returns>
-        /// The <see cref="CallResult"/> of the specified task.
+        /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task<CallResult> Signout()
+        public async Task Signout()
         {
-            try
-            {
-                Purge();
-
-                return await Task.FromResult(CallResult.Success()).ConfigureAwait(false);
-            }
-            catch (FirebaseException ex)
-            {
-                return await Task.FromResult(CallResult.Error(ex)).ConfigureAwait(false);
-            }
+            await Task.Run(Purge);
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Exceptions;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -8,24 +9,25 @@ namespace RestfulFirebase.Database
 {
     internal class ExceptionHelpers
     {
-        internal static FirebaseExceptionReason GetFailureReason(HttpStatusCode statusCode)
+        internal static Exception GetException(HttpStatusCode statusCode, Exception originalException)
         {
             switch (statusCode)
             {
                 case HttpStatusCode.BadRequest:
-                    return FirebaseExceptionReason.DatabaseBadRequest;
+                    return new DatabaseBadRequestException(originalException);
                 case HttpStatusCode.Unauthorized:
-                    return FirebaseExceptionReason.DatabaseUnauthorized;
+                    return new DatabaseUnauthorizedException(originalException);
                 case HttpStatusCode.NotFound:
-                    return FirebaseExceptionReason.DatabaseNotFound;
+                    return new DatabaseNotFoundException(originalException);
                 case HttpStatusCode.InternalServerError:
-                    return FirebaseExceptionReason.DatabaseInternalServerError;
+                    return new DatabaseInternalServerErrorException(originalException);
                 case HttpStatusCode.ServiceUnavailable:
-                    return FirebaseExceptionReason.DatabaseServiceUnavailable;
+                    return new DatabaseServiceUnavailableException(originalException);
                 case HttpStatusCode.PreconditionFailed:
-                    return FirebaseExceptionReason.DatabasePreconditionFailed;
+                    return new DatabasePreconditionFailedException(originalException);
+                default:
+                    return new DatabaseUndefinedException(originalException);
             }
-            return FirebaseExceptionReason.OfflineMode;
         }
     }
 }

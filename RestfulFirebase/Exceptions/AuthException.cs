@@ -1,0 +1,30 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+
+namespace RestfulFirebase.Exceptions
+{
+    /// <summary>
+    /// Occurs when there`s an error in authentication.
+    /// </summary>
+    public abstract class AuthException : Exception
+    {
+        private protected AuthException()
+            : this(null)
+        {
+
+        }
+
+        private protected AuthException(Exception innerException)
+            : base("An authentication error occured.", innerException)
+        {
+
+        }
+
+        private protected AuthException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+
+        }
+    }
+}

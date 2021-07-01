@@ -1,5 +1,6 @@
 ﻿using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using RestfulFirebase.Serializers;
 using System;
@@ -29,7 +30,7 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
 
         /// <inheritdoc/>
-        public event EventHandler<WireException> WireError;
+        public event EventHandler<WireExceptionEventArgs> WireError;
 
         #endregion
 
@@ -78,7 +79,7 @@ namespace RestfulFirebase.Database.Models
                     }
                     else
                     {
-                        throw new Exception("Object is not serializable");
+                        throw new SerializerNotSupportedException(obj.GetType());
                     }
 
                     if (invokeSetFirst)
@@ -116,6 +117,9 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         public override bool SetValue<T>(T value)
         {
             if (IsDisposed)
@@ -137,7 +141,7 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
-                if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
+                if (!Serializer.CanSerialize<T>()) throw new SerializerNotSupportedException(typeof(T));
 
                 var blob = Serializer.Serialize(value);
 
@@ -158,6 +162,9 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
         public override T GetValue<T>(T defaultValue = default)
         {
             if (IsDisposed)
@@ -171,7 +178,7 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
-                if (!Serializer.CanSerialize<T>()) throw new Exception("Value is not serializable");
+                if (!Serializer.CanSerialize<T>()) throw new SerializerNotSupportedException(typeof(T));
 
                 var obj = GetObject();
 
@@ -186,7 +193,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 else
                 {
-                    throw new Exception("Object is not serializable");
+                    throw new SerializerNotSupportedException(obj.GetType());
                 }
 
                 return Serializer.Deserialize<T>(blob, defaultValue);
@@ -274,7 +281,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="args">
         /// The event arguments for the event to invoke.
         /// </param>
-        protected virtual void OnWireError(WireException args)
+        protected virtual void OnWireError(WireExceptionEventArgs args)
         {
             ContextPost(delegate
             {
@@ -342,7 +349,7 @@ namespace RestfulFirebase.Database.Models
             }
         }
 
-        private void RealtimeInstance_Error(object sender, WireException e)
+        private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
         {
             if (IsDisposed)
             {
@@ -377,6 +384,21 @@ namespace RestfulFirebase.Database.Models
         {
             get => base.GetValue<T>(default);
             set => base.SetValue(value);
+        }
+
+        #endregion
+
+        #region Initializers
+
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseProperty{T}"/> class.
+        /// </summary>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
+        public FirebaseProperty()
+        {
+            if (!Serializer.CanSerialize<T>()) throw new SerializerNotSupportedException(typeof(T));
         }
 
         #endregion

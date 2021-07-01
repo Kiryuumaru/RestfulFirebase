@@ -161,7 +161,7 @@ namespace RestTest
             // Attach your config
             app = new RestfulFirebaseApp(Config.YourConfig());
 
-            var signInResult = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+            await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
@@ -206,7 +206,7 @@ namespace RestTest
             };
             wire.Error += (s, e) =>
             {
-                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.InnerException.Message);
+                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             wire.Start();
             while (true)
@@ -259,7 +259,7 @@ namespace RestTest
             };
             wire.Error += (s, e) =>
             {
-                Console.WriteLine("Main OnError: " + e.Uri + " Message: " + e.InnerException.Message);
+                Console.WriteLine("Main OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             var subWire1 = wire.Child("sub1");
             subWire1.DataChanges += (s, e) =>
@@ -268,7 +268,7 @@ namespace RestTest
             };
             subWire1.Error += (s, e) =>
             {
-                Console.WriteLine("Sub1 OnError: " + e.Uri + " Message: " + e.InnerException.Message);
+                Console.WriteLine("Sub1 OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             var subWire2 = wire.Child("sub2");
             subWire2.DataChanges += (s, e) =>
@@ -277,7 +277,7 @@ namespace RestTest
             };
             subWire2.Error += (s, e) =>
             {
-                Console.WriteLine("Sub2 OnError: " + e.Uri + " Message: " + e.InnerException.Message);
+                Console.WriteLine("Sub2 OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
             wire.Start();
             while (true)

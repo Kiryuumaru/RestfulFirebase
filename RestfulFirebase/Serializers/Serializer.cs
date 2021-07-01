@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Exceptions;
+using RestfulFirebase.Extensions;
 using RestfulFirebase.Serializers.Additionals;
 using RestfulFirebase.Serializers.Primitives;
 using System;
@@ -129,7 +130,7 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The serializer proxy of the provided type <paramref name="type"/>.
         /// </returns>
-        /// <exception cref="FirebaseException">
+        /// <exception cref="SerializerNotSupportedException">
         /// Throws if serializer is not supported.
         /// </exception>
         public static SerializerHolder GetSerializer(Type type)
@@ -225,7 +226,7 @@ namespace RestfulFirebase.Serializers
                     }
                 }
             }
-            throw new FirebaseException(FirebaseExceptionReason.SerializerNotSupported);
+            throw new SerializerNotSupportedException(type);
         }
 
         /// <summary>
@@ -237,7 +238,7 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The serializer proxy of the provided type <typeparamref name="T"/>.
         /// </returns>
-        /// <exception cref="FirebaseException">
+        /// <exception cref="SerializerNotSupportedException">
         /// Throws if serializer is not supported.
         /// </exception>
         public static SerializerHolder<T> GetSerializer<T>()
@@ -335,7 +336,7 @@ namespace RestfulFirebase.Serializers
                     }
                 }
             }
-            throw new FirebaseException(FirebaseExceptionReason.SerializerNotSupported);
+            throw new SerializerNotSupportedException(type);
         }
 
         /// <summary>

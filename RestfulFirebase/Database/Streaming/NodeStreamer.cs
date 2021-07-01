@@ -14,6 +14,7 @@ using RestfulFirebase.Extensions;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using RestfulFirebase.Exceptions;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -64,87 +65,110 @@ namespace RestfulFirebase.Database.Streaming
                 var line = string.Empty;
                 var statusCode = HttpStatusCode.OK;
 
+                bool isReady = true;
+
                 try
                 {
                     cancel.Token.ThrowIfCancellationRequested();
+                }
+                catch (Exception)
+                {
+                    isReady = false;
+                }
 
-                    url = await query.BuildUrl().ConfigureAwait(false);
-
-                    var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
-
-                    HttpResponseMessage response = null;
-
-                    if (await Task.Run(async delegate
+                if (isReady)
+                {
+                    try
                     {
-                        response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
-                        return false;
-                    }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
-                    {
-                        continue;
+                        url = await query.BuildUrl().ConfigureAwait(false);
                     }
-
-                    var serverEvent = ServerEventType.KeepAlive;
-
-                    statusCode = response.StatusCode;
-                    response.EnsureSuccessStatusCode();
-
-                    using (var stream = await response.Content.ReadAsStreamAsync())
-                    using (var reader = new NonBlockingStreamReader(stream))
+                    catch (Exception ex)
                     {
-                        try
+                        onError?.Invoke(this, ex);
+                        isReady = false;
+                    }
+                }
+
+                if (isReady)
+                {
+                    try
+                    {
+                        var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
+
+                        HttpResponseMessage response = null;
+
+                        if (await Task.Run(async delegate
                         {
-                            reader.Peek(); // ReadlineAsync bug fix (no idea)
+                            response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
+                            return false;
+                        }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
+                        {
+                            continue;
                         }
-                        catch { }
-                        while (true)
+
+                        var serverEvent = ServerEventType.KeepAlive;
+
+                        statusCode = response.StatusCode;
+                        response.EnsureSuccessStatusCode();
+
+                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        using (var reader = new NonBlockingStreamReader(stream))
                         {
-                            cancel.Token.ThrowIfCancellationRequested();
+                            try
+                            {
+                                reader.Peek(); // ReadlineAsync bug fix (no idea)
+                            }
+                            catch { }
+                            while (true)
+                            {
+                                cancel.Token.ThrowIfCancellationRequested();
 
-                            line = string.Empty;
+                                line = string.Empty;
 
-                            if (await Task.Run(async delegate
+                                if (await Task.Run(async delegate
                                 {
                                     line = (await reader.ReadLineAsync().ConfigureAwait(false))?.Trim();
                                     return false;
                                 }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
-                            {
-                                break;
-                            }
-
-                            if (string.IsNullOrWhiteSpace(line))
-                            {
-                                continue;
-                            }
-
-                            var tuple = line.Split(new[] { ':' }, 2, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
-
-                            switch (tuple[0].ToLower())
-                            {
-                                case "event":
-                                    serverEvent = ParseServerEvent(serverEvent, tuple[1]);
+                                {
                                     break;
-                                case "data":
-                                    ProcessServerData(url, serverEvent, tuple[1]);
-                                    break;
-                            }
+                                }
 
-                            if (serverEvent == ServerEventType.AuthRevoked)
-                            {
-                                // auth token no longer valid, reconnect
-                                break;
+                                if (string.IsNullOrWhiteSpace(line))
+                                {
+                                    continue;
+                                }
+
+                                var tuple = line.Split(new[] { ':' }, 2, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToArray();
+
+                                switch (tuple[0].ToLower())
+                                {
+                                    case "event":
+                                        serverEvent = ParseServerEvent(serverEvent, tuple[1]);
+                                        break;
+                                    case "data":
+                                        ProcessServerData(url, serverEvent, tuple[1]);
+                                        break;
+                                }
+
+                                if (serverEvent == ServerEventType.AuthRevoked)
+                                {
+                                    // auth token no longer valid, reconnect
+                                    break;
+                                }
                             }
                         }
                     }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke(this, ExceptionHelpers.GetException(statusCode, ex));
+                    }
                 }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    var fireEx = new FirebaseException(ExceptionHelpers.GetFailureReason(statusCode), ex);
-                    onError?.Invoke(this, fireEx);
-                }
+
                 await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
             }
         }
@@ -196,10 +220,7 @@ namespace RestfulFirebase.Database.Streaming
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
-                    var firEx = new FirebaseException(FirebaseExceptionReason.DatabaseUnauthorized, new Exception("Cancelled"));
-                    Console.WriteLine("STREAM Cancelled");
-                    onError?.Invoke(this, firEx);
-
+                    onError?.Invoke(this, new DatabaseUnauthorizedException());
                     break;
             }
         }
