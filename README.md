@@ -63,7 +63,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public async void Authenticate()
+        public static async void Authenticate()
         {
             await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
         }
@@ -88,7 +88,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public void Subscribe()
+        public static void Subscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
             RealtimeWire userWire = app.Database
@@ -122,7 +122,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public void WriteAndSubscribe()
+        public static void WriteAndSubscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
             RealtimeWire userWire = app.Database
@@ -157,7 +157,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public void WriteAndSubscribe()
+        public static void WriteAndSubscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/
             RealtimeWire userWire = app.Database
@@ -221,12 +221,12 @@ namespace YourNamespace
     {
         private Dinosaur dinosaur;
 
-        public void UIThread()
+        public static void UIThread()
         {
             dinosaur = new Dinosaur();
         }
 
-        public void BackgroundThread()
+        public static void BackgroundThread()
         {
             // Subscribe to both online and local updates
             dinosaur.PropertyChanged += (s, e) =>
