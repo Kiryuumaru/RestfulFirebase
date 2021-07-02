@@ -28,6 +28,7 @@ To use in UI safe updates, create the firebase object instances at the UI thread
 ## Usage
 
 ### App Module Sample
+
 ```csharp
 using RestfulFirebase;
 
@@ -54,6 +55,7 @@ namespace YourNamespace
 ```
 
 ### Authentication
+
 ```csharp
 using RestfulFirebase;
 
@@ -69,7 +71,14 @@ namespace YourNamespace
 }
 ```
 
-### Realtime Subscription
+### Realtime
+
+The RealtimeWire holds a database subscription for real-time online and local data updates; Also manages offline persistency and caching for the specified reference node.
+
+#### Subscribe
+
+Predefined model values will be overwritten by the database values.
+
 ```csharp
 using System.Threading.Tasks;
 using RestfulFirebase;
@@ -79,7 +88,75 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public void Subscription()
+        public void Subscribe()
+        {
+            // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
+            RealtimeWire userWire = app.Database
+              .Child("users")
+              .Child(app.Auth.Session.LocalId) // User UID
+              .Child("pets")
+              .Child("dinosaur")
+              .AsRealtimeWire();
+
+            // Starts to subscribe and listen for the node`s local and online updates
+            userWire.Start();
+
+            // Subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
+            Dinosaur dinosaur = new Dinosaur();
+            userWire.SubModel(dinosaur);
+        }
+    }
+}
+```
+
+#### Write and Subscribe
+
+Database values will be overwritten by the predefined model values.
+
+```csharp
+using System.Threading.Tasks;
+using RestfulFirebase;
+using RestfulFirebase.Database.Realtime;
+
+namespace YourNamespace
+{
+    public static class Program
+    {
+        public void WriteAndSubscribe()
+        {
+            // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
+            RealtimeWire userWire = app.Database
+              .Child("users")
+              .Child(app.Auth.Session.LocalId) // User UID
+              .Child("pets")
+              .Child("dinosaur")
+              .AsRealtimeWire();
+
+            // Starts to subscribe and listen for the node`s local and online updates
+            userWire.Start();
+
+            // Write and subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
+            Dinosaur dinosaur = new Dinosaur();
+            userWire.PutModel(dinosaur);
+        }
+    }
+}
+```
+
+#### Listen Instance
+
+Creating listen instance to the existing realtime wire without resubscribing to the node will save you some bandwidth and usage.
+
+```csharp
+using System.Threading.Tasks;
+using RestfulFirebase;
+using RestfulFirebase.Database.Realtime;
+
+namespace YourNamespace
+{
+    public static class Program
+    {
+        public void WriteAndSubscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/
             RealtimeWire userWire = app.Database
@@ -90,33 +167,25 @@ namespace YourNamespace
             // Starts to subscribe and listen for the node`s local and online updates
             userWire.Start();
 
-            // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
-            // This node will be https://some-database.firebaseio.com/users/<UID>/pets/dog
-            RealtimeInstance userDog = userWire
-              .Child("pets")
-              .Child("dog");
-
-            // This node will be https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
+            // Creates a new listen instance without resubscribing to the node.
             RealtimeInstance userDinosaur = userWire
               .Child("pets")
               .Child("dinosaur");
-
-            // Writes and subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dog
-            // Database values will be overwritten by the predifined values
-            Dinosaur dinosaur = new Dinosaur();
-            dinosaur.Name = "Megalosaurus";
-            userDinosaur.PutModel(dinosaur);
-
-            // Subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
-            // Predifined values will be overwritten by the database values.
-            Dog dog = new Dog();
-            userDog.SubModel(dog);
+              
+            RealtimeInstance userDinosaur1 = userWire
+              .Child("pets")
+              .Child("dinosaur1");
+              
+            RealtimeInstance userDinosaur2 = userWire
+              .Child("pets")
+              .Child("dinosaur2");
         }
     }
 }
 ```
 
 ### FirebaseObject Sample
+
 ```csharp
 using RestfulFirebase.Database.Models;
 
@@ -141,6 +210,7 @@ namespace YourNamespace
 ```
 
 ### UI safe
+
 ```csharp
 using RestfulFirebase.Database.Models;
 
