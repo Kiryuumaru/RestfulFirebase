@@ -43,8 +43,8 @@ namespace YourNamespace
             config = new FirebaseConfig()
             {
                 ApiKey = "<Your API key>",
-                DatabaseURL = "<Your realtime database URL>",
-                StorageBucket = "<Your storage bucket>",
+                DatabaseURL = "<Your realtime database URL>", // Ends with firebaseio.com
+                StorageBucket = "<Your storage bucket>", // Ends with appspot.com
                 LocalDatabase = "<Your implementation of RestfulFirebase.Local.ILocalDatabase>" // For optional offline persistency and database 
             };
             app = new RestfulFirebaseApp(config);
@@ -81,6 +81,7 @@ namespace YourNamespace
     {
         public void Subscription()
         {
+            // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/
             RealtimeWire userWire = app.Database
               .Child("users")
               .Child(app.Auth.Session.LocalId) // User UID
@@ -90,19 +91,21 @@ namespace YourNamespace
             userWire.Start();
 
             // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
+            // This node will be https://some-database.firebaseio.com/users/<UID>/pets/dog
             RealtimeInstance userDog = userWire
               .Child("pets")
               .Child("dog");
 
+            // This node will be https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
             RealtimeInstance userDinosaur = userWire
               .Child("pets")
               .Child("dinosaur");
 
-            // Writes and subscribes observable model to the realtime instance.
+            // Writes and subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dog.
             Dog dog = new Dog();
             userDog.PutModel(dog);
 
-            // Subscribes observable model to the realtime instance.
+            // Subscribes observable model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur.
             Dinosaur dinosaur = new Dinosaur();
             userDinosaur.SubModel(dinosaur);
         }
