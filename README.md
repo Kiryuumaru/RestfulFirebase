@@ -42,7 +42,7 @@ namespace YourNamespace
             ApiKey = "<Your API key>",
             DatabaseURL = <Your realtime database URL,
             StorageBucket = "<Your storage bucket>",
-            LocalDatabase = <Your implementation of ILocalDatabase for offline persistency> // Optional
+            LocalDatabase = <Your implementation of RestfulFirebase.Local.ILocalDatabase for offline persistency and database> // Optional
         };
         app = new RestfulFirebaseApp(config);
     }
@@ -57,7 +57,7 @@ namespace YourNamespace
 {
     public static async Task Authenticate()
     {
-        var result = await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+        await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
     }
 }
 ```
@@ -79,10 +79,10 @@ namespace YourNamespace
           .Child(app.Auth.Session.LocalId) // User UID
           .AsRealtimeWire();
         
-        // Starts to subscribe and listen of the node`s local and online updates
+        // Starts to subscribe and listen for the node`s local and online updates
         userWire.Start();
         
-        // Creates new listen instance without resubscribing to the node.
+        // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
         var userDog = userWire
           .Child("pets")
           .Child("dog");
