@@ -33,13 +33,14 @@ using RestfulFirebase;
 
 namespace YourNamespace
 {
-    private static RestfulFirebaseApp app;
-    
     public static class Program
     {
+        private staic RestfulFirebaseApp config;
+        private staic RestfulFirebaseApp app;
+        
         public static void Main(string[] args)
         {
-            var config = new FirebaseConfig()
+            config = new FirebaseConfig()
             {
                 ApiKey = "<Your API key>",
                 DatabaseURL = "<Your realtime database URL>",
@@ -78,11 +79,9 @@ namespace YourNamespace
 {
     public static class Program
     {
-        private static RealtimeWire userWire;
-
         public void Subscription()
         {
-            userWire = app.Database
+            RealtimeWire userWire = app.Database
               .Child("users")
               .Child(app.Auth.Session.LocalId) // User UID
               .AsRealtimeWire();
@@ -91,20 +90,20 @@ namespace YourNamespace
             userWire.Start();
 
             // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
-            var userDog = userWire
+            RealtimeInstance userDog = userWire
               .Child("pets")
               .Child("dog");
 
-            var userDinosaur = userWire
+            RealtimeInstance userDinosaur = userWire
               .Child("pets")
               .Child("dinosaur");
 
             // Writes and subscribes observable model to the realtime instance.
-            var dog = new Dog();
+            Dog dog = new Dog();
             userDog.PutModel(dog);
 
             // Subscribes observable model to the realtime instance.
-            var dinosaur = new Dinosaur();
+            Dinosaur dinosaur = new Dinosaur();
             userDinosaur.SubModel(dinosaur);
         }
     }
