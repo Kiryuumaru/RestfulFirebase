@@ -92,9 +92,11 @@ namespace YourNamespace
           .Child("dinosaur");
         
         // Writes and subscribes observable model to the realtime instance.
+        var dog = new Dog();
         userDog.PutModel(dog);
         
         // Subscribes observable model to the realtime instance.
+        var dinosaur = new Dinosaur();
         userDinosaur.SubModel(dinosaur);
     }
 }
