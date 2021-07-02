@@ -73,7 +73,7 @@ namespace YourNamespace
 
 ### Realtime
 
-The RealtimeWire holds a database subscription for real-time online and local data updates; Also manages offline persistency and caching for the specified reference node. Persistent data from the app launch will continue to sync if its real-time wire node is created and started.
+The RealtimeWire holds a database subscription for real-time online and local data updates; Also manages offline persistency and caching for the specified reference node. Persistent data from the app launch will continue to sync if its real-time node or its parent\`s real-time node is created and started.
 
 #### Subscribe
 
