@@ -42,7 +42,7 @@ namespace YourNamespace
             ApiKey = "<Your API key>",
             DatabaseURL = <Your realtime database URL,
             StorageBucket = "<Your storage bucket>",
-            LocalDatabase = <Your implementation of RestfulFirebase.Local.ILocalDatabase for offline persistency and database> // Optional
+            LocalDatabase = <Your implementation of RestfulFirebase.Local.ILocalDatabase> // For optional offline persistency and database 
         };
         app = new RestfulFirebaseApp(config);
     }
