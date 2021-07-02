@@ -63,7 +63,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        public static async void Authenticate()
+        public async void Authenticate()
         {
             await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
         }
@@ -217,7 +217,7 @@ using RestfulFirebase.Database.Models;
 
 namespace YourNamespace
 {
-    public class Program
+    public static class Program
     {
         private Dinosaur dinosaur;
 
