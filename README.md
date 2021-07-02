@@ -219,7 +219,7 @@ namespace YourNamespace
 {
     public static class Program
     {
-        private Dinosaur dinosaur;
+        private static Dinosaur dinosaur;
 
         public static void UIThread()
         {
