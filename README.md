@@ -22,9 +22,8 @@ Install-Package RestfulFirebase -pre
 
 ## Get Started
 
-All firebase observable events are executed on the thread that is used to create the object instance.
-To use in UI safe updates, create the firebase object instances at the UI thread or manually configure the ISyncObject.SyncOperation to use UI thread.
-If ILocalDatabase is provided and implemented with a specific device database persistency implementation, app authentication and the database will be persisted even if the app closes and reopens.
+* All firebase observable events are executed on the thread that is used to create the object instance. To use in UI safe updates, create the firebase object instances at the UI thread or manually configure the ISyncObject.SyncOperation to use UI thread.
+* If ILocalDatabase is provided and implemented with a specific device database persistency implementation, app authentication and the database will be persisted even if the app closes and reopens.
 
 ## Usage
 
@@ -47,7 +46,7 @@ namespace YourNamespace
                 ApiKey = "<Your API key>",
                 DatabaseURL = "<Your realtime database URL>", // Ends with firebaseio.com
                 StorageBucket = "<Your storage bucket>", // Ends with appspot.com
-                LocalDatabase = "<Your implementation of RestfulFirebase.Local.ILocalDatabase>" // For optional offline persistency and database 
+                LocalDatabase = "<Your implementation of RestfulFirebase.Local.ILocalDatabase>" // For optional offline persistency 
             };
             app = new RestfulFirebaseApp(config);
         }
