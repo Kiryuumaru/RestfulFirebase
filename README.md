@@ -35,16 +35,19 @@ namespace YourNamespace
 {
     private static RestfulFirebaseApp app;
     
-    public static void Main(string[] args)
+    public static class Program
     {
-        var config = new FirebaseConfig()
+        public static void Main(string[] args)
         {
-            ApiKey = "<Your API key>",
-            DatabaseURL = <Your realtime database URL,
-            StorageBucket = "<Your storage bucket>",
-            LocalDatabase = <Your implementation of RestfulFirebase.Local.ILocalDatabase> // For optional offline persistency and database 
-        };
-        app = new RestfulFirebaseApp(config);
+            var config = new FirebaseConfig()
+            {
+                ApiKey = "<Your API key>",
+                DatabaseURL = "<Your realtime database URL>",
+                StorageBucket = "<Your storage bucket>",
+                LocalDatabase = "<Your implementation of RestfulFirebase.Local.ILocalDatabase>" // For optional offline persistency and database 
+            };
+            app = new RestfulFirebaseApp(config);
+        }
     }
 }
 ```
@@ -55,9 +58,12 @@ using RestfulFirebase;
 
 namespace YourNamespace
 {
-    public static async void Authenticate()
+    public static class Program
     {
-        await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+        public static async void Authenticate()
+        {
+            await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+        }
     }
 }
 ```
@@ -70,34 +76,37 @@ using RestfulFirebase.Database.Realtime;
 
 namespace YourNamespace
 {
-    private static RealtimeWire userWire;
-    
-    public static async void Subscription()
+    public static class Program
     {
-        userWire = app.Database
-          .Child("users")
-          .Child(app.Auth.Session.LocalId) // User UID
-          .AsRealtimeWire();
-        
-        // Starts to subscribe and listen for the node`s local and online updates
-        userWire.Start();
-        
-        // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
-        var userDog = userWire
-          .Child("pets")
-          .Child("dog");
-          
-        var userDinosaur = userWire
-          .Child("pets")
-          .Child("dinosaur");
-        
-        // Writes and subscribes observable model to the realtime instance.
-        var dog = new Dog();
-        userDog.PutModel(dog);
-        
-        // Subscribes observable model to the realtime instance.
-        var dinosaur = new Dinosaur();
-        userDinosaur.SubModel(dinosaur);
+        private static RealtimeWire userWire;
+
+        public void Subscription()
+        {
+            userWire = app.Database
+              .Child("users")
+              .Child(app.Auth.Session.LocalId) // User UID
+              .AsRealtimeWire();
+
+            // Starts to subscribe and listen for the node`s local and online updates
+            userWire.Start();
+
+            // Creates a new listen instance without resubscribing to the node to save bandwidth and usage.
+            var userDog = userWire
+              .Child("pets")
+              .Child("dog");
+
+            var userDinosaur = userWire
+              .Child("pets")
+              .Child("dinosaur");
+
+            // Writes and subscribes observable model to the realtime instance.
+            var dog = new Dog();
+            userDog.PutModel(dog);
+
+            // Subscribes observable model to the realtime instance.
+            var dinosaur = new Dinosaur();
+            userDinosaur.SubModel(dinosaur);
+        }
     }
 }
 ```
