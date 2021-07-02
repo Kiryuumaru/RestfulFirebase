@@ -36,8 +36,8 @@ namespace YourNamespace
 {
     public static class Program
     {
-        private staic RestfulFirebaseApp config;
-        private staic RestfulFirebaseApp app;
+        private static RestfulFirebaseApp config;
+        private static RestfulFirebaseApp app;
         
         public static void Main(string[] args)
         {
