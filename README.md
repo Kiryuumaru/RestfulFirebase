@@ -137,6 +137,7 @@ namespace YourNamespace
 
             // Write and subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
             Dinosaur dinosaur = new Dinosaur();
+            dinosaur.Name = "Megalosaurus";
             userWire.PutModel(dinosaur);
         }
     }
