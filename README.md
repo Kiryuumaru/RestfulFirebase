@@ -146,7 +146,7 @@ namespace YourNamespace
 
 #### Listen Instance
 
-Creating listen instance of the existing realtime wire without resubscribing to the node will save you some bandwidth and usage.
+Creating a listen instance of the existing realtime wire without resubscribing to the node will save you some bandwidth and usage.
 
 ```csharp
 using System.Threading.Tasks;
