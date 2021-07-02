@@ -129,7 +129,7 @@ namespace YourNamespace
         public int Height
         {
             get => GetFirebaseProperty<int>();
-            set => GetFirebaseProperty(value);
+            set => SetFirebaseProperty(value);
         }
     }
 }
