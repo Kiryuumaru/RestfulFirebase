@@ -55,7 +55,7 @@ using RestfulFirebase;
 
 namespace YourNamespace
 {
-    public static async Task Authenticate()
+    public static async void Authenticate()
     {
         await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
     }
@@ -72,7 +72,7 @@ namespace YourNamespace
 {
     private static RealtimeWire userWire;
     
-    public static async Task Subscription()
+    public static async void Subscription()
     {
         userWire = app.Database
           .Child("users")
