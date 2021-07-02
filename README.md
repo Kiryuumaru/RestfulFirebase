@@ -22,8 +22,9 @@ Install-Package RestfulFirebase -pre
 
 ## Get Started
 
-All firebase observable events are executed on thread that was used to create the object instance.
+All firebase observable events are executed on the thread that is used to create the object instance.
 To use in UI safe updates, create the firebase object instances at the UI thread or manually configure the ISyncObject.SyncOperation to use UI thread.
+If ILocalDatabase is provided and implemented with a specific device database persistency implementation, app authentication and the database will be persisted even if the app closes and reopens.
 
 ## Usage
 
@@ -73,7 +74,7 @@ namespace YourNamespace
 
 ### Realtime
 
-The RealtimeWire holds a database subscription for real-time online and local data updates; Also manages offline persistency and caching for the specified reference node.
+The RealtimeWire holds a database subscription for real-time online and local data updates; Also manages offline persistency and caching for the specified reference node. Persistent data from the app launch will continue to synced if its real-time wire node is created and started.
 
 #### Subscribe
 
@@ -228,6 +229,7 @@ namespace YourNamespace
 
         public void BackgroundThread()
         {
+            // Subscribe to both online and local updates
             dinosaur.PropertyChanged += (s, e) =>
             {
                 // Executed on UI thread
