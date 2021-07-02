@@ -105,7 +105,7 @@ namespace YourNamespace
             Dog dog = new Dog();
             userDog.PutModel(dog);
 
-            // Subscribes observable model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur.
+            // Subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur.
             Dinosaur dinosaur = new Dinosaur();
             userDinosaur.SubModel(dinosaur);
         }
