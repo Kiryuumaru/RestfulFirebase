@@ -102,12 +102,15 @@ namespace YourNamespace
               .Child("dinosaur");
 
             // Writes and subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dog.
-            Dog dog = new Dog();
-            userDog.PutModel(dog);
+            // Database values will be overwritten by the predifined values
+            Dinosaur dinosaur = new Dinosaur();
+            dinosaur.Name = "Megalosaurus";
+            userDinosaur.PutModel(dinosaur);
 
             // Subscribes model to the node https://some-database.firebaseio.com/users/some-uid/pets/dinosaur.
-            Dinosaur dinosaur = new Dinosaur();
-            userDinosaur.SubModel(dinosaur);
+            // Predifined values will be overwritten by the database values.
+            Dog dog = new Dog();
+            userDog.SubModel(dog);
         }
     }
 }
