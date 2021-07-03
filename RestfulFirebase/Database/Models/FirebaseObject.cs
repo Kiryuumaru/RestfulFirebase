@@ -123,7 +123,7 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <summary>
-        /// Sets a property for the firebase object.
+        /// Sets a firebase property value with the provided firebase <paramref name="key"/>.
         /// </summary>
         /// <typeparam name="T">
         /// The underlying type of the <paramref name="value"/> of the property.
@@ -171,7 +171,7 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <summary>
-        /// Sets a property for the firebase object.
+        /// Gets the firebase property value of the provided firebase <paramref name="key"/>.
         /// </summary>
         /// <typeparam name="T">
         /// The underlying type of the property to get.
@@ -223,7 +223,7 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <summary>
-        /// Sets a property for the firebase object.
+        /// Sets a firebase property value using <paramref name="propertyName"/> or the caller`s member name as its firebase key.
         /// </summary>
         /// <typeparam name="T">
         /// The underlying type of the <paramref name="value"/> of the property.
@@ -254,7 +254,7 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <summary>
-        /// Sets a property for the firebase object.
+        /// Gets the firebase property value using <paramref name="propertyName"/> or the caller`s member name as its firebase key.
         /// </summary>
         /// <typeparam name="T">
         /// The underlying type of the property to get.
