@@ -93,6 +93,7 @@ namespace RestfulFirebase.Database.Query
                         }
 
                         var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                        invokeToken.ThrowIfCancellationRequested();
                         statusCode = result.StatusCode;
                         responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -182,6 +183,7 @@ namespace RestfulFirebase.Database.Query
                         }
 
                         var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                        invokeToken.ThrowIfCancellationRequested();
                         statusCode = result.StatusCode;
                         responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -294,6 +296,7 @@ namespace RestfulFirebase.Database.Query
                     }
 
                     var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
+                    invokeToken.ThrowIfCancellationRequested();
                     statusCode = response.StatusCode;
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -458,6 +461,7 @@ namespace RestfulFirebase.Database.Query
 
                 HttpResponseMessage result = null;
                 result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
+                invokeToken.ThrowIfCancellationRequested();
                 statusCode = result.StatusCode;
                 responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
