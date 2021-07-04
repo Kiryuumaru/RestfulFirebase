@@ -16,7 +16,7 @@ namespace RestfulFirebase.Serializers.Primitives
         /// <inheritdoc/>
         public override bool Deserialize(string data)
         {
-            return data == "1";
+            return data.Equals("1");
         }
     }
 }
