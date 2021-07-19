@@ -169,7 +169,7 @@ namespace RestTest
             //TestObservableObject();
             //TestRealtimeWire();
             //TestRealtimeWire2();
-            await TestModelAttachDetach();
+            //await TestModelAttachDetach();
             //TestPropertyPut();
             //TestPropertySub();
             //TestPropertySub2();
@@ -181,7 +181,7 @@ namespace RestTest
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
-            //TestObjectDictionarySub2();
+            TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
             //ExperimentList();
             //await TestDef();

@@ -126,16 +126,22 @@ namespace RestfulFirebase.Database.Models
         /// Sets a firebase property value with the provided firebase <paramref name="key"/>.
         /// </summary>
         /// <typeparam name="T">
-        /// The underlying type of the <paramref name="value"/> of the property.
+        /// The underlying type of the <paramref name="value"/> of the property to set.
         /// </typeparam>
         /// <param name="value">
-        /// The value of the property.
+        /// The value of the property to set.
         /// </param>
         /// <param name="key">
-        /// The key of the property.
+        /// The key of the property to set.
         /// </param>
         /// <param name="propertyName">
-        /// The name of the property.
+        /// The name of the property to set.
+        /// </param>
+        /// <param name="validate">
+        /// The value set validator function.
+        /// </param>
+        /// <param name="onSet">
+        /// The callback after set operation.
         /// </param>
         /// <returns>
         /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
@@ -152,7 +158,9 @@ namespace RestfulFirebase.Database.Models
         protected bool SetFirebasePropertyWithKey<T>(
             T value,
             string key,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Func<(T oldValue, T newValue), bool> validate = null,
+            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             if (IsDisposed)
             {
@@ -167,7 +175,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject));
+            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validate, onSet);
         }
 
         /// <summary>
@@ -177,13 +185,19 @@ namespace RestfulFirebase.Database.Models
         /// The underlying type of the property to get.
         /// </typeparam>
         /// <param name="key">
-        /// The key of the property.
+        /// The key of the property to get.
         /// </param>
         /// <param name="defaultValue">
         /// The default value of the property to set and return if the property is empty.
         /// </param>
         /// <param name="propertyName">
-        /// The name of the property.
+        /// The name of the property to get.
+        /// </param>
+        /// <param name="validate">
+        /// The value set validator function.
+        /// </param>
+        /// <param name="onSet">
+        /// The callback after set operation.
         /// </param>
         /// <returns>
         /// The value of the property.
@@ -200,7 +214,9 @@ namespace RestfulFirebase.Database.Models
         protected T GetFirebasePropertyWithKey<T>(
             string key,
             T defaultValue = default,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Func<(T oldValue, T newValue), bool> validate = null,
+            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             if (IsDisposed)
             {
@@ -219,20 +235,26 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject));
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), validate, onSet);
         }
 
         /// <summary>
         /// Sets a firebase property value using <paramref name="propertyName"/> or the caller`s member name as its firebase key.
         /// </summary>
         /// <typeparam name="T">
-        /// The underlying type of the <paramref name="value"/> of the property.
+        /// The underlying type of the <paramref name="value"/> of the property to set.
         /// </typeparam>
         /// <param name="value">
-        /// The value of the property.
+        /// The value of the property to set.
         /// </param>
         /// <param name="propertyName">
-        /// The name of the property.
+        /// The name of the property to set.
+        /// </param>
+        /// <param name="validate">
+        /// The value set validator function.
+        /// </param>
+        /// <param name="onSet">
+        /// The callback after set operation.
         /// </param>
         /// <returns>
         /// <c>true</c> whether the value of the property sets; otherwise <c>false</c>.
@@ -248,9 +270,11 @@ namespace RestfulFirebase.Database.Models
         /// </exception>
         protected bool SetFirebaseProperty<T>(
             T value,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Func<(T oldValue, T newValue), bool> validate = null,
+            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
         {
-            return SetFirebasePropertyWithKey(value, propertyName, propertyName);
+            return SetFirebasePropertyWithKey(value, propertyName, propertyName, validate, onSet);
         }
 
         /// <summary>
@@ -263,7 +287,13 @@ namespace RestfulFirebase.Database.Models
         /// The default value of the property to set and return if the property is empty.
         /// </param>
         /// <param name="propertyName">
-        /// The name of the property.
+        /// The name of the property to get.
+        /// </param>
+        /// <param name="validate">
+        /// The value set validator function.
+        /// </param>
+        /// <param name="onSet">
+        /// The callback after set operation.
         /// </param>
         /// <returns>
         /// The value of the property.
@@ -279,9 +309,11 @@ namespace RestfulFirebase.Database.Models
         /// </exception>
         protected T GetFirebaseProperty<T>(
             T defaultValue = default,
-            [CallerMemberName] string propertyName = null)
+            [CallerMemberName] string propertyName = null,
+            Func<(T oldValue, T newValue), bool> validate = null,
+            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
         {
-            return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName);
+            return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, onSet);
         }
 
         /// <inheritdoc/>
