@@ -5,6 +5,7 @@ using RestfulFirebase.Extensions;
 using RestfulFirebase.Serializers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -406,12 +407,12 @@ namespace RestfulFirebase.Database.Models
         #region Methods
 
         /// <inheritdoc/>
-        protected override void OnPropertyChanged(string propertyName)
+        protected override void OnPropertyChanged(PropertyChangedEventArgs args)
         {
-            base.OnPropertyChanged(propertyName);
-            if (propertyName == nameof(Property))
+            base.OnPropertyChanged(args);
+            if (args.PropertyName == nameof(Property))
             {
-                base.OnPropertyChanged(nameof(Value));
+                base.OnPropertyChanged(new PropertyChangedEventArgs(nameof(Value)));
             }
         }
 
