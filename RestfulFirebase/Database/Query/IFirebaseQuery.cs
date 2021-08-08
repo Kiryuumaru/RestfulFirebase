@@ -64,6 +64,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -102,6 +103,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -140,6 +142,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -178,6 +181,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -216,6 +220,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -257,6 +262,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -298,6 +304,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="token">
@@ -351,6 +358,9 @@ namespace RestfulFirebase.Database.Query
         /// </exception>
         /// <exception cref="AuthMissingRefreshTokenException">
         /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.

@@ -12,7 +12,7 @@ namespace RestfulFirebase.Auth
     {
         internal static Exception GetException(string responseData, Exception originalException)
         {
-            string message = null;
+            string message = "";
             try
             {
                 if (!string.IsNullOrEmpty(responseData) && responseData != "N/A")
@@ -22,7 +22,7 @@ namespace RestfulFirebase.Auth
                     errorData = JsonConvert.DeserializeAnonymousType(responseData, errorData);
 
                     //errorData is just null if different JSON was received
-                    message = errorData?.error?.message;
+                    message = errorData?.error?.message ?? "";
                 }
             }
             catch (JsonException)

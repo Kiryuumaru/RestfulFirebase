@@ -190,6 +190,9 @@ namespace RestfulFirebase.Auth
         /// <exception cref="AuthUserNotFoundException">
         /// There is no user record corresponding to this identifier. The user may have been deleted.
         /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -222,6 +225,9 @@ namespace RestfulFirebase.Auth
         /// </exception>
         /// <exception cref="AuthUserNotFoundException">
         /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
@@ -293,6 +299,9 @@ namespace RestfulFirebase.Auth
         /// <exception cref="AuthAPIKeyNotValidException">
         /// API key not valid. Please pass a valid API key.
         /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -357,6 +366,9 @@ namespace RestfulFirebase.Auth
         /// <exception cref="AuthUserNotFoundException">
         /// There is no user record corresponding to this identifier. The user may have been deleted.
         /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -408,6 +420,9 @@ namespace RestfulFirebase.Auth
         /// <exception cref="AuthUserNotFoundException">
         /// There is no user record corresponding to this identifier. The user may have been deleted.
         /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -444,6 +459,9 @@ namespace RestfulFirebase.Auth
         /// </exception>
         /// <exception cref="AuthUserNotFoundException">
         /// There is no user record corresponding to this identifier. The user may have been deleted.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
@@ -484,6 +502,9 @@ namespace RestfulFirebase.Auth
         /// </exception>
         /// <exception cref="AuthAPIKeyNotValidException">
         /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
@@ -558,6 +579,9 @@ namespace RestfulFirebase.Auth
         /// </exception>
         /// <exception cref="AuthMissingRefreshTokenException">
         /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
@@ -640,6 +664,9 @@ namespace RestfulFirebase.Auth
         /// <exception cref="AuthMissingRefreshTokenException">
         /// No refresh token provided.
         /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -672,6 +699,9 @@ namespace RestfulFirebase.Auth
         /// </returns>
         /// <exception cref="AuthInvalidIDTokenException">
         /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
