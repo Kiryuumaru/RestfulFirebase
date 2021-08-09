@@ -6,10 +6,20 @@ using System.Text;
 
 namespace RestfulFirebase.Local
 {
-    /// <inheritdoc/>
-    public class DefaultLocalDatabase : ILocalDatabase
+    /// <summary>
+    /// The provided stock <see cref="ILocalDatabase"/> implementation to be used.
+    /// </summary>
+    public sealed class StockLocalDatabase : ILocalDatabase
     {
         private static Dictionary<string, string> db = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Creates new instance of <see cref="StockLocalDatabase"/> class.
+        /// </summary>
+        public StockLocalDatabase()
+        {
+
+        }
 
         /// <inheritdoc/>
         public bool ContainsKey(string key)

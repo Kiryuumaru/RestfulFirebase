@@ -7,10 +7,18 @@ using System.Text;
 namespace RestfulFirebase.Local
 {
     /// <summary>
-    /// The provided local encryption implementation to be optionally used to disable encryption.
+    /// The provided stock <see cref="ILocalEncryption"/> implementation to be used.
     /// </summary>
-    public class LocalNonEncryption : ILocalEncryption
+    public sealed class StockLocalNonEncryption : ILocalEncryption
     {
+        /// <summary>
+        /// Creates new instance of <see cref="StockLocalNonEncryption"/> class.
+        /// </summary>
+        public StockLocalNonEncryption()
+        {
+
+        }
+
         /// <inheritdoc/>
         public string DecryptKey(string encrypted)
         {

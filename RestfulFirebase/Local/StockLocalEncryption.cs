@@ -11,11 +11,19 @@ using System.Threading.Tasks;
 namespace RestfulFirebase.Local
 {
     /// <summary>
-    /// The stock provided local encryption implementation to be optionally used for local encryption.
+    /// The provided stock <see cref="ILocalEncryption"/> implementation to be used.
     /// </summary>
-    public class LocalEncryption : ILocalEncryption
+    public sealed class StockLocalEncryption : ILocalEncryption
     {
         private static readonly int[] EncryptionPattern = new int[] { 1, 4, 2, 3 };
+
+        /// <summary>
+        /// Creates new instance of <see cref="StockLocalEncryption"/> class.
+        /// </summary>
+        public StockLocalEncryption()
+        {
+
+        }
 
         /// <inheritdoc/>
         public string DecryptKey(string encrypted)

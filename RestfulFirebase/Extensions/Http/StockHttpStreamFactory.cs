@@ -3,8 +3,20 @@ using System.Net.Http;
 
 namespace RestfulFirebase.Extensions.Http
 {
-    internal sealed class DefaultHttpStreamFactory : IHttpStreamFactory
+    /// <summary>
+    /// The provided stock <see cref="IHttpClientProxy"/> implementation to be used.
+    /// </summary>
+    public sealed class StockHttpStreamFactory : IHttpStreamFactory
     {
+        /// <summary>
+        /// Creates new instance of <see cref="StockHttpStreamFactory"/> class.
+        /// </summary>
+        public StockHttpStreamFactory()
+        {
+
+        }
+
+        /// <inheritdoc/>
         public HttpClient GetHttpClient()
         {
             return new HttpClient(new HttpClientHandler()
@@ -15,6 +27,7 @@ namespace RestfulFirebase.Extensions.Http
             }, true);
         }
 
+        /// <inheritdoc/>
         public HttpRequestMessage GetStreamHttpRequestMessage(HttpMethod method, string url)
         {
             return new HttpRequestMessage(method, url);
