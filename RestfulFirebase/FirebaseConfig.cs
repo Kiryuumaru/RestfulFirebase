@@ -23,7 +23,7 @@ namespace RestfulFirebase
         public FirebaseConfig()
         {
             LocalDatabase = new DefaultLocalDatabase();
-            LocalEncryption = new DefaultLocalEncryption();
+            LocalEncryption = new LocalNonEncryption();
             HttpClientFactory = new DefaultHttpClientFactory();
             HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);

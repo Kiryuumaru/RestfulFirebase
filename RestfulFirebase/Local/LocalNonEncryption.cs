@@ -6,8 +6,10 @@ using System.Text;
 
 namespace RestfulFirebase.Local
 {
-    /// <inheritdoc/>
-    public class DefaultLocalEncryption : ILocalEncryption
+    /// <summary>
+    /// The provided local encryption implementation to be optionally used to disable encryption.
+    /// </summary>
+    public class LocalNonEncryption : ILocalEncryption
     {
         /// <inheritdoc/>
         public string DecryptKey(string encrypted)
