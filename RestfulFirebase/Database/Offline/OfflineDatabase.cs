@@ -237,6 +237,13 @@ namespace RestfulFirebase.Database.Offline
 
         public void Flush()
         {
+            lock (writeTasks)
+            {
+                foreach (WriteTask task in writeTasks)
+                {
+                    task.Cancel();
+                }
+            }
             var subPaths = App.LocalDatabase.GetSubPaths(Root);
             foreach (var subPath in subPaths)
             {

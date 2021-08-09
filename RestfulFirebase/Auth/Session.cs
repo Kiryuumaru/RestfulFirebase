@@ -760,6 +760,7 @@ namespace RestfulFirebase.Auth
             await Task.Run(delegate
             {
                 Purge();
+                App.Database.Flush();
                 App.Auth.InvokeAuthenticationEvents();
             });
         }
