@@ -13,7 +13,7 @@ namespace RestfulFirebase
     /// <summary>
     /// App session for whole restful firebase operations.
     /// </summary>
-    public class RestfulFirebaseApp : Disposable
+    public class RestfulFirebaseApp : SyncContext
     {
         #region Properties
 

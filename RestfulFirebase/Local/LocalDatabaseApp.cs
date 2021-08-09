@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Extensions;
+﻿using ObservableHelpers;
+using RestfulFirebase.Extensions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ namespace RestfulFirebase.Local
     /// <summary>
     /// App module that provides persistency for the <see cref="RestfulFirebaseApp"/>.
     /// </summary>
-    public class LocalDatabaseApp : IAppModule
+    public class LocalDatabaseApp : SyncContext, IAppModule
     {
         #region Properties
 
@@ -29,6 +30,8 @@ namespace RestfulFirebase.Local
 
         internal LocalDatabaseApp(RestfulFirebaseApp app)
         {
+            SyncOperation.SetContext(app);
+
             App = app;
         }
 

@@ -17,8 +17,8 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.2.2</Version>
-    <PackageReleaseNotes>* Updated stock config classes and docs</PackageReleaseNotes>
+    <Version>1.2.3</Version>
+    <PackageReleaseNotes>* Updated auth events to more elaborate implementation</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <None Remove="Auth\FirebaseAuthApp.cs~RF20cd8c7.TMP" />
+    <None Remove="Auth\Session.cs~RF1a3d10e8.TMP" />
     <None Remove="Database\Models\FirebasePropertyDictionary.cs~RF13ba79b1.TMP" />
     <None Remove="Database\Offline\DataHolder.cs~RF2eb3d46.TMP" />
     <None Remove="Database\Offline\DataNode.cs~RFfd0da87.TMP" />

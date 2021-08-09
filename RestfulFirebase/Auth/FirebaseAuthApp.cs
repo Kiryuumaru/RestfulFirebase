@@ -40,15 +40,22 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Event raised on the current context when the authentication is refreshed.
         /// </summary>
-        public event Action AuthRefreshed;
+        public event EventHandler AuthRefreshed;
 
         /// <summary>
         /// Event raised on the current context when the module is authenticated.
         /// </summary>
-        public event Action Authenticated;
+        public event EventHandler Authenticated;
 
-        private IHttpClientProxy client;
-        private Session session;
+        /// <summary>
+        /// Event raised on the current context when the module is unauthenticated.
+        /// </summary>
+        public event EventHandler Unauthenticated;
+
+        /// <summary>
+        /// Event raised on the current context when the module is unauthenticated.
+        /// </summary>
+        public event EventHandler<AuthenticationChangesEventArgs> AuthenticationChanges;
 
         internal const string GoogleRefreshAuth = "https://securetoken.googleapis.com/v1/token?key={0}";
         internal const string GoogleCustomAuthUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={0}";
@@ -64,12 +71,17 @@ namespace RestfulFirebase.Auth
         internal const string ProfileDeleteDisplayName = "DISPLAY_NAME";
         internal const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
+        private IHttpClientProxy client;
+        private Session session;
+
         #endregion
 
         #region Initializers
 
         internal FirebaseAuthApp(RestfulFirebaseApp app)
         {
+            SyncOperation.SetContext(app);
+
             App = app;
             session = new Session(App);
         }
@@ -223,7 +235,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
 
             if (sendVerificationEmail)
             {
@@ -263,7 +275,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -319,7 +331,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -364,7 +376,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -461,7 +473,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -496,7 +508,7 @@ namespace RestfulFirebase.Auth
 
             await RefreshUserInfo(auth).ConfigureAwait(false);
 
-            OnAuthenticated();
+            InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -552,18 +564,29 @@ namespace RestfulFirebase.Auth
         {
             ContextPost(delegate
             {
-                AuthRefreshed?.Invoke();
+                AuthRefreshed?.Invoke(this, new EventArgs());
             });
         }
 
         /// <summary>
-        /// Invokes <see cref="Authenticated"/> event into the current context.
+        /// Invokes authenticate events into the current context.
         /// </summary>
-        internal void OnAuthenticated()
+        internal void InvokeAuthenticationEvents()
         {
             ContextPost(delegate
             {
-                Authenticated?.Invoke();
+                if (IsAuthenticated)
+                {
+                    Authenticated?.Invoke(this, new EventArgs());
+                }
+                else
+                {
+                    Unauthenticated?.Invoke(this, new EventArgs());
+                }
+            });
+            ContextPost(delegate
+            {
+                AuthenticationChanges?.Invoke(this, new AuthenticationChangesEventArgs(IsAuthenticated));
             });
         }
 

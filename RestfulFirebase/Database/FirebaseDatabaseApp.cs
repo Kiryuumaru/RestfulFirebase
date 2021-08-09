@@ -15,7 +15,7 @@ namespace RestfulFirebase.Database
     /// <summary>
     /// App module that provides firebase realtime database implementations.
     /// </summary>
-    public class FirebaseDatabaseApp : Disposable, IAppModule
+    public class FirebaseDatabaseApp : SyncContext, IAppModule
     {
         #region Properties
 
@@ -35,6 +35,8 @@ namespace RestfulFirebase.Database
 
         internal FirebaseDatabaseApp(RestfulFirebaseApp app)
         {
+            SyncOperation.SetContext(app);
+
             App = app;
             OfflineDatabase = new OfflineDatabase(app);
         }

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using ObservableHelpers;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Extensions;
 using RestfulFirebase.Serializers;
@@ -14,11 +15,11 @@ namespace RestfulFirebase.Auth
     /// <summary>
     /// Provides firebase user authentication implementations.
     /// </summary>
-    public class Session
+    public class Session : SyncContext
     {
         #region Properties
 
-        private const string AuthRoot = "auth";
+        private const string Root = "auth";
 
         /// <summary>
         /// Gets the underlying <see cref="RestfulFirebaseApp"/> this module uses.
@@ -30,8 +31,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FirebaseToken
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "tok"));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "tok"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "tok"));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "tok"), value);
         }
 
         /// <summary>
@@ -39,8 +40,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string RefreshToken
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "ref"));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "ref"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "ref"));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ref"), value);
         }
 
         /// <summary>
@@ -48,8 +49,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public int ExpiresIn
         {
-            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "exp")));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "exp"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "exp")));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "exp"), Serializer.Serialize(value));
         }
 
         /// <summary>
@@ -57,8 +58,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public DateTime Created
         {
-            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "ctd")));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "ctd"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "ctd")));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ctd"), Serializer.Serialize(value));
         }
 
         /// <summary>
@@ -66,8 +67,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string LocalId
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "lid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "lid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lid")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lid"), value);
         }
 
         /// <summary>
@@ -75,8 +76,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FederatedId
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "fid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "fid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fid")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fid"), value);
         }
 
         /// <summary>
@@ -84,8 +85,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FirstName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "fname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "fname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fname"), value);
         }
 
         /// <summary>
@@ -93,8 +94,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string LastName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "lname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "lname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lname"), value);
         }
 
         /// <summary>
@@ -102,8 +103,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string DisplayName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "dname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "dname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "dname")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "dname"), value);
         }
 
         /// <summary>
@@ -111,8 +112,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string Email
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "email")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "email"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "email")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "email"), value);
         }
 
         /// <summary>
@@ -120,8 +121,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public bool IsEmailVerified
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "vmail")) == "1";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "vmail"), value ? "1" : "0");
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "vmail")) == "1";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "vmail"), value ? "1" : "0");
         }
 
         /// <summary>
@@ -129,8 +130,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string PhotoUrl
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "purl")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "purl"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "purl")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "purl"), value);
         }
 
         /// <summary>
@@ -138,8 +139,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string PhoneNumber
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(AuthRoot, "pnum")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(AuthRoot, "pnum"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "pnum")) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "pnum"), value);
         }
 
         /// <summary>
@@ -155,12 +156,19 @@ namespace RestfulFirebase.Auth
             }
         }
 
+        /// <summary>
+        /// Event raised on the current context when the authentication is refreshed.
+        /// </summary>
+        public event EventHandler AuthRefreshed;
+
         #endregion
 
         #region Initializers
 
         internal Session(RestfulFirebaseApp app)
         {
+            SyncOperation.SetContext(app);
+
             App = app;
         }
 
@@ -619,7 +627,7 @@ namespace RestfulFirebase.Auth
 
                     UpdateAuth(auth);
 
-                    App.Auth.OnAuthRefreshed();
+                    OnAuthRefreshed();
                 }
                 catch (OperationCanceledException)
                 {
@@ -742,14 +750,18 @@ namespace RestfulFirebase.Auth
         }
 
         /// <summary>
-        /// Sign out the authentcated account.
+        /// Sign out the authenticated account.
         /// </summary>
         /// <returns>
         /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
         public async Task Signout()
         {
-            await Task.Run(Purge);
+            await Task.Run(delegate
+            {
+                Purge();
+                App.Auth.InvokeAuthenticationEvents();
+            });
         }
 
         /// <summary>
@@ -761,6 +773,18 @@ namespace RestfulFirebase.Auth
         public bool IsExpired()
         {
             return DateTime.Now > Created.AddSeconds(ExpiresIn - 10);
+        }
+
+        /// <summary>
+        /// Invokes <see cref="AuthRefreshed"/> event into the current context.
+        /// </summary>
+        internal void OnAuthRefreshed()
+        {
+            App.Auth.OnAuthRefreshed();
+            ContextPost(delegate
+            {
+                AuthRefreshed?.Invoke(this, new EventArgs());
+            });
         }
 
         internal void UpdateAuth(FirebaseAuth auth)
@@ -787,20 +811,20 @@ namespace RestfulFirebase.Auth
 
         internal void Purge()
         {
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "ctd"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "exp"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "ref"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "tok"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ctd"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "exp"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ref"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "tok"));
 
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "lid"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "fid"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "fname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "lname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "dname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "email"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "vmail"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "purl"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(AuthRoot, "pnum"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lid"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fid"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "dname"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "email"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "vmail"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "purl"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "pnum"));
         }
 
         #endregion
