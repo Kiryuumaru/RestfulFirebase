@@ -9,7 +9,7 @@ namespace RestfulFirebase.Local
     /// <summary>
     /// App module that provides persistency for the <see cref="RestfulFirebaseApp"/>.
     /// </summary>
-    public class LocalDatabaseApp
+    public class LocalDatabaseApp : IAppModule
     {
         #region Properties
 
@@ -20,9 +20,7 @@ namespace RestfulFirebase.Local
 
         private ConcurrentDictionary<string, string> cacheDb = new ConcurrentDictionary<string, string>();
 
-        /// <summary>
-        /// Gets the underlying <see cref="RestfulFirebaseApp"/> this module uses.
-        /// </summary>
+        /// <inheritdoc/>
         public RestfulFirebaseApp App { get; }
 
         #endregion
@@ -175,6 +173,7 @@ namespace RestfulFirebase.Local
         private string ValidatePath(string path)
         {
             if (string.IsNullOrEmpty(path)) throw new Exception("Path is null or empty");
+
             return path[path.Length - 1] == '/' ? path.Substring(0, path.Length - 1) : path;
         }
 
@@ -182,36 +181,51 @@ namespace RestfulFirebase.Local
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
+            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+            string encryptedValue = App.Config.LocalEncryption.EncryptValue(value);
+
             lock (App.Config.LocalDatabase)
             {
-                App.Config.LocalDatabase.Set(key, value);
+                App.Config.LocalDatabase.Set(encryptedKey, encryptedValue);
             }
         }
 
         private string DBGet(string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+
+            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+            string encryptedValue = null;
+
             lock (App.Config.LocalDatabase)
             {
-                return App.Config.LocalDatabase.Get(key);
+                encryptedValue = App.Config.LocalDatabase.Get(encryptedKey);
             }
+
+            return App.Config.LocalEncryption.DecryptValue(encryptedValue);
         }
 
         private bool DBContainsKey(string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+
+            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+
             lock (App.Config.LocalDatabase)
             {
-                return App.Config.LocalDatabase.ContainsKey(key);
+                return App.Config.LocalDatabase.ContainsKey(encryptedKey);
             }
         }
 
         private void DBDelete(string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+
+            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+
             lock (App.Config.LocalDatabase)
             {
-                App.Config.LocalDatabase.Delete(key);
+                App.Config.LocalDatabase.Delete(encryptedKey);
             }
         }
 

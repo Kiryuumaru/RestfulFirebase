@@ -122,6 +122,142 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
+        /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            string[] properties = Utils.DeserializeString(serialized);
+
+            if (properties == null)
+            {
+                return;
+            }
+
+            foreach (string data in properties)
+            {
+                string[] property = Utils.DeserializeString(data);
+                if (property.Length != 4)
+                {
+                    continue;
+                }
+                string key = property[0];
+                string name = property[1];
+                string group = property[2];
+                string value = property[3];
+                try
+                {
+                    bool hasChanges = false;
+                    NamedProperty namedProperty = GetCore(key, name);
+
+                    if (namedProperty == null)
+                    {
+                        namedProperty = NamedPropertyFactory(key, name, group);
+                        if (namedProperty != null)
+                        {
+                            WireNamedProperty(namedProperty);
+                            AddCore(namedProperty);
+                            ((FirebaseProperty)namedProperty.Property).LoadFromSerializedValue(value);
+                            hasChanges = true;
+                        }
+                    }
+                    else
+                    {
+                        namedProperty.Property.SyncOperation.SetContext(this);
+
+                        if (namedProperty.Key != key)
+                        {
+                            namedProperty.Key = key;
+                            hasChanges = true;
+                        }
+
+                        if (namedProperty.PropertyName != name)
+                        {
+                            namedProperty.PropertyName = name;
+                            hasChanges = true;
+                        }
+
+                        if (namedProperty.Group != group)
+                        {
+                            namedProperty.Group = group;
+                            hasChanges = true;
+                        }
+
+                        var hasSetChanges = false;
+
+                        if (namedProperty.Property.SetValue(value))
+                        {
+                            hasSetChanges = true;
+                            hasChanges = true;
+                        }
+
+                        if (!hasSetChanges && hasChanges)
+                        {
+                            OnPropertyChanged(namedProperty.Key, namedProperty.PropertyName, namedProperty.Group);
+                        }
+                    }
+
+                }
+                catch { }
+            }
+        }
+
+        /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized, int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            var decrypted = Utils.DecryptString(serialized, encryptionPattern);
+            LoadFromSerializedValue(decrypted);
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            List<string> properties = new List<string>();
+            foreach (NamedProperty namedProperty in GetRawProperties())
+            {
+                string data = Utils.SerializeString(
+                    namedProperty.Key,
+                    namedProperty.PropertyName,
+                    namedProperty.Group,
+                    ((FirebaseProperty)namedProperty.Property).GenerateSerializedValue());
+                properties.Add(data);
+            }
+
+            return Utils.SerializeString(properties.ToArray());
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue(int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            string serialized = GenerateSerializedValue();
+            if (serialized != null)
+            {
+                return Utils.EncryptString(serialized, encryptionPattern);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// Sets a firebase property value with the provided firebase <paramref name="key"/>.
         /// </summary>

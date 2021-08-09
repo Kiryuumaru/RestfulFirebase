@@ -10,13 +10,18 @@ namespace RestfulFirebase.Exceptions
     public abstract class StorageException : Exception
     {
         private protected StorageException()
-            : this(null)
         {
 
         }
 
         private protected StorageException(Exception innerException)
             : base("A storage error occured.", innerException)
+        {
+
+        }
+
+        private protected StorageException(string message)
+            : base(message)
         {
 
         }

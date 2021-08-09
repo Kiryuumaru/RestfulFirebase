@@ -10,13 +10,18 @@ namespace RestfulFirebase.Exceptions
     public abstract class DatabaseException : Exception
     {
         private protected DatabaseException()
-            : this(null)
         {
 
         }
 
         private protected DatabaseException(Exception innerException)
             : base("A realtime database error occured.", innerException)
+        {
+
+        }
+
+        private protected DatabaseException(string message)
+            : base(message)
         {
 
         }

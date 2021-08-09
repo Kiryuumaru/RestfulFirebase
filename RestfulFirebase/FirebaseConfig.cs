@@ -23,6 +23,7 @@ namespace RestfulFirebase
         public FirebaseConfig()
         {
             LocalDatabase = new DefaultLocalDatabase();
+            LocalEncryption = new DefaultLocalEncryption();
             HttpClientFactory = new DefaultHttpClientFactory();
             HttpStreamFactory = new DefaultHttpStreamFactory();
             AuthRequestTimeout = TimeSpan.FromSeconds(30);
@@ -87,6 +88,11 @@ namespace RestfulFirebase
         /// Gets or sets the <see cref="ILocalDatabase"/> used for app persistency and offline database.
         /// </summary>
         public ILocalDatabase LocalDatabase { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ILocalEncryption"/> used for local database security.
+        /// </summary>
+        public ILocalEncryption LocalEncryption { get; set; }
 
         /// <summary>
         /// Specify if token returned by factory will be used as "auth" url parameter or "access_token". 

@@ -166,6 +166,7 @@ namespace RestTest
 
             Console.WriteLine("FIN");
 
+            //TestSerializers();
             //TestObservableObject();
             //TestRealtimeWire();
             //TestRealtimeWire2();
@@ -179,7 +180,7 @@ namespace RestTest
             //TestPropertyDictionarySub();
             //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
-            //TestObjectDictionaryPut();
+            TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
@@ -190,6 +191,39 @@ namespace RestTest
             //TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
             //await TestCascadeObjectSetNull();
+
+            while (true)
+            {
+                Console.ReadLine();
+            }
+        }
+
+        public static void TestSerializers()
+        {
+            var dict = new FirebaseDictionary<FirebaseProperty>();
+            dict.CollectionChanged += (s, e) =>
+            {
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+            while (true)
+            {
+                string line = Console.ReadLine();
+                if (line == "end")
+                {
+                    break;
+                }
+                var prop = new FirebaseProperty();
+                prop.SetValue(line);
+                dict.Add(UIDFactory.GenerateUID(5), prop);
+            }
+
+            var serialized = dict.GenerateSerializedValue();
+            var dictFromS = new FirebaseDictionary<FirebaseProperty>();
+            dictFromS.LoadFromSerializedValue(serialized);
+
+            var encrypted = dict.GenerateSerializedValue(new int[] { 1, 4, 2, 3 });
+            var dictFromE = new FirebaseDictionary<FirebaseProperty>();
+            dictFromS.LoadFromSerializedValue(encrypted, new int[] { 1, 4, 2, 3 });
 
             while (true)
             {

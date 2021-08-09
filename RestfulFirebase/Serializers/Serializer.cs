@@ -10,92 +10,6 @@ using System.Text;
 
 namespace RestfulFirebase.Serializers
 {
-    #region SerializerProxy
-
-    /// <summary>
-    /// Provides implementation holder for serializer and deserializer.
-    /// </summary>
-    public class SerializerHolder
-    {
-        private readonly Func<object, string> serialize;
-        private readonly Func<string, object, object> deserialize;
-
-        internal SerializerHolder(Func<object, string> serialize, Func<string, object, object> deserialize)
-        {
-            this.serialize = serialize;
-            this.deserialize = deserialize;
-        }
-
-        /// <summary>
-        /// Object serializer implementation proxy.
-        /// </summary>
-        /// <param name="value">
-        /// The value to serialize.
-        /// </param>
-        /// <returns>
-        /// The serialized data.
-        /// </returns>
-        public string Serialize(object value) => serialize(value);
-
-        /// <summary>
-        /// Data deserializer implementation proxy.
-        /// </summary>
-        /// <param name="data">
-        /// Data to deserialized
-        /// </param>
-        /// <param name="defaultValue">
-        /// The default value returned if deserialize throws an exception.
-        /// </param>
-        /// <returns>
-        /// The deserialized value.
-        /// </returns>
-        public object Deserialize(string data, object defaultValue = default) => deserialize(data, defaultValue);
-    }
-
-    /// <summary>
-    /// Provides implementation holder for serializer and deserializer.
-    /// </summary>
-    /// <typeparam name="T">
-    /// The underlying type of the value to serialize and deserialize.
-    /// </typeparam>
-    public class SerializerHolder<T> : SerializerHolder
-    {
-        internal SerializerHolder(Func<T, string> serialize, Func<string, T, T> deserialize)
-            : base(
-                  new Func<object, string>(obj => serialize((T)obj)),
-                  new Func<string, object, object>((data, defaultValue) => deserialize(data, (T)defaultValue)))
-        {
-
-        }
-
-        /// <summary>
-        /// Object serializer implementation proxy.
-        /// </summary>
-        /// <param name="value">
-        /// The value to serialize.
-        /// </param>
-        /// <returns>
-        /// The serialized data.
-        /// </returns>
-        public string Serialize(T value) => base.Serialize(value);
-
-        /// <summary>
-        /// Data deserializer implementation proxy.
-        /// </summary>
-        /// <param name="data">
-        /// Data to deserialized
-        /// </param>
-        /// <param name="defaultValue">
-        /// The default value returned if deserialize throws an exception.
-        /// </param>
-        /// <returns>
-        /// The deserialized value.
-        /// </returns>
-        public T Deserialize(string data, T defaultValue = default) => (T)base.Deserialize(data, defaultValue);
-    }
-
-    #endregion
-
     /// <summary>
     /// Provides implementation for value serializer and deserializer.
     /// </summary>
@@ -133,7 +47,7 @@ namespace RestfulFirebase.Serializers
         /// <exception cref="SerializerNotSupportedException">
         /// Throws if serializer is not supported.
         /// </exception>
-        public static SerializerHolder GetSerializer(Type type)
+        public static SerializerProxy GetSerializer(Type type)
         {
             if (type.IsArray)
             {
@@ -142,7 +56,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == arrayType)
                     {
-                        return new SerializerHolder(
+                        return new SerializerProxy(
                             values => conv.SerializeEnumerableObject(values),
                             (data, defaultValue) =>
                             {
@@ -165,7 +79,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == genericType)
                     {
-                        return new SerializerHolder(
+                        return new SerializerProxy(
                             values => conv.SerializeEnumerableObject(values),
                             (data, defaultValue) =>
                             {
@@ -188,7 +102,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == nullableType)
                     {
-                        return new SerializerHolder(
+                        return new SerializerProxy(
                             value => conv.SerializeNullableObject(value),
                             (data, defaultValue) =>
                             {
@@ -210,7 +124,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == type)
                     {
-                        return new SerializerHolder(
+                        return new SerializerProxy(
                             conv.SerializeObject,
                             (data, defaultValue) =>
                             {
@@ -241,7 +155,7 @@ namespace RestfulFirebase.Serializers
         /// <exception cref="SerializerNotSupportedException">
         /// Throws if serializer is not supported.
         /// </exception>
-        public static SerializerHolder<T> GetSerializer<T>()
+        public static SerializerProxy<T> GetSerializer<T>()
         {
             var type = typeof(T);
             if (type.IsArray)
@@ -251,7 +165,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == arrayType)
                     {
-                        return new SerializerHolder<T>(
+                        return new SerializerProxy<T>(
                             values => conv.SerializeEnumerableObject(values),
                             (data, defaultValue) =>
                             {
@@ -274,7 +188,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == genericType)
                     {
-                        return new SerializerHolder<T>(
+                        return new SerializerProxy<T>(
                             values => conv.SerializeEnumerableObject(values),
                             (data, defaultValue) =>
                             {
@@ -297,7 +211,7 @@ namespace RestfulFirebase.Serializers
                 {
                     if (conv.Type == nullableType)
                     {
-                        return new SerializerHolder<T>(
+                        return new SerializerProxy<T>(
                             value => conv.SerializeNullableObject(value),
                             (data, defaultValue) =>
                             {
@@ -320,7 +234,7 @@ namespace RestfulFirebase.Serializers
                     if (conv.Type == type)
                     {
                         var derivedConv = (Serializer<T>)conv;
-                        return new SerializerHolder<T>(
+                        return new SerializerProxy<T>(
                             derivedConv.Serialize,
                             (data, defaultValue) =>
                             {

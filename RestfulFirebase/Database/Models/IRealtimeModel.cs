@@ -14,7 +14,7 @@ namespace RestfulFirebase.Database.Models
     /// <summary>
     /// Provides realtime observable model for <see cref="RestfulFirebase.Database.Realtime.RealtimeInstance"/>
     /// </summary>
-    public interface IRealtimeModel : IObservable
+    public interface IRealtimeModel : IObservable, ISerializableObject
     {
         /// <summary>
         /// Gets the <see cref="RestfulFirebase.Database.Realtime.RealtimeInstance"/> the model uses.

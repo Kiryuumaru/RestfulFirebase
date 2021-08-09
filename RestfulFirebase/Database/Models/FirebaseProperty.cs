@@ -118,6 +118,84 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (GetObject() is IRealtimeModel model)
+            {
+                model.LoadFromSerializedValue(serialized);
+            }
+            else
+            {
+                if (SetObject(serialized))
+                {
+                    if (HasAttachedRealtime)
+                    {
+                        RealtimeInstance.SetBlob(serialized);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized, int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            var decrypted = Utils.DecryptString(serialized, encryptionPattern);
+            LoadFromSerializedValue(decrypted);
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            object obj = GetObject();
+            if (obj is IRealtimeModel model)
+            {
+                return model.GenerateSerializedValue();
+            }
+            else if (obj is string value)
+            {
+                return value;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue(int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            string serialized = GenerateSerializedValue();
+            if (serialized != null)
+            {
+                return Utils.EncryptString(serialized, encryptionPattern);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <inheritdoc/>
         /// <exception cref="SerializerNotSupportedException">
         /// Occurs when the object has no supported serializer.
         /// </exception>

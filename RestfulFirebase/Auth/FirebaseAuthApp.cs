@@ -20,13 +20,11 @@ namespace RestfulFirebase.Auth
     /// <summary>
     /// App module that provides firebase authentication implementations.
     /// </summary>
-    public class FirebaseAuthApp : SyncContext
+    public class FirebaseAuthApp : SyncContext, IAppModule
     {
         #region Properties
 
-        /// <summary>
-        /// Gets the underlying <see cref="RestfulFirebaseApp"/> the module uses.
-        /// </summary>
+        /// <inheritdoc/>
         public RestfulFirebaseApp App { get; private set; }
 
         /// <summary>

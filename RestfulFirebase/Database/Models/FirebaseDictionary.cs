@@ -130,6 +130,84 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeDetached(args);
         }
 
+        /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            Dictionary<string, string> values = Utils.BlobConvert(serialized);
+
+            if (values == null)
+            {
+                return;
+            }
+
+            foreach (KeyValuePair<string, string> data in values)
+            {
+                if (TryGetValueCore(data.Key, out T value))
+                {
+                    value.LoadFromSerializedValue(data.Value);
+                }
+                else
+                {
+                    value = ObjectFactory(data.Key);
+                    value.LoadFromSerializedValue(data.Value);
+                    Add(data.Key, value);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public void LoadFromSerializedValue(string serialized, int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            var decrypted = Utils.DecryptString(serialized, encryptionPattern);
+            LoadFromSerializedValue(decrypted);
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            Dictionary<string, string> values = new Dictionary<string, string>();
+            foreach (KeyValuePair<string, T> value in this)
+            {
+                values.Add(value.Key, value.Value.GenerateSerializedValue());
+            }
+
+            return Utils.BlobConvert(values);
+        }
+
+        /// <inheritdoc/>
+        public string GenerateSerializedValue(int[] encryptionPattern)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            string serialized = GenerateSerializedValue();
+            if (serialized != null)
+            {
+                return Utils.EncryptString(serialized, encryptionPattern);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         /// <summary>
         /// Factory used for creating the item object.
         /// </summary>

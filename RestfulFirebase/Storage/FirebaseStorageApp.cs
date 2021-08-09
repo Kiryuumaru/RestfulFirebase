@@ -10,13 +10,11 @@ namespace RestfulFirebase.Storage
     /// <summary>
     /// App module that provides firebase storage implementations
     /// </summary>
-    public class FirebaseStorageApp : Disposable
+    public class FirebaseStorageApp : Disposable, IAppModule
     {
         #region Properties
 
-        /// <summary>
-        /// Gets the <see cref="RestfulFirebaseApp"/> the module uses.
-        /// </summary>
+        /// <inheritdoc/>
         public RestfulFirebaseApp App { get; }
 
         #endregion

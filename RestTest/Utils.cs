@@ -245,6 +245,58 @@ namespace RestTest
 
         #endregion
 
+        #region EncryptString
+
+        internal static string EncryptString(string value, int[] pattern)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            int patternIndex = 0;
+            string result = "";
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (char.MaxValue < (char)(value[i] + pattern[patternIndex]))
+                {
+                    result += char.MaxValue - (char)(value[i] + pattern[patternIndex]);
+                }
+                else
+                {
+                    result += (char)(value[i] + pattern[patternIndex]);
+                }
+                patternIndex = (patternIndex + 1) >= pattern.Length ? 0 : patternIndex + 1;
+            }
+            return result;
+        }
+
+        internal static string DecryptString(string encrypted, int[] pattern)
+        {
+            if (encrypted == null)
+            {
+                return null;
+            }
+
+            int patternIndex = 0;
+            string result = "";
+            for (int i = 0; i < encrypted.Length; i++)
+            {
+                if (char.MinValue > (char)(encrypted[i] - pattern[patternIndex]))
+                {
+                    result += char.MaxValue - (char)(encrypted[i] - pattern[patternIndex]);
+                }
+                else
+                {
+                    result += (char)(encrypted[i] - pattern[patternIndex]);
+                }
+                patternIndex = (patternIndex + 1) >= pattern.Length ? 0 : patternIndex + 1;
+            }
+            return result;
+        }
+
+        #endregion
+
         #region Math
 
         internal static uint[] ToUnsignedArbitraryBaseSystem(ulong number, uint baseSystem)

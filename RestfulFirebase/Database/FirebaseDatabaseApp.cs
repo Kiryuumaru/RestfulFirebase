@@ -15,13 +15,11 @@ namespace RestfulFirebase.Database
     /// <summary>
     /// App module that provides firebase realtime database implementations.
     /// </summary>
-    public class FirebaseDatabaseApp : Disposable
+    public class FirebaseDatabaseApp : Disposable, IAppModule
     {
         #region Properties
 
-        /// <summary>
-        /// Gets the underlying <see cref="RestfulFirebaseApp"/> the module uses.
-        /// </summary>
+        /// <inheritdoc/>
         public RestfulFirebaseApp App { get; private set; }
 
         /// <summary>
