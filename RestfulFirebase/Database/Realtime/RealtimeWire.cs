@@ -100,32 +100,19 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
         /// </summary>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public async Task WaitForFirstStream()
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            while (!HasFirstStream)
-            {
-                await Task.Delay(500).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
         /// <param name="cancelOnError">
         /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
         /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task<bool> WaitForFirstStream(bool cancelOnError)
+        public async Task<bool> WaitForFirstStream(bool cancelOnError = false, TimeSpan? timeout = null, CancellationToken? cancellationToken = null)
         {
             if (IsDisposed)
             {
@@ -141,42 +128,33 @@ namespace RestfulFirebase.Database.Realtime
             {
                 Error += RealtimeInstance_Error;
             }
-            while (!HasFirstStream && !cancel)
+            async Task<bool> waitTask()
             {
-                await Task.Delay(500).ConfigureAwait(false);
+                while (!HasFirstStream && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
+                {
+                    try
+                    {
+                        if (cancellationToken.HasValue)
+                        {
+                            await Task.Delay(500, cancellationToken.Value).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            await Task.Delay(500).ConfigureAwait(false);
+                        }
+                    }
+                    catch { }
+                }
+                return HasFirstStream;
             }
+            bool result = timeout.HasValue
+                ? await Task.Run(waitTask).WithTimeout(timeout.Value, false).ConfigureAwait(false)
+                : await Task.Run(waitTask).ConfigureAwait(false);
             if (cancelOnError)
             {
                 Error -= RealtimeInstance_Error;
             }
-            return HasFirstStream && !cancel;
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public async Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
-        {
-            if (IsDisposed)
-            {
-                return false;
-            }
-
-            while (!HasFirstStream && !cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-                }
-                catch { }
-            }
-            return HasFirstStream && !cancellationToken.IsCancellationRequested;
+            return result;
         }
 
         /// <summary>
@@ -185,41 +163,40 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="cancelOnError">
         /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
         /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForFirstStream(bool cancelOnError)
+        {
+            return WaitForFirstStream(cancelOnError: cancelOnError);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        /// </summary>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForFirstStream(TimeSpan timeout)
+        {
+            return WaitForFirstStream(timeout: timeout);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        /// </summary>
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
         /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task<bool> WaitForFirstStream(bool cancelOnError, CancellationToken cancellationToken)
+        public Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
         {
-            if (IsDisposed)
-            {
-                return false;
-            }
-
-            bool cancel = false;
-            void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
-            {
-                cancel = true;
-            }
-            if (cancelOnError)
-            {
-                Error += RealtimeInstance_Error;
-            }
-            while (!HasFirstStream && !cancel && !cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
-                }
-                catch { }
-            }
-            if (cancelOnError)
-            {
-                Error -= RealtimeInstance_Error;
-            }
-            return HasFirstStream && !cancel && !cancellationToken.IsCancellationRequested;
+            return WaitForFirstStream(cancellationToken: cancellationToken);
         }
 
         /// <inheritdoc/>
