@@ -220,10 +220,46 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            await Task.Run(async delegate
+            while (!IsSynced)
             {
-                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
-            }).ConfigureAwait(false);
+                await Task.Delay(500).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public async Task<bool> WaitForSynced(bool cancelOnError)
+        {
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            bool cancel = false;
+            void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+            {
+                cancel = true;
+            }
+            if (cancelOnError)
+            {
+                Error += RealtimeInstance_Error;
+            }
+            while (!IsSynced && !cancel)
+            {
+                await Task.Delay(500).ConfigureAwait(false);
+            }
+            if (cancelOnError)
+            {
+                Error -= RealtimeInstance_Error;
+            }
+            return IsSynced && !cancel;
         }
 
         /// <summary>
@@ -235,40 +271,65 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task WaitForSynced(CancellationToken cancellationToken)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            await Task.Run(async delegate
-            {
-                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
-            }, cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public async Task<bool> WaitForSynced(TimeSpan timeout)
+        public async Task<bool> WaitForSynced(CancellationToken cancellationToken)
         {
             if (IsDisposed)
             {
                 return false;
             }
 
-            return await Task.Run(async delegate
+            while (!IsSynced && !cancellationToken.IsCancellationRequested)
             {
-                while (!IsSynced) { await Task.Delay(500).ConfigureAwait(false); }
-                return true;
-            }).WithTimeout(timeout, false).ConfigureAwait(false);
+                try
+                {
+                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                }
+                catch { }
+            }
+            return IsSynced && !cancellationToken.IsCancellationRequested;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public async Task<bool> WaitForSynced(bool cancelOnError, CancellationToken cancellationToken)
+        {
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            bool cancel = false;
+            void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+            {
+                cancel = true;
+            }
+            if (cancelOnError)
+            {
+                Error += RealtimeInstance_Error;
+            }
+            while (!IsSynced && !cancel && !cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                }
+                catch { }
+            }
+            if (cancelOnError)
+            {
+                Error -= RealtimeInstance_Error;
+            }
+            return IsSynced && !cancel && !cancellationToken.IsCancellationRequested;
         }
 
         /// <summary>
