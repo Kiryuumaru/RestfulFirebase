@@ -11,7 +11,7 @@ namespace RestfulFirebase.Local
     /// </summary>
     public sealed class StockLocalDatabase : ILocalDatabase
     {
-        private static Dictionary<string, string> db = new Dictionary<string, string>();
+        private static volatile ConcurrentDictionary<string, string> db = new ConcurrentDictionary<string, string>();
 
         /// <summary>
         /// Creates new instance of <see cref="StockLocalDatabase"/> class.
@@ -24,55 +24,35 @@ namespace RestfulFirebase.Local
         /// <inheritdoc/>
         public bool ContainsKey(string key)
         {
-            lock (db)
-            {
-                return db.ContainsKey(key);
-            }
+            return db.ContainsKey(key);
         }
 
         /// <inheritdoc/>
         public string Get(string key)
         {
-            lock (db)
+            if (!db.TryGetValue(key, out string value))
             {
-                try
-                {
-                    if (!db.ContainsKey(key)) return null;
-                    return db[key];
-                }
-                catch
-                {
-                    return null;
-                }
+                return null;
             }
+            return value;
         }
 
         /// <inheritdoc/>
         public void Set(string key, string value)
         {
-            lock (db)
-            {
-                if (db.ContainsKey(key)) db[key] = value;
-                else db.Add(key, value);
-            }
+            db.AddOrUpdate(key, value, delegate { return value; });
         }
 
         /// <inheritdoc/>
         public void Delete(string key)
         {
-            lock (db)
-            {
-                db.Remove(key);
-            }
+            db.TryRemove(key, out _);
         }
 
         /// <inheritdoc/>
         public void Clear()
         {
-            lock (db)
-            {
-                db.Clear();
-            }
+            db.Clear();
         }
     }
 }
