@@ -24,20 +24,26 @@ namespace RestfulFirebase.Local
         /// <inheritdoc/>
         public bool ContainsKey(string key)
         {
-            return db.ContainsKey(key);
+            lock (db)
+            {
+                return db.ContainsKey(key);
+            }
         }
 
         /// <inheritdoc/>
         public string Get(string key)
         {
-            try
+            lock (db)
             {
-                if (!db.ContainsKey(key)) return null;
-                return db[key];
-            }
-            catch
-            {
-                return null;
+                try
+                {
+                    if (!db.ContainsKey(key)) return null;
+                    return db[key];
+                }
+                catch
+                {
+                    return null;
+                }
             }
         }
 

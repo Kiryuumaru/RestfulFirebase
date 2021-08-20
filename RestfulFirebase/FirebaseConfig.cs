@@ -85,9 +85,14 @@ namespace RestfulFirebase
         public TimeSpan StorageRequestTimeout { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ILocalDatabase"/> used for app persistency and offline database.
+        /// Gets or sets the <see cref="ILocalDatabase"/> used for auth persistency and offline database.
         /// </summary>
         public ILocalDatabase LocalDatabase { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ILocalDatabase"/> to optionally separate the auth persistency storage from the <see cref="LocalDatabase"/>.
+        /// </summary>
+        public ILocalDatabase CustomAuthLocalDatabase { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ILocalEncryption"/> used for local database security.

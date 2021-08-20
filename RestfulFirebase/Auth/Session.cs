@@ -31,8 +31,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FirebaseToken
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "tok"));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "tok"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "tok"), true);
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "tok"), value, true);
         }
 
         /// <summary>
@@ -40,8 +40,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string RefreshToken
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "ref"));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ref"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "ref"), true);
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ref"), value, true);
         }
 
         /// <summary>
@@ -49,8 +49,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public int ExpiresIn
         {
-            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "exp")));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "exp"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "exp"), true));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "exp"), Serializer.Serialize(value), true);
         }
 
         /// <summary>
@@ -58,8 +58,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public DateTime Created
         {
-            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "ctd")));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ctd"), Serializer.Serialize(value));
+            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "ctd"), true));
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ctd"), Serializer.Serialize(value), true);
         }
 
         /// <summary>
@@ -67,8 +67,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string LocalId
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lid"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lid"), value, true);
         }
 
         /// <summary>
@@ -76,8 +76,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FederatedId
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fid")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fid"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fid"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fid"), value, true);
         }
 
         /// <summary>
@@ -85,8 +85,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string FirstName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fname"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fname"), value, true);
         }
 
         /// <summary>
@@ -94,8 +94,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string LastName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lname"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lname"), value, true);
         }
 
         /// <summary>
@@ -103,8 +103,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string DisplayName
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "dname")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "dname"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "dname"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "dname"), value, true);
         }
 
         /// <summary>
@@ -112,8 +112,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string Email
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "email")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "email"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "email"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "email"), value, true);
         }
 
         /// <summary>
@@ -121,8 +121,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public bool IsEmailVerified
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "vmail")) == "1";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "vmail"), value ? "1" : "0");
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "vmail"), true) == "1";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "vmail"), value ? "1" : "0", true);
         }
 
         /// <summary>
@@ -130,8 +130,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string PhotoUrl
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "purl")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "purl"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "purl"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "purl"), value, true);
         }
 
         /// <summary>
@@ -139,8 +139,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public string PhoneNumber
         {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "pnum")) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "pnum"), value);
+            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "pnum"), true) ?? "";
+            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "pnum"), value, true);
         }
 
         /// <summary>
@@ -812,20 +812,20 @@ namespace RestfulFirebase.Auth
 
         internal void Purge()
         {
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ctd"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "exp"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ref"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "tok"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ctd"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "exp"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ref"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "tok"), true);
 
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lid"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fid"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "dname"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "email"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "vmail"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "purl"));
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "pnum"));
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lid"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fid"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fname"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lname"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "dname"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "email"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "vmail"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "purl"), true);
+            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "pnum"), true);
         }
 
         #endregion
