@@ -29,119 +29,67 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets the firebase token of the authenticated account which can be used for authenticated queries. 
         /// </summary>
-        public string FirebaseToken
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "tok"), true);
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "tok"), value, true);
-        }
+        public string FirebaseToken { get; private set; }
 
         /// <summary>
         /// Gets the refresh token of the underlying service which can be used to get a new access token. 
         /// </summary>
-        public string RefreshToken
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "ref"), true);
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ref"), value, true);
-        }
+        public string RefreshToken { get; private set; }
 
         /// <summary>
         /// Gets the number of seconds since the token is created.
         /// </summary>
-        public int ExpiresIn
-        {
-            get => Serializer.Deserialize<int>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "exp"), true));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "exp"), Serializer.Serialize(value), true);
-        }
+        public int ExpiresIn { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="DateTime"/> when this token was created.
         /// </summary>
-        public DateTime Created
-        {
-            get => Serializer.Deserialize<DateTime>(App.LocalDatabase.Get(Utils.UrlCombine(Root, "ctd"), true));
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "ctd"), Serializer.Serialize(value), true);
-        }
+        public DateTime Created { get; private set; }
 
         /// <summary>
         /// Gets the local id or the <c>UID</c> of the account.
         /// </summary>
-        public string LocalId
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lid"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lid"), value, true);
-        }
+        public string LocalId { get; private set; }
 
         /// <summary>
         /// Gets the federated id of the account.
         /// </summary>
-        public string FederatedId
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fid"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fid"), value, true);
-        }
+        public string FederatedId { get; private set; }
 
         /// <summary>
         /// Gets the first name of the user.
         /// </summary>
-        public string FirstName
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "fname"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "fname"), value, true);
-        }
+        public string FirstName { get; private set; }
 
         /// <summary>
         /// Gets the last name of the user.
         /// </summary>
-        public string LastName
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "lname"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "lname"), value, true);
-        }
+        public string LastName { get; private set; }
 
         /// <summary>
         /// Gets the display name of the user.
         /// </summary>
-        public string DisplayName
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "dname"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "dname"), value, true);
-        }
+        public string DisplayName { get; private set; }
 
         /// <summary>
         /// Gets the email of the user.
         /// </summary>
-        public string Email
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "email"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "email"), value, true);
-        }
+        public string Email { get; private set; }
 
         /// <summary>
         /// Gets the email verfication status of the account.
         /// </summary>
-        public bool IsEmailVerified
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "vmail"), true) == "1";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "vmail"), value ? "1" : "0", true);
-        }
+        public bool IsEmailVerified { get; private set; }
 
         /// <summary>
         /// Gets or sets the photo url of the account.
         /// </summary>
-        public string PhotoUrl
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "purl"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "purl"), value, true);
-        }
+        public string PhotoUrl { get; private set; }
 
         /// <summary>
         /// Gets or sets the phone number of the user.
         /// </summary>
-        public string PhoneNumber
-        {
-            get => App.LocalDatabase.Get(Utils.UrlCombine(Root, "pnum"), true) ?? "";
-            private set => App.LocalDatabase.Set(Utils.UrlCombine(Root, "pnum"), value, true);
-        }
+        public string PhoneNumber { get; private set; }
 
         /// <summary>
         /// Gets whether this session exists.
@@ -161,6 +109,8 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public event EventHandler AuthRefreshed;
 
+        internal bool IsInitialized { get; private set; }
+
         #endregion
 
         #region Initializers
@@ -172,6 +122,15 @@ namespace RestfulFirebase.Auth
             App = app;
         }
 
+        internal async Task Initialize()
+        {
+            if (IsInitialized)
+            {
+                return;
+            }
+            IsInitialized = true;
+            await Fetch().ConfigureAwait(false);
+        }
 
         #endregion
 
@@ -625,7 +584,7 @@ namespace RestfulFirebase.Auth
                         FirebaseToken = refreshAuth.AccessToken
                     };
 
-                    UpdateAuth(auth);
+                    await UpdateAuth(auth);
 
                     OnAuthRefreshed();
                 }
@@ -746,7 +705,7 @@ namespace RestfulFirebase.Auth
 
             var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
 
-            UpdateAuth(auth);
+            await UpdateAuth(auth).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -757,12 +716,9 @@ namespace RestfulFirebase.Auth
         /// </returns>
         public async Task Signout()
         {
-            await Task.Run(delegate
-            {
-                Purge();
-                App.Database.Flush();
-                App.Auth.InvokeAuthenticationEvents();
-            });
+            await Purge().ConfigureAwait(false);
+            await App.Database.Flush().ConfigureAwait(false);
+            App.Auth.InvokeAuthenticationEvents();
         }
 
         /// <summary>
@@ -788,16 +744,16 @@ namespace RestfulFirebase.Auth
             });
         }
 
-        internal void UpdateAuth(FirebaseAuth auth)
+        internal async Task UpdateAuth(FirebaseAuth auth)
         {
             if (!string.IsNullOrEmpty(auth.FirebaseToken)) FirebaseToken = auth.FirebaseToken;
             if (!string.IsNullOrEmpty(auth.RefreshToken)) RefreshToken = auth.RefreshToken;
             if (auth.ExpiresIn.HasValue) ExpiresIn = auth.ExpiresIn.Value;
             if (auth.Created.HasValue) Created = auth.Created.Value;
-            if (auth.User != null) UpdateUserInfo(auth.User);
+            if (auth.User != null) await UpdateUserInfo(auth.User).ConfigureAwait(false);
         }
 
-        internal void UpdateUserInfo(User user)
+        internal async Task UpdateUserInfo(User user)
         {
             LocalId = user.LocalId;
             FederatedId = user.FederatedId;
@@ -808,24 +764,66 @@ namespace RestfulFirebase.Auth
             IsEmailVerified = user.IsEmailVerified;
             PhotoUrl = user.PhoneNumber;
             PhoneNumber = user.PhoneNumber;
+            await Store().ConfigureAwait(false);
         }
 
-        internal void Purge()
+        internal async Task Purge()
         {
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ctd"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "exp"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "ref"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "tok"), true);
+            FirebaseToken = default;
+            RefreshToken = default;
+            ExpiresIn = default;
+            Created = default;
+            LocalId = default;
+            FederatedId = default;
+            FirstName = default;
+            LastName = default;
+            DisplayName = default;
+            Email = default;
+            IsEmailVerified = default;
+            PhotoUrl = default;
+            PhoneNumber = default;
 
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lid"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fid"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "fname"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "lname"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "dname"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "email"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "vmail"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "purl"), true);
-            App.LocalDatabase.Delete(Utils.UrlCombine(Root, "pnum"), true);
+            await App.LocalDatabase.Delete(Root, true).ConfigureAwait(false);
+        }
+
+        internal async Task Fetch()
+        {
+            var auth = await App.LocalDatabase.Get(Root, true).ConfigureAwait(false);
+
+            FirebaseToken = Utils.BlobGetValue(auth, "tok");
+            RefreshToken = Utils.BlobGetValue(auth, "ref");
+            ExpiresIn = Serializer.Deserialize<int>(Utils.BlobGetValue(auth, "exp"));
+            Created = Serializer.Deserialize<DateTime>(Utils.BlobGetValue(auth, "ctd"));
+            LocalId = Utils.BlobGetValue(auth, "lid");
+            FederatedId = Utils.BlobGetValue(auth, "fid");
+            FirstName = Utils.BlobGetValue(auth, "fname");
+            LastName = Utils.BlobGetValue(auth, "lname");
+            DisplayName = Utils.BlobGetValue(auth, "dname");
+            Email = Utils.BlobGetValue(auth, "email");
+            IsEmailVerified = Serializer.Deserialize<bool>(Utils.BlobGetValue(auth, "vmail"));
+            PhotoUrl = Utils.BlobGetValue(auth, "purl");
+            PhoneNumber = Utils.BlobGetValue(auth, "pnum");
+        }
+
+        internal async Task Store()
+        {
+            var auth = "";
+
+            auth = Utils.BlobSetValue(auth, "tok", FirebaseToken);
+            auth = Utils.BlobSetValue(auth, "ref", RefreshToken);
+            auth = Utils.BlobSetValue(auth, "exp", Serializer.Serialize(ExpiresIn));
+            auth = Utils.BlobSetValue(auth, "ctd", Serializer.Serialize(Created));
+            auth = Utils.BlobSetValue(auth, "lid", LocalId);
+            auth = Utils.BlobSetValue(auth, "fid", FederatedId);
+            auth = Utils.BlobSetValue(auth, "fname", FirstName);
+            auth = Utils.BlobSetValue(auth, "lname", LastName);
+            auth = Utils.BlobSetValue(auth, "dname", DisplayName);
+            auth = Utils.BlobSetValue(auth, "email", Email);
+            auth = Utils.BlobSetValue(auth, "vmail", Serializer.Serialize(IsEmailVerified));
+            auth = Utils.BlobSetValue(auth, "purl", PhotoUrl);
+            auth = Utils.BlobSetValue(auth, "pnum", PhoneNumber);
+
+            await App.LocalDatabase.Set(Root, auth, true).ConfigureAwait(false);
         }
 
         #endregion

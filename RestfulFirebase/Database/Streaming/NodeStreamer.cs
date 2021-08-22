@@ -111,7 +111,7 @@ namespace RestfulFirebase.Database.Streaming
                         statusCode = response.StatusCode;
                         response.EnsureSuccessStatusCode();
 
-                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        using (var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
                         using (var reader = new NonBlockingStreamReader(stream))
                         {
                             try

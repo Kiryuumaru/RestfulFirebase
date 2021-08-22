@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Models
@@ -36,6 +37,9 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public event EventHandler<WireExceptionEventArgs> WireError;
 
+        private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim dataChangesLock = new SemaphoreSlim(1, 1);
+
         #endregion
 
         #region Initializers
@@ -53,22 +57,24 @@ namespace RestfulFirebase.Database.Models
         #region Methods
 
         /// <inheritdoc/>
-        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            lock (this)
+            try
             {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
                 Subscribe(realtimeInstance);
 
                 InitializeProperties();
 
                 IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
                 List<string> supPaths = new List<string>();
-                foreach (var path in RealtimeInstance.GetSubPaths())
+                foreach (var path in await RealtimeInstance.GetSubPaths().ConfigureAwait(false))
                 {
                     var separatedPath = Utils.UrlSeparate(path);
                     var key = separatedPath[0];
@@ -94,6 +100,14 @@ namespace RestfulFirebase.Database.Models
                     RealtimeInstance.Child(path).SubModel((FirebaseProperty)namedProperty.Property);
                     AddCore(namedProperty);
                 }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                attachLock.Release();
             }
 
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
@@ -564,7 +578,7 @@ namespace RestfulFirebase.Database.Models
             RealtimeInstance = null;
         }
 
-        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private async void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {
@@ -575,10 +589,12 @@ namespace RestfulFirebase.Database.Models
             {
                 var separated = Utils.UrlSeparate(e.Path);
                 var key = separated[0];
-                lock (this)
+
+                try
                 {
+                    await attachLock.WaitAsync().ConfigureAwait(false);
                     NamedProperty namedProperty = GetCore(key, null);
-                    if (namedProperty == null && RealtimeInstance.HasChild(key))
+                    if (namedProperty == null && await RealtimeInstance.HasChild(key).ConfigureAwait(false))
                     {
                         namedProperty = NamedPropertyFactory(key, null, nameof(FirebaseObject));
                         if (namedProperty == null)
@@ -589,6 +605,14 @@ namespace RestfulFirebase.Database.Models
                         RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);
                         AddCore(namedProperty);
                     }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    attachLock.Release();
                 }
             }
         }

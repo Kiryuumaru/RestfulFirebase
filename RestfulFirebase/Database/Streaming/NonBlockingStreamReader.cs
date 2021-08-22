@@ -29,7 +29,7 @@ namespace RestfulFirebase.Database.Streaming
 
             while (currentString == null)
             {
-                var read = await stream.ReadAsync(buffer, 0, bufferSize);
+                var read = await stream.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false);
                 var str = Encoding.UTF8.GetString(buffer, 0, read);
 
                 cachedData += str;

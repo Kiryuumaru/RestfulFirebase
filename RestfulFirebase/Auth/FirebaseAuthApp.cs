@@ -86,6 +86,12 @@ namespace RestfulFirebase.Auth
             session = new Session(App);
         }
 
+        internal async Task Initialize()
+        {
+            await session.Initialize().ConfigureAwait(false);
+            InvokeAuthenticationEvents();
+        }
+
         #endregion
 
         #region Helpers
@@ -167,7 +173,7 @@ namespace RestfulFirebase.Auth
 
                 auth.User = user;
 
-                session.UpdateAuth(auth);
+                await session.UpdateAuth(auth).ConfigureAwait(false);
 
                 OnAuthRefreshed();
             }

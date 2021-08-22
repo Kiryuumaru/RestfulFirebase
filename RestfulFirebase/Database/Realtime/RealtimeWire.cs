@@ -209,7 +209,7 @@ namespace RestfulFirebase.Database.Realtime
             base.Dispose(disposing);
         }
 
-        private void OnNext(object sender, StreamObject streamObject)
+        private async void OnNext(object sender, StreamObject streamObject)
         {
             if (IsDisposed)
             {
@@ -223,37 +223,48 @@ namespace RestfulFirebase.Database.Realtime
             if (streamObject.Data is null)
             {
                 // Delete all
-                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
+                var subDatas = await App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath()).ConfigureAwait(false);
                 foreach (var subData in subDatas)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    var task = subData?.MakeSync(null, err => OnPutError(subData, err));
+                    if (task == null ? false : await task.ConfigureAwait(false))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri))) urisToInvoke.Add(subData.Uri);
+                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        {
+                            urisToInvoke.Add(subData.Uri);
+                        }
                     }
                 }
             }
             else if (streamObject.Data is SingleStreamData single)
             {
                 // Delete related
-                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, false, true, Query.GetAbsolutePath());
+                var subDatas = await App.Database.OfflineDatabase.GetDatas(streamObject.Uri, false, true, Query.GetAbsolutePath()).ConfigureAwait(false);
                 foreach (var subData in subDatas)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    var task = subData?.MakeSync(null, err => OnPutError(subData, err));
+                    if (task == null ? false : await task.ConfigureAwait(false))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri))) urisToInvoke.Add(subData.Uri);
+                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        {
+                            urisToInvoke.Add(subData.Uri);
+                        }
                     }
                 }
 
                 // Make single
-                var data = App.Database.OfflineDatabase.GetData(streamObject.Uri) ?? new DataHolder(App, streamObject.Uri);
-                if (data.MakeSync(single.Blob, err => OnPutError(data, err)))
+                var data = await App.Database.OfflineDatabase.GetData(streamObject.Uri).ConfigureAwait(false) ?? App.Database.OfflineDatabase.BuildDataHolder(App, streamObject.Uri);
+                if (await data.MakeSync(single.Blob, err => OnPutError(data, err)).ConfigureAwait(false))
                 {
-                    if (!urisToInvoke.Any(i => Utils.UrlCompare(i, data.Uri))) urisToInvoke.Add(data.Uri);
+                    if (!urisToInvoke.Any(i => Utils.UrlCompare(i, data.Uri)))
+                    {
+                        urisToInvoke.Add(data.Uri);
+                    }
                 }
             }
             else if (streamObject.Data is MultiStreamData multi)
             {
-                var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
+                var subDatas = await App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath()).ConfigureAwait(false);
                 var descendants = multi.GetDescendants();
                 var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.UrlCombine(streamObject.Uri, i.path), i.blob)));
 
@@ -261,9 +272,13 @@ namespace RestfulFirebase.Database.Realtime
                 var excluded = subDatas.Where(i => !syncDatas.Any(j => Utils.UrlCompare(j.path, i.Uri)));
                 foreach (var subData in excluded)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    var task = subData?.MakeSync(null, err => OnPutError(subData, err));
+                    if (task == null ? false : await task.ConfigureAwait(false))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri))) urisToInvoke.Add(subData.Uri);
+                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        {
+                            urisToInvoke.Add(subData.Uri);
+                        }
                     }
                 }
 
@@ -271,10 +286,16 @@ namespace RestfulFirebase.Database.Realtime
                 foreach (var syncData in syncDatas)
                 {
                     var subData = subDatas.FirstOrDefault(i => i.Uri == syncData.path);
-                    if (subData == null) subData = new DataHolder(App, syncData.path);
-                    if (subData?.MakeSync(syncData.blob, err => OnPutError(subData, err)) ?? false)
+                    if (subData == null)
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri))) urisToInvoke.Add(subData.Uri);
+                        subData = App.Database.OfflineDatabase.BuildDataHolder(App, syncData.path);
+                    }
+                    if (await subData.MakeSync(syncData.blob, err => OnPutError(subData, err)).ConfigureAwait(false))
+                    {
+                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        {
+                            urisToInvoke.Add(subData.Uri);
+                        }
                     }
                 }
             }

@@ -42,6 +42,16 @@ namespace RestfulFirebase
         /// </summary>
         public FirebaseStorageApp Storage { get; }
 
+        /// <summary>
+        /// Gets <c>true</c> whether the app is initialized; otherwise <c>false</c>.
+        /// </summary>
+        public bool IsInitialized { get; private set; }
+
+        /// <summary>
+        /// Event raised on the current context when the app is initialized.
+        /// </summary>
+        public event EventHandler Initialized;
+
         #endregion
 
         #region Initializers
@@ -65,6 +75,25 @@ namespace RestfulFirebase
             Database = new FirebaseDatabaseApp(this);
             Storage = new FirebaseStorageApp(this);
             Auth = new FirebaseAuthApp(this);
+        }
+
+        /// <summary>
+        /// Initializes app instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the completion of initialization.
+        /// </returns>
+        public async Task Initialize()
+        {
+            if (IsInitialized)
+            {
+                return;
+            }
+            IsInitialized = true;
+
+            await Auth.Initialize().ConfigureAwait(false);
+
+            Initialized?.Invoke(this, new EventArgs());
         }
 
         #endregion

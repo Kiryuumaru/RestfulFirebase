@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
@@ -37,6 +39,9 @@ namespace RestfulFirebase.Database.Models
 
         private Func<string, T> itemInitializer;
 
+        private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
+        private SemaphoreSlim dataChangesLock = new SemaphoreSlim(1, 1);
+
         #endregion
 
         #region Initializer
@@ -68,20 +73,22 @@ namespace RestfulFirebase.Database.Models
         #region Methods
 
         /// <inheritdoc/>
-        public void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            lock (this)
+            try
             {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
                 Subscribe(realtimeInstance);
 
                 List<KeyValuePair<string, T>> objs = this.ToList();
                 List<string> supPaths = new List<string>();
-                foreach (var path in RealtimeInstance.GetSubPaths())
+                foreach (var path in await RealtimeInstance.GetSubPaths().ConfigureAwait(false))
                 {
                     var separatedPath = Utils.UrlSeparate(path);
                     var key = separatedPath[0];
@@ -105,6 +112,14 @@ namespace RestfulFirebase.Database.Models
                         NotifyObserversOfChange();
                     }
                 }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                attachLock.Release();
             }
 
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
@@ -424,7 +439,7 @@ namespace RestfulFirebase.Database.Models
             RealtimeInstance = null;
         }
 
-        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private async void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {
@@ -435,10 +450,13 @@ namespace RestfulFirebase.Database.Models
             {
                 var separated = Utils.UrlSeparate(e.Path);
                 var key = separated[0];
-                lock (this)
+
+                try
                 {
+                    await dataChangesLock.WaitAsync().ConfigureAwait(false);
+
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var hasChild = RealtimeInstance.HasChild(key);
+                    var hasChild = await RealtimeInstance.HasChild(key).ConfigureAwait(false);
                     if (obj.Value == null && hasChild)
                     {
                         var item = ObjectFactory(key);
@@ -456,6 +474,14 @@ namespace RestfulFirebase.Database.Models
                     {
                         Remove(key);
                     }
+                }
+                catch
+                {
+                    throw;
+                }
+                finally
+                {
+                    dataChangesLock.Release();
                 }
             }
         }

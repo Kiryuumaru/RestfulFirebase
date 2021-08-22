@@ -26,8 +26,7 @@ namespace RestfulFirebase.Extensions
             }
         }
 
-        private SemaphoreSlim semaphoreSlim;
-        private SemaphoreSlim semaphoreSlimControl;
+        private SemaphoreSlim operationLock;
         private int lastTokenCount;
         private int tokenCount;
 
@@ -43,9 +42,9 @@ namespace RestfulFirebase.Extensions
         /// </param>
         public OperationInvoker(int initialTokenCount)
         {
-            semaphoreSlim = new SemaphoreSlim(initialTokenCount);
-            semaphoreSlimControl = new SemaphoreSlim(1, 1);
+            operationLock = new SemaphoreSlim(initialTokenCount);
             ConcurrentTokenCount = initialTokenCount;
+            lastTokenCount = initialTokenCount;
         }
 
         #endregion
@@ -65,15 +64,15 @@ namespace RestfulFirebase.Extensions
         {
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 action();
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) action();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
         }
 
         /// <summary>
@@ -89,15 +88,15 @@ namespace RestfulFirebase.Extensions
         {
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 await func().ConfigureAwait(false);
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) await func().ConfigureAwait(false);
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
         }
 
         /// <summary>
@@ -113,39 +112,72 @@ namespace RestfulFirebase.Extensions
         {
             if (cancellationToken == null)
             {
-                semaphoreSlim.Wait();
+                operationLock.Wait();
                 action();
             }
             else
             {
-                semaphoreSlim.Wait(cancellationToken.Value);
+                operationLock.Wait(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) action();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
         }
 
         /// <summary>
-        /// Executes <paramref name="func"/> and blocking the executing thread until the <paramref name="func"/> ended.
+        /// Executes <paramref name="action"/> and blocking the executing thread until the <paramref name="action"/> ended.
         /// </summary>
-        /// <param name="func">
-        /// The function to be executed.
+        /// <param name="action">
+        /// The action to be executed.
+        /// </param>
+        /// <param name="returnOnLockFree">
+        /// Specify <c>true</c> if the method will return on lock free; otherwise <c>false</c>.
         /// </param>
         /// <param name="cancellationToken">
         /// The cancellation token used for execution cancellation.
         /// </param>
-        public async void Send(Func<Task> func, CancellationToken? cancellationToken = null)
+        public void Send(Action action, bool returnOnLockFree, CancellationToken? cancellationToken = null)
         {
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                await func();
+                operationLock.Wait();
+                if (returnOnLockFree)
+                {
+                    Task.Run(delegate
+                    {
+                        action();
+                        operationLock.Release();
+                    });
+                }
+                else
+                {
+                    action();
+                    operationLock.Release();
+                }
             }
             else
             {
-                semaphoreSlim.Wait(cancellationToken.Value);
-                if (!cancellationToken.Value.IsCancellationRequested) await func();
+                operationLock.Wait(cancellationToken.Value);
+                if (!cancellationToken.Value.IsCancellationRequested)
+                {
+                    if (returnOnLockFree)
+                    {
+                        Task.Run(delegate
+                        {
+                            action();
+                            operationLock.Release();
+                        });
+                    }
+                    else
+                    {
+                        action();
+                        operationLock.Release();
+                    }
+                }
+                else
+                {
+                    operationLock.Release();
+                }
             }
-            semaphoreSlim.Release();
         }
 
         /// <summary>
@@ -165,15 +197,15 @@ namespace RestfulFirebase.Extensions
             T result = default;
             if (cancellationToken == null)
             {
-                semaphoreSlim.Wait();
+                operationLock.Wait();
                 result = func();
             }
             else
             {
-                semaphoreSlim.Wait(cancellationToken.Value);
+                operationLock.Wait(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) result = func();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
             return result;
         }
 
@@ -194,15 +226,15 @@ namespace RestfulFirebase.Extensions
             T result = default;
             if (cancellationToken == null)
             {
-                semaphoreSlim.Wait();
+                operationLock.Wait();
                 result = func().Result;
             }
             else
             {
-                semaphoreSlim.Wait(cancellationToken.Value);
+                operationLock.Wait(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) result = func().Result;
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
             return result;
         }
 
@@ -222,15 +254,83 @@ namespace RestfulFirebase.Extensions
         {
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 action();
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) action();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
+        }
+
+        /// <summary>
+        /// Executes <paramref name="action"/> that can return a value and blocking the executing thread until the <paramref name="action"/> ended.
+        /// </summary>
+        /// <param name="action">
+        /// The action to be executed.
+        /// </param>
+        /// <param name="returnOnLockFree">
+        /// Specify <c>true</c> if the method will return on lock free; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The cancellation token used for execution cancellation.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents a proxy for the task returned by <paramref name="action"/>.
+        /// </returns>
+        public async Task SendAsync(Action action, bool returnOnLockFree, CancellationToken? cancellationToken = null)
+        {
+            if (cancellationToken == null)
+            {
+                await operationLock.WaitAsync().ConfigureAwait(false);
+                if (returnOnLockFree)
+                {
+                    void onLockFree()
+                    {
+                        Task.Run(delegate
+                        {
+                            action();
+                            operationLock.Release();
+                        });
+                    }
+                    onLockFree();
+                }
+                else
+                {
+                    action();
+                    operationLock.Release();
+                }
+            }
+            else
+            {
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                if (!cancellationToken.Value.IsCancellationRequested)
+                {
+                    if (returnOnLockFree)
+                    {
+                        void onLockFree()
+                        {
+                            Task.Run(delegate
+                            {
+                                action();
+                                operationLock.Release();
+                            });
+                        }
+                        onLockFree();
+                    }
+                    else
+                    {
+                        action();
+                        operationLock.Release();
+                    }
+                }
+                else
+                {
+                    operationLock.Release();
+                }
+            }
         }
 
         /// <summary>
@@ -249,15 +349,77 @@ namespace RestfulFirebase.Extensions
         {
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 await func().ConfigureAwait(false);
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) await func().ConfigureAwait(false);
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
+        }
+
+        /// <summary>
+        /// Executes <paramref name="func"/> that can return a value and blocking the executing thread until the <paramref name="func"/> ended.
+        /// </summary>
+        /// <param name="func">
+        /// The function to be executed.
+        /// </param>
+        /// <param name="returnOnLockFree">
+        /// Specify <c>true</c> if the method will return on lock free; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The cancellation token used for execution cancellation.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents a proxy for the task returned by <paramref name="func"/>.
+        /// </returns>
+        public async Task SendAsync(Func<Task> func, bool returnOnLockFree, CancellationToken? cancellationToken = null)
+        {
+            if (cancellationToken == null)
+            {
+                await operationLock.WaitAsync().ConfigureAwait(false);
+                if (returnOnLockFree)
+                {
+                    async void onLockFree()
+                    {
+                        await func().ConfigureAwait(false);
+                        operationLock.Release();
+                    }
+                    onLockFree();
+                }
+                else
+                {
+                    await func().ConfigureAwait(false);
+                    operationLock.Release();
+                }
+            }
+            else
+            {
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                if (!cancellationToken.Value.IsCancellationRequested)
+                {
+                    if (returnOnLockFree)
+                    {
+                        async void onLockFree()
+                        {
+                            await func().ConfigureAwait(false);
+                            operationLock.Release();
+                        }
+                        onLockFree();
+                    }
+                    else
+                    {
+                        await func().ConfigureAwait(false);
+                        operationLock.Release();
+                    }
+                }
+                else
+                {
+                    operationLock.Release();
+                }
+            }
         }
 
         /// <summary>
@@ -277,15 +439,15 @@ namespace RestfulFirebase.Extensions
             T result = default;
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 result = func();
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) result = func();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
             return result;
         }
 
@@ -306,42 +468,35 @@ namespace RestfulFirebase.Extensions
             T result = default;
             if (cancellationToken == null)
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync().ConfigureAwait(false);
                 result = await func();
             }
             else
             {
-                await semaphoreSlim.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
                 if (!cancellationToken.Value.IsCancellationRequested) result = await func();
             }
-            semaphoreSlim.Release();
+            operationLock.Release();
             return result;
         }
 
         private async void EvaluateTokenCount()
         {
-            if (lastTokenCount == ConcurrentTokenCount) return;
-            await semaphoreSlimControl.WaitAsync();
-            try
+            if (lastTokenCount < ConcurrentTokenCount)
             {
-                if (lastTokenCount < ConcurrentTokenCount)
+                int tokenToRelease = ConcurrentTokenCount - lastTokenCount;
+                lastTokenCount = ConcurrentTokenCount;
+                operationLock.Release(tokenToRelease);
+            }
+            else if (lastTokenCount > ConcurrentTokenCount)
+            {
+                int tokenToWait = lastTokenCount - ConcurrentTokenCount;
+                lastTokenCount = ConcurrentTokenCount;
+                for (int i = 0; i < tokenToWait; i++)
                 {
-                    int tokenToRelease = ConcurrentTokenCount - lastTokenCount;
-                    lastTokenCount = ConcurrentTokenCount;
-                    semaphoreSlim.Release(tokenToRelease);
-                }
-                else if (lastTokenCount > ConcurrentTokenCount)
-                {
-                    int tokenToWait = lastTokenCount - ConcurrentTokenCount;
-                    lastTokenCount = ConcurrentTokenCount;
-                    for (int i = 0; i < tokenToWait; i++)
-                    {
-                        await semaphoreSlim.WaitAsync();
-                    }
+                    await operationLock.WaitAsync();
                 }
             }
-            catch { }
-            semaphoreSlimControl.Release();
         }
 
         #endregion

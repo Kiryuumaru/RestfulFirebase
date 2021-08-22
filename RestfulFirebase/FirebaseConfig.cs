@@ -32,6 +32,7 @@ namespace RestfulFirebase
             DatabaseRetryDelay = TimeSpan.FromSeconds(2);
             StorageRequestTimeout = TimeSpan.FromMinutes(2);
             DatabaseMaxConcurrentWrites = 100;
+            DatabaseInRuntimeDataCache = 10000;
         }
 
         /// <summary>
@@ -113,5 +114,10 @@ namespace RestfulFirebase
         /// Gets or sets the firebase realtime database max concurrent writes.
         /// </summary>
         public int DatabaseMaxConcurrentWrites { get; set; }
+
+        /// <summary>
+        /// Gets or sets the firebase realtime database in-runtime data cache.
+        /// </summary>
+        public int DatabaseInRuntimeDataCache { get; set; }
     }
 }

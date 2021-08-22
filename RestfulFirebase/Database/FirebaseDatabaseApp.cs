@@ -62,9 +62,9 @@ namespace RestfulFirebase.Database
         /// <summary>
         /// Flush all data of the offline database.
         /// </summary>
-        public void Flush()
+        public async Task Flush()
         {
-            OfflineDatabase.Flush();
+            await OfflineDatabase.Flush();
         }
 
         /// <inheritdoc/>

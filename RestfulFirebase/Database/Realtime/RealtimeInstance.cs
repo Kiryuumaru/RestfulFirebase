@@ -68,11 +68,6 @@ namespace RestfulFirebase.Database.Realtime
         /// </remarks>
         public event EventHandler<WireExceptionEventArgs> Error;
 
-        /// <summary>
-        /// Gets the status of the syncing. Returnes <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
-        /// </summary>
-        public bool IsSynced { get => GetTotalDataCount() == GetSyncedDataCount(); }
-
         #endregion
 
         #region Initializers
@@ -102,14 +97,12 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Methods
 
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
+        /// <summary>
+        /// A <see cref="Task"/> that contains the status of the syncing. Returnes <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// </summary>
+        public async Task<bool> IsSynced()
         {
-            if (disposing)
-            {
-                UnsubscribeToParent();
-            }
-            base.Dispose(disposing);
+            return await GetTotalDataCount().ConfigureAwait(false) == await GetSyncedDataCount().ConfigureAwait(false);
         }
 
         /// <summary>
@@ -138,9 +131,9 @@ namespace RestfulFirebase.Database.Realtime
         /// The path of the child to check.
         /// </param>
         /// <returns>
-        /// <c>true</c> whether the instance has a child with a provided <paramref name="path"/>; otherwise, <c>false</c>.
+        /// A <see cref="Task"/> that contains <c>true</c> whether the instance has a child with a provided <paramref name="path"/>; otherwise, <c>false</c>.
         /// </returns>
-        public bool HasChild(string path)
+        public async Task<bool> HasChild(string path)
         {
             if (IsDisposed)
             {
@@ -148,7 +141,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Utils.UrlCombine(Query.GetAbsolutePath().Trim('/'), path);
-            return App.Database.OfflineDatabase.GetDatas(uri, true).Any(i => i.Blob != null);
+            return await App.Database.OfflineDatabase.HasChild(uri, true);
         }
 
         /// <summary>
@@ -177,9 +170,9 @@ namespace RestfulFirebase.Database.Realtime
         /// Gets the total data cached of the instance.
         /// </summary>
         /// <returns>
-        /// The total data count.
+        /// A <see cref="Task"/> that contains the total data count.
         /// </returns>
-        public int GetTotalDataCount()
+        public async Task<int> GetTotalDataCount()
         {
             if (IsDisposed)
             {
@@ -187,16 +180,16 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(uri, true).Count();
+            return (await App.Database.OfflineDatabase.GetDatas(uri, true).ConfigureAwait(false)).Count();
         }
 
         /// <summary>
         /// Gets the total synced data cached of node instance.
         /// </summary>
         /// <returns>
-        /// The total synced data count.
+        /// A <see cref="Task"/> that contains the total synced data count.
         /// </returns>
-        public int GetSyncedDataCount()
+        public async Task<int> GetSyncedDataCount()
         {
             if (IsDisposed)
             {
@@ -204,7 +197,15 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(uri, true).Where(i => i.Changes == null).Count();
+            int count = 0;
+            foreach (var data in await App.Database.OfflineDatabase.GetDatas(uri, true).ConfigureAwait(false))
+            {
+                if (await data.GetChanges().ConfigureAwait(false) == null)
+                {
+                    count++;
+                }
+            }
+            return count;
         }
 
         /// <summary>
@@ -240,7 +241,7 @@ namespace RestfulFirebase.Database.Realtime
             }
             async Task<bool> waitTask()
             {
-                while (!IsSynced && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
+                while (!await IsSynced().ConfigureAwait(false) && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
                 {
                     try
                     {
@@ -255,7 +256,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                     catch { }
                 }
-                return IsSynced;
+                return await IsSynced();
             }
             bool result = timeout.HasValue
                 ? await Task.Run(waitTask).WithTimeout(timeout.Value, false).ConfigureAwait(false)
@@ -316,9 +317,9 @@ namespace RestfulFirebase.Database.Realtime
         /// The blob to set.
         /// </param>
         /// <returns>
-        /// <c>true</c> whether the blob was set; otherwise, <c>false</c>.
+        /// A <see cref="Task"/> that contains <c>true</c> whether the blob was set; otherwise, <c>false</c>.
         /// </returns>
-        public bool SetBlob(string blob)
+        public async Task<bool> SetBlob(string blob)
         {
             if (IsDisposed)
             {
@@ -332,10 +333,10 @@ namespace RestfulFirebase.Database.Realtime
             var uri = Query.GetAbsolutePath();
 
             // Delete related changes
-            var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
+            var subDatas = await App.Database.OfflineDatabase.GetDatas(uri, false, true).ConfigureAwait(false);
             foreach (var subData in subDatas)
             {
-                if (subData.MakeChanges(null, err => OnPutError(subData, err)))
+                if (await subData.MakeChanges(null, err => OnPutError(subData, err)).ConfigureAwait(false))
                 {
                     hasChanges = true;
                     affectedUris.Add(subData.Uri);
@@ -343,8 +344,8 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             // Make changes
-            var dataHolder = new DataHolder(App, uri);
-            if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
+            var dataHolder = App.Database.OfflineDatabase.BuildDataHolder(App, uri);
+            if (await dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)).ConfigureAwait(false))
             {
                 hasChanges = true;
                 affectedUris.Add(uri);
@@ -361,7 +362,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <inheritdoc/>
         public bool SetNull()
         {
-            return SetBlob(null);
+            return SetBlob(null).Result;
         }
 
         /// <inheritdoc/>
@@ -373,11 +374,11 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
+            return App.Database.OfflineDatabase.GetDatas(uri, true).Result.All(i => i.GetBlob().Result == null);
         }
 
         /// <inheritdoc/>
-        public string GetBlob()
+        public async Task<string> GetBlob()
         {
             if (IsDisposed)
             {
@@ -385,8 +386,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            var dataHolder = new DataHolder(App, uri);
-            return dataHolder.Blob;
+            return await App.Database.OfflineDatabase.GetBlob(uri).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -395,7 +395,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The cached sub paths.
         /// </returns>
-        public IEnumerable<string> GetSubPaths()
+        public async Task<IEnumerable<string>> GetSubPaths()
         {
             if (IsDisposed)
             {
@@ -403,7 +403,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubUris(uri, false).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
+            return (await App.Database.OfflineDatabase.GetSubUris(uri, false).ConfigureAwait(false)).Select(i => i.Replace(uri, "").Trim('/')).Where(i => !string.IsNullOrEmpty(i));
         }
 
         /// <summary>
@@ -412,7 +412,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The cached sub path of the instance.
         /// </returns>
-        public IEnumerable<string> GetSubUris()
+        public async Task<IEnumerable<string>> GetSubUris()
         {
             if (IsDisposed)
             {
@@ -420,7 +420,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubUris(uri, false);
+            return await App.Database.OfflineDatabase.GetSubUris(uri, false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -433,7 +433,7 @@ namespace RestfulFirebase.Database.Realtime
         /// The realtime model to write and subscribe.
         /// </param>
         /// <returns>
-        /// The provided <paramref name="model"/>.
+        /// A <see cref="Task"/> that contains the provided <paramref name="model"/>.
         /// </returns>
         public T PutModel<T>(T model)
             where T : IRealtimeModel
@@ -457,7 +457,7 @@ namespace RestfulFirebase.Database.Realtime
         /// The realtime model to subscribe.
         /// </param>
         /// <returns>
-        /// The provided <paramref name="model"/>.
+        /// A <see cref="Task"/> that contains the provided <paramref name="model"/>.
         /// </returns>
         public T SubModel<T>(T model)
             where T : IRealtimeModel
@@ -480,6 +480,16 @@ namespace RestfulFirebase.Database.Realtime
         public override string ToString()
         {
             return Query.GetAbsolutePath();
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                UnsubscribeToParent();
+            }
+            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -509,9 +519,18 @@ namespace RestfulFirebase.Database.Realtime
                     var eventPath = "";
                     for (int i = 0; i < separatedPath.Length; i++)
                     {
-                        if (string.IsNullOrEmpty(eventPath)) eventPath = Utils.UrlCombine(separatedPath[i]);
-                        else eventPath = Utils.UrlCombine(eventPath, separatedPath[i]);
-                        if (!affectedPaths.Any(affectedPath => Utils.UrlCompare(affectedPath, eventPath))) affectedPaths.Add(eventPath);
+                        if (string.IsNullOrEmpty(eventPath))
+                        {
+                            eventPath = Utils.UrlCombine(separatedPath[i]);
+                        }
+                        else
+                        {
+                            eventPath = Utils.UrlCombine(eventPath, separatedPath[i]);
+                        }
+                        if (!affectedPaths.Any(affectedPath => Utils.UrlCompare(affectedPath, eventPath)))
+                        {
+                            affectedPaths.Add(eventPath);
+                        }
                     }
                 }
                 foreach (var affectedPath in affectedPaths.OrderByDescending(i => i.Length))
@@ -585,7 +604,7 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
+        internal async void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
             if (IsDisposed)
             {
@@ -595,13 +614,13 @@ namespace RestfulFirebase.Database.Realtime
             var hasChanges = false;
             if (err.Exception is DatabaseUnauthorizedException ex)
             {
-                if (holder.Sync == null)
+                if (await holder.GetSync().ConfigureAwait(false) == null)
                 {
-                    if (holder.Delete()) hasChanges = true;
+                    if (await holder.Delete().ConfigureAwait(false)) hasChanges = true;
                 }
                 else
                 {
-                    if (holder.DeleteChanges()) hasChanges = true;
+                    if (await holder.DeleteChanges().ConfigureAwait(false)) hasChanges = true;
                 }
             }
 

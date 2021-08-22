@@ -4,6 +4,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Local
 {
@@ -23,6 +25,8 @@ namespace RestfulFirebase.Local
 
         /// <inheritdoc/>
         public RestfulFirebaseApp App { get; }
+
+        private SemaphoreSlim storeLock = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -48,9 +52,12 @@ namespace RestfulFirebase.Local
         /// <param name="data">
         /// The data to set.
         /// </param>
-        public void Set(string path, string data)
+        /// <returns>
+        /// A <see cref="Task"/> that represents the completion of data set.
+        /// </returns>
+        public async Task Set(string path, string data)
         {
-            Set(path, data, false);
+            await Set(path, data, false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -60,11 +67,11 @@ namespace RestfulFirebase.Local
         /// The path of the data to get.
         /// </param>
         /// <returns>
-        /// The data of the specified <paramref name="path"/>.
+        /// The <see cref="Task"/> that holds the data of the specified <paramref name="path"/>.
         /// </returns>
-        public string Get(string path)
+        public async Task<string> Get(string path)
         {
-            return Get(path, false);
+            return await Get(path, false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -73,9 +80,12 @@ namespace RestfulFirebase.Local
         /// <param name="path">
         /// The path of the data to delete.
         /// </param>
-        public void Delete(string path)
+        /// <returns>
+        /// A <see cref="Task"/> that represents the completion of data deletion.
+        /// </returns>
+        public async Task Delete(string path)
         {
-            Delete(path, false);
+            await Delete(path, false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -85,11 +95,11 @@ namespace RestfulFirebase.Local
         /// The path to get the sub paths.
         /// </param>
         /// <returns>
-        /// The sub paths of the specified <paramref name="path"/>.
+        /// The <see cref="Task"/> that holds the sub paths of the specified <paramref name="path"/>.
         /// </returns>
-        public IEnumerable<string> GetSubPaths(string path)
+        public async Task<IEnumerable<string>> GetSubPaths(string path)
         {
-            return GetSubPaths(path, false);
+            return await GetSubPaths(path, false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -99,14 +109,14 @@ namespace RestfulFirebase.Local
         /// The path to check.
         /// </param>
         /// <returns>
-        /// <c>true</c> if the <paramref name="path"/> exists; otherwise <c>false</c>.
+        /// The <see cref="Task"/> that holds <c>true</c> if the <paramref name="path"/> exists; otherwise <c>false</c>.
         /// </returns>
-        public bool ContainsData(string path)
+        public async Task<bool> ContainsData(string path)
         {
-            return ContainsData(path, false);
+            return await ContainsData(path, false).ConfigureAwait(false);
         }
 
-        internal void Set(string path, string data, bool tryFromAuthStore)
+        internal async Task Set(string path, string data, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
             var separated = Utils.UrlSeparate(path);
@@ -114,26 +124,26 @@ namespace RestfulFirebase.Local
             for (int i = 0; i < separated.Length - 1; i++)
             {
                 keyHeir = Utils.UrlCombine(keyHeir, separated[i]);
-                var hiers = DBGet(ValidatePath(keyHeir), tryFromAuthStore);
+                var hiers = await DBGet(ValidatePath(keyHeir), tryFromAuthStore).ConfigureAwait(false);
                 var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
                 if (!deserialized.Contains(separated[i + 1])) deserialized.Add(separated[i + 1]);
                 var serialized = Utils.SerializeString(deserialized.ToArray());
-                DBSet(ValidatePath(keyHeir), serialized, tryFromAuthStore);
+                await DBSet(ValidatePath(keyHeir), serialized, tryFromAuthStore).ConfigureAwait(false);
             }
-            DBSet(path, data, tryFromAuthStore);
+            await DBSet(path, data, tryFromAuthStore).ConfigureAwait(false);
         }
 
-        internal string Get(string path, bool tryFromAuthStore)
+        internal async Task<string> Get(string path, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
-            return DBGet(path, tryFromAuthStore);
+            return await DBGet(path, tryFromAuthStore).ConfigureAwait(false);
         }
 
-        internal void Delete(string path, bool tryFromAuthStore)
+        internal async Task Delete(string path, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
             var subKeyHierPath = ValidatePath(Utils.UrlCombine(KeyHeirPath, path));
-            if (DBGet(subKeyHierPath, tryFromAuthStore) == null)
+            if (await DBGet(subKeyHierPath, tryFromAuthStore).ConfigureAwait(false) == null)
             {
                 var separated = Utils.UrlSeparate(path);
                 for (int i = separated.Length - 1; i >= 0; i--)
@@ -142,40 +152,43 @@ namespace RestfulFirebase.Local
                     if (separated.Length - 1 != i)
                     {
                         var valuePath = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
-                        if (DBGet(valuePath, tryFromAuthStore) != null) break;
+                        if (await DBGet(valuePath, tryFromAuthStore).ConfigureAwait(false) != null)
+                        {
+                            break;
+                        }
                     }
                     keyHierList = keyHierList.Take(i).ToList();
                     keyHierList.Insert(0, KeyHeirPath);
                     var keyHeir = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
-                    var hiers = DBGet(keyHeir, tryFromAuthStore);
+                    var hiers = await DBGet(keyHeir, tryFromAuthStore).ConfigureAwait(false);
                     var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
                     if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
                     if (deserialized.Count == 0)
                     {
-                        DBDelete(keyHeir, tryFromAuthStore);
+                        await DBDelete(keyHeir, tryFromAuthStore).ConfigureAwait(false);
                     }
                     else
                     {
                         var serialized = Utils.SerializeString(deserialized.ToArray());
-                        DBSet(keyHeir, serialized, tryFromAuthStore);
+                        await DBSet(keyHeir, serialized, tryFromAuthStore).ConfigureAwait(false);
                         break;
                     }
                 }
             }
-            DBDelete(path, tryFromAuthStore);
+            await DBDelete(path, tryFromAuthStore).ConfigureAwait(false);
         }
 
-        internal IEnumerable<string> GetSubPaths(string path, bool tryFromAuthStore)
+        internal async Task<IEnumerable<string>> GetSubPaths(string path, bool tryFromAuthStore)
         {
             List<string> subPaths = new List<string>();
-            void recursive(string subPath)
+            async Task recursive(string subPath)
             {
                 var s = Utils.UrlCombine(KeyHeirPath, subPath);
-                var hiers = DBGet(ValidatePath(s), tryFromAuthStore);
+                var hiers = await DBGet(ValidatePath(s), tryFromAuthStore).ConfigureAwait(false);
                 var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
                 if (path != subPath)
                 {
-                    if (DBContainsKey(ValidatePath(subPath), tryFromAuthStore))
+                    if (await DBContainsKey(ValidatePath(subPath), tryFromAuthStore).ConfigureAwait(false))
                     {
                         subPaths.Add(subPath);
                     }
@@ -184,18 +197,18 @@ namespace RestfulFirebase.Local
                 {
                     foreach (var hier in deserialized)
                     {
-                        recursive(Utils.UrlCombine(subPath, hier));
+                        await recursive(Utils.UrlCombine(subPath, hier)).ConfigureAwait(false);
                     }
                 }
             }
-            recursive(path);
+            await recursive(path).ConfigureAwait(false);
             return subPaths;
         }
 
-        internal bool ContainsData(string path, bool tryFromAuthStore)
+        internal async Task<bool> ContainsData(string path, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
-            return DBContainsKey(path, tryFromAuthStore);
+            return await DBContainsKey(path, tryFromAuthStore).ConfigureAwait(false);
         }
 
         private string ValidatePath(string path)
@@ -205,7 +218,7 @@ namespace RestfulFirebase.Local
             return path[path.Length - 1] == '/' ? path.Substring(0, path.Length - 1) : path;
         }
 
-        private void DBSet(string key, string value, bool tryFromAuthStore)
+        private async Task DBSet(string key, string value, bool tryFromAuthStore)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
@@ -214,13 +227,14 @@ namespace RestfulFirebase.Local
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = App.Config.LocalEncryption.EncryptValue(value);
 
-            lock (store)
-            {
-                store.Set(encryptedKey, encryptedValue);
-            }
+            await storeLock.WaitAsync().ConfigureAwait(false);
+
+            store.Set(encryptedKey, encryptedValue);
+
+            storeLock.Release();
         }
 
-        private string DBGet(string key, bool tryFromAuthStore)
+        private async Task<string> DBGet(string key, bool tryFromAuthStore)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
@@ -229,15 +243,16 @@ namespace RestfulFirebase.Local
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = null;
 
-            lock (store)
-            {
-                encryptedValue = store.Get(encryptedKey);
-            }
+            await storeLock.WaitAsync().ConfigureAwait(false);
+
+            encryptedValue = store.Get(encryptedKey);
+
+            storeLock.Release();
 
             return App.Config.LocalEncryption.DecryptValue(encryptedValue);
         }
 
-        private bool DBContainsKey(string key, bool tryFromAuthStore)
+        private async Task<bool> DBContainsKey(string key, bool tryFromAuthStore)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
@@ -245,13 +260,16 @@ namespace RestfulFirebase.Local
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 
-            lock (store)
-            {
-                return store.ContainsKey(encryptedKey);
-            }
+            await storeLock.WaitAsync().ConfigureAwait(false);
+
+            bool result = store.ContainsKey(encryptedKey);
+
+            storeLock.Release();
+
+            return result;
         }
 
-        private void DBDelete(string key, bool tryFromAuthStore)
+        private async Task DBDelete(string key, bool tryFromAuthStore)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
@@ -259,20 +277,22 @@ namespace RestfulFirebase.Local
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 
-            lock (store)
-            {
-                store.Delete(encryptedKey);
-            }
+            await storeLock.WaitAsync().ConfigureAwait(false);
+
+            store.Delete(encryptedKey);
+
+            storeLock.Release();
         }
 
-        private void DBClear(bool tryFromAuthStore)
+        private async Task DBClear(bool tryFromAuthStore)
         {
             var store = DBGetStore(tryFromAuthStore);
 
-            lock (store)
-            {
-                store.Clear();
-            }
+            await storeLock.WaitAsync().ConfigureAwait(false);
+
+            store.Clear();
+
+            storeLock.Release();
         }
 
         private ILocalDatabase DBGetStore(bool tryFromAuthStore)

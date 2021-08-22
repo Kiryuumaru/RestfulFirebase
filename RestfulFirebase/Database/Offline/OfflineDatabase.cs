@@ -28,7 +28,9 @@ namespace RestfulFirebase.Database.Offline
 
             public bool IsWritting { get; private set; }
 
-            public bool IsCancelled { get; private set; }
+            public bool IsCancelled => cancellationSource.IsCancellationRequested;
+
+            public CancellationToken CancellationToken => cancellationSource.Token;
 
             private CancellationTokenSource cancellationSource;
 
@@ -48,87 +50,81 @@ namespace RestfulFirebase.Database.Offline
                 this.error = error;
             }
 
-            public void Run()
+            public async Task Run()
             {
-                if (IsWritting) return;
+                if (IsWritting || IsCancelled)
+                {
+                    return;
+                }
                 IsWritting = true;
 
-                App.Database.OfflineDatabase.writeTaskPutControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
-                
-                Task.Run(async delegate
+                try
                 {
-                    await Write().ConfigureAwait(false);
-                    lock (App.Database.OfflineDatabase.writeTasks)
+                    await App.Database.OfflineDatabase.writeTaskPutControl.SendAsync(async delegate
                     {
-                        App.Database.OfflineDatabase.writeTasks.Remove(this);
-                    }
-                }).ConfigureAwait(false);
+                        if (IsCancelled)
+                        {
+                            return;
+                        }
+                        try
+                        {
+                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                            await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
+                            {
+                                if (IsCancelled)
+                                {
+                                    return;
+                                }
+                                App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
+                                Type exType = err.Exception.GetType();
+                                if (err.Exception is OfflineModeException)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                        return true;
+                                    });
+                                }
+                                else if (err.Exception is OperationCanceledException)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                        return true;
+                                    });
+                                }
+                                else if (err.Exception is AuthException)
+                                {
+                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    {
+                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                        return true;
+                                    });
+                                }
+                                else
+                                {
+                                    error(err);
+                                }
+                            }).ConfigureAwait(false);
+                        }
+                        catch { }
+                        if (!IsCancelled)
+                        {
+                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                        }
+                    }, cancellationSource.Token).ConfigureAwait(false);
+                }
+                catch { }
+
+                IsWritting = false;
             }
 
             public void Cancel()
             {
                 if (!IsCancelled)
                 {
-                    IsCancelled = true;
-                    lock (App.Database.OfflineDatabase.writeTasks)
-                    {
-                        App.Database.OfflineDatabase.writeTasks.Remove(this);
-                    }
                     cancellationSource.Cancel();
                 }
-            }
-
-            private async Task Write()
-            {
-                if (IsCancelled) return;
-                await App.Database.OfflineDatabase.writeTaskPutControl.SendAsync(async delegate
-                {
-                    if (IsCancelled) return;
-                    try
-                    {
-                        App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
-                        await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
-                        {
-                            if (IsCancelled) return;
-                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
-                            Type exType = err.Exception.GetType();
-                            if (err.Exception is OfflineModeException)
-                            {
-                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                {
-                                    await Task.Delay(App.Config.DatabaseRetryDelay);
-                                    return true;
-                                });
-                            }
-                            else if (err.Exception is OperationCanceledException)
-                            {
-                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                {
-                                    await Task.Delay(App.Config.DatabaseRetryDelay);
-                                    return true;
-                                });
-                            }
-                            else if (err.Exception is AuthException)
-                            {
-                                err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
-                                {
-                                    await Task.Delay(App.Config.DatabaseRetryDelay);
-                                    return true;
-                                });
-                            }
-                            else
-                            {
-                                error(err);
-                            }
-                        }).ConfigureAwait(false);
-                        if (!IsCancelled)
-                        {
-                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
-                        }
-                    }
-                    catch { }
-                });
-                IsWritting = false;
             }
         }
 
@@ -145,10 +141,13 @@ namespace RestfulFirebase.Database.Offline
         internal static readonly string SyncBlobPath = Utils.UrlCombine(Root, "blob");
         internal static readonly string ChangesPath = Utils.UrlCombine(Root, "changes");
 
-        private List<WriteTask> writeTasks = new List<WriteTask>();
+        private ConcurrentDictionary<DateTime, WriteTask> writeTasks = new ConcurrentDictionary<DateTime, WriteTask>();
 
+        private bool islockControlRefresherRunning;
         private OperationInvoker writeTaskPutControl;
         private OperationInvoker writeTaskErrorControl;
+
+        private ConcurrentDictionary<string, (long ticks, DataHolder holder)> DataHolderCache = new ConcurrentDictionary<string, (long ticks, DataHolder holder)>();
 
         #endregion
 
@@ -165,24 +164,39 @@ namespace RestfulFirebase.Database.Offline
 
         #region Methods
 
-        public DataHolder GetData(string uri)
+        public async Task<DataHolder> GetData(string uri)
         {
-            var data = new DataHolder(App, uri);
-            return data.Exist ? data : null;
+            var data = BuildDataHolder(App, uri);
+            return await data.IsExists().ConfigureAwait(false) ? data : null;
         }
 
-        public IEnumerable<string> GetSubUris(string uri, bool includeOriginIfExists = false)
+        public async Task<string> GetBlob(string uri)
+        {
+            var data = BuildDataHolder(App, uri);
+            return await data.GetBlob().ConfigureAwait(false);
+        }
+
+        public async Task<bool> IsExists(string uri)
+        {
+            var data = BuildDataHolder(App, uri);
+            return await data.IsExists().ConfigureAwait(false);
+        }
+
+        public async Task<IEnumerable<string>> GetSubUris(string uri, bool includeOriginIfExists = false)
         {
             var paths = new List<string>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)))
+            foreach (var subPath in await App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)).ConfigureAwait(false))
             {
                 paths.Add(subPath.Substring(ShortPath.Length));
             }
-            if (GetData(uri) != null && includeOriginIfExists) paths.Add(uri);
+            if (await IsExists(uri).ConfigureAwait(false) && includeOriginIfExists)
+            {
+                paths.Add(uri);
+            }
             return paths;
         }
 
-        public IEnumerable<string> GetHierUris(string uri, string baseUri = "", bool includeOriginIfExists = false)
+        public async Task<IEnumerable<string>> GetHierUris(string uri, string baseUri = "", bool includeOriginIfExists = false)
         {
             if (string.IsNullOrEmpty(baseUri)) baseUri = App.Config.DatabaseURL;
 
@@ -191,137 +205,269 @@ namespace RestfulFirebase.Database.Offline
             baseUri = baseUri.Trim();
             baseUri = baseUri.Trim('/');
 
-            if (!uri.StartsWith(baseUri)) throw new Exception("URI not related");
+            if (!uri.StartsWith(baseUri))
+            {
+                throw new Exception("URI not related");
+            }
 
             var hier = new List<string>();
             var path = uri.Replace(baseUri, "");
             path = path.Trim('/');
             var separated = Utils.UrlSeparate(path);
             var currentUri = baseUri;
-            if (GetData(currentUri) != null) hier.Add(currentUri);
+            if (await IsExists(currentUri).ConfigureAwait(false))
+            {
+                hier.Add(currentUri);
+            }    
             for (int i = 0; i < separated.Length - 1; i++)
             {
                 currentUri = Utils.UrlCombine(currentUri, separated[i]);
-                if (GetData(currentUri) != null) hier.Add(currentUri);
+                if (await IsExists(currentUri).ConfigureAwait(false))
+                {
+                    hier.Add(currentUri);
+                }
             }
-            if (GetData(uri) != null && includeOriginIfExists) hier.Add(uri);
+            if (await IsExists(currentUri).ConfigureAwait(false) && includeOriginIfExists)
+            {
+                hier.Add(uri);
+            }
             return hier;
         }
 
-        public IEnumerable<DataHolder> GetDatas(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
+        public async Task<IEnumerable<DataHolder>> GetDatas(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<DataHolder>();
-            foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
+            foreach (var subUri in await GetSubUris(uri, includeOriginIfExists).ConfigureAwait(false))
             {
-                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri))) datas.Add(new DataHolder(App, subUri));
+                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                {
+                    datas.Add(BuildDataHolder(App, subUri));
+                }
             }
             if (includeHierIfExists)
             {
-                foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
+                foreach (var subUri in await GetHierUris(uri, baseHierUri, includeOriginIfExists).ConfigureAwait(false))
                 {
-                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri))) datas.Add(new DataHolder(App, subUri));
+                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                    {
+                        datas.Add(BuildDataHolder(App, subUri));
+                    }
                 }
             }
             return datas;
         }
 
-        public IEnumerable<DataHolder> GetAllDatas()
+        public async Task<IEnumerable<string>> GetDataUris(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
+        {
+            var datas = new List<string>();
+            foreach (var subUri in await GetSubUris(uri, includeOriginIfExists).ConfigureAwait(false))
+            {
+                if (!datas.Any(i => Utils.UrlCompare(i, subUri)))
+                {
+                    datas.Add(subUri);
+                }
+            }
+            if (includeHierIfExists)
+            {
+                foreach (var subUri in await GetHierUris(uri, baseHierUri, includeOriginIfExists).ConfigureAwait(false))
+                {
+                    if (!datas.Any(i => Utils.UrlCompare(i, subUri)))
+                    {
+                        datas.Add(subUri);
+                    }
+                }
+            }
+            return datas;
+        }
+
+        public async Task<bool> HasChild(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<DataHolder>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath)))
+            foreach (var subUri in await GetSubUris(uri, includeOriginIfExists).ConfigureAwait(false))
             {
-                datas.Add(new DataHolder(App, subPath.Substring(ShortPath.Length)));
+                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                {
+                    if (await GetBlob(subUri).ConfigureAwait(false) != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if (includeHierIfExists)
+            {
+                foreach (var subUri in await GetHierUris(uri, baseHierUri, includeOriginIfExists).ConfigureAwait(false))
+                {
+                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                    {
+                        if (await GetBlob(subUri).ConfigureAwait(false) != null)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        public async Task<IEnumerable<DataHolder>> GetAllDatas()
+        {
+            var datas = new List<DataHolder>();
+            foreach (var subPath in await App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath)).ConfigureAwait(false))
+            {
+                datas.Add(BuildDataHolder(App, subPath.Substring(ShortPath.Length)));
             }
             return datas;
         }
 
-        public void Flush()
+        public async Task Flush()
         {
-            lock (writeTasks)
+            foreach (WriteTask task in writeTasks.Values)
             {
-                foreach (WriteTask task in writeTasks)
-                {
-                    task.Cancel();
-                }
+                task.Cancel();
             }
-            var subPaths = App.LocalDatabase.GetSubPaths(Root);
+            var subPaths = await App.LocalDatabase.GetSubPaths(Root).ConfigureAwait(false);
             foreach (var subPath in subPaths)
             {
-                App.LocalDatabase.Delete(subPath);
+                await App.LocalDatabase.Delete(subPath).ConfigureAwait(false);
             }
         }
 
         public void Dispose()
         {
-            lock (writeTasks)
+            foreach (WriteTask task in writeTasks.Values)
             {
-                foreach (var writeTask in writeTasks.ToList())
-                {
-                    writeTask.Cancel();
-                }
+                task.Cancel();
             }
         }
 
-        internal void Put(DataHolder data, Action<RetryExceptionEventArgs> onError)
+        internal async Task Put(DataHolder data, Action<RetryExceptionEventArgs> onError)
         {
-            var datas = GetDatas(data.Uri, false, true).ToList();
-            foreach (var uri in data.HierarchyUri)
+            var uris = (await GetDataUris(data.Uri, false, true).ConfigureAwait(false)).ToList();
+            foreach (var uri in data.GetHierarchyUri())
             {
-                var hierData = GetData(uri);
-                if (hierData != null) datas.Add(hierData);
+                if (await IsExists(uri).ConfigureAwait(false))
+                {
+                    uris.Add(uri);
+                }
             }
-            foreach (var subData in datas)
+            foreach (var uri in uris)
             {
-                CancelPut(subData);
+                CancelPut(uri);
             }
 
-            lock (writeTasks)
+            var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Value.Uri, data.Uri)).Value;
+            if (existing != null)
             {
-                var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
-                if (existing != null)
+                if (existing.Blob != await data.GetBlob().ConfigureAwait(false))
                 {
-                    if (existing.Blob != data.Blob)
-                    {
-                        existing.Cancel();
-                        var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
-                        writeTasks.Add(newWriteTask);
-                        newWriteTask.Run();
-                    }
+                    existing.Cancel();
+                    QueueWrite(new WriteTask(App, data.Uri, (await data.GetChanges().ConfigureAwait(false))?.Blob, onError));
                 }
-                else
-                {
-                    var newWriteTask = new WriteTask(App, data.Uri, data.Changes?.Blob, onError);
-                    writeTasks.Add(newWriteTask);
-                    newWriteTask.Run();
-                }
+            }
+            else
+            {
+                QueueWrite(new WriteTask(App, data.Uri, (await data.GetChanges().ConfigureAwait(false))?.Blob, onError));
             }
         }
 
-        internal void CancelPut(DataHolder data)
+        internal void CancelPut(string uri)
         {
-            lock (writeTasks)
+            foreach (var taskPair in writeTasks.Where(i => Utils.UrlCompare(i.Value.Uri, uri)))
             {
-                foreach (WriteTask task in writeTasks.Where(i => Utils.UrlCompare(i.Uri, data.Uri)).ToList())
-                {
-                    task.Cancel();
-                }
+                taskPair.Value.Cancel();
             }
         }
 
         internal bool IsWriting(DataHolder data)
         {
-            lock (writeTasks)
+            return writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Value.Uri, data.Uri)).Value?.IsCancelled ?? false;
+        }
+
+        internal void EvaluateCache(DataHolder dataHolder)
+        {
+            (long ticks, DataHolder holder) cache;
+            if (DataHolderCache.TryGetValue(dataHolder.Uri, out cache))
             {
-                var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Uri, data.Uri));
-                if (existing != null)
-                {
-                    return !existing.IsCancelled;
-                }
-                else
-                {
-                    return false;
-                }
+                cache.ticks = DateTime.UtcNow.Ticks;
             }
+            else
+            {
+                cache = (DateTime.UtcNow.Ticks, dataHolder);
+            }
+            DataHolderCache.AddOrUpdate(dataHolder.Uri, cache, (oldKey, oldValue) => cache);
+
+            while (DataHolderCache.Count != 0 && DataHolderCache.Count > App.Config.DatabaseInRuntimeDataCache)
+            {
+                try
+                {
+                    var lowestTick = DataHolderCache.Min(i => i.Value.ticks);
+                    var keyOfLowest = DataHolderCache.FirstOrDefault(i => i.Value.ticks == lowestTick).Key;
+                    DataHolderCache.TryRemove(keyOfLowest, out _);
+                }
+                catch { }
+            }
+        }
+
+        internal DataHolder BuildDataHolder(RestfulFirebaseApp app, string uri)
+        {
+            uri = uri.EndsWith("/") ? uri : uri + "/";
+
+            (long ticks, DataHolder holder) cache;
+            if (DataHolderCache.TryGetValue(uri, out cache))
+            {
+                cache.ticks = DateTime.UtcNow.Ticks;
+            }
+            else
+            {
+                cache = (DateTime.UtcNow.Ticks, new DataHolder(app, uri));
+            }
+            DataHolderCache.AddOrUpdate(uri, cache, (oldKey, oldValue) => cache);
+
+            while (DataHolderCache.Count != 0 && DataHolderCache.Count > App.Config.DatabaseInRuntimeDataCache)
+            {
+                try
+                {
+                    var lowestTick = DataHolderCache.Min(i => i.Value.ticks);
+                    var keyOfLowest = DataHolderCache.FirstOrDefault(i => i.Value.ticks == lowestTick).Key;
+                    DataHolderCache.TryRemove(keyOfLowest, out _);
+                }
+                catch { }
+            }
+            return cache.holder;
+        }
+
+        private void QueueWrite(WriteTask writeTask)
+        {
+            DateTime key = DateTime.UtcNow;
+
+            writeTasks.AddOrUpdate(key, writeTask, (oldKey, oldValue) => writeTask);
+
+            Task.Run(async delegate
+            {
+                await writeTask.Run().ContinueWith(delegate
+                {
+                    writeTasks.TryRemove(key, out _);
+                }).ConfigureAwait(false);
+            });
+
+            StartLockControlRefresher();
+        }
+
+        private async void StartLockControlRefresher()
+        {
+            if (islockControlRefresherRunning)
+            {
+                return;
+            }
+            islockControlRefresherRunning = true;
+
+            while (writeTasks.Count != 0)
+            {
+                App.Database.OfflineDatabase.writeTaskPutControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+            }
+
+            islockControlRefresherRunning = false;
         }
 
         #endregion

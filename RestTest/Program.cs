@@ -178,9 +178,9 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
-            TestObjectDictionaryPut();
+            //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
             //TestObjectDictionarySub3();
@@ -231,7 +231,7 @@ namespace RestTest
             }
         }
 
-        public static void TestRealtimeWire()
+        public static async void TestRealtimeWire()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
@@ -259,7 +259,7 @@ namespace RestTest
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        subWire.SetBlob(null);
+                        await subWire.SetBlob(null);
                     }
                     else
                     {
@@ -270,7 +270,7 @@ namespace RestTest
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        subWire.SetBlob(data);
+                        await subWire.SetBlob(data);
                     }
                 }
                 else if (line == "view")
@@ -284,7 +284,7 @@ namespace RestTest
             }
         }
 
-        public static void TestRealtimeWire2()
+        public static async void TestRealtimeWire2()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
@@ -333,7 +333,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(null);
+                            await subWire.SetBlob(null);
                         }
                         else
                         {
@@ -344,7 +344,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(data);
+                            await subWire.SetBlob(data);
                         }
                     }
                 }
@@ -363,7 +363,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(null);
+                            await subWire.SetBlob(null);
                         }
                         else
                         {
@@ -374,7 +374,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(data);
+                            await subWire.SetBlob(data);
                         }
                     }
                 }
@@ -623,6 +623,9 @@ namespace RestTest
 
         public static void TestPropertyDictionarySub2()
         {
+            Console.WriteLine("START");
+            Console.ReadLine();
+
             var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
@@ -644,14 +647,12 @@ namespace RestTest
                     while (toRun)
                     {
                         toRun = false;
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        Console.WriteLine("Total: " + await wire.GetTotalDataCount() + " Sync: " + await wire.GetSyncedDataCount());
                         await Task.Delay(500);
                     }
                     isRun = false;
                 }).ConfigureAwait(false);
             };
-
-            string lin11e = Console.ReadLine();
 
             for (int i = 0; i < 1000; i++)
             {
@@ -777,7 +778,7 @@ namespace RestTest
                     {
                         toRun = false;
                         Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        Console.WriteLine("Total: " + await wire.GetTotalDataCount() + " Sync: " + await wire.GetSyncedDataCount());
                         await Task.Delay(500);
                     }
                     isRun = false;
