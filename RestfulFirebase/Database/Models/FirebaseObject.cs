@@ -38,7 +38,6 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<WireExceptionEventArgs> WireError;
 
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
-        private SemaphoreSlim dataChangesLock = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -74,7 +73,7 @@ namespace RestfulFirebase.Database.Models
 
                 IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
                 List<string> supPaths = new List<string>();
-                foreach (var path in await RealtimeInstance.GetSubPaths().ConfigureAwait(false))
+                foreach (var path in RealtimeInstance.GetSubPaths())
                 {
                     var separatedPath = Utils.UrlSeparate(path);
                     var key = separatedPath[0];
@@ -83,8 +82,14 @@ namespace RestfulFirebase.Database.Models
 
                 foreach (var prop in props)
                 {
-                    if (invokeSetFirst) RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
-                    else RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
+                    if (invokeSetFirst)
+                    {
+                        RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
+                    }
+                    else
+                    {
+                        RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
+                    }
                     supPaths.RemoveAll(i => i == prop.Key);
                 }
 
@@ -594,7 +599,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     await attachLock.WaitAsync().ConfigureAwait(false);
                     NamedProperty namedProperty = GetCore(key, null);
-                    if (namedProperty == null && await RealtimeInstance.HasChild(key).ConfigureAwait(false))
+                    if (namedProperty == null && RealtimeInstance.HasChild(key))
                     {
                         namedProperty = NamedPropertyFactory(key, null, nameof(FirebaseObject));
                         if (namedProperty == null)

@@ -18,6 +18,7 @@ using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Extensions;
 using System.ComponentModel;
 using System.Windows.Threading;
+using RestfulFirebase.Local;
 
 namespace RestTest
 {
@@ -178,7 +179,7 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
@@ -188,13 +189,12 @@ namespace RestTest
             //await TestDef();
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
-            //TestCascadeObjectMassPut();
+            TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
             //await TestCascadeObjectSetNull();
 
             while (true)
             {
-                Console.ReadLine();
             }
         }
 
@@ -231,12 +231,12 @@ namespace RestTest
             }
         }
 
-        public static async void TestRealtimeWire()
+        public static void TestRealtimeWire()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
+                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -259,7 +259,7 @@ namespace RestTest
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        await subWire.SetBlob(null);
+                        subWire.SetBlob(null);
                     }
                     else
                     {
@@ -270,7 +270,7 @@ namespace RestTest
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        await subWire.SetBlob(data);
+                        subWire.SetBlob(data);
                     }
                 }
                 else if (line == "view")
@@ -284,12 +284,12 @@ namespace RestTest
             }
         }
 
-        public static async void TestRealtimeWire2()
+        public static void TestRealtimeWire2()
         {
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Main Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
+                Console.WriteLine("Main Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -298,7 +298,7 @@ namespace RestTest
             var subWire1 = wire.Child("sub1");
             subWire1.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub1 Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
+                Console.WriteLine("Sub1 Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
             };
             subWire1.Error += (s, e) =>
             {
@@ -307,7 +307,7 @@ namespace RestTest
             var subWire2 = wire.Child("sub2");
             subWire2.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub2 Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount() + " Path: " + e.Path);
+                Console.WriteLine("Sub2 Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
             };
             subWire2.Error += (s, e) =>
             {
@@ -333,7 +333,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            await subWire.SetBlob(null);
+                            subWire.SetBlob(null);
                         }
                         else
                         {
@@ -344,7 +344,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            await subWire.SetBlob(data);
+                            subWire.SetBlob(data);
                         }
                     }
                 }
@@ -363,7 +363,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            await subWire.SetBlob(null);
+                            subWire.SetBlob(null);
                         }
                         else
                         {
@@ -374,7 +374,7 @@ namespace RestTest
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            await subWire.SetBlob(data);
+                            subWire.SetBlob(data);
                         }
                     }
                 }
@@ -610,7 +610,7 @@ namespace RestTest
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
             };
             while (true)
             {
@@ -623,38 +623,26 @@ namespace RestTest
 
         public static void TestPropertyDictionarySub2()
         {
-            Console.WriteLine("START");
-            Console.ReadLine();
-
             var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
-                //Console.WriteLine("Count: " + dict.Keys.Count);
+                Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
-            bool isRun = false;
-            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.DataChanges += (s, e) =>
+            wire.DataEvaluated += (s, e) =>
             {
-                toRun = true;
-                if (isRun) return;
-                isRun = true;
-                Task.Run(async delegate
-                {
-                    while (toRun)
-                    {
-                        toRun = false;
-                        Console.WriteLine("Total: " + await wire.GetTotalDataCount() + " Sync: " + await wire.GetSyncedDataCount());
-                        await Task.Delay(500);
-                    }
-                    isRun = false;
-                }).ConfigureAwait(false);
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
+                Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
-            for (int i = 0; i < 1000; i++)
+            Console.WriteLine("START");
+            Console.ReadLine();
+
+            for (int i = 0; i < 2000; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(i.ToString());
@@ -683,7 +671,7 @@ namespace RestTest
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
             };
 
             string lin11e = Console.ReadLine();
@@ -762,27 +750,14 @@ namespace RestTest
             {
                 //Console.WriteLine("Count: " + dict.Keys.Count);
             };
-            bool isRun = false;
-            bool toRun = false;
+
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.DataChanges += (s, e) =>
+            wire.DataEvaluated += (s, e) =>
             {
-                toRun = true;
-                if (isRun) return;
-                isRun = true;
-                Task.Run(async delegate
-                {
-                    while (toRun)
-                    {
-                        toRun = false;
-                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + await wire.GetTotalDataCount() + " Sync: " + await wire.GetSyncedDataCount());
-                        await Task.Delay(500);
-                    }
-                    isRun = false;
-                }).ConfigureAwait(false);
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
             };
 
             string lin11e = Console.ReadLine();
@@ -812,7 +787,7 @@ namespace RestTest
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount());
+                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount);
             };
             wire.Start();
             wire.SubModel(dict);
@@ -845,7 +820,7 @@ namespace RestTest
             wire.PutModel(obj);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.GetSyncedDataCount() + "/" + wire.GetTotalDataCount());
+                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount);
             };
 
             await wire.WaitForSynced();
@@ -951,7 +926,7 @@ namespace RestTest
                     {
                         toRun = false;
                         Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
                         await Task.Delay(500);
                     }
                     isRun = false;
@@ -1019,25 +994,11 @@ namespace RestTest
                 Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
             };
 
-            bool isRun = false;
-            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataChanges += (s, e) =>
+            wire.DataEvaluated += (s, e) =>
             {
-                toRun = true;
-                if (isRun) return;
-                isRun = true;
-                Task.Run(async delegate
-                {
-                    while (toRun)
-                    {
-                        toRun = false;
-                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
-                        await Task.Delay(500);
-                    }
-                    isRun = false;
-                }).ConfigureAwait(false);
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
             };
             wire.Start();
 
@@ -1115,7 +1076,7 @@ namespace RestTest
                     {
                         toRun = false;
                         Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
                         await Task.Delay(500);
                     }
                     isRun = false;
@@ -1199,7 +1160,7 @@ namespace RestTest
                     {
                         toRun = false;
                         Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.GetTotalDataCount() + " Sync: " + wire.GetSyncedDataCount());
+                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
                         await Task.Delay(500);
                     }
                     isRun = false;

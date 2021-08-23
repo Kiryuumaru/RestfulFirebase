@@ -35,7 +35,6 @@ namespace RestfulFirebase.Database.Models
         public event EventHandler<WireExceptionEventArgs> WireError;
 
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
-        private SemaphoreSlim dataChangesLock = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -91,11 +90,11 @@ namespace RestfulFirebase.Database.Models
 
                     if (invokeSetFirst)
                     {
-                        await RealtimeInstance.SetBlob(blob).ConfigureAwait(false);
+                        RealtimeInstance.SetBlob(blob);
                     }
                     else
                     {
-                        SetObject(await RealtimeInstance.GetBlob().ConfigureAwait(false));
+                        SetObject(RealtimeInstance.GetBlob());
                     }
                 }
             }
@@ -149,10 +148,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (HasAttachedRealtime)
                     {
-                        Task.Run(async delegate
-                        {
-                            await RealtimeInstance.SetBlob(serialized).ConfigureAwait(false);
-                        });
+                        RealtimeInstance.SetBlob(serialized);
                     }
                 }
             }
@@ -248,10 +244,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (HasAttachedRealtime)
                     {
-                        Task.Run(async delegate
-                        {
-                            await RealtimeInstance.SetBlob(blob).ConfigureAwait(false);
-                        });
+                        RealtimeInstance.SetBlob(blob);
                     }
 
                     return true;
@@ -320,10 +313,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (HasAttachedRealtime)
                     {
-                        Task.Run(async delegate
-                        {
-                            await RealtimeInstance.SetBlob(null).ConfigureAwait(false);
-                        });
+                        RealtimeInstance.SetBlob(null);
                     }
                     return true;
                 }
@@ -446,10 +436,10 @@ namespace RestfulFirebase.Database.Models
             {
                 try
                 {
-                    await dataChangesLock.WaitAsync().ConfigureAwait(false);
+                    await attachLock.WaitAsync().ConfigureAwait(false);
                     if (!(GetObject() is IRealtimeModel))
                     {
-                        SetObject(await RealtimeInstance.GetBlob().ConfigureAwait(false));
+                        SetObject(RealtimeInstance.GetBlob());
                     }
                 }
                 catch
@@ -458,7 +448,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 finally
                 {
-                    dataChangesLock.Release();
+                    attachLock.Release();
                 }
             }
         }

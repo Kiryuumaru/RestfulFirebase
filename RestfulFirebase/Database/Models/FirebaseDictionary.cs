@@ -40,7 +40,6 @@ namespace RestfulFirebase.Database.Models
         private Func<string, T> itemInitializer;
 
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
-        private SemaphoreSlim dataChangesLock = new SemaphoreSlim(1, 1);
 
         #endregion
 
@@ -88,7 +87,7 @@ namespace RestfulFirebase.Database.Models
 
                 List<KeyValuePair<string, T>> objs = this.ToList();
                 List<string> supPaths = new List<string>();
-                foreach (var path in await RealtimeInstance.GetSubPaths().ConfigureAwait(false))
+                foreach (var path in RealtimeInstance.GetSubPaths())
                 {
                     var separatedPath = Utils.UrlSeparate(path);
                     var key = separatedPath[0];
@@ -330,7 +329,10 @@ namespace RestfulFirebase.Database.Models
             {
                 if (HasAttachedRealtime)
                 {
-                    WireValue(key, value, true);
+                    Task.Run(delegate
+                    {
+                        WireValue(key, value, true);
+                    });
                 }
             }
 
@@ -351,7 +353,10 @@ namespace RestfulFirebase.Database.Models
             {
                 if (TryGetValueCore(key, out T value))
                 {
-                    if (!value.IsNull()) value.SetNull();
+                    if (!value.IsNull())
+                    {
+                        value.SetNull();
+                    }
                     value.Dispose();
                     return true;
                 }
@@ -453,10 +458,10 @@ namespace RestfulFirebase.Database.Models
 
                 try
                 {
-                    await dataChangesLock.WaitAsync().ConfigureAwait(false);
+                    await attachLock.WaitAsync().ConfigureAwait(false);
 
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var hasChild = await RealtimeInstance.HasChild(key).ConfigureAwait(false);
+                    var hasChild = RealtimeInstance.HasChild(key);
                     if (obj.Value == null && hasChild)
                     {
                         var item = ObjectFactory(key);
@@ -481,7 +486,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 finally
                 {
-                    dataChangesLock.Release();
+                    attachLock.Release();
                 }
             }
         }

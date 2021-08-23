@@ -109,8 +109,6 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public event EventHandler AuthRefreshed;
 
-        internal bool IsInitialized { get; private set; }
-
         #endregion
 
         #region Initializers
@@ -120,16 +118,20 @@ namespace RestfulFirebase.Auth
             SyncOperation.SetContext(app);
 
             App = app;
+
+            App.Config.PropertyChanged += Config_PropertyChanged;
+
+            Fetch();
         }
 
-        internal async Task Initialize()
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
-            if (IsInitialized)
+            if (disposing)
             {
-                return;
+                App.Config.PropertyChanged -= Config_PropertyChanged;
             }
-            IsInitialized = true;
-            await Fetch().ConfigureAwait(false);
+            base.Dispose(disposing);
         }
 
         #endregion
@@ -584,7 +586,7 @@ namespace RestfulFirebase.Auth
                         FirebaseToken = refreshAuth.AccessToken
                     };
 
-                    await UpdateAuth(auth);
+                    UpdateAuth(auth);
 
                     OnAuthRefreshed();
                 }
@@ -705,7 +707,7 @@ namespace RestfulFirebase.Auth
 
             var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
 
-            await UpdateAuth(auth).ConfigureAwait(false);
+            UpdateAuth(auth);
         }
 
         /// <summary>
@@ -714,10 +716,10 @@ namespace RestfulFirebase.Auth
         /// <returns>
         /// The <see cref="Task"/> proxy of the specified task.
         /// </returns>
-        public async Task Signout()
+        public void Signout()
         {
-            await Purge().ConfigureAwait(false);
-            await App.Database.Flush().ConfigureAwait(false);
+            Purge();
+            App.Database.Flush();
             App.Auth.InvokeAuthenticationEvents();
         }
 
@@ -744,16 +746,16 @@ namespace RestfulFirebase.Auth
             });
         }
 
-        internal async Task UpdateAuth(FirebaseAuth auth)
+        internal void UpdateAuth(FirebaseAuth auth)
         {
             if (!string.IsNullOrEmpty(auth.FirebaseToken)) FirebaseToken = auth.FirebaseToken;
             if (!string.IsNullOrEmpty(auth.RefreshToken)) RefreshToken = auth.RefreshToken;
             if (auth.ExpiresIn.HasValue) ExpiresIn = auth.ExpiresIn.Value;
             if (auth.Created.HasValue) Created = auth.Created.Value;
-            if (auth.User != null) await UpdateUserInfo(auth.User).ConfigureAwait(false);
+            if (auth.User != null) UpdateUserInfo(auth.User);
         }
 
-        internal async Task UpdateUserInfo(User user)
+        internal void UpdateUserInfo(User user)
         {
             LocalId = user.LocalId;
             FederatedId = user.FederatedId;
@@ -764,10 +766,10 @@ namespace RestfulFirebase.Auth
             IsEmailVerified = user.IsEmailVerified;
             PhotoUrl = user.PhoneNumber;
             PhoneNumber = user.PhoneNumber;
-            await Store().ConfigureAwait(false);
+            Store();
         }
 
-        internal async Task Purge()
+        internal void Purge()
         {
             FirebaseToken = default;
             RefreshToken = default;
@@ -783,12 +785,12 @@ namespace RestfulFirebase.Auth
             PhotoUrl = default;
             PhoneNumber = default;
 
-            await App.LocalDatabase.Delete(Root, true).ConfigureAwait(false);
+            App.LocalDatabase.Delete(Root, true);
         }
 
-        internal async Task Fetch()
+        internal void Fetch()
         {
-            var auth = await App.LocalDatabase.Get(Root, true).ConfigureAwait(false);
+            var auth = App.LocalDatabase.Get(Root, true);
 
             FirebaseToken = Utils.BlobGetValue(auth, "tok");
             RefreshToken = Utils.BlobGetValue(auth, "ref");
@@ -805,7 +807,7 @@ namespace RestfulFirebase.Auth
             PhoneNumber = Utils.BlobGetValue(auth, "pnum");
         }
 
-        internal async Task Store()
+        internal void Store()
         {
             var auth = "";
 
@@ -823,7 +825,16 @@ namespace RestfulFirebase.Auth
             auth = Utils.BlobSetValue(auth, "purl", PhotoUrl);
             auth = Utils.BlobSetValue(auth, "pnum", PhoneNumber);
 
-            await App.LocalDatabase.Set(Root, auth, true).ConfigureAwait(false);
+            App.LocalDatabase.Set(Root, auth, true);
+        }
+
+        private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
+                e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))
+            {
+                Fetch();
+            }
         }
 
         #endregion
