@@ -346,7 +346,9 @@ namespace RestfulFirebase.Database.Query
         /// <inheritdoc/>
         public RealtimeWire AsRealtimeWire()
         {
-            return new RealtimeWire(App, this);
+            var wire = new RealtimeWire(App, this);
+            wire.EvaluateData();
+            return wire;
         }
 
         /// <inheritdoc/>
