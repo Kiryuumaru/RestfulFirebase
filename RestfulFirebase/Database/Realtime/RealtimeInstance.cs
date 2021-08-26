@@ -48,7 +48,7 @@ namespace RestfulFirebase.Database.Realtime
         public bool IsSynced => TotalDataCount == SyncedDataCount && dataInitialized;
 
         /// <summary>
-        /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// Gets <c>true</c> whether the node is locally available; otherwise <c>false</c>.
         /// </summary>
         public bool IsLocallyAvailable => TotalDataCount != 0 && dataInitialized;
 
