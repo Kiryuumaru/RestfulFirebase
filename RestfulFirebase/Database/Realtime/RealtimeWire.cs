@@ -87,6 +87,7 @@ namespace RestfulFirebase.Database.Realtime
 
             var clone = new RealtimeWire(App, Query);
             clone.SyncOperation.SetContext(this);
+            clone.EvaluateData();
             Next += clone.OnNext;
             Disposing += delegate
             {

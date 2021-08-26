@@ -84,11 +84,11 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (invokeSetFirst)
                     {
-                        RealtimeInstance.Child(prop.Key).PutModel((FirebaseProperty)prop.Property);
+                        RealtimeInstance.Child(prop.Key, false).PutModel((FirebaseProperty)prop.Property);
                     }
                     else
                     {
-                        RealtimeInstance.Child(prop.Key).SubModel((FirebaseProperty)prop.Property);
+                        RealtimeInstance.Child(prop.Key, false).SubModel((FirebaseProperty)prop.Property);
                     }
                     supPaths.RemoveAll(i => i == prop.Key);
                 }
@@ -102,7 +102,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (!postAction.isUpdate && postAction.namedProperty != null)
                             {
-                                RealtimeInstance.Child(path).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                                RealtimeInstance.Child(path, false).SubModel((FirebaseProperty)postAction.namedProperty.Property);
                             }
                         });
                 }
@@ -588,7 +588,7 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (!postAction.isUpdate && postAction.namedProperty != null)
                             {
-                                RealtimeInstance.Child(key).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                                RealtimeInstance.Child(key, false).SubModel((FirebaseProperty)postAction.namedProperty.Property);
                             }
                         });
                 }

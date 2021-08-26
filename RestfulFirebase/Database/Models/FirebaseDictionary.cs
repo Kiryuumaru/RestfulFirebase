@@ -271,11 +271,11 @@ namespace RestfulFirebase.Database.Models
 
             if (invokeSetFirst)
             {
-                RealtimeInstance.Child(key).PutModel(value);
+                RealtimeInstance.Child(key, false).PutModel(value);
             }
             else
             {
-                RealtimeInstance.Child(key).SubModel(value);
+                RealtimeInstance.Child(key, false).SubModel(value);
             }
         }
 

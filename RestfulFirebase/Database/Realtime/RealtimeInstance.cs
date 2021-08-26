@@ -45,7 +45,12 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
         /// </summary>
-        public bool IsSynced => TotalDataCount == SyncedDataCount && dataCountInitialized;
+        public bool IsSynced => TotalDataCount == SyncedDataCount && dataInitialized;
+
+        /// <summary>
+        /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// </summary>
+        public bool IsLocallyAvailable => TotalDataCount != 0 && dataInitialized;
 
         /// <summary>
         /// Gets the total data cached of the instance.
@@ -93,7 +98,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </remarks>
         public event EventHandler<WireExceptionEventArgs> Error;
 
-        private bool dataCountInitialized;
+        private bool dataInitialized;
         private bool dataCountQueue;
         private bool dataCountEvaluating;
 
@@ -106,7 +111,7 @@ namespace RestfulFirebase.Database.Realtime
             App = app;
             Query = query;
 
-            EvaluateDataCount();
+            EvaluateDataQueue();
         }
 
         private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire root, RealtimeInstance parent, IFirebaseQuery query)
@@ -144,6 +149,7 @@ namespace RestfulFirebase.Database.Realtime
 
             var clone = new RealtimeInstance(App, Root, Parent, Query);
             clone.SyncOperation.SetContext(this);
+            clone.EvaluateData();
 
             return clone;
         }
@@ -179,25 +185,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public RealtimeInstance Child(string path)
         {
-            if (IsDisposed)
-            {
-                return default;
-            }
-
-            RealtimeWire root = null;
-            if (Root == null && this is RealtimeWire wire)
-            {
-                root = wire;
-            }
-            else
-            {
-                root = Root;
-            }
-
-            var childWire = new RealtimeInstance(App, root, this, path);
-            childWire.SyncOperation.SetContext(this);
-
-            return childWire;
+            return Child(path, true);
         }
 
         /// <summary>
@@ -349,7 +337,7 @@ namespace RestfulFirebase.Database.Realtime
             }
             else
             {
-                EvaluateDataCount();
+                EvaluateDataQueue();
             }
 
             return hasChanges;
@@ -541,7 +529,7 @@ namespace RestfulFirebase.Database.Realtime
                 Root.OnDataChanges(uris);
             }
 
-            EvaluateDataCount();
+            EvaluateDataQueue();
         }
 
         /// <summary>
@@ -604,6 +592,33 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
+        internal RealtimeInstance Child(string path, bool evaluateData)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            RealtimeWire root = null;
+            if (Root == null && this is RealtimeWire wire)
+            {
+                root = wire;
+            }
+            else
+            {
+                root = Root;
+            }
+
+            var childWire = new RealtimeInstance(App, root, this, path);
+            childWire.SyncOperation.SetContext(this);
+            if (evaluateData)
+            {
+                childWire.EvaluateData();
+            }
+
+            return childWire;
+        }
+
         internal bool MakeChanges(DataHolder dataHolder, string blob)
         {
             return dataHolder?.MakeChanges(blob, OnWrite, err => OnPutError(dataHolder, err)) ?? false;
@@ -614,9 +629,28 @@ namespace RestfulFirebase.Database.Realtime
             return dataHolder?.MakeSync(blob, OnWrite, err => OnPutError(dataHolder, err)) ?? false;
         }
 
+        internal void EvaluateData()
+        {
+            var uri = Query.GetAbsolutePath();
+            int totalCount = 0;
+            int synedCount = 0;
+            foreach (var data in App.Database.OfflineDatabase.GetDatas(uri, true))
+            {
+                totalCount++;
+                if (data.Changes == null)
+                {
+                    synedCount++;
+                }
+            }
+            TotalDataCount = totalCount;
+            SyncedDataCount = synedCount;
+            dataInitialized = true;
+            DataEvaluated?.Invoke(this, new DataEvaluatedEventArgs(totalCount, synedCount));
+        }
+
         private void OnWrite()
         {
-            EvaluateDataCount();
+            EvaluateDataQueue();
         }
 
         private void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
@@ -660,7 +694,7 @@ namespace RestfulFirebase.Database.Realtime
 
                 SelfDataChanges(new DataChangesEventArgs(baseUri, path));
 
-                EvaluateDataCount();
+                EvaluateDataQueue();
             }
         }
 
@@ -704,11 +738,11 @@ namespace RestfulFirebase.Database.Realtime
             });
         }
 
-        private async void EvaluateDataCount()
+        private async void EvaluateDataQueue()
         {
             if (Parent != null)
             {
-                Parent.EvaluateDataCount();
+                Parent.EvaluateDataQueue();
             }
             dataCountQueue = true;
             if (dataCountEvaluating)
@@ -716,24 +750,10 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
             dataCountEvaluating = true;
-            var uri = Query.GetAbsolutePath();
             while (dataCountQueue)
             {
                 dataCountQueue = false;
-                int totalCount = 0;
-                int synedCount = 0;
-                foreach (var data in App.Database.OfflineDatabase.GetDatas(uri, true))
-                {
-                    totalCount++;
-                    if (data.Changes == null)
-                    {
-                        synedCount++;
-                    }
-                }
-                TotalDataCount = totalCount;
-                SyncedDataCount = synedCount;
-                dataCountInitialized = true;
-                DataEvaluated?.Invoke(this, new DataEvaluatedEventArgs(totalCount, synedCount));
+                EvaluateData();
                 await Task.Delay(App.Config.DatabaseRetryDelay);
             }
             dataCountEvaluating = false;
