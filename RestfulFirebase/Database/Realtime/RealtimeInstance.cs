@@ -259,7 +259,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForSynced(bool cancelOnError)
         {
-            return WaitForSynced(cancelOnError: cancelOnError);
+            return WaitForSynced(cancelOnError, null, null);
         }
 
         /// <summary>
@@ -273,7 +273,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForSynced(TimeSpan timeout)
         {
-            return WaitForSynced(timeout: timeout);
+            return WaitForSynced(false, timeout, null);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForSynced(CancellationToken cancellationToken)
         {
-            return WaitForSynced(cancellationToken: cancellationToken);
+            return WaitForSynced(false, null, cancellationToken);
         }
 
         /// <summary>

@@ -169,7 +169,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForFirstStream(bool cancelOnError)
         {
-            return WaitForFirstStream(cancelOnError: cancelOnError);
+            return WaitForFirstStream(cancelOnError, null, null);
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForFirstStream(TimeSpan timeout)
         {
-            return WaitForFirstStream(timeout: timeout);
+            return WaitForFirstStream(false, timeout, null);
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
         {
-            return WaitForFirstStream(cancellationToken: cancellationToken);
+            return WaitForFirstStream(false, null, cancellationToken);
         }
 
         /// <inheritdoc/>
