@@ -35,7 +35,7 @@ namespace RestfulFirebase.Auth
         /// <summary>
         /// Gets <c>true</c> whether the user is authenticated; otherwise <c>false</c>.
         /// </summary>
-        public bool IsAuthenticated => Session != null;
+        public bool IsAuthenticated => session.Exist;
 
         /// <summary>
         /// Event raised on the current context when the authentication is refreshed.

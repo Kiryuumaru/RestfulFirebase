@@ -226,7 +226,7 @@ namespace RestfulFirebase.Database.Realtime
                 var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
                 foreach (var subData in subDatas)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    if (MakeSync(subData, null))
                     {
                         if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
                         {
@@ -241,7 +241,7 @@ namespace RestfulFirebase.Database.Realtime
                 var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, false, true, Query.GetAbsolutePath());
                 foreach (var subData in subDatas)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    if (MakeSync(subData, null))
                     {
                         if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
                         {
@@ -252,7 +252,7 @@ namespace RestfulFirebase.Database.Realtime
 
                 // Make single
                 var data = App.Database.OfflineDatabase.GetData(streamObject.Uri);
-                if (data.MakeSync(single.Blob, err => OnPutError(data, err)))
+                if (MakeSync(data, single.Blob))
                 {
                     if (!urisToInvoke.Any(i => Utils.UrlCompare(i, data.Uri)))
                     {
@@ -270,7 +270,7 @@ namespace RestfulFirebase.Database.Realtime
                 var excluded = subDatas.Where(i => !syncDatas.Any(j => Utils.UrlCompare(j.path, i.Uri)));
                 foreach (var subData in excluded)
                 {
-                    if (subData?.MakeSync(null, err => OnPutError(subData, err)) ?? false)
+                    if (MakeSync(subData, null))
                     {
                         if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
                         {
@@ -287,7 +287,7 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         subData = App.Database.OfflineDatabase.GetData(syncData.path);
                     }
-                    if (subData.MakeSync(syncData.blob, err => OnPutError(subData, err)))
+                    if (MakeSync(subData, syncData.blob))
                     {
                         if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
                         {

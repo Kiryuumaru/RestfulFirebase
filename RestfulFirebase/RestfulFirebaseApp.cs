@@ -56,11 +56,6 @@ namespace RestfulFirebase
         {
             Config = config;
 
-            if (!Config.DatabaseURL.EndsWith("/"))
-            {
-                Config.DatabaseURL += "/";
-            }
-
             LocalDatabase = new LocalDatabaseApp(this);
             Database = new FirebaseDatabaseApp(this);
             Storage = new FirebaseStorageApp(this);

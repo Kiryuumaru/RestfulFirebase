@@ -328,7 +328,7 @@ namespace RestfulFirebase.Database.Realtime
             var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
             foreach (var subData in subDatas)
             {
-                if (subData.MakeChanges(null, err => OnPutError(subData, err)))
+                if (MakeChanges(subData, null))
                 {
                     hasChanges = true;
                     affectedUris.Add(subData.Uri);
@@ -337,7 +337,7 @@ namespace RestfulFirebase.Database.Realtime
 
             // Make changes
             var dataHolder = App.Database.OfflineDatabase.GetData(uri);
-            if (dataHolder.MakeChanges(blob, err => OnPutError(dataHolder, err)))
+            if (MakeChanges(dataHolder, blob))
             {
                 hasChanges = true;
                 affectedUris.Add(uri);
@@ -347,8 +347,10 @@ namespace RestfulFirebase.Database.Realtime
             {
                 OnDataChanges(affectedUris.ToArray());
             }
-
-            EvaluateDataCount();
+            else
+            {
+                EvaluateDataCount();
+            }
 
             return hasChanges;
         }
@@ -602,7 +604,22 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        internal void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
+        internal bool MakeChanges(DataHolder dataHolder, string blob)
+        {
+            return dataHolder?.MakeChanges(blob, OnWrite, err => OnPutError(dataHolder, err)) ?? false;
+        }
+
+        internal bool MakeSync(DataHolder dataHolder, string blob)
+        {
+            return dataHolder?.MakeSync(blob, OnWrite, err => OnPutError(dataHolder, err)) ?? false;
+        }
+
+        private void OnWrite()
+        {
+            EvaluateDataCount();
+        }
+
+        private void OnPutError(DataHolder holder, RetryExceptionEventArgs err)
         {
             if (IsDisposed)
             {
@@ -689,6 +706,10 @@ namespace RestfulFirebase.Database.Realtime
 
         private async void EvaluateDataCount()
         {
+            if (Parent != null)
+            {
+                Parent.EvaluateDataCount();
+            }
             dataCountQueue = true;
             if (dataCountEvaluating)
             {

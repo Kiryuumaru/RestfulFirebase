@@ -241,12 +241,12 @@ namespace RestfulFirebase.Extensions
         internal static string ToBase62(int number)
         {
             var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 62);
-            string base62 = "";
+            StringBuilder builder = new StringBuilder();
             foreach (var num in arbitraryBase)
             {
-                base62 += Base62Charset[(int)num];
+                builder.Append(Base62Charset[(int)num]);
             }
-            return base62;
+            return builder.ToString();
         }
 
         internal static int FromBase62(string number)
@@ -264,12 +264,12 @@ namespace RestfulFirebase.Extensions
         internal static string ToBase64(int number)
         {
             var arbitraryBase = ToUnsignedArbitraryBaseSystem((ulong)number, 64);
-            string base64 = "";
+            StringBuilder builder = new StringBuilder();
             foreach (var num in arbitraryBase)
             {
-                base64 += Base64Charset[(int)num];
+                builder.Append(Base64Charset[(int)num]);
             }
-            return base64;
+            return builder.ToString();
         }
 
         internal static int FromBase64(string number)
@@ -345,21 +345,21 @@ namespace RestfulFirebase.Extensions
                 return null;
             }
 
+            StringBuilder builder = new StringBuilder();
             int patternIndex = 0;
-            string result = "";
             for (int i = 0; i < value.Length; i++)
             {
                 if (char.MaxValue < (char)(value[i] + pattern[patternIndex]))
                 {
-                    result += char.MaxValue - (char)(value[i] + pattern[patternIndex]);
+                    builder.Append(char.MaxValue - (char)(value[i] + pattern[patternIndex]));
                 }
                 else
                 {
-                    result += (char)(value[i] + pattern[patternIndex]);
+                    builder.Append((char)(value[i] + pattern[patternIndex]));
                 }
                 patternIndex = (patternIndex + 1) >= pattern.Length ? 0 : patternIndex + 1;
             }
-            return result;
+            return builder.ToString();
         }
 
         internal static string DecryptString(string encrypted, int[] pattern)
@@ -369,21 +369,21 @@ namespace RestfulFirebase.Extensions
                 return null;
             }
 
+            StringBuilder builder = new StringBuilder();
             int patternIndex = 0;
-            string result = "";
             for (int i = 0; i < encrypted.Length; i++)
             {
                 if (char.MinValue > (char)(encrypted[i] - pattern[patternIndex]))
                 {
-                    result += char.MaxValue - (char)(encrypted[i] - pattern[patternIndex]);
+                    builder.Append(char.MaxValue - (char)(encrypted[i] - pattern[patternIndex]));
                 }
                 else
                 {
-                    result += (char)(encrypted[i] - pattern[patternIndex]);
+                    builder.Append((char)(encrypted[i] - pattern[patternIndex]));
                 }
                 patternIndex = (patternIndex + 1) >= pattern.Length ? 0 : patternIndex + 1;
             }
-            return result;
+            return builder.ToString();
         }
 
         #endregion
@@ -460,14 +460,18 @@ namespace RestfulFirebase.Extensions
 
         internal static string UrlCombine(params string[] paths)
         {
-            string ret = "";
+            StringBuilder builder = new StringBuilder();
             foreach (var path in paths)
             {
-                if (string.IsNullOrEmpty(path)) ret += "/";
-                else if (path.EndsWith("/")) ret += path;
-                else ret += (path + "/");
+                if (string.IsNullOrEmpty(path)) builder.Append("/");
+                else if (path.EndsWith("/")) builder.Append(path);
+                else builder.Append(path + "/");
             }
-            return ret.Length == 0 ? "/" : ret;
+            if (builder.Length == 0)
+            {
+                builder.Append("/");
+            }
+            return builder.ToString();
         }
 
         internal static string[] UrlSeparate(string url)

@@ -482,16 +482,17 @@ namespace RestfulFirebase.Extensions
 
         private async void EvaluateTokenCount()
         {
-            if (lastTokenCount < ConcurrentTokenCount)
+            int currentToken = ConcurrentTokenCount;
+            if (lastTokenCount < currentToken)
             {
-                int tokenToRelease = ConcurrentTokenCount - lastTokenCount;
-                lastTokenCount = ConcurrentTokenCount;
+                int tokenToRelease = currentToken - lastTokenCount;
+                lastTokenCount = currentToken;
                 operationLock.Release(tokenToRelease);
             }
-            else if (lastTokenCount > ConcurrentTokenCount)
+            else if (lastTokenCount > currentToken)
             {
-                int tokenToWait = lastTokenCount - ConcurrentTokenCount;
-                lastTokenCount = ConcurrentTokenCount;
+                int tokenToWait = lastTokenCount - currentToken;
+                lastTokenCount = currentToken;
                 for (int i = 0; i < tokenToWait; i++)
                 {
                     await operationLock.WaitAsync();

@@ -295,7 +295,7 @@ namespace RestfulFirebase.Database.Models
             string key,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             if (IsDisposed)
             {
@@ -351,7 +351,7 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             if (IsDisposed)
             {
@@ -407,7 +407,7 @@ namespace RestfulFirebase.Database.Models
             T value,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             return SetFirebasePropertyWithKey(value, propertyName, propertyName, validate, onSet);
         }
@@ -446,7 +446,7 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            EventHandler<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<ObjectPropertySetEventArgs<T>> onSet = null)
         {
             return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, onSet);
         }

@@ -269,9 +269,16 @@ namespace RestfulFirebase.Database.Models
 
             value.SyncOperation.SetContext(this);
 
-            if (invokeSetFirst) RealtimeInstance.Child(key).PutModel(value);
-            else RealtimeInstance.Child(key).SubModel(value);
+            if (invokeSetFirst)
+            {
+                RealtimeInstance.Child(key).PutModel(value);
+            }
+            else
+            {
+                RealtimeInstance.Child(key).SubModel(value);
+            }
         }
+
 
         /// <summary>
         /// Invokes <see cref="RealtimeAttached"/> event on the current context.
@@ -332,7 +339,7 @@ namespace RestfulFirebase.Database.Models
                     Task.Run(delegate
                     {
                         WireValue(key, value, true);
-                    });
+                    }).ConfigureAwait(false);
                 }
             }
 

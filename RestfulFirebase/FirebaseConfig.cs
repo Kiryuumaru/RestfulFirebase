@@ -7,6 +7,7 @@ using RestfulFirebase.Local;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -51,7 +52,13 @@ namespace RestfulFirebase
         public string DatabaseURL
         {
             get => GetProperty<string>();
-            set => SetProperty(value);
+            set => SetProperty(value, onSet: args =>
+            {
+                if (!args.NewValue.EndsWith("/"))
+                {
+                    DatabaseURL += "/";
+                }
+            });
         }
 
         /// <summary>

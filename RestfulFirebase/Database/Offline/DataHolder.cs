@@ -188,14 +188,14 @@ namespace RestfulFirebase.Database.Offline
             App = app;
             Uri = uri.EndsWith("/") ? uri : uri + "/";
 
-            App.Config.PropertyChanged += Config_PropertyChanged;
+            App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                App.Config.PropertyChanged -= Config_PropertyChanged;
+                App.Config.ImmediatePropertyChanged -= Config_PropertyChanged;
             }
             base.Dispose(disposing);
         }
@@ -204,7 +204,7 @@ namespace RestfulFirebase.Database.Offline
 
         #region Methods
 
-        internal bool MakeChanges(string blob, Action<RetryExceptionEventArgs> error)
+        internal bool MakeChanges(string blob, Action onWrite, Action<RetryExceptionEventArgs> error)
         {
             App.Database.OfflineDatabase.EvaluateCache(this);
 
@@ -222,7 +222,7 @@ namespace RestfulFirebase.Database.Offline
                     Changes = new DataChanges(
                         blob,
                         DataChangesType.Create);
-                    Put(error);
+                    Put(onWrite, error);
                 }
             }
             else if (oldBlob != blob)
@@ -230,17 +230,17 @@ namespace RestfulFirebase.Database.Offline
                 Changes = new DataChanges(
                     blob,
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
-                Put(error);
+                Put(onWrite, error);
             }
             else if (blob == null)
             {
-                Put(error);
+                Put(onWrite, error);
             }
 
             return oldBlob != Blob;
         }
 
-        internal bool MakeSync(string sync, Action<RetryExceptionEventArgs> error)
+        internal bool MakeSync(string sync, Action onWrite, Action<RetryExceptionEventArgs> error)
         {
             App.Database.OfflineDatabase.EvaluateCache(this);
 
@@ -271,7 +271,7 @@ namespace RestfulFirebase.Database.Offline
                     case DataChangesType.Create:
                         if (sync == null)
                         {
-                            Put(error);
+                            Put(onWrite, error);
                         }
                         else
                         {
@@ -286,7 +286,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         else if (currentSync == sync)
                         {
-                            Put(error);
+                            Put(onWrite, error);
                         }
                         else
                         {
@@ -301,7 +301,7 @@ namespace RestfulFirebase.Database.Offline
                         }
                         if (currentSync == sync)
                         {
-                            Put(error);
+                            Put(onWrite, error);
                         }
                         else
                         {
@@ -342,9 +342,9 @@ namespace RestfulFirebase.Database.Offline
             return true;
         }
 
-        private void Put(Action<RetryExceptionEventArgs> error)
+        private void Put(Action onWrite, Action<RetryExceptionEventArgs> error)
         {
-            App.Database.OfflineDatabase.Put(this, error);
+            App.Database.OfflineDatabase.Put(this, onWrite, error);
         }
 
         private string GetUniqueShort()

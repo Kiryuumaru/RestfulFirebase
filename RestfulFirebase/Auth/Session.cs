@@ -119,7 +119,7 @@ namespace RestfulFirebase.Auth
 
             App = app;
 
-            App.Config.PropertyChanged += Config_PropertyChanged;
+            App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
 
             Fetch();
         }
@@ -129,7 +129,7 @@ namespace RestfulFirebase.Auth
         {
             if (disposing)
             {
-                App.Config.PropertyChanged -= Config_PropertyChanged;
+                App.Config.ImmediatePropertyChanged -= Config_PropertyChanged;
             }
             base.Dispose(disposing);
         }

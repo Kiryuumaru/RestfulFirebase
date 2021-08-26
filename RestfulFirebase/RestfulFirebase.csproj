@@ -41,7 +41,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.1.3" />
+    <PackageReference Include="ObservableHelpers" Version="1.1.8" />
   </ItemGroup>
 
 </Project>

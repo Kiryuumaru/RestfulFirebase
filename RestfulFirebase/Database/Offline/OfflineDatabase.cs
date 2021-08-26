@@ -51,7 +51,7 @@ namespace RestfulFirebase.Database.Offline
                 this.error = error;
             }
 
-            public async Task Run()
+            public async void Run(Action onFinish)
             {
                 if (IsWritting || IsCancelled)
                 {
@@ -118,6 +118,8 @@ namespace RestfulFirebase.Database.Offline
                 catch { }
 
                 IsWritting = false;
+
+                onFinish?.Invoke();
             }
 
             public void Cancel()
@@ -159,7 +161,7 @@ namespace RestfulFirebase.Database.Offline
             writeTaskPutControl = new OperationInvoker(0);
             writeTaskErrorControl = new OperationInvoker(0);
 
-            App.Config.PropertyChanged += Config_PropertyChanged;
+            App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
 
             UpdateWriteTaskLock();
         }
@@ -168,7 +170,7 @@ namespace RestfulFirebase.Database.Offline
         {
             if (disposing)
             {
-                App.Config.PropertyChanged -= Config_PropertyChanged;
+                App.Config.ImmediatePropertyChanged -= Config_PropertyChanged;
                 foreach (WriteTask task in writeTasks.Values)
                 {
                     task.Cancel();
@@ -362,7 +364,7 @@ namespace RestfulFirebase.Database.Offline
             }
         }
 
-        internal void Put(DataHolder data, Action<RetryExceptionEventArgs> onError)
+        internal void Put(DataHolder data, Action onWrite, Action<RetryExceptionEventArgs> onError)
         {
             var uris = GetDataUris(data.Uri, false, true).ToList();
             foreach (var uri in data.HierarchyUri)
@@ -383,12 +385,12 @@ namespace RestfulFirebase.Database.Offline
                 if (existing.Blob != data.Blob)
                 {
                     existing.Cancel();
-                    QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError));
+                    QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError), onWrite);
                 }
             }
             else
             {
-                QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError));
+                QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError), onWrite);
             }
         }
 
@@ -430,7 +432,7 @@ namespace RestfulFirebase.Database.Offline
             }
         }
 
-        private async void QueueWrite(WriteTask writeTask)
+        private void QueueWrite(WriteTask writeTask, Action onWrite)
         {
             string key;
 
@@ -440,10 +442,11 @@ namespace RestfulFirebase.Database.Offline
             }
             while (!writeTasks.TryAdd(key, writeTask));
 
-            await writeTask.Run().ContinueWith(delegate
+            writeTask.Run(delegate
             {
                 writeTasks.TryRemove(key, out _);
-            }).ConfigureAwait(false);
+                onWrite?.Invoke();
+            });
         }
 
         private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

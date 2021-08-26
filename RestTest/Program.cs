@@ -162,7 +162,15 @@ namespace RestTest
             // Attach your config
             app = new RestfulFirebaseApp(Config.YourConfig());
 
-            await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+            if (!app.Auth.IsAuthenticated)
+            {
+                await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+                Console.WriteLine("NEW AUTH");
+            }
+            else
+            {
+                Console.WriteLine("OLD AUTH");
+            }
             userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
             Console.WriteLine("FIN");
@@ -179,7 +187,7 @@ namespace RestTest
             //TestObjectSub();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
@@ -189,7 +197,7 @@ namespace RestTest
             //await TestDef();
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
-            TestCascadeObjectMassPut();
+            //TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
             //await TestCascadeObjectSetNull();
 
@@ -626,7 +634,7 @@ namespace RestTest
             var dict = new FirebaseDictionary<FirebaseProperty>(key => new FirebaseProperty());
             dict.CollectionChanged += (s, e) =>
             {
-                Console.WriteLine("Count: " + dict.Keys.Count);
+                //Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
@@ -758,11 +766,12 @@ namespace RestTest
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
+                Console.WriteLine("Count: " + dict.Keys.Count);
             };
 
             string lin11e = Console.ReadLine();
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 300; i++)
             {
                 var obj = new TestStorable();
                 obj.Test = i.ToString();
@@ -1011,22 +1020,18 @@ namespace RestTest
                 lin11e = Console.ReadLine();
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-                foreach (var data in app.Database.OfflineDatabase.GetAllDatas().Where(i => i.Changes != null))
-                {
-                    Console.WriteLine("Bugged: " + data.Uri);
-                }
             }
 
             obj.Test = "cscs";
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(i.ToString());
                 obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
             }
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 50; i++)
             {
                 var stor = new TestStorable();
                 stor.Test = i.ToString();
