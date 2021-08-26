@@ -232,7 +232,7 @@ namespace RestfulFirebase.Database.Offline
                     blob == null ? DataChangesType.Delete : DataChangesType.Update);
                 Put(error);
             }
-            else
+            else if (blob == null)
             {
                 Put(error);
             }

@@ -342,7 +342,7 @@ namespace RestfulFirebase.Database.Offline
         public IEnumerable<DataHolder> GetAllDatas()
         {
             var datas = new List<DataHolder>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath)))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(ShortPath))
             {
                 datas.Add(GetData(subPath.Substring(ShortPath.Length)));
             }

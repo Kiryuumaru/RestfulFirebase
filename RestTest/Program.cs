@@ -124,11 +124,11 @@ namespace RestTest
             set => SetFirebasePropertyWithKey(value, "storable2");
         }
 
-        public FirebaseDictionary<CascadeStorable> CascadeDictionary
-        {
-            get => GetFirebasePropertyWithKey<FirebaseDictionary<CascadeStorable>>("cascade");
-            set => SetFirebasePropertyWithKey(value, "cascade");
-        }
+        //public FirebaseDictionary<CascadeStorable> CascadeDictionary
+        //{
+        //    get => GetFirebasePropertyWithKey<FirebaseDictionary<CascadeStorable>>("cascade");
+        //    set => SetFirebasePropertyWithKey(value, "cascade");
+        //}
 
         public string Test
         {
@@ -1004,16 +1004,29 @@ namespace RestTest
 
             wire.PutModel(obj);
 
+            string lin11e = null;
+
+            while (lin11e != "q")
+            {
+                lin11e = Console.ReadLine();
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
+                foreach (var data in app.Database.OfflineDatabase.GetAllDatas().Where(i => i.Changes != null))
+                {
+                    Console.WriteLine("Bugged: " + data.Uri);
+                }
+            }
+
             obj.Test = "cscs";
 
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < 100; i++)
             {
                 var prop = new FirebaseProperty();
                 prop.SetValue(i.ToString());
                 obj.PropertyDictionary.Add(UIDFactory.GenerateSafeUID(), prop);
             }
 
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 10; i++)
             {
                 var stor = new TestStorable();
                 stor.Test = i.ToString();
@@ -1026,7 +1039,7 @@ namespace RestTest
                 if (line == "view")
                 {
                     var db = ((DatastoreBlob)app.Config.LocalDatabase).GetDB();
-                    foreach (var pair in db)
+                    foreach (var pair in db.Where(i => i.Key.Contains("changes")))
                     {
                         Console.WriteLine("KEY: " + pair.Key + " VAL: " + pair.Value);
                     }
@@ -1205,7 +1218,7 @@ namespace RestTest
                     cas.ObjectDictionary.Add(UIDFactory.GenerateSafeUID(), stor);
                 }
 
-                obj.CascadeDictionary.Add(i.ToString(), cas);
+                //obj.CascadeDictionary.Add(i.ToString(), cas);
             }
 
             await wire.WaitForSynced();

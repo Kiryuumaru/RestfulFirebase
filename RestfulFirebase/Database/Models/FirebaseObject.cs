@@ -95,15 +95,16 @@ namespace RestfulFirebase.Database.Models
 
                 foreach (var path in supPaths)
                 {
-                    if (ExistsCore(path, null)) continue;
-                    var namedProperty = NamedPropertyFactory(path, null, nameof(FirebaseObject));
-                    if (namedProperty == null)
-                    {
-                        continue;
-                    }
-                    WireNamedProperty(namedProperty);
-                    RealtimeInstance.Child(path).SubModel((FirebaseProperty)namedProperty.Property);
-                    AddCore(namedProperty);
+                    AddOrUpdatePropertyCore(path, null, nameof(FirebaseObject),
+                        newNamedProperty => true,
+                        existingNamedProperty => false,
+                        postAction =>
+                        {
+                            if (!postAction.isUpdate && postAction.namedProperty != null)
+                            {
+                                RealtimeInstance.Child(path).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                            }
+                        });
                 }
             }
             catch
@@ -170,55 +171,34 @@ namespace RestfulFirebase.Database.Models
                 try
                 {
                     bool hasChanges = false;
-                    NamedProperty namedProperty = GetCore(key, name);
 
-                    if (namedProperty == null)
-                    {
-                        namedProperty = NamedPropertyFactory(key, name, group);
-                        if (namedProperty != null)
+                    AddOrUpdatePropertyCore(key, name, group,
+                        newNamedProperty => true,
+                        existingNamedProperty => true,
+                        postAction =>
                         {
-                            WireNamedProperty(namedProperty);
-                            AddCore(namedProperty);
-                            ((FirebaseProperty)namedProperty.Property).LoadFromSerializedValue(value);
-                            hasChanges = true;
-                        }
-                    }
-                    else
-                    {
-                        namedProperty.Property.SyncOperation.SetContext(this);
+                            hasChanges = postAction.hasChanges;
 
-                        if (namedProperty.Key != key)
-                        {
-                            namedProperty.Key = key;
-                            hasChanges = true;
-                        }
+                            if (postAction.isUpdate)
+                            {
+                                var hasSetChanges = false;
 
-                        if (namedProperty.PropertyName != name)
-                        {
-                            namedProperty.PropertyName = name;
-                            hasChanges = true;
-                        }
+                                if (postAction.namedProperty.Property.SetValue(value))
+                                {
+                                    hasSetChanges = true;
+                                    hasChanges = true;
+                                }
 
-                        if (namedProperty.Group != group)
-                        {
-                            namedProperty.Group = group;
-                            hasChanges = true;
-                        }
-
-                        var hasSetChanges = false;
-
-                        if (namedProperty.Property.SetValue(value))
-                        {
-                            hasSetChanges = true;
-                            hasChanges = true;
-                        }
-
-                        if (!hasSetChanges && hasChanges)
-                        {
-                            OnPropertyChanged(namedProperty.Key, namedProperty.PropertyName, namedProperty.Group);
-                        }
-                    }
-
+                                if (!hasSetChanges && hasChanges)
+                                {
+                                    OnPropertyChanged(postAction.namedProperty.Key, postAction.namedProperty.PropertyName, postAction.namedProperty.Group);
+                                }
+                            }
+                            else if (postAction.namedProperty != null)
+                            {
+                                ((FirebaseProperty)postAction.namedProperty.Property).LoadFromSerializedValue(value);
+                            }
+                        });
                 }
                 catch { }
             }
@@ -598,18 +578,19 @@ namespace RestfulFirebase.Database.Models
                 try
                 {
                     await attachLock.WaitAsync().ConfigureAwait(false);
-                    NamedProperty namedProperty = GetCore(key, null);
-                    if (namedProperty == null && RealtimeInstance.HasChild(key))
-                    {
-                        namedProperty = NamedPropertyFactory(key, null, nameof(FirebaseObject));
-                        if (namedProperty == null)
+                    AddOrUpdatePropertyCore(key, null, nameof(FirebaseObject),
+                        newNamedProperty =>
                         {
-                            return;
-                        }
-                        WireNamedProperty(namedProperty);
-                        RealtimeInstance.Child(key).SubModel((FirebaseProperty)namedProperty.Property);
-                        AddCore(namedProperty);
-                    }
+                            return RealtimeInstance.HasChild(key);
+                        },
+                        existingNamedProperty => false,
+                        postAction =>
+                        {
+                            if (!postAction.isUpdate && postAction.namedProperty != null)
+                            {
+                                RealtimeInstance.Child(key).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                            }
+                        });
                 }
                 catch
                 {
