@@ -277,21 +277,19 @@ namespace RestfulFirebase.Database.Models
 
                 var obj = GetObject();
 
-                string blob = null;
                 if (obj is string objBlob)
                 {
-                    blob = objBlob;
+                    return Serializer.Deserialize<T>(objBlob, defaultValue);
                 }
                 else if (obj is null)
                 {
-                    blob = null;
+                    return defaultValue;
                 }
                 else
                 {
                     throw new SerializerNotSupportedException(obj.GetType());
                 }
 
-                return Serializer.Deserialize<T>(blob, defaultValue);
             }
         }
 
