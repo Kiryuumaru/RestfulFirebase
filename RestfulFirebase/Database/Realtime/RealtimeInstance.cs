@@ -738,7 +738,7 @@ namespace RestfulFirebase.Database.Realtime
             });
         }
 
-        private async void EvaluateDataQueue()
+        private void EvaluateDataQueue()
         {
             if (Parent != null)
             {
@@ -750,13 +750,16 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
             dataCountEvaluating = true;
-            while (dataCountQueue)
+            Task.Run(async delegate
             {
-                dataCountQueue = false;
-                EvaluateData();
-                await Task.Delay(App.Config.DatabaseRetryDelay);
-            }
-            dataCountEvaluating = false;
+                while (dataCountQueue)
+                {
+                    dataCountQueue = false;
+                    EvaluateData();
+                    await Task.Delay(App.Config.DatabaseRetryDelay);
+                }
+                dataCountEvaluating = false;
+            });
         }
 
         #endregion

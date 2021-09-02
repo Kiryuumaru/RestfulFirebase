@@ -14,5 +14,11 @@ namespace RestfulFirebase.Exceptions
         {
 
         }
+
+        internal SerializerNotSupportedException(string fullname)
+            : base("There is no supported serializer for \'" + fullname + "\'. Register a serializer for the specified type first.")
+        {
+
+        }
     }
 }

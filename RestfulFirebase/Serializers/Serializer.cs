@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace RestfulFirebase.Serializers
@@ -49,98 +50,7 @@ namespace RestfulFirebase.Serializers
         /// </exception>
         public static SerializerProxy GetSerializer(Type type)
         {
-            if (type.IsArray)
-            {
-                var arrayType = type.GetElementType();
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == arrayType)
-                    {
-                        return new SerializerProxy(
-                            values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return conv.DeserializeEnumerableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else if (typeof(IEnumerable).IsAssignableFrom(type) && type.GetGenericArguments()?.Length == 1)
-            {
-                var genericType = type.GetGenericArguments()[0];
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == genericType)
-                    {
-                        return new SerializerProxy(
-                            values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return conv.DeserializeEnumerableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else if (Nullable.GetUnderlyingType(type) != null)
-            {
-                var nullableType = Nullable.GetUnderlyingType(type);
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == nullableType)
-                    {
-                        return new SerializerProxy(
-                            value => conv.SerializeNullableObject(value),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return conv.DeserializeNullableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else
-            {
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == type)
-                    {
-                        return new SerializerProxy(
-                            conv.SerializeObject,
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return conv.DeserializeObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            throw new SerializerNotSupportedException(type);
+            return GetSerializerInternal(type, () => new SerializerProxy());
         }
 
         /// <summary>
@@ -157,100 +67,7 @@ namespace RestfulFirebase.Serializers
         /// </exception>
         public static SerializerProxy<T> GetSerializer<T>()
         {
-            var type = typeof(T);
-            if (type.IsArray)
-            {
-                var arrayType = type.GetElementType();
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == arrayType)
-                    {
-                        return new SerializerProxy<T>(
-                            values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return (T)conv.DeserializeEnumerableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else if (typeof(IEnumerable).IsAssignableFrom(typeof(T)) && type.GetGenericArguments()?.Length == 1)
-            {
-                var genericType = type.GetGenericArguments()[0];
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == genericType)
-                    {
-                        return new SerializerProxy<T>(
-                            values => conv.SerializeEnumerableObject(values),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return (T)conv.DeserializeEnumerableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else if (Nullable.GetUnderlyingType(type) != null)
-            {
-                var nullableType = Nullable.GetUnderlyingType(type);
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == nullableType)
-                    {
-                        return new SerializerProxy<T>(
-                            value => conv.SerializeNullableObject(value),
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return (T)conv.DeserializeNullableObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            else
-            {
-                foreach (var conv in serializers)
-                {
-                    if (conv.Type == type)
-                    {
-                        var derivedConv = (Serializer<T>)conv;
-                        return new SerializerProxy<T>(
-                            derivedConv.Serialize,
-                            (data, defaultValue) =>
-                            {
-                                try
-                                {
-                                    return derivedConv.Deserialize(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
-                            });
-                    }
-                }
-            }
-            throw new SerializerNotSupportedException(type);
+            return GetSerializerInternal(typeof(T), () => new SerializerProxy<T>());
         }
 
         /// <summary>
@@ -265,6 +82,9 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The serialized data.
         /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static string Serialize(object value, Type type)
         {
             return GetSerializer(type).Serialize(value);
@@ -282,6 +102,9 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The serialized data.
         /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static string Serialize<T>(T value)
         {
             return GetSerializer<T>().Serialize(value);
@@ -302,6 +125,9 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The deserialized value.
         /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static object Deserialize(string data, Type type, object defaultValue = default)
         {
             return GetSerializer(type).Deserialize(data, defaultValue);
@@ -322,6 +148,9 @@ namespace RestfulFirebase.Serializers
         /// <returns>
         /// The deserialized value.
         /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws if serializer is not supported.
+        /// </exception>
         public static T Deserialize<T>(string data, T defaultValue = default)
         {
             return GetSerializer<T>().Deserialize(data, defaultValue);
@@ -436,7 +265,7 @@ namespace RestfulFirebase.Serializers
         public abstract object DeserializeObject(string data);
 
         /// <summary>
-        /// Serialize the provided <see cref="IEnumerable"/> <paramref name="value"/> with the specified type <see cref="Type"/>.
+        /// Serialize the provided <paramref name="value"/> with the specified type <see cref="Type"/>.
         /// </summary>
         /// <param name="value">
         /// The value to serialize.
@@ -447,7 +276,7 @@ namespace RestfulFirebase.Serializers
         public abstract string SerializeEnumerableObject(object value);
 
         /// <summary>
-        /// Deserialize the provided <see cref="IEnumerable"/> <paramref name="data"/> with the specified type <see cref="Type"/>.
+        /// Deserialize the provided <paramref name="data"/> with the specified type <see cref="Type"/>.
         /// </summary>
         /// <param name="data">
         /// The data to deserialize.
@@ -478,6 +307,259 @@ namespace RestfulFirebase.Serializers
         /// The deserialized value.
         /// </returns>
         public abstract object DeserializeNullableObject(string data);
+
+        internal static T GetSerializerInternal<T>(
+            Type type,
+            Func<T> initializer,
+            Func<Serializer, object, string> onSet = null,
+            Func<Serializer, string, object, object> onGet = null)
+            where T : SerializerProxy
+        {
+            var proxy = initializer();
+            foreach (var conv in serializers)
+            {
+                if (conv.Type == type)
+                {
+                    proxy.Set(
+                        value =>
+                        {
+                            return onSet == null ? conv.SerializeObject(value) : onSet.Invoke(conv, value);
+                        },
+                        (data, defaultValue) =>
+                        {
+                            if (onGet == null)
+                            {
+                                try
+                                {
+                                    return conv.DeserializeObject(data);
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            }
+                            else
+                            {
+                                return onGet.Invoke(conv, data, defaultValue);
+                            }
+                        });
+                    return proxy;
+                }
+            }
+
+            var nullableType = Nullable.GetUnderlyingType(type);
+            if (nullableType != null)
+            {
+                return GetSerializerInternal(nullableType, initializer);
+            }
+
+            if (typeof(IEnumerable).IsAssignableFrom(type))
+            {
+                if (type.IsArray)
+                {
+                    var arrayType = type.GetElementType();
+                    return GetSerializerInternal(arrayType, initializer,
+                        (conv, value) =>
+                        {
+                            return conv.SerializeEnumerableObject(value);
+                        },
+                        (conv, data, defaultValue) =>
+                        {
+                            try
+                            {
+                                return conv.DeserializeEnumerableObject(data);
+                            }
+                            catch
+                            {
+                                return defaultValue;
+                            }
+                        });
+                }
+
+                ConstructorInfo constructor = type.GetConstructors()
+                    .FirstOrDefault(i =>
+                    {
+                        if (!i.IsPublic)
+                        {
+                            return false;
+                        }
+                        var parameters = i.GetParameters();
+                        if (parameters == null)
+                        {
+                            return false;
+                        }
+                        if (parameters.Length != 1)
+                        {
+                            return false;
+                        }
+                        if (!typeof(IEnumerable).IsAssignableFrom(parameters[0].ParameterType))
+                        {
+                            return false;
+                        }
+                        return true;
+                    });
+
+                if (constructor != null)
+                {
+                    var parameterType = constructor.GetParameters()[0].ParameterType;
+                    var genericArguments = parameterType.GetGenericArguments();
+                    if (genericArguments.Length == 1)
+                    {
+                        var genericType = genericArguments[0];
+                        if (genericType.IsGenericType)
+                        {
+                            var keyValuePairType = typeof(KeyValuePair<,>);
+                            if (typeof(IDictionary).IsAssignableFrom(type) && genericType.GetGenericTypeDefinition() == keyValuePairType)
+                            {
+                                var pairGenericArgs = genericType.GetGenericArguments();
+                                var keyConv = GetSerializer(pairGenericArgs[0]);
+                                var valueConv = GetSerializer(pairGenericArgs[1]);
+                                proxy.Set(
+                                    pairs =>
+                                    {
+                                        var blobArray = Array.Empty<string>();
+                                        foreach (var pair in (IEnumerable)pairs)
+                                        {
+                                            var key = genericType.GetProperty("Key").GetValue(pair, new object[0]);
+                                            var value = genericType.GetProperty("Value").GetValue(pair, new object[0]);
+                                            blobArray = Utils.BlobSetValue(blobArray, keyConv.Serialize(key), valueConv.Serialize(value));
+                                        }
+                                        return Utils.SerializeString(blobArray);
+                                    },
+                                    (data, defaultValue) =>
+                                    {
+                                        try
+                                        {
+                                            Dictionary<string, string> deserialized = Utils.BlobConvert(data);
+                                            var valuesType = typeof(List<>).MakeGenericType(genericType);
+                                            var values = Activator.CreateInstance(valuesType);
+                                            foreach (var pair in deserialized)
+                                            {
+                                                valuesType.GetMethod("Add").Invoke(values, new object[] {
+                                                    Activator.CreateInstance(genericType,
+                                                        keyConv.Deserialize(pair.Key),
+                                                        valueConv.Deserialize(pair.Value)) });
+                                            }
+                                            try
+                                            {
+                                                return constructor.Invoke(new object[] { values });
+                                            }
+                                            catch
+                                            {
+                                                throw new SerializerNotSupportedException(type);
+                                            }
+                                        }
+                                        catch (SerializerException)
+                                        {
+                                            throw;
+                                        }
+                                        catch
+                                        {
+                                            return defaultValue;
+                                        }
+                                    });
+                                return proxy;
+                            }
+                        }
+                        else
+                        {
+                            return GetSerializerInternal(genericType, initializer,
+                                (conv, value) =>
+                                {
+                                    return conv.SerializeEnumerableObject(value);
+                                },
+                                (conv, data, defaultValue) =>
+                                {
+                                    try
+                                    {
+                                        return constructor.Invoke(new object[] { conv.DeserializeEnumerableObject(data) });
+                                    }
+                                    catch
+                                    {
+                                        return defaultValue;
+                                    }
+                                });
+                        }
+                    }
+                    else if (genericArguments.Length == 0)
+                    {
+                        proxy.Set(
+                            values =>
+                            {
+                                var serialized = new List<string>();
+                                foreach (var value in (IEnumerable)values)
+                                {
+                                    string serializedType = value.GetType().FullName;
+                                    string serializedValue = Serializer.Serialize(value, value.GetType());
+                                    serialized.Add(Utils.SerializeString(serializedType, serializedValue));
+                                }
+                                return Utils.SerializeString(serialized.ToArray());
+                            },
+                            (data, defaultValue) =>
+                            {
+                                try
+                                {
+                                    string[] deserialized = Utils.DeserializeString(data);
+                                    var values = new List<object>();
+                                    foreach (var value in deserialized)
+                                    {
+                                        try
+                                        {
+                                            string[] deserializedPair = Utils.DeserializeString(value);
+                                            if (deserializedPair?.Length == 2)
+                                            {
+                                                string serializedType = deserializedPair[0];
+                                                string serializedValue = deserializedPair[1];
+                                                object deserializedValue = null;
+                                                bool hasDeserializer = false;
+                                                foreach (var conv in serializers)
+                                                {
+                                                    if (conv.Type.FullName == serializedType)
+                                                    {
+                                                        deserializedValue = conv.DeserializeObject(serializedValue);
+                                                        hasDeserializer = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (!hasDeserializer)
+                                                {
+                                                    throw new SerializerNotSupportedException(serializedType);
+                                                }
+                                                values.Add(deserializedValue);
+                                                continue;
+                                            }
+                                        }
+                                        catch (SerializerException)
+                                        {
+                                            throw;
+                                        }
+                                        catch { }
+                                        values.Add(null);
+                                    }
+                                    try
+                                    {
+                                        return constructor.Invoke(new object[] { values });
+                                    }
+                                    catch
+                                    {
+                                        throw new SerializerNotSupportedException(type);
+                                    }
+                                }
+                                catch (SerializerException)
+                                {
+                                    throw;
+                                }
+                                catch
+                                {
+                                    return defaultValue;
+                                }
+                            });
+                        return proxy;
+                    }
+                }
+            }
+            throw new SerializerNotSupportedException(type);
+        }
     }
 
     /// <summary>

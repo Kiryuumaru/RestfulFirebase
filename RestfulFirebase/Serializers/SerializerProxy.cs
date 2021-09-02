@@ -15,13 +15,11 @@ namespace RestfulFirebase.Serializers
     /// </summary>
     public class SerializerProxy
     {
-        private readonly Func<object, string> serialize;
-        private readonly Func<string, object, object> deserialize;
+        private Func<object, string> serialize;
+        private Func<string, object, object> deserialize;
 
-        internal SerializerProxy(Func<object, string> serialize, Func<string, object, object> deserialize)
-        {
-            this.serialize = serialize;
-            this.deserialize = deserialize;
+        internal SerializerProxy()
+        { 
         }
 
         /// <summary>
@@ -48,6 +46,12 @@ namespace RestfulFirebase.Serializers
         /// The deserialized value.
         /// </returns>
         public object Deserialize(string data, object defaultValue = default) => deserialize(data, defaultValue);
+
+        internal void Set(Func<object, string> serialize, Func<string, object, object> deserialize)
+        {
+            this.serialize = serialize;
+            this.deserialize = deserialize;
+        }
     }
 
     /// <summary>
@@ -58,12 +62,8 @@ namespace RestfulFirebase.Serializers
     /// </typeparam>
     public class SerializerProxy<T> : SerializerProxy
     {
-        internal SerializerProxy(Func<T, string> serialize, Func<string, T, T> deserialize)
-            : base(
-                  new Func<object, string>(obj => serialize((T)obj)),
-                  new Func<string, object, object>((data, defaultValue) => deserialize(data, (T)defaultValue)))
+        internal SerializerProxy()
         {
-
         }
 
         /// <summary>
@@ -90,5 +90,11 @@ namespace RestfulFirebase.Serializers
         /// The deserialized value.
         /// </returns>
         public T Deserialize(string data, T defaultValue = default) => (T)base.Deserialize(data, defaultValue);
+    
+        internal void Set(Func<T, string> serialize, Func<string, T, T> deserialize)
+        {
+            Set(new Func<object, string>(obj => serialize((T)obj)),
+                new Func<string, object, object>((data, defaultValue) => deserialize(data, (T)defaultValue)));
+        }
     }
 }

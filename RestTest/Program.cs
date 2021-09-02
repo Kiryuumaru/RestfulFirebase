@@ -19,6 +19,8 @@ using RestfulFirebase.Extensions;
 using System.ComponentModel;
 using System.Windows.Threading;
 using RestfulFirebase.Local;
+using System.Collections;
+using System.Collections.Concurrent;
 
 namespace RestTest
 {
@@ -38,10 +40,16 @@ namespace RestTest
             set => SetFirebasePropertyWithKey(value, "premium");
         }
 
-        public IEnumerable<TimeSpan> Premiums
+        public List<TimeSpan> Premiums
         {
-            get => GetFirebasePropertyWithKey<IEnumerable<TimeSpan>>("premiums", new List<TimeSpan>());
+            get => GetFirebasePropertyWithKey("premiums", new List<TimeSpan>());
             set => SetFirebasePropertyWithKey(value, "premiums");
+        }
+
+        public TimeSpan[] Premiums1
+        {
+            get => GetFirebasePropertyWithKey("premiums1", new TimeSpan[0]);
+            set => SetFirebasePropertyWithKey(value, "premiums1");
         }
 
         public decimal Num1
@@ -94,6 +102,42 @@ namespace RestTest
             }
             base.Dispose(disposing);
         }
+    }
+    public class TestStorable2 : FirebaseObject
+    {
+        #region Properties
+
+        public List<DateTime> List
+        {
+            get => GetFirebasePropertyWithKey("list", new List<DateTime>());
+            set => SetFirebasePropertyWithKey(value, "list");
+        }
+
+        public DateTime[] Array
+        {
+            get => GetFirebasePropertyWithKey("array", new DateTime[0]);
+            set => SetFirebasePropertyWithKey(value, "array");
+        }
+
+        public Queue Queue
+        {
+            get => GetFirebasePropertyWithKey("queue", new Queue());
+            set => SetFirebasePropertyWithKey(value, "queue");
+        }
+
+        public Queue<DateTime> QueueTyped
+        {
+            get => GetFirebasePropertyWithKey("queueTyped", new Queue<DateTime>());
+            set => SetFirebasePropertyWithKey(value, "queueTyped");
+        }
+
+        public ConcurrentDictionary<string, DateTime> ConcurrentDictionary
+        {
+            get => GetFirebasePropertyWithKey("concurrentDictionary", new ConcurrentDictionary<string, DateTime>());
+            set => SetFirebasePropertyWithKey(value, "concurrentDictionary");
+        }
+
+        #endregion
     }
 
     public class CascadeStorable : FirebaseObject
@@ -185,6 +229,7 @@ namespace RestTest
             //TestPropertySub2();
             //TestObjectPut();
             //TestObjectSub();
+            //TestObjectDefaults();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
             TestPropertyDictionarySub2();
@@ -572,6 +617,87 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 obj.Test = string.IsNullOrEmpty(line) ? null : line;
+            }
+        }
+
+        public async static void TestObjectDefaults()
+        {
+            var obj = new TestStorable2();
+            obj.ImmediatePropertyChanged += (s, e) =>
+            {
+                var write = "Prop: " + e.PropertyName + ": ";
+                switch (e.PropertyName)
+                {
+                    case nameof(TestStorable2.List):
+                        write += obj.List?.ToString();
+                        break;
+                    case nameof(TestStorable2.Array):
+                        write += obj.Array?.ToString();
+                        break;
+                    case nameof(TestStorable2.Queue):
+                        write += obj.Queue?.ToString();
+                        break;
+                    case nameof(TestStorable2.QueueTyped):
+                        write += obj.QueueTyped?.ToString();
+                        break;
+                    default:
+                        break;
+                }
+                Console.WriteLine(write);
+            };
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(obj);
+            await wire.WaitForFirstStream();
+
+            var newList1 = obj.List;
+            newList1.Add(DateTime.UtcNow);
+            obj.List = newList1;
+            await wire.WaitForFirstStream();
+            var newList2 = obj.List;
+            newList2.Add(DateTime.UtcNow);
+            obj.List = newList2;
+            await wire.WaitForFirstStream();
+
+            var newArr1 = obj.Array.ToList();
+            newArr1.Add(DateTime.UtcNow);
+            obj.Array = newArr1.ToArray();
+            await wire.WaitForFirstStream();
+            var newArr2 = obj.Array.ToList();
+            newArr2.Add(DateTime.UtcNow);
+            obj.Array = newArr2.ToArray();
+            await wire.WaitForFirstStream();
+
+            var newQueue1 = obj.Queue;
+            newQueue1.Enqueue(DateTime.UtcNow);
+            obj.Queue = newQueue1;
+            await wire.WaitForFirstStream();
+            var newQueue2 = obj.Queue;
+            newQueue2.Enqueue(DateTime.UtcNow);
+            obj.Queue = newQueue2;
+            await wire.WaitForFirstStream();
+
+            var newQueueTyped1 = obj.QueueTyped;
+            newQueueTyped1.Enqueue(DateTime.UtcNow);
+            obj.QueueTyped = newQueueTyped1;
+            await wire.WaitForFirstStream();
+            var newQueueTyped2 = obj.QueueTyped;
+            newQueueTyped2.Enqueue(DateTime.UtcNow);
+            obj.QueueTyped = newQueueTyped2;
+            await wire.WaitForFirstStream();
+
+            var newDict1 = obj.ConcurrentDictionary;
+            newDict1.TryAdd((obj.ConcurrentDictionary.Count + 1).ToString(), DateTime.UtcNow);
+            obj.ConcurrentDictionary = newDict1;
+            await wire.WaitForFirstStream();
+            var newDict2 = obj.ConcurrentDictionary;
+            newDict2.TryAdd((obj.ConcurrentDictionary.Count + 1).ToString(), DateTime.UtcNow);
+            obj.ConcurrentDictionary = newDict2;
+            await wire.WaitForFirstStream();
+
+            while (true)
+            {
+                string line = Console.ReadLine();
             }
         }
 

@@ -233,11 +233,6 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
-                if (!Serializer.CanSerialize<T>())
-                {
-                    throw new SerializerNotSupportedException(typeof(T));
-                }
-
                 var blob = Serializer.Serialize(value);
 
                 if (SetObject(blob))
@@ -273,8 +268,6 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
-                if (!Serializer.CanSerialize<T>()) throw new SerializerNotSupportedException(typeof(T));
-
                 var obj = GetObject();
 
                 if (obj is string objBlob)
@@ -500,7 +493,10 @@ namespace RestfulFirebase.Database.Models
         /// </exception>
         public FirebaseProperty()
         {
-            if (!Serializer.CanSerialize<T>()) throw new SerializerNotSupportedException(typeof(T));
+            if (!Serializer.CanSerialize<T>())
+            {
+                throw new SerializerNotSupportedException(typeof(T));
+            }
         }
 
         #endregion
