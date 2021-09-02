@@ -139,6 +139,18 @@ namespace RestTest
 
         #endregion
     }
+    public class TestStorable3 : FirebaseObject
+    {
+        #region Properties
+
+        public DateTime? NullableType
+        {
+            get => GetFirebasePropertyWithKey<DateTime?>("nullable");
+            set => SetFirebasePropertyWithKey(value, "nullable");
+        }
+
+        #endregion
+    }
 
     public class CascadeStorable : FirebaseObject
     {
@@ -230,9 +242,10 @@ namespace RestTest
             //TestObjectPut();
             //TestObjectSub();
             //TestObjectDefaults();
+            TestObjectNullable();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
@@ -693,6 +706,36 @@ namespace RestTest
             var newDict2 = obj.ConcurrentDictionary;
             newDict2.TryAdd((obj.ConcurrentDictionary.Count + 1).ToString(), DateTime.UtcNow);
             obj.ConcurrentDictionary = newDict2;
+            await wire.WaitForFirstStream();
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+            }
+        }
+
+        public async static void TestObjectNullable()
+        {
+            var obj = new TestStorable3();
+            obj.ImmediatePropertyChanged += (s, e) =>
+            {
+                var write = "Prop: " + e.PropertyName + ": ";
+                switch (e.PropertyName)
+                {
+                    case nameof(TestStorable3.NullableType):
+                        write += obj.NullableType?.ToString();
+                        break;
+                    default:
+                        break;
+                }
+                Console.WriteLine(write);
+            };
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(obj);
+            await wire.WaitForFirstStream();
+
+            obj.NullableType = DateTime.UtcNow;
             await wire.WaitForFirstStream();
 
             while (true)

@@ -350,7 +350,29 @@ namespace RestfulFirebase.Serializers
             var nullableType = Nullable.GetUnderlyingType(type);
             if (nullableType != null)
             {
-                return GetSerializerInternal(nullableType, initializer);
+                return GetSerializerInternal(nullableType, initializer,
+                    (conv, value) =>
+                    {
+                        return value == null ? null : conv.SerializeObject(value);
+                    },
+                    (conv, data, defaultValue) =>
+                    {
+                        if (data == null)
+                        {
+                            return defaultValue;
+                        }
+                        else
+                        {
+                            try
+                            {
+                                return conv.DeserializeObject(data);
+                            }
+                            catch
+                            {
+                                return defaultValue;
+                            }
+                        }
+                    });
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(type))
