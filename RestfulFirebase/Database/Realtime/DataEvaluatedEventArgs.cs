@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Extensions.Http
+namespace RestfulFirebase.Http
 {
     /// <summary>
     /// The <see cref="IHttpClientProxy"/> factory for custom factory declarations.

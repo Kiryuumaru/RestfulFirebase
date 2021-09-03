@@ -2,7 +2,7 @@
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
 using RestfulFirebase.Database.Offline;
-using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Http;
 using RestfulFirebase.Local;
 using System;
 using System.Collections.Concurrent;

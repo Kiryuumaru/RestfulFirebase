@@ -2,8 +2,8 @@
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Extensions;
-using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Utilities;
+using RestfulFirebase.Http;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -56,7 +56,7 @@ namespace RestfulFirebase.Database
         /// </returns>
         public ChildQuery Child(string resourceName)
         {
-            return new ChildQuery(App, () => Utils.UrlCombine(App.Config.DatabaseURL, resourceName));
+            return new ChildQuery(App, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceName));
         }
 
         /// <summary>

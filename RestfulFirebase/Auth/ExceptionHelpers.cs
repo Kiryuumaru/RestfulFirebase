@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net;

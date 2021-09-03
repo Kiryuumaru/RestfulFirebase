@@ -4,7 +4,7 @@ using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -170,7 +170,7 @@ namespace RestfulFirebase.Database.Realtime
                 return false;
             }
 
-            var uri = Utils.UrlCombine(Query.GetAbsolutePath().Trim('/'), path);
+            var uri = UrlUtilities.Combine(Query.GetAbsolutePath().Trim('/'), path);
             return App.Database.OfflineDatabase.GetDatas(uri, true).Any(i => i.Blob != null);
         }
 
@@ -501,19 +501,19 @@ namespace RestfulFirebase.Database.Realtime
                     var uri = u.EndsWith("/") ? u : u + "/";
                     if (!uri.StartsWith(baseUri)) continue;
                     var path = uri.Replace(baseUri, "");
-                    var separatedPath = Utils.UrlSeparate(path);
+                    var separatedPath = UrlUtilities.Separate(path);
                     var eventPath = "";
                     for (int i = 0; i < separatedPath.Length; i++)
                     {
                         if (string.IsNullOrEmpty(eventPath))
                         {
-                            eventPath = Utils.UrlCombine(separatedPath[i]);
+                            eventPath = UrlUtilities.Combine(separatedPath[i]);
                         }
                         else
                         {
-                            eventPath = Utils.UrlCombine(eventPath, separatedPath[i]);
+                            eventPath = UrlUtilities.Combine(eventPath, separatedPath[i]);
                         }
-                        if (!affectedPaths.Any(affectedPath => Utils.UrlCompare(affectedPath, eventPath)))
+                        if (!affectedPaths.Any(affectedPath => UrlUtilities.Compare(affectedPath, eventPath)))
                         {
                             affectedPaths.Add(eventPath);
                         }

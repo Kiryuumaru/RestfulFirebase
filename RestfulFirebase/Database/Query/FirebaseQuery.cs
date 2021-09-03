@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Streaming;
 using System.Net;
-using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Http;
 using System.Linq;
 using RestfulFirebase.Database.Models;
 using System.IO;
@@ -12,7 +12,7 @@ using System.Threading;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
 using System.Collections.Concurrent;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 

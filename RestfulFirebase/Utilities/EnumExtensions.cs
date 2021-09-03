@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 
-namespace RestfulFirebase.Extensions
+namespace RestfulFirebase.Utilities
 {
     /// <summary>
     /// Provides enum extensions.
@@ -11,7 +11,7 @@ namespace RestfulFirebase.Extensions
     public static class EnumExtensions
     {
         /// <summary>
-        /// Convert enum to its specified string value.
+        /// Converts enum to its specified string value.
         /// </summary>
         /// <typeparam name="T">
         /// The underlying type of the enum.

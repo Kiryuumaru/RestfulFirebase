@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,11 +11,11 @@ namespace RestfulFirebase.Serializers.Additionals
         /// <inheritdoc/>
         public override string Serialize(DateTime value)
         {
-            var bytes = Utils.ToUnsignedArbitraryBaseSystem((ulong)value.Ticks, 64);
+            var bytes = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)value.Ticks, 64);
             string base64 = "";
             foreach (var num in bytes)
             {
-                base64 += Utils.Base64Charset[(int)num];
+                base64 += StringUtilities.Base64Charset[(int)num];
             }
             return base64;
         }
@@ -26,10 +26,10 @@ namespace RestfulFirebase.Serializers.Additionals
             var indexes = new List<uint>();
             foreach (var num in data)
             {
-                var indexOf = Utils.Base64Charset.IndexOf(num);
+                var indexOf = StringUtilities.Base64Charset.IndexOf(num);
                 indexes.Add((uint)indexOf);
             }
-            var ticks = Utils.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+            var ticks = MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
 
             return new DateTime((long)ticks);
         }

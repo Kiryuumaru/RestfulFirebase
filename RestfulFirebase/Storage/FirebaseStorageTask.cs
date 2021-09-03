@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

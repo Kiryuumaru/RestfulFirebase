@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Utilities;
 using RestfulFirebase.Local;
 using System;
 using System.Collections.Generic;
@@ -28,25 +28,25 @@ namespace RestfulFirebase.Local
         /// <inheritdoc/>
         public string DecryptKey(string encrypted)
         {
-            return Utils.DecryptString(encrypted, EncryptionPattern);
+            return encrypted.VigenereCipherDecrypt(EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string DecryptValue(string encrypted)
         {
-            return Utils.DecryptString(encrypted, EncryptionPattern);
+            return encrypted.VigenereCipherDecrypt(EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string EncryptKey(string key)
         {
-            return Utils.EncryptString(key, EncryptionPattern);
+            return key.VigenereCipherEncrypt(EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string EncryptValue(string value)
         {
-            return Utils.EncryptString(value, EncryptionPattern);
+            return value.VigenereCipherEncrypt(EncryptionPattern);
         }
     }
 }

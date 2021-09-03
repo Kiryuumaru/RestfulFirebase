@@ -17,8 +17,8 @@
   
   <PropertyGroup>
     <PackageLicenseFile>LICENCE.md</PackageLicenseFile>
-    <Version>1.3.9</Version>
-    <PackageReleaseNotes>* Bug fixes</PackageReleaseNotes>
+    <Version>1.3.10</Version>
+    <PackageReleaseNotes>* Added convenient utilities</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,7 +36,7 @@
     <None Remove="Database\Realtime\RealtimeWire.cs~RF123265c.TMP" />
     <None Remove="Database\Realtime\RealtimeWire.cs~RFf20d81e.TMP" />
     <None Remove="Database\Streaming\NodeStreamer.cs~RF674bce4.TMP" />
-    <None Remove="Extensions\Http\DefaultHttpStreamFactory.cs~RFcdef18d.TMP" />
+    <None Remove="Http\DefaultHttpStreamFactory.cs~RFcdef18d.TMP" />
   </ItemGroup>
 
   <ItemGroup>

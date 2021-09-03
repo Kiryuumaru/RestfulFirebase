@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Extensions
+namespace RestfulFirebase.Utilities
 {
     /// <summary>
     /// Provides wrapped SemaphoreSlim with dynamic TokenCount.

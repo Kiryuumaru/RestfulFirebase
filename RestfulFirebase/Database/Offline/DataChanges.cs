@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,7 +18,7 @@ namespace RestfulFirebase.Database.Offline
         public static DataChanges Parse(string data)
         {
             if (string.IsNullOrEmpty(data)) return null;
-            var deserialized = Utils.DeserializeString(data);
+            var deserialized = StringUtilities.Deserialize(data);
             if (deserialized == null) return null;
             if (deserialized.Length != 2) return null;
             var changesType = DataChangesType.None;
@@ -58,7 +58,7 @@ namespace RestfulFirebase.Database.Offline
                     changesType = "3";
                     break;
             }
-            return Utils.SerializeString(Blob, changesType);
+            return StringUtilities.Serialize(Blob, changesType);
         }
     }
 }

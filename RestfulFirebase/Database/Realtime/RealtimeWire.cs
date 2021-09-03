@@ -3,7 +3,7 @@ using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -229,7 +229,7 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     if (MakeSync(subData, null))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
                         {
                             urisToInvoke.Add(subData.Uri);
                         }
@@ -244,7 +244,7 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     if (MakeSync(subData, null))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
                         {
                             urisToInvoke.Add(subData.Uri);
                         }
@@ -255,7 +255,7 @@ namespace RestfulFirebase.Database.Realtime
                 var data = App.Database.OfflineDatabase.GetData(streamObject.Uri);
                 if (MakeSync(data, single.Blob))
                 {
-                    if (!urisToInvoke.Any(i => Utils.UrlCompare(i, data.Uri)))
+                    if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, data.Uri)))
                     {
                         urisToInvoke.Add(data.Uri);
                     }
@@ -265,15 +265,15 @@ namespace RestfulFirebase.Database.Realtime
             {
                 var subDatas = App.Database.OfflineDatabase.GetDatas(streamObject.Uri, true, true, Query.GetAbsolutePath());
                 var descendants = multi.GetDescendants();
-                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (Utils.UrlCombine(streamObject.Uri, i.path), i.blob)));
+                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (UrlUtilities.Combine(streamObject.Uri, i.path), i.blob)));
 
                 // Delete related
-                var excluded = subDatas.Where(i => !syncDatas.Any(j => Utils.UrlCompare(j.path, i.Uri)));
+                var excluded = subDatas.Where(i => !syncDatas.Any(j => UrlUtilities.Compare(j.path, i.Uri)));
                 foreach (var subData in excluded)
                 {
                     if (MakeSync(subData, null))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
                         {
                             urisToInvoke.Add(subData.Uri);
                         }
@@ -290,7 +290,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                     if (MakeSync(subData, syncData.blob))
                     {
-                        if (!urisToInvoke.Any(i => Utils.UrlCompare(i, subData.Uri)))
+                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
                         {
                             urisToInvoke.Add(subData.Uri);
                         }

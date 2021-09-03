@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -89,7 +89,7 @@ namespace RestfulFirebase.Database.Models
                 List<string> supPaths = new List<string>();
                 foreach (var path in RealtimeInstance.GetSubPaths())
                 {
-                    var separatedPath = Utils.UrlSeparate(path);
+                    var separatedPath = UrlUtilities.Separate(path);
                     var key = separatedPath[0];
                     if (!supPaths.Contains(key)) supPaths.Add(key);
                 }
@@ -145,14 +145,16 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized)
+        public void LoadFromSerializedValue(string serialized, params int[] encryptionPattern)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            Dictionary<string, string> values = Utils.BlobConvert(serialized);
+            var decrypted = serialized?.VigenereCipherDecrypt(encryptionPattern);
+
+            Dictionary<string, string> values = BlobUtilities.Convert(decrypted);
 
             if (values == null)
             {
@@ -175,19 +177,7 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized, int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            var decrypted = Utils.DecryptString(serialized, encryptionPattern);
-            LoadFromSerializedValue(decrypted);
-        }
-
-        /// <inheritdoc/>
-        public string GenerateSerializedValue()
+        public string GenerateSerializedValue(params int[] encryptionPattern)
         {
             if (IsDisposed)
             {
@@ -200,26 +190,9 @@ namespace RestfulFirebase.Database.Models
                 values.Add(value.Key, value.Value.GenerateSerializedValue());
             }
 
-            return Utils.BlobConvert(values);
-        }
+            string serialized = BlobUtilities.Convert(values);
 
-        /// <inheritdoc/>
-        public string GenerateSerializedValue(int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return default;
-            }
-
-            string serialized = GenerateSerializedValue();
-            if (serialized != null)
-            {
-                return Utils.EncryptString(serialized, encryptionPattern);
-            }
-            else
-            {
-                return null;
-            }
+            return serialized?.VigenereCipherEncrypt(encryptionPattern);
         }
 
         /// <summary>
@@ -460,7 +433,7 @@ namespace RestfulFirebase.Database.Models
 
             if (!string.IsNullOrEmpty(e.Path))
             {
-                var separated = Utils.UrlSeparate(e.Path);
+                var separated = UrlUtilities.Separate(e.Path);
                 var key = separated[0];
 
                 try

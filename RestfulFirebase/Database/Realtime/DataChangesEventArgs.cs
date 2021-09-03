@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -30,7 +30,7 @@ namespace RestfulFirebase.Database.Realtime
         {
             BaseUri = baseUri.Trim().Trim('/');
             Path = path.Trim().Trim('/');
-            Uri = (string.IsNullOrEmpty(Path) ? BaseUri : Utils.UrlCombine(BaseUri, Path)).Trim().Trim('/');
+            Uri = (string.IsNullOrEmpty(Path) ? BaseUri : UrlUtilities.Combine(BaseUri, Path)).Trim().Trim('/');
         }
     }
 }

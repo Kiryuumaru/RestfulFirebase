@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers.Additionals;
 using RestfulFirebase.Serializers.Primitives;
 using System;

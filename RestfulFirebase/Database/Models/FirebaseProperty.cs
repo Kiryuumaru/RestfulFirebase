@@ -1,7 +1,7 @@
 ﻿using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers;
 using System;
 using System.Collections.Generic;
@@ -131,81 +131,52 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized)
+        public void LoadFromSerializedValue(string serialized, params int[] encryptionPattern)
         {
             if (IsDisposed)
             {
                 return;
             }
 
+            string decrypted = serialized?.VigenereCipherDecrypt(encryptionPattern);
+
             if (GetObject() is IRealtimeModel model)
             {
-                model.LoadFromSerializedValue(serialized);
+                model.LoadFromSerializedValue(decrypted);
             }
             else
             {
-                if (SetObject(serialized))
+                if (SetObject(decrypted))
                 {
                     if (HasAttachedRealtime)
                     {
-                        RealtimeInstance.SetBlob(serialized);
+                        RealtimeInstance.SetBlob(decrypted);
                     }
                 }
             }
         }
 
         /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized, int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            var decrypted = Utils.DecryptString(serialized, encryptionPattern);
-            LoadFromSerializedValue(decrypted);
-        }
-
-        /// <inheritdoc/>
-        public string GenerateSerializedValue()
+        public string GenerateSerializedValue(params int[] encryptionPattern)
         {
             if (IsDisposed)
             {
                 return default;
             }
+
+            string serialized = null;
 
             object obj = GetObject();
             if (obj is IRealtimeModel model)
             {
-                return model.GenerateSerializedValue();
+                serialized = model.GenerateSerializedValue();
             }
             else if (obj is string value)
             {
-                return value;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        /// <inheritdoc/>
-        public string GenerateSerializedValue(int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return default;
+                serialized = value;
             }
 
-            string serialized = GenerateSerializedValue();
-            if (serialized != null)
-            {
-                return Utils.EncryptString(serialized, encryptionPattern);
-            }
-            else
-            {
-                return null;
-            }
+            return serialized?.VigenereCipherEncrypt(encryptionPattern);
         }
 
         /// <inheritdoc/>
@@ -421,7 +392,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            var path = Utils.UrlSeparate(e.Path);
+            var path = UrlUtilities.Separate(e.Path);
 
             if (path.Length == 0)
             {

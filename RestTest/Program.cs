@@ -15,7 +15,7 @@ using System.Threading;
 using ObservableHelpers;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Database.Realtime;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System.ComponentModel;
 using System.Windows.Threading;
 using RestfulFirebase.Local;
@@ -242,10 +242,10 @@ namespace RestTest
             //TestObjectPut();
             //TestObjectSub();
             //TestObjectDefaults();
-            TestObjectNullable();
+            //TestObjectNullable();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
@@ -287,9 +287,9 @@ namespace RestTest
             var dictFromS = new FirebaseDictionary<FirebaseProperty>();
             dictFromS.LoadFromSerializedValue(serialized);
 
-            var encrypted = dict.GenerateSerializedValue(new int[] { 1, 4, 2, 3 });
+            var encrypted = dict.GenerateSerializedValue(1, 4, 2, 3);
             var dictFromE = new FirebaseDictionary<FirebaseProperty>();
-            dictFromS.LoadFromSerializedValue(encrypted, new int[] { 1, 4, 2, 3 });
+            dictFromS.LoadFromSerializedValue(encrypted, 1, 4, 2, 3);
 
             while (true)
             {

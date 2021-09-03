@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.Extensions
+namespace RestfulFirebase.Utilities
 {
     /// <summary>
     /// Provides UID generators.
     /// </summary>
     public static class UIDFactory
     {
-        private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(Utils.Base64Charset));
+        private static readonly char[] PushChars = Encoding.UTF8.GetChars(Encoding.UTF8.GetBytes(StringUtilities.Base64Charset));
         private static readonly DateTimeOffset Epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
         private static readonly Random random = new Random();
         private static readonly byte[] lastRandChars = new byte[12];
@@ -26,7 +26,7 @@ namespace RestfulFirebase.Extensions
         /// The charset used by the randomizer.
         /// </param>
         /// <returns></returns>
-        public static string GenerateUID(int length = 10, string charset = Utils.Base64Charset)
+        public static string GenerateUID(int length = 10, string charset = StringUtilities.Base64Charset)
         {
             string id = "";
             for (int i = 0; i < length; i++)

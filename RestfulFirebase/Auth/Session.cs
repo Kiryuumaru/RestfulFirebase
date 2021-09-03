@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ObservableHelpers;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers;
 using System;
 using System.Collections.Generic;
@@ -792,38 +792,38 @@ namespace RestfulFirebase.Auth
         {
             var auth = App.LocalDatabase.Get(Root, true);
 
-            FirebaseToken = Utils.BlobGetValue(auth, "tok");
-            RefreshToken = Utils.BlobGetValue(auth, "ref");
-            ExpiresIn = Serializer.Deserialize<int>(Utils.BlobGetValue(auth, "exp"));
-            Created = Serializer.Deserialize<DateTime>(Utils.BlobGetValue(auth, "ctd"));
-            LocalId = Utils.BlobGetValue(auth, "lid");
-            FederatedId = Utils.BlobGetValue(auth, "fid");
-            FirstName = Utils.BlobGetValue(auth, "fname");
-            LastName = Utils.BlobGetValue(auth, "lname");
-            DisplayName = Utils.BlobGetValue(auth, "dname");
-            Email = Utils.BlobGetValue(auth, "email");
-            IsEmailVerified = Serializer.Deserialize<bool>(Utils.BlobGetValue(auth, "vmail"));
-            PhotoUrl = Utils.BlobGetValue(auth, "purl");
-            PhoneNumber = Utils.BlobGetValue(auth, "pnum");
+            FirebaseToken = BlobUtilities.GetValue(auth, "tok");
+            RefreshToken = BlobUtilities.GetValue(auth, "ref");
+            ExpiresIn = Serializer.Deserialize<int>(BlobUtilities.GetValue(auth, "exp"));
+            Created = Serializer.Deserialize<DateTime>(BlobUtilities.GetValue(auth, "ctd"));
+            LocalId = BlobUtilities.GetValue(auth, "lid");
+            FederatedId = BlobUtilities.GetValue(auth, "fid");
+            FirstName = BlobUtilities.GetValue(auth, "fname");
+            LastName = BlobUtilities.GetValue(auth, "lname");
+            DisplayName = BlobUtilities.GetValue(auth, "dname");
+            Email = BlobUtilities.GetValue(auth, "email");
+            IsEmailVerified = Serializer.Deserialize<bool>(BlobUtilities.GetValue(auth, "vmail"));
+            PhotoUrl = BlobUtilities.GetValue(auth, "purl");
+            PhoneNumber = BlobUtilities.GetValue(auth, "pnum");
         }
 
         internal void Store()
         {
             var auth = "";
 
-            auth = Utils.BlobSetValue(auth, "tok", FirebaseToken);
-            auth = Utils.BlobSetValue(auth, "ref", RefreshToken);
-            auth = Utils.BlobSetValue(auth, "exp", Serializer.Serialize(ExpiresIn));
-            auth = Utils.BlobSetValue(auth, "ctd", Serializer.Serialize(Created));
-            auth = Utils.BlobSetValue(auth, "lid", LocalId);
-            auth = Utils.BlobSetValue(auth, "fid", FederatedId);
-            auth = Utils.BlobSetValue(auth, "fname", FirstName);
-            auth = Utils.BlobSetValue(auth, "lname", LastName);
-            auth = Utils.BlobSetValue(auth, "dname", DisplayName);
-            auth = Utils.BlobSetValue(auth, "email", Email);
-            auth = Utils.BlobSetValue(auth, "vmail", Serializer.Serialize(IsEmailVerified));
-            auth = Utils.BlobSetValue(auth, "purl", PhotoUrl);
-            auth = Utils.BlobSetValue(auth, "pnum", PhoneNumber);
+            auth = BlobUtilities.SetValue(auth, "tok", FirebaseToken);
+            auth = BlobUtilities.SetValue(auth, "ref", RefreshToken);
+            auth = BlobUtilities.SetValue(auth, "exp", Serializer.Serialize(ExpiresIn));
+            auth = BlobUtilities.SetValue(auth, "ctd", Serializer.Serialize(Created));
+            auth = BlobUtilities.SetValue(auth, "lid", LocalId);
+            auth = BlobUtilities.SetValue(auth, "fid", FederatedId);
+            auth = BlobUtilities.SetValue(auth, "fname", FirstName);
+            auth = BlobUtilities.SetValue(auth, "lname", LastName);
+            auth = BlobUtilities.SetValue(auth, "dname", DisplayName);
+            auth = BlobUtilities.SetValue(auth, "email", Email);
+            auth = BlobUtilities.SetValue(auth, "vmail", Serializer.Serialize(IsEmailVerified));
+            auth = BlobUtilities.SetValue(auth, "purl", PhotoUrl);
+            auth = BlobUtilities.SetValue(auth, "pnum", PhoneNumber);
 
             App.LocalDatabase.Set(Root, auth, true);
         }

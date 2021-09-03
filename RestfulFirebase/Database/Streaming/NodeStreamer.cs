@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ObservableHelpers;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using System.Diagnostics;
@@ -210,7 +210,7 @@ namespace RestfulFirebase.Database.Streaming
                     var absolutePath = query.GetAbsolutePath();
 
                     var uri = streamPath == "/" ?
-                        absolutePath : Utils.UrlCombine(absolutePath, streamPath.Substring(1));
+                        absolutePath : UrlUtilities.Combine(absolutePath, streamPath.Substring(1));
 
                     var type = dataToken.Type;
 

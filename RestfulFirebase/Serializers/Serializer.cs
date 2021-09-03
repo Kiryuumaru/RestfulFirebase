@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers.Additionals;
 using RestfulFirebase.Serializers.Primitives;
 using System;
@@ -444,15 +444,15 @@ namespace RestfulFirebase.Serializers
                                         {
                                             var key = genericType.GetProperty("Key").GetValue(pair, new object[0]);
                                             var value = genericType.GetProperty("Value").GetValue(pair, new object[0]);
-                                            blobArray = Utils.BlobSetValue(blobArray, keyConv.Serialize(key), valueConv.Serialize(value));
+                                            blobArray = BlobUtilities.SetValue(blobArray, keyConv.Serialize(key), valueConv.Serialize(value));
                                         }
-                                        return Utils.SerializeString(blobArray);
+                                        return StringUtilities.Serialize(blobArray);
                                     },
                                     (data, defaultValue) =>
                                     {
                                         try
                                         {
-                                            Dictionary<string, string> deserialized = Utils.BlobConvert(data);
+                                            Dictionary<string, string> deserialized = BlobUtilities.Convert(data);
                                             var valuesType = typeof(List<>).MakeGenericType(genericType);
                                             var values = Activator.CreateInstance(valuesType);
                                             foreach (var pair in deserialized)
@@ -513,21 +513,21 @@ namespace RestfulFirebase.Serializers
                                 {
                                     string serializedType = value.GetType().FullName;
                                     string serializedValue = Serializer.Serialize(value, value.GetType());
-                                    serialized.Add(Utils.SerializeString(serializedType, serializedValue));
+                                    serialized.Add(StringUtilities.Serialize(serializedType, serializedValue));
                                 }
-                                return Utils.SerializeString(serialized.ToArray());
+                                return StringUtilities.Serialize(serialized.ToArray());
                             },
                             (data, defaultValue) =>
                             {
                                 try
                                 {
-                                    string[] deserialized = Utils.DeserializeString(data);
+                                    string[] deserialized = StringUtilities.Deserialize(data);
                                     var values = new List<object>();
                                     foreach (var value in deserialized)
                                     {
                                         try
                                         {
-                                            string[] deserializedPair = Utils.DeserializeString(value);
+                                            string[] deserializedPair = StringUtilities.Deserialize(value);
                                             if (deserializedPair?.Length == 2)
                                             {
                                                 string serializedType = deserializedPair[0];
@@ -617,13 +617,13 @@ namespace RestfulFirebase.Serializers
             {
                 encodedValues[i] = Serialize(values.ElementAt(i));
             }
-            return Utils.SerializeString(encodedValues);
+            return StringUtilities.Serialize(encodedValues);
         }
 
         /// <inheritdoc/>
         public IEnumerable<T> DeserializeEnumerable(string data, IEnumerable<T> defaultValue = default)
         {
-            var encodedValues = Utils.DeserializeString(data);
+            var encodedValues = StringUtilities.Deserialize(data);
             if (encodedValues == null) return defaultValue;
             var decodedValues = new T[encodedValues.Length];
             for (int i = 0; i < encodedValues.Length; i++)

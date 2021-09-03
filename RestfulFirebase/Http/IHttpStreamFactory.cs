@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 
-namespace RestfulFirebase.Extensions.Http
+namespace RestfulFirebase.Http
 {
     /// <summary>
     /// The Http stream factory for custom streamer factory declarations.

@@ -6,7 +6,7 @@ using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 
 namespace RestfulFirebase.Database.Query
 {

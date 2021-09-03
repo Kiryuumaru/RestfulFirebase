@@ -1,5 +1,5 @@
 ﻿using ObservableHelpers;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -118,18 +118,18 @@ namespace RestfulFirebase.Local
         internal void Set(string path, string data, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
-            var separated = Utils.UrlSeparate(path);
+            var separated = UrlUtilities.Separate(path);
             var keyHeir = KeyHeirPath;
             for (int i = 0; i < separated.Length - 1; i++)
             {
-                keyHeir = Utils.UrlCombine(keyHeir, separated[i]);
+                keyHeir = UrlUtilities.Combine(keyHeir, separated[i]);
                 var validatedKeyHeir = ValidatePath(keyHeir);
                 PathWriteLock(validatedKeyHeir, delegate
                 {
                     var hiers = DBGet(validatedKeyHeir, tryFromAuthStore);
-                    var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
+                    var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                     if (!deserialized.Contains(separated[i + 1])) deserialized.Add(separated[i + 1]);
-                    var serialized = Utils.SerializeString(deserialized.ToArray());
+                    var serialized = StringUtilities.Serialize(deserialized.ToArray());
                     DBSet(validatedKeyHeir, serialized, tryFromAuthStore);
                 });
             }
@@ -145,16 +145,16 @@ namespace RestfulFirebase.Local
         internal void Delete(string path, bool tryFromAuthStore)
         {
             path = ValidatePath(path);
-            var subKeyHierPath = ValidatePath(Utils.UrlCombine(KeyHeirPath, path));
+            var subKeyHierPath = ValidatePath(UrlUtilities.Combine(KeyHeirPath, path));
             if (DBGet(subKeyHierPath, tryFromAuthStore) == null)
             {
-                var separated = Utils.UrlSeparate(path);
+                var separated = UrlUtilities.Separate(path);
                 for (int i = separated.Length - 1; i >= 0; i--)
                 {
                     var keyHierList = separated.Take(i + 1).ToList();
                     if (separated.Length - 1 != i)
                     {
-                        var valuePath = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
+                        var valuePath = ValidatePath(UrlUtilities.Combine(keyHierList.ToArray()));
                         if (DBGet(valuePath, tryFromAuthStore) != null)
                         {
                             break;
@@ -162,12 +162,12 @@ namespace RestfulFirebase.Local
                     }
                     keyHierList = keyHierList.Take(i).ToList();
                     keyHierList.Insert(0, KeyHeirPath);
-                    var keyHeir = ValidatePath(Utils.UrlCombine(keyHierList.ToArray()));
+                    var keyHeir = ValidatePath(UrlUtilities.Combine(keyHierList.ToArray()));
                     bool isBreak = false;
                     PathWriteLock(keyHeir, delegate
                     {
                         var hiers = DBGet(keyHeir, tryFromAuthStore);
-                        var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
+                        var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                         if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
                         if (deserialized.Count == 0)
                         {
@@ -175,7 +175,7 @@ namespace RestfulFirebase.Local
                         }
                         else
                         {
-                            var serialized = Utils.SerializeString(deserialized.ToArray());
+                            var serialized = StringUtilities.Serialize(deserialized.ToArray());
                             DBSet(keyHeir, serialized, tryFromAuthStore);
                             isBreak = true;
                         }
@@ -194,9 +194,9 @@ namespace RestfulFirebase.Local
             List<string> subPaths = new List<string>();
             void recursive(string subPath)
             {
-                var keyHeir = ValidatePath(Utils.UrlCombine(KeyHeirPath, subPath));
+                var keyHeir = ValidatePath(UrlUtilities.Combine(KeyHeirPath, subPath));
                 var hiers = DBGet(keyHeir, tryFromAuthStore);
-                var deserialized = Utils.DeserializeString(hiers)?.ToList() ?? new List<string>();
+                var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                 if (path != subPath)
                 {
                     if (DBContainsKey(ValidatePath(subPath), tryFromAuthStore))
@@ -208,7 +208,7 @@ namespace RestfulFirebase.Local
                 {
                     foreach (var hier in deserialized)
                     {
-                        recursive(Utils.UrlCombine(subPath, hier));
+                        recursive(UrlUtilities.Combine(subPath, hier));
                     }
                 }
             }

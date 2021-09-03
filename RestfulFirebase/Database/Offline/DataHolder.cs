@@ -3,7 +3,7 @@ using ObservableHelpers;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -148,12 +148,12 @@ namespace RestfulFirebase.Database.Offline
                 {
                     var hier = new List<string>();
                     var path = Uri.Replace(App.Config.DatabaseURL, "");
-                    var separated = Utils.UrlSeparate(path);
+                    var separated = UrlUtilities.Separate(path);
                     var currentUri = App.Config.DatabaseURL;
                     hier.Add(currentUri);
                     for (int i = 0; i < separated.Length - 1; i++)
                     {
-                        currentUri = Utils.UrlCombine(currentUri, separated[i]);
+                        currentUri = UrlUtilities.Combine(currentUri, separated[i]);
                         hier.Add(currentUri);
                     }
                     hierarchyUriCache = hier;
@@ -352,7 +352,7 @@ namespace RestfulFirebase.Database.Offline
             string uid = null;
             while (uid == null)
             {
-                uid = UIDFactory.GenerateUID(5, Utils.Base64Charset);
+                uid = UIDFactory.GenerateUID(5, StringUtilities.Base64Charset);
                 var sync = Get(OfflineDatabase.SyncBlobPath, uid);
                 var changes = Get(OfflineDatabase.ChangesPath, uid);
                 if (sync != null || changes != null) uid = null;
@@ -363,12 +363,12 @@ namespace RestfulFirebase.Database.Offline
         private string Get(params string[] path)
         {
             if (path.Any(i => i is null)) return null;
-            return App.LocalDatabase.Get(Utils.UrlCombine(path));
+            return App.LocalDatabase.Get(UrlUtilities.Combine(path));
         }
 
         private void Set(string data, params string[] path)
         {
-            var combined = Utils.UrlCombine(path);
+            var combined = UrlUtilities.Combine(path);
             if (data == null)
             {
                 App.LocalDatabase.Delete(combined);

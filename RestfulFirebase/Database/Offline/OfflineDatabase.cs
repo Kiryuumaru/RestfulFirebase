@@ -2,7 +2,7 @@
 using ObservableHelpers;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Exceptions;
-using RestfulFirebase.Extensions;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -140,9 +140,9 @@ namespace RestfulFirebase.Database.Offline
         public int WriteTaskCount => writeTasks.Count;
 
         internal const string Root = "offdb";
-        internal static readonly string ShortPath = Utils.UrlCombine(Root, "short");
-        internal static readonly string SyncBlobPath = Utils.UrlCombine(Root, "blob");
-        internal static readonly string ChangesPath = Utils.UrlCombine(Root, "changes");
+        internal static readonly string ShortPath = UrlUtilities.Combine(Root, "short");
+        internal static readonly string SyncBlobPath = UrlUtilities.Combine(Root, "blob");
+        internal static readonly string ChangesPath = UrlUtilities.Combine(Root, "changes");
 
         private ConcurrentDictionary<string, WriteTask> writeTasks = new ConcurrentDictionary<string, WriteTask>();
 
@@ -214,7 +214,7 @@ namespace RestfulFirebase.Database.Offline
         public IEnumerable<string> GetSubUris(string uri, bool includeOriginIfExists = false)
         {
             var paths = new List<string>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(Utils.UrlCombine(ShortPath, uri)))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(UrlUtilities.Combine(ShortPath, uri)))
             {
                 paths.Add(subPath.Substring(ShortPath.Length));
             }
@@ -245,7 +245,7 @@ namespace RestfulFirebase.Database.Offline
             var hier = new List<string>();
             var path = uri.Replace(baseUri, "");
             path = path.Trim('/');
-            var separated = Utils.UrlSeparate(path);
+            var separated = UrlUtilities.Separate(path);
             var currentUri = baseUri;
             if (GetData(currentUri).IsExists)
             {
@@ -253,7 +253,7 @@ namespace RestfulFirebase.Database.Offline
             }    
             for (int i = 0; i < separated.Length - 1; i++)
             {
-                currentUri = Utils.UrlCombine(currentUri, separated[i]);
+                currentUri = UrlUtilities.Combine(currentUri, separated[i]);
                 if (GetData(currentUri).IsExists)
                 {
                     hier.Add(currentUri);
@@ -271,7 +271,7 @@ namespace RestfulFirebase.Database.Offline
             var datas = new List<DataHolder>();
             foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
             {
-                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                 {
                     datas.Add(GetData(subUri));
                 }
@@ -280,7 +280,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
                 {
-                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                    if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                     {
                         datas.Add(GetData(subUri));
                     }
@@ -294,7 +294,7 @@ namespace RestfulFirebase.Database.Offline
             var datas = new List<string>();
             foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
             {
-                if (!datas.Any(i => Utils.UrlCompare(i, subUri)))
+                if (!datas.Any(i => UrlUtilities.Compare(i, subUri)))
                 {
                     datas.Add(subUri);
                 }
@@ -303,7 +303,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
                 {
-                    if (!datas.Any(i => Utils.UrlCompare(i, subUri)))
+                    if (!datas.Any(i => UrlUtilities.Compare(i, subUri)))
                     {
                         datas.Add(subUri);
                     }
@@ -317,7 +317,7 @@ namespace RestfulFirebase.Database.Offline
             var datas = new List<DataHolder>();
             foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
             {
-                if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                 {
                     if (GetData(subUri).Blob != null)
                     {
@@ -329,7 +329,7 @@ namespace RestfulFirebase.Database.Offline
             {
                 foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
                 {
-                    if (!datas.Any(i => Utils.UrlCompare(i.Uri, subUri)))
+                    if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                     {
                         if (GetData(subUri).Blob != null)
                         {
@@ -379,7 +379,7 @@ namespace RestfulFirebase.Database.Offline
                 CancelPut(uri);
             }
 
-            var existing = writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Value.Uri, data.Uri)).Value;
+            var existing = writeTasks.FirstOrDefault(i => UrlUtilities.Compare(i.Value.Uri, data.Uri)).Value;
             if (existing != null)
             {
                 if (existing.Blob != data.Blob)
@@ -396,7 +396,7 @@ namespace RestfulFirebase.Database.Offline
 
         internal void CancelPut(string uri)
         {
-            foreach (var taskPair in writeTasks.Where(i => Utils.UrlCompare(i.Value.Uri, uri)))
+            foreach (var taskPair in writeTasks.Where(i => UrlUtilities.Compare(i.Value.Uri, uri)))
             {
                 taskPair.Value.Cancel();
             }
@@ -404,7 +404,7 @@ namespace RestfulFirebase.Database.Offline
 
         internal bool IsWriting(DataHolder data)
         {
-            return writeTasks.FirstOrDefault(i => Utils.UrlCompare(i.Value.Uri, data.Uri)).Value?.IsCancelled ?? false;
+            return writeTasks.FirstOrDefault(i => UrlUtilities.Compare(i.Value.Uri, data.Uri)).Value?.IsCancelled ?? false;
         }
 
         internal void EvaluateCache(DataHolder dataHolder)

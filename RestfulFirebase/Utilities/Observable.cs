@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.Extensions
+namespace RestfulFirebase.Utilities
 {
     /// <summary>
     /// Provides an operator for the push-based notifications mechanism <see cref="IObserver{T}"/>.

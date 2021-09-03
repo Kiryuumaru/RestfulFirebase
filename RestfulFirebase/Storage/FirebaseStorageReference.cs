@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.Extensions.Http;
-using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Http;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;

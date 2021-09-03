@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Extensions;
+﻿using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Extensions.Http;
+using RestfulFirebase.Http;
 using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;

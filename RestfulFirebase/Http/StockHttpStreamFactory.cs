@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http;
 
-namespace RestfulFirebase.Extensions.Http
+namespace RestfulFirebase.Http
 {
     /// <summary>
     /// The provided stock <see cref="IHttpClientProxy"/> implementation to be used.

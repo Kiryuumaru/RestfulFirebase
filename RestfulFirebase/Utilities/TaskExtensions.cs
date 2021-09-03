@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Extensions
+namespace RestfulFirebase.Utilities
 {
     /// <summary>
-    /// Provides task extensions
+    /// Provides <see cref="Task"/> extensions
     /// </summary>
     public static class TaskExtensions
     {
