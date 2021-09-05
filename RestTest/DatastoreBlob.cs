@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Local;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace RestTest
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath));
             if (!File.Exists(filePath))
                 File.WriteAllText(filePath, "");
-            if (isPersistent) db = new ConcurrentDictionary<string, string>(Utils.BlobConvert(File.ReadAllText(filePath)));
+            if (isPersistent) db = new ConcurrentDictionary<string, string>(BlobUtilities.Convert(File.ReadAllText(filePath)));
             else db = new ConcurrentDictionary<string, string>();
         }
 
@@ -50,7 +51,7 @@ namespace RestTest
                         }
                         lock (this)
                         {
-                            string contentCopy = Utils.BlobConvert(dbCopy);
+                            string contentCopy = BlobUtilities.Convert(dbCopy);
                             File.WriteAllText(filePath, contentCopy);
                         }
                     }

@@ -319,7 +319,7 @@ namespace RestTest
                     if (line.EndsWith(" "))
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        var separated = Utils.SeparateUrl(path);
+                        var separated = UrlUtilities.Separate(path);
                         RealtimeInstance subWire = wire;
                         for (int i = 0; i < separated.Length; i++)
                         {
@@ -330,7 +330,7 @@ namespace RestTest
                     else
                     {
                         var data = line.Substring(line.IndexOf(' ') + 1);
-                        var separated = Utils.SeparateUrl(path);
+                        var separated = UrlUtilities.Separate(path);
                         RealtimeInstance subWire = wire;
                         for (int i = 0; i < separated.Length; i++)
                         {
@@ -393,7 +393,7 @@ namespace RestTest
                         if (line.EndsWith(" "))
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
-                            var separated = Utils.SeparateUrl(path);
+                            var separated = UrlUtilities.Separate(path);
                             RealtimeInstance subWire = subWire1;
                             for (int i = 0; i < separated.Length; i++)
                             {
@@ -404,7 +404,7 @@ namespace RestTest
                         else
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
-                            var separated = Utils.SeparateUrl(path);
+                            var separated = UrlUtilities.Separate(path);
                             RealtimeInstance subWire = subWire1;
                             for (int i = 0; i < separated.Length; i++)
                             {
@@ -423,7 +423,7 @@ namespace RestTest
                         if (line.EndsWith(" "))
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
-                            var separated = Utils.SeparateUrl(path);
+                            var separated = UrlUtilities.Separate(path);
                             RealtimeInstance subWire = subWire2;
                             for (int i = 0; i < separated.Length; i++)
                             {
@@ -434,7 +434,7 @@ namespace RestTest
                         else
                         {
                             var data = line.Substring(line.IndexOf(' ') + 1);
-                            var separated = Utils.SeparateUrl(path);
+                            var separated = UrlUtilities.Separate(path);
                             RealtimeInstance subWire = subWire2;
                             for (int i = 0; i < separated.Length; i++)
                             {

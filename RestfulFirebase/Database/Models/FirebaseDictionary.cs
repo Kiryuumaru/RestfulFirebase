@@ -152,7 +152,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            var decrypted = serialized?.VigenereCipherDecrypt(encryptionPattern);
+            var decrypted = Cryptography.VigenereCipherDecrypt(serialized, encryptionPattern);
 
             Dictionary<string, string> values = BlobUtilities.Convert(decrypted);
 
@@ -192,7 +192,7 @@ namespace RestfulFirebase.Database.Models
 
             string serialized = BlobUtilities.Convert(values);
 
-            return serialized?.VigenereCipherEncrypt(encryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
         }
 
         /// <summary>

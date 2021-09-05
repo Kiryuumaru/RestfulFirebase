@@ -59,7 +59,7 @@ namespace RestfulFirebase.Local
         /// </param>
         public void Set(string path, string data)
         {
-            Set(path, data, false);
+            Set(App.Config.LocalDatabase, path, data);
         }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace RestfulFirebase.Local
         /// </returns>
         public string Get(string path)
         {
-            return Get(path, false);
+            return Get(App.Config.LocalDatabase, path);
         }
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace RestfulFirebase.Local
         /// </param>
         public void Delete(string path)
         {
-            Delete(path, false);
+            Delete(App.Config.LocalDatabase, path);
         }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace RestfulFirebase.Local
         /// </returns>
         public IEnumerable<string> GetSubPaths(string path)
         {
-            return GetSubPaths(path, false);
+            return GetSubPaths(App.Config.LocalDatabase, path);
         }
 
         /// <summary>
@@ -112,10 +112,10 @@ namespace RestfulFirebase.Local
         /// </returns>
         public bool ContainsData(string path)
         {
-            return ContainsData(path, false);
+            return ContainsData(App.Config.LocalDatabase, path);
         }
 
-        internal void Set(string path, string data, bool tryFromAuthStore)
+        internal void Set(ILocalDatabase localDatabase, string path, string data)
         {
             path = ValidatePath(path);
             var separated = UrlUtilities.Separate(path);
@@ -126,27 +126,27 @@ namespace RestfulFirebase.Local
                 var validatedKeyHeir = ValidatePath(keyHeir);
                 PathWriteLock(validatedKeyHeir, delegate
                 {
-                    var hiers = DBGet(validatedKeyHeir, tryFromAuthStore);
+                    var hiers = DBGet(localDatabase, validatedKeyHeir);
                     var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                     if (!deserialized.Contains(separated[i + 1])) deserialized.Add(separated[i + 1]);
                     var serialized = StringUtilities.Serialize(deserialized.ToArray());
-                    DBSet(validatedKeyHeir, serialized, tryFromAuthStore);
+                    DBSet(localDatabase, validatedKeyHeir, serialized);
                 });
             }
-            DBSet(path, data, tryFromAuthStore);
+            DBSet(localDatabase, path, data);
         }
 
-        internal string Get(string path, bool tryFromAuthStore)
+        internal string Get(ILocalDatabase localDatabase, string path)
         {
             path = ValidatePath(path);
-            return DBGet(path, tryFromAuthStore);
+            return DBGet(localDatabase, path);
         }
 
-        internal void Delete(string path, bool tryFromAuthStore)
+        internal void Delete(ILocalDatabase localDatabase, string path)
         {
             path = ValidatePath(path);
             var subKeyHierPath = ValidatePath(UrlUtilities.Combine(KeyHeirPath, path));
-            if (DBGet(subKeyHierPath, tryFromAuthStore) == null)
+            if (DBGet(localDatabase, subKeyHierPath) == null)
             {
                 var separated = UrlUtilities.Separate(path);
                 for (int i = separated.Length - 1; i >= 0; i--)
@@ -155,7 +155,7 @@ namespace RestfulFirebase.Local
                     if (separated.Length - 1 != i)
                     {
                         var valuePath = ValidatePath(UrlUtilities.Combine(keyHierList.ToArray()));
-                        if (DBGet(valuePath, tryFromAuthStore) != null)
+                        if (DBGet(localDatabase, valuePath) != null)
                         {
                             break;
                         }
@@ -166,17 +166,17 @@ namespace RestfulFirebase.Local
                     bool isBreak = false;
                     PathWriteLock(keyHeir, delegate
                     {
-                        var hiers = DBGet(keyHeir, tryFromAuthStore);
+                        var hiers = DBGet(localDatabase, keyHeir);
                         var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                         if (deserialized.Contains(separated[i])) deserialized.Remove(separated[i]);
                         if (deserialized.Count == 0)
                         {
-                            DBDelete(keyHeir, tryFromAuthStore);
+                            DBDelete(localDatabase, keyHeir);
                         }
                         else
                         {
                             var serialized = StringUtilities.Serialize(deserialized.ToArray());
-                            DBSet(keyHeir, serialized, tryFromAuthStore);
+                            DBSet(localDatabase, keyHeir, serialized);
                             isBreak = true;
                         }
                     });
@@ -186,20 +186,20 @@ namespace RestfulFirebase.Local
                     }
                 }
             }
-            DBDelete(path, tryFromAuthStore);
+            DBDelete(localDatabase, path);
         }
 
-        internal IEnumerable<string> GetSubPaths(string path, bool tryFromAuthStore)
+        internal IEnumerable<string> GetSubPaths(ILocalDatabase localDatabase, string path)
         {
             List<string> subPaths = new List<string>();
             void recursive(string subPath)
             {
                 var keyHeir = ValidatePath(UrlUtilities.Combine(KeyHeirPath, subPath));
-                var hiers = DBGet(keyHeir, tryFromAuthStore);
+                var hiers = DBGet(localDatabase, keyHeir);
                 var deserialized = StringUtilities.Deserialize(hiers)?.ToList() ?? new List<string>();
                 if (path != subPath)
                 {
-                    if (DBContainsKey(ValidatePath(subPath), tryFromAuthStore))
+                    if (DBContainsKey(localDatabase, ValidatePath(subPath)))
                     {
                         subPaths.Add(subPath);
                     }
@@ -216,10 +216,10 @@ namespace RestfulFirebase.Local
             return subPaths;
         }
 
-        internal bool ContainsData(string path, bool tryFromAuthStore)
+        internal bool ContainsData(ILocalDatabase localDatabase, string path)
         {
             path = ValidatePath(path);
-            return DBContainsKey(path, tryFromAuthStore);
+            return DBContainsKey(localDatabase, path);
         }
 
         private string ValidatePath(string path)
@@ -244,66 +244,49 @@ namespace RestfulFirebase.Local
             }
         }
 
-        private void DBSet(string key, string value, bool tryFromAuthStore)
+        private void DBSet(ILocalDatabase localDatabase, string key, string value)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
-
-            var store = DBGetStore(tryFromAuthStore);
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = App.Config.LocalEncryption.EncryptValue(value);
 
-            store.Set(encryptedKey, encryptedValue);
+            localDatabase.Set(encryptedKey, encryptedValue);
         }
 
-        private string DBGet(string key, bool tryFromAuthStore)
+        private string DBGet(ILocalDatabase localDatabase, string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
-
-            var store = DBGetStore(tryFromAuthStore);
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = null;
 
-            encryptedValue = store.Get(encryptedKey);
+            encryptedValue = localDatabase.Get(encryptedKey);
 
             return App.Config.LocalEncryption.DecryptValue(encryptedValue);
         }
 
-        private bool DBContainsKey(string key, bool tryFromAuthStore)
+        private bool DBContainsKey(ILocalDatabase localDatabase, string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
-            var store = DBGetStore(tryFromAuthStore);
-
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 
-            return store.ContainsKey(encryptedKey);
+            return localDatabase.ContainsKey(encryptedKey);
         }
 
-        private void DBDelete(string key, bool tryFromAuthStore)
+        private void DBDelete(ILocalDatabase localDatabase, string key)
         {
             if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
 
-            var store = DBGetStore(tryFromAuthStore);
-
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 
-            store.Delete(encryptedKey);
+            localDatabase.Delete(encryptedKey);
         }
 
-        private void DBClear(bool tryFromAuthStore)
+        private void DBClear(ILocalDatabase localDatabase)
         {
-            var store = DBGetStore(tryFromAuthStore);
-
-            store.Clear();
-        }
-
-        private ILocalDatabase DBGetStore(bool tryFromAuthStore)
-        {
-            return tryFromAuthStore
-                ? (App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase)
-                : App.Config.LocalDatabase;
+            localDatabase.Clear();
         }
 
         #endregion

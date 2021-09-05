@@ -3,6 +3,7 @@ using ObservableHelpers;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -20,6 +21,8 @@ namespace RestfulFirebase.Database.Offline
         #region Properties
 
         public RestfulFirebaseApp App { get; }
+
+        public ILocalDatabase LocalDatabase { get; }
 
         public string Uri { get; }
 
@@ -183,10 +186,11 @@ namespace RestfulFirebase.Database.Offline
 
         #region Initializers
 
-        public DataHolder(RestfulFirebaseApp app, string uri)
+        public DataHolder(RestfulFirebaseApp app, string uri, ILocalDatabase localDatabase)
         {
             App = app;
             Uri = uri.EndsWith("/") ? uri : uri + "/";
+            LocalDatabase = localDatabase;
 
             App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
         }
@@ -363,7 +367,7 @@ namespace RestfulFirebase.Database.Offline
         private string Get(params string[] path)
         {
             if (path.Any(i => i is null)) return null;
-            return App.LocalDatabase.Get(UrlUtilities.Combine(path));
+            return App.LocalDatabase.Get(LocalDatabase, UrlUtilities.Combine(path));
         }
 
         private void Set(string data, params string[] path)
@@ -371,11 +375,11 @@ namespace RestfulFirebase.Database.Offline
             var combined = UrlUtilities.Combine(path);
             if (data == null)
             {
-                App.LocalDatabase.Delete(combined);
+                App.LocalDatabase.Delete(LocalDatabase, combined);
             }
             else
             {
-                App.LocalDatabase.Set(combined, data);
+                App.LocalDatabase.Set(LocalDatabase, combined, data);
             }
         }
 

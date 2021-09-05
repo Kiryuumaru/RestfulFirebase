@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using RestfulFirebase.Local;
 
 namespace RestfulFirebase.Database
 {
@@ -62,9 +63,12 @@ namespace RestfulFirebase.Database
         /// <summary>
         /// Flush all data of the offline database.
         /// </summary>
-        public void Flush()
+        /// <param name="localDatabase">
+        /// Local database to flush. Leave <c>default</c> or <c>null</c> to flush default local database <see cref="FirebaseConfig.LocalDatabase"/>.
+        /// </param>
+        public void Flush(ILocalDatabase localDatabase = default)
         {
-            OfflineDatabase.Flush();
+            OfflineDatabase.Flush(localDatabase ?? App.Config.LocalDatabase);
         }
 
         /// <inheritdoc/>

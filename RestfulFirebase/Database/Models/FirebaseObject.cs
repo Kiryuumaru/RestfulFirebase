@@ -150,7 +150,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            string decrypted = serialized?.VigenereCipherDecrypt(encryptionPattern);
+            string decrypted = Cryptography.VigenereCipherDecrypt(serialized, encryptionPattern);
 
             string[] properties = StringUtilities.Deserialize(decrypted);
 
@@ -227,7 +227,7 @@ namespace RestfulFirebase.Database.Models
 
             string serialized = StringUtilities.Serialize(properties.ToArray());
 
-            return serialized?.VigenereCipherEncrypt(encryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
         }
 
         /// <summary>

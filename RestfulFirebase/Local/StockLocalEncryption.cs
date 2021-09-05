@@ -28,25 +28,25 @@ namespace RestfulFirebase.Local
         /// <inheritdoc/>
         public string DecryptKey(string encrypted)
         {
-            return encrypted.VigenereCipherDecrypt(EncryptionPattern);
+            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string DecryptValue(string encrypted)
         {
-            return encrypted.VigenereCipherDecrypt(EncryptionPattern);
+            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string EncryptKey(string key)
         {
-            return key.VigenereCipherEncrypt(EncryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(key, EncryptionPattern);
         }
 
         /// <inheritdoc/>
         public string EncryptValue(string value)
         {
-            return value.VigenereCipherEncrypt(EncryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(value, EncryptionPattern);
         }
     }
 }

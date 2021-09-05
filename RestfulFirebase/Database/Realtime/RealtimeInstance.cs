@@ -4,6 +4,7 @@ using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
@@ -41,6 +42,11 @@ namespace RestfulFirebase.Database.Realtime
         /// The parent <see cref="RealtimeInstance"/> of the instance.
         /// </summary>
         public RealtimeInstance Parent { get; }
+
+        /// <summary>
+        /// Local database used by this realtime instance.
+        /// </summary>
+        public ILocalDatabase LocalDatabase { get; private set; }
 
         /// <summary>
         /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
@@ -106,16 +112,17 @@ namespace RestfulFirebase.Database.Realtime
 
         #region Initializers
 
-        private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query)
+        private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
         {
             App = app;
             Query = query;
+            LocalDatabase = localDatabase;
 
             EvaluateDataQueue();
         }
 
-        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire root, RealtimeInstance parent, IFirebaseQuery query)
-           : this(app, query)
+        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire root, RealtimeInstance parent, IFirebaseQuery query, ILocalDatabase localDatabase)
+           : this(app, query, localDatabase)
         {
             Root = root;
             Parent = parent;
@@ -124,8 +131,8 @@ namespace RestfulFirebase.Database.Realtime
             SubscribeToParent();
         }
 
-        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire root, RealtimeInstance parent, string path)
-           : this(app, root, parent, parent.Query.Child(path))
+        private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire root, RealtimeInstance parent, string path, ILocalDatabase localDatabase)
+           : this(app, root, parent, parent.Query.Child(path), localDatabase)
         {
 
         }
@@ -147,7 +154,7 @@ namespace RestfulFirebase.Database.Realtime
                 return default;
             }
 
-            var clone = new RealtimeInstance(App, Root, Parent, Query);
+            var clone = new RealtimeInstance(App, Root, Parent, Query, LocalDatabase);
             clone.SyncOperation.SetContext(this);
             clone.EvaluateData();
 
@@ -171,7 +178,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = UrlUtilities.Combine(Query.GetAbsolutePath().Trim('/'), path);
-            return App.Database.OfflineDatabase.GetDatas(uri, true).Any(i => i.Blob != null);
+            return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).Any(i => i.Blob != null);
         }
 
         /// <summary>
@@ -313,7 +320,7 @@ namespace RestfulFirebase.Database.Realtime
             var uri = Query.GetAbsolutePath();
 
             // Delete related changes
-            var subDatas = App.Database.OfflineDatabase.GetDatas(uri, false, true);
+            var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, false, true);
             foreach (var subData in subDatas)
             {
                 if (MakeChanges(subData, null))
@@ -324,7 +331,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             // Make changes
-            var dataHolder = App.Database.OfflineDatabase.GetData(uri);
+            var dataHolder = App.Database.OfflineDatabase.GetData(LocalDatabase, uri);
             if (MakeChanges(dataHolder, blob))
             {
                 hasChanges = true;
@@ -358,7 +365,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(uri, true).All(i => i.Blob == null);
+            return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).All(i => i.Blob == null);
         }
 
         /// <inheritdoc/>
@@ -370,7 +377,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetData(uri).Blob;
+            return App.Database.OfflineDatabase.GetData(LocalDatabase, uri).Blob;
         }
 
         /// <summary>
@@ -387,7 +394,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubUris(uri, false)
+            return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false)
                 .Select(i => i.Replace(uri, "").Trim('/'))
                 .Where(i => !string.IsNullOrEmpty(i));
         }
@@ -406,7 +413,7 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetSubUris(uri, false);
+            return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false);
         }
 
         /// <summary>
@@ -609,7 +616,7 @@ namespace RestfulFirebase.Database.Realtime
                 root = Root;
             }
 
-            var childWire = new RealtimeInstance(App, root, this, path);
+            var childWire = new RealtimeInstance(App, root, this, path, LocalDatabase);
             childWire.SyncOperation.SetContext(this);
             if (evaluateData)
             {
@@ -634,7 +641,7 @@ namespace RestfulFirebase.Database.Realtime
             var uri = Query.GetAbsolutePath();
             int totalCount = 0;
             int synedCount = 0;
-            foreach (var data in App.Database.OfflineDatabase.GetDatas(uri, true))
+            foreach (var data in App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true))
             {
                 totalCount++;
                 if (data.Changes == null)

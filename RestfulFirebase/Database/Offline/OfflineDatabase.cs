@@ -2,6 +2,7 @@
 using ObservableHelpers;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -131,6 +132,59 @@ namespace RestfulFirebase.Database.Offline
             }
         }
 
+        private class DataHolderCache
+        {
+            public DataHolder Holder { get; }
+            public long Ticks { get; set; }
+
+            public DataHolderCache(DataHolder holder)
+            {
+                Holder = holder;
+                Ticks = DateTime.UtcNow.Ticks;
+            }
+        }
+
+        private struct DataHolderCacheKey
+        {
+            public string Url { get => dataHolderCache?.Holder?.Uri ?? url; }
+            public ILocalDatabase LocalDatabase { get => dataHolderCache?.Holder?.LocalDatabase ?? localDatabase; }
+
+            private string url;
+            private ILocalDatabase localDatabase;
+            private DataHolderCache dataHolderCache;
+
+            public DataHolderCacheKey(string url, ILocalDatabase localDatabase)
+            {
+                this.url = url;
+                this.localDatabase = localDatabase;
+                dataHolderCache = null;
+            }
+
+            public DataHolderCacheKey(DataHolderCache dataHolderCache)
+            {
+                this.url = null;
+                this.localDatabase = null;
+                this.dataHolderCache = dataHolderCache;
+            }
+
+            public void Update(DataHolderCache dataHolderCache)
+            {
+                this.dataHolderCache = dataHolderCache;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is DataHolderCacheKey key &&
+                       UrlUtilities.Compare(Url, key.Url) &&
+                       EqualityComparer<ILocalDatabase>.Default.Equals(LocalDatabase, key.LocalDatabase);
+            }
+
+            public override int GetHashCode()
+            {
+                return -1887812163 + EqualityComparer<ILocalDatabase>.Default.GetHashCode(LocalDatabase);
+            }
+        }
+
         #endregion
 
         #region Properties
@@ -149,7 +203,7 @@ namespace RestfulFirebase.Database.Offline
         private OperationInvoker writeTaskPutControl;
         private OperationInvoker writeTaskErrorControl;
 
-        private ConcurrentDictionary<string, (long ticks, DataHolder holder)> DataHolderCache = new ConcurrentDictionary<string, (long ticks, DataHolder holder)>();
+        private ConcurrentDictionary<DataHolderCacheKey, DataHolderCache> DataHolderCaches = new ConcurrentDictionary<DataHolderCacheKey, DataHolderCache>();
 
         #endregion
 
@@ -183,44 +237,46 @@ namespace RestfulFirebase.Database.Offline
 
         #region Methods
 
-        public DataHolder GetData(string uri)
+        public DataHolder GetData(ILocalDatabase localDatabase, string uri)
         {
             uri = uri.EndsWith("/") ? uri : uri + "/";
 
-            (long ticks, DataHolder holder) cache;
-            if (DataHolderCache.TryGetValue(uri, out cache))
+            DataHolderCacheKey key = new DataHolderCacheKey(uri, localDatabase);
+            DataHolderCache cache;
+            if (DataHolderCaches.TryGetValue(key, out cache))
             {
-                cache.ticks = DateTime.UtcNow.Ticks;
+                cache.Ticks = DateTime.UtcNow.Ticks;
             }
             else
             {
-                cache = (DateTime.UtcNow.Ticks, new DataHolder(App, uri));
+                cache = new DataHolderCache(new DataHolder(App, uri, localDatabase));
             }
-            DataHolderCache.AddOrUpdate(uri, cache, (oldKey, oldValue) => cache);
+            key.Update(cache);
+            DataHolderCaches.AddOrUpdate(key, cache, (oldKey, oldValue) => cache);
 
-            while (DataHolderCache.Count != 0 && DataHolderCache.Count > App.Config.DatabaseInRuntimeDataCache)
+            while (DataHolderCaches.Count != 0 && DataHolderCaches.Count > App.Config.DatabaseInRuntimeDataCache)
             {
                 try
                 {
-                    var lowestTick = DataHolderCache.Min(i => i.Value.ticks);
-                    var keyOfLowest = DataHolderCache.FirstOrDefault(i => i.Value.ticks == lowestTick).Key;
-                    DataHolderCache.TryRemove(keyOfLowest, out _);
+                    var lowestTick = DataHolderCaches.Min(i => i.Value.Ticks);
+                    var keyOfLowest = DataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
+                    DataHolderCaches.TryRemove(keyOfLowest, out _);
                 }
                 catch { }
             }
-            return cache.holder;
+            return cache.Holder;
         }
 
-        public IEnumerable<string> GetSubUris(string uri, bool includeOriginIfExists = false)
+        public IEnumerable<string> GetSubUris(ILocalDatabase localDatabase, string uri, bool includeOriginIfExists = false)
         {
             var paths = new List<string>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(UrlUtilities.Combine(ShortPath, uri)))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(localDatabase, UrlUtilities.Combine(ShortPath, uri)))
             {
                 paths.Add(subPath.Substring(ShortPath.Length));
             }
             if (includeOriginIfExists)
             {
-                if (GetData(uri).IsExists)
+                if (GetData(localDatabase, uri).IsExists)
                 {
                     paths.Add(uri);
                 }
@@ -228,7 +284,7 @@ namespace RestfulFirebase.Database.Offline
             return paths;
         }
 
-        public IEnumerable<string> GetHierUris(string uri, string baseUri = "", bool includeOriginIfExists = false)
+        public IEnumerable<string> GetHierUris(ILocalDatabase localDatabase, string uri, string baseUri = "", bool includeOriginIfExists = false)
         {
             if (string.IsNullOrEmpty(baseUri)) baseUri = App.Config.DatabaseURL;
 
@@ -247,52 +303,52 @@ namespace RestfulFirebase.Database.Offline
             path = path.Trim('/');
             var separated = UrlUtilities.Separate(path);
             var currentUri = baseUri;
-            if (GetData(currentUri).IsExists)
+            if (GetData(localDatabase, currentUri).IsExists)
             {
                 hier.Add(currentUri);
             }    
             for (int i = 0; i < separated.Length - 1; i++)
             {
                 currentUri = UrlUtilities.Combine(currentUri, separated[i]);
-                if (GetData(currentUri).IsExists)
+                if (GetData(localDatabase, currentUri).IsExists)
                 {
                     hier.Add(currentUri);
                 }
             }
-            if (GetData(currentUri).IsExists && includeOriginIfExists)
+            if (GetData(localDatabase, currentUri).IsExists && includeOriginIfExists)
             {
                 hier.Add(uri);
             }
             return hier;
         }
 
-        public IEnumerable<DataHolder> GetDatas(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
+        public IEnumerable<DataHolder> GetDatas(ILocalDatabase localDatabase, string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<DataHolder>();
-            foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
+            foreach (var subUri in GetSubUris(localDatabase, uri, includeOriginIfExists))
             {
                 if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                 {
-                    datas.Add(GetData(subUri));
+                    datas.Add(GetData(localDatabase, subUri));
                 }
             }
             if (includeHierIfExists)
             {
-                foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
+                foreach (var subUri in GetHierUris(localDatabase, uri, baseHierUri, includeOriginIfExists))
                 {
                     if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                     {
-                        datas.Add(GetData(subUri));
+                        datas.Add(GetData(localDatabase, subUri));
                     }
                 }
             }
             return datas;
         }
 
-        public IEnumerable<string> GetDataUris(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
+        public IEnumerable<string> GetDataUris(ILocalDatabase localDatabase, string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<string>();
-            foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
+            foreach (var subUri in GetSubUris(localDatabase, uri, includeOriginIfExists))
             {
                 if (!datas.Any(i => UrlUtilities.Compare(i, subUri)))
                 {
@@ -301,7 +357,7 @@ namespace RestfulFirebase.Database.Offline
             }
             if (includeHierIfExists)
             {
-                foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
+                foreach (var subUri in GetHierUris(localDatabase, uri, baseHierUri, includeOriginIfExists))
                 {
                     if (!datas.Any(i => UrlUtilities.Compare(i, subUri)))
                     {
@@ -312,14 +368,14 @@ namespace RestfulFirebase.Database.Offline
             return datas;
         }
 
-        public bool HasChild(string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
+        public bool HasChild(ILocalDatabase localDatabase, string uri, bool includeOriginIfExists = false, bool includeHierIfExists = false, string baseHierUri = "")
         {
             var datas = new List<DataHolder>();
-            foreach (var subUri in GetSubUris(uri, includeOriginIfExists))
+            foreach (var subUri in GetSubUris(localDatabase, uri, includeOriginIfExists))
             {
                 if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                 {
-                    if (GetData(subUri).Blob != null)
+                    if (GetData(localDatabase, subUri).Blob != null)
                     {
                         return true;
                     }
@@ -327,11 +383,11 @@ namespace RestfulFirebase.Database.Offline
             }
             if (includeHierIfExists)
             {
-                foreach (var subUri in GetHierUris(uri, baseHierUri, includeOriginIfExists))
+                foreach (var subUri in GetHierUris(localDatabase, uri, baseHierUri, includeOriginIfExists))
                 {
                     if (!datas.Any(i => UrlUtilities.Compare(i.Uri, subUri)))
                     {
-                        if (GetData(subUri).Blob != null)
+                        if (GetData(localDatabase, subUri).Blob != null)
                         {
                             return true;
                         }
@@ -341,35 +397,35 @@ namespace RestfulFirebase.Database.Offline
             return false;
         }
 
-        public IEnumerable<DataHolder> GetAllDatas()
+        public IEnumerable<DataHolder> GetAllDatas(ILocalDatabase localDatabase)
         {
             var datas = new List<DataHolder>();
-            foreach (var subPath in App.LocalDatabase.GetSubPaths(ShortPath))
+            foreach (var subPath in App.LocalDatabase.GetSubPaths(localDatabase, ShortPath))
             {
-                datas.Add(GetData(subPath.Substring(ShortPath.Length)));
+                datas.Add(GetData(localDatabase, subPath.Substring(ShortPath.Length)));
             }
             return datas;
         }
 
-        public void Flush()
+        public void Flush(ILocalDatabase localDatabase)
         {
             foreach (WriteTask task in writeTasks.Values)
             {
                 task.Cancel();
             }
-            var subPaths = App.LocalDatabase.GetSubPaths(Root);
+            var subPaths = App.LocalDatabase.GetSubPaths(localDatabase, Root);
             foreach (var subPath in subPaths)
             {
-                App.LocalDatabase.Delete(subPath);
+                App.LocalDatabase.Delete(localDatabase, subPath);
             }
         }
 
         internal void Put(DataHolder data, Action onWrite, Action<RetryExceptionEventArgs> onError)
         {
-            var uris = GetDataUris(data.Uri, false, true).ToList();
+            var uris = GetDataUris(data.LocalDatabase, data.Uri, false, true).ToList();
             foreach (var uri in data.HierarchyUri)
             {
-                if (GetData(uri).IsExists)
+                if (GetData(data.LocalDatabase, uri).IsExists)
                 {
                     uris.Add(uri);
                 }
@@ -409,24 +465,26 @@ namespace RestfulFirebase.Database.Offline
 
         internal void EvaluateCache(DataHolder dataHolder)
         {
-            (long ticks, DataHolder holder) cache;
-            if (DataHolderCache.TryGetValue(dataHolder.Uri, out cache))
+            DataHolderCacheKey key = new DataHolderCacheKey(dataHolder.Uri, dataHolder.LocalDatabase);
+            DataHolderCache cache;
+            if (DataHolderCaches.TryGetValue(key, out cache))
             {
-                cache.ticks = DateTime.UtcNow.Ticks;
+                cache.Ticks = DateTime.UtcNow.Ticks;
             }
             else
             {
-                cache = (DateTime.UtcNow.Ticks, dataHolder);
+                cache = new DataHolderCache(dataHolder);
             }
-            DataHolderCache.AddOrUpdate(dataHolder.Uri, cache, (oldKey, oldValue) => cache);
+            key.Update(cache);
+            DataHolderCaches.AddOrUpdate(key, cache, (oldKey, oldValue) => cache);
 
-            while (DataHolderCache.Count != 0 && DataHolderCache.Count > App.Config.DatabaseInRuntimeDataCache)
+            while (DataHolderCaches.Count != 0 && DataHolderCaches.Count > App.Config.DatabaseInRuntimeDataCache)
             {
                 try
                 {
-                    var lowestTick = DataHolderCache.Min(i => i.Value.ticks);
-                    var keyOfLowest = DataHolderCache.FirstOrDefault(i => i.Value.ticks == lowestTick).Key;
-                    DataHolderCache.TryRemove(keyOfLowest, out _);
+                    var lowestTick = DataHolderCaches.Min(i => i.Value.Ticks);
+                    var keyOfLowest = DataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
+                    DataHolderCaches.TryRemove(keyOfLowest, out _);
                 }
                 catch { }
             }

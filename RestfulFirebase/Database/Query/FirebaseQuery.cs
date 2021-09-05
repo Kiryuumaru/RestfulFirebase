@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using RestfulFirebase.Utilities;
 using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Local;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -344,9 +345,9 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public RealtimeWire AsRealtimeWire()
+        public RealtimeWire AsRealtimeWire(ILocalDatabase customLocalDatabase = default)
         {
-            var wire = new RealtimeWire(App, this);
+            var wire = new RealtimeWire(App, this, customLocalDatabase ?? App.Config.LocalDatabase);
             wire.EvaluateData();
             return wire;
         }

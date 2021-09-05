@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -138,7 +139,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            string decrypted = serialized?.VigenereCipherDecrypt(encryptionPattern);
+            string decrypted = Cryptography.VigenereCipherDecrypt(serialized, encryptionPattern);
 
             if (GetObject() is IRealtimeModel model)
             {
@@ -176,7 +177,7 @@ namespace RestfulFirebase.Database.Models
                 serialized = value;
             }
 
-            return serialized?.VigenereCipherEncrypt(encryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
         }
 
         /// <inheritdoc/>
@@ -204,6 +205,14 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
+                if (!Serializer.CanSerialize<T>())
+                {
+                    if (typeof(IEnumerable).IsAssignableFrom(typeof(T)))
+                    {
+
+                    }
+                }
+
                 var blob = Serializer.Serialize(value);
 
                 if (SetObject(blob))

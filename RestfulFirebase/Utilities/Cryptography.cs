@@ -21,7 +21,7 @@ namespace RestfulFirebase.Utilities
         /// <returns>
         /// The encrypted representation of the <paramref name="value"/> parameter.
         /// </returns>
-        public static string VigenereCipherEncrypt(this string value, params int[] pattern)
+        public static string VigenereCipherEncrypt(string value, params int[] pattern)
         {
             if (value == null)
             {
@@ -54,7 +54,7 @@ namespace RestfulFirebase.Utilities
         /// <returns>
         /// The decrypted representation of the <paramref name="encrypted"/> parameter.
         /// </returns>
-        public static string VigenereCipherDecrypt(this string encrypted, params int[] pattern)
+        public static string VigenereCipherDecrypt(string encrypted, params int[] pattern)
         {
             if (encrypted == null)
             {

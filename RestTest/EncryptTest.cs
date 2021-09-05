@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Local;
+using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,25 +23,25 @@ namespace RestTest
         public string DecryptKey(string encrypted)
         {
             if (!isEncrypted) return encrypted;
-            return Utils.DecryptString(encrypted, EncryptionPattern);
+            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
         }
 
         public string DecryptValue(string encrypted)
         {
             if (!isEncrypted) return encrypted;
-            return Utils.DecryptString(encrypted, EncryptionPattern);
+            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
         }
 
         public string EncryptKey(string key)
         {
             if (!isEncrypted) return key;
-            return Utils.EncryptString(key, EncryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(key, EncryptionPattern);
         }
 
         public string EncryptValue(string value)
         {
             if (!isEncrypted) return value;
-            return Utils.EncryptString(value, EncryptionPattern);
+            return Cryptography.VigenereCipherEncrypt(value, EncryptionPattern);
         }
     }
 }

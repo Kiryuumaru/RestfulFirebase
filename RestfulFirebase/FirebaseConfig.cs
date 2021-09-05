@@ -24,17 +24,7 @@ namespace RestfulFirebase
         /// </summary>
         public FirebaseConfig()
         {
-            LocalDatabase = new StockLocalDatabase();
-            LocalEncryption = new StockLocalNonEncryption();
-            HttpClientFactory = new StockHttpClientFactory();
-            HttpStreamFactory = new StockHttpStreamFactory();
-            AuthRequestTimeout = TimeSpan.FromSeconds(30);
-            DatabaseRequestTimeout = TimeSpan.FromSeconds(15);
-            DatabaseColdStreamTimeout = TimeSpan.FromMinutes(1);
-            DatabaseRetryDelay = TimeSpan.FromSeconds(2);
-            StorageRequestTimeout = TimeSpan.FromMinutes(2);
-            DatabaseMaxConcurrentWrites = 100;
-            DatabaseInRuntimeDataCache = 10000;
+
         }
 
         /// <summary>
@@ -75,7 +65,7 @@ namespace RestfulFirebase
         /// </summary>
         public IHttpClientFactory HttpClientFactory
         {
-            get => GetProperty<IHttpClientFactory>();
+            get => GetProperty<IHttpClientFactory>(new StockHttpClientFactory());
             set => SetProperty(value);
         }
 
@@ -84,7 +74,7 @@ namespace RestfulFirebase
         /// </summary>
         public IHttpStreamFactory HttpStreamFactory
         {
-            get => GetProperty<IHttpStreamFactory>();
+            get => GetProperty<IHttpStreamFactory>(new StockHttpStreamFactory());
             set => SetProperty(value);
         }
 
@@ -93,7 +83,7 @@ namespace RestfulFirebase
         /// </summary>
         public TimeSpan AuthRequestTimeout
         {
-            get => GetProperty<TimeSpan>();
+            get => GetProperty<TimeSpan>(TimeSpan.FromSeconds(30));
             set => SetProperty(value);
         }
 
@@ -102,16 +92,16 @@ namespace RestfulFirebase
         /// </summary>
         public TimeSpan DatabaseRequestTimeout
         {
-            get => GetProperty<TimeSpan>();
+            get => GetProperty<TimeSpan>(TimeSpan.FromSeconds(15));
             set => SetProperty(value);
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="TimeSpan"/> timeout used for the firebase realtime database cold streamers.
+        /// Gets or sets the <see cref="TimeSpan"/> timeout used for the firebase realtime database unresponsive streamers.
         /// </summary>
         public TimeSpan DatabaseColdStreamTimeout
         {
-            get => GetProperty<TimeSpan>();
+            get => GetProperty<TimeSpan>(TimeSpan.FromMinutes(1));
             set => SetProperty(value);
         }
 
@@ -120,7 +110,7 @@ namespace RestfulFirebase
         /// </summary>
         public TimeSpan DatabaseRetryDelay
         {
-            get => GetProperty<TimeSpan>();
+            get => GetProperty<TimeSpan>(TimeSpan.FromSeconds(2));
             set => SetProperty(value);
         }
 
@@ -129,7 +119,7 @@ namespace RestfulFirebase
         /// </summary>
         public TimeSpan StorageRequestTimeout
         {
-            get => GetProperty<TimeSpan>();
+            get => GetProperty<TimeSpan>(TimeSpan.FromMinutes(2));
             set => SetProperty(value);
         }
 
@@ -138,7 +128,7 @@ namespace RestfulFirebase
         /// </summary>
         public ILocalDatabase LocalDatabase
         {
-            get => GetProperty<ILocalDatabase>();
+            get => GetProperty<ILocalDatabase>(new StockLocalDatabase());
             set => SetProperty(value);
         }
 
@@ -156,7 +146,7 @@ namespace RestfulFirebase
         /// </summary>
         public ILocalEncryption LocalEncryption
         {
-            get => GetProperty<ILocalEncryption>();
+            get => GetProperty<ILocalEncryption>(new StockLocalNonEncryption());
             set => SetProperty(value);
         }
 
@@ -183,7 +173,7 @@ namespace RestfulFirebase
         /// </summary>
         public int DatabaseMaxConcurrentWrites
         {
-            get => GetProperty<int>();
+            get => GetProperty<int>(100);
             set => SetProperty(value);
         }
 
@@ -192,7 +182,16 @@ namespace RestfulFirebase
         /// </summary>
         public int DatabaseInRuntimeDataCache
         {
-            get => GetProperty<int>();
+            get => GetProperty<int>(10000);
+            set => SetProperty(value);
+        }
+
+        /// <summary>
+        /// Gets or sets whether the <see cref="IEnumerable{T}"/> types will be serialized as blobs.
+        /// </summary>
+        public bool DatabaseSerializeEnumerableAsBlobs
+        {
+            get => GetProperty<bool>();
             set => SetProperty(value);
         }
     }
