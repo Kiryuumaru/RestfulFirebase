@@ -647,8 +647,7 @@ namespace RestfulFirebase.Auth
             {
                 FirebaseToken = FirebaseToken,
                 RefreshToken = RefreshToken,
-                ExpiresIn = ExpiresIn,
-                Created = Created
+                ExpiresIn = ExpiresIn
             };
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
@@ -731,7 +730,7 @@ namespace RestfulFirebase.Auth
         /// </returns>
         public bool IsExpired()
         {
-            return DateTime.Now > Created.AddSeconds(ExpiresIn - 10);
+            return DateTime.UtcNow > Created.AddSeconds(ExpiresIn - 10);
         }
 
         /// <summary>
@@ -748,10 +747,10 @@ namespace RestfulFirebase.Auth
 
         internal void UpdateAuth(FirebaseAuth auth)
         {
+            if (FirebaseToken != auth.FirebaseToken) Created = DateTime.UtcNow;
             if (!string.IsNullOrEmpty(auth.FirebaseToken)) FirebaseToken = auth.FirebaseToken;
             if (!string.IsNullOrEmpty(auth.RefreshToken)) RefreshToken = auth.RefreshToken;
             if (auth.ExpiresIn.HasValue) ExpiresIn = auth.ExpiresIn.Value;
-            if (auth.Created.HasValue) Created = auth.Created.Value;
             if (auth.User != null) UpdateUserInfo(auth.User);
         }
 

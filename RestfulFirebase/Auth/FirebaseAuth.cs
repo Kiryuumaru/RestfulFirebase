@@ -13,7 +13,7 @@ namespace RestfulFirebase.Auth
         /// </summary>
         public FirebaseAuth()
         {
-            Created = DateTime.Now;
+
         }
 
         /// <summary>
@@ -47,33 +47,12 @@ namespace RestfulFirebase.Auth
         }
 
         /// <summary>
-        /// Gets or sets when this token was created.
-        /// </summary>
-        public DateTime? Created
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// Gets or sets the user.
         /// </summary>
         public User User
         {
             get;
             set;
-        }
-
-        /// <summary>
-        /// Check if the token is expired.
-        /// </summary>
-        /// <returns>
-        /// <c>true</c> if the token is expired; otherwise, <c>false</c>.
-        /// </returns>
-        public bool IsExpired()
-        {
-            if (!Created.HasValue || !ExpiresIn.HasValue) return true;
-            return DateTime.Now > Created.Value.AddSeconds(ExpiresIn.Value - 10);
         }
     }
 }
