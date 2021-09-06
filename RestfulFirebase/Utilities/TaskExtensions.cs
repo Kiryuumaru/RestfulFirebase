@@ -63,8 +63,12 @@ namespace RestfulFirebase.Utilities
         /// </returns>
         public static async Task<T> WithTimeout<T>(this Task<T> task, int timeoutInMilliseconds, T defaultValue = default)
         {
-            var retTask = await Task.WhenAny(task, Task.Delay(timeoutInMilliseconds)).ConfigureAwait(false);
-            return retTask is Task<T> ? task.Result : defaultValue;
+            T returnValue = defaultValue;
+            var retTask = await Task.WhenAny(Task.Run(async delegate
+            {
+                returnValue = await task;
+            }), Task.Delay(timeoutInMilliseconds)).ConfigureAwait(false);
+            return returnValue;
         }
 
         /// <summary>

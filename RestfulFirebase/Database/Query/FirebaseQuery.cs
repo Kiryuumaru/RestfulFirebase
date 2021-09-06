@@ -366,10 +366,8 @@ namespace RestfulFirebase.Database.Query
 
             if (App.Auth.IsAuthenticated && AuthenticateRequests)
             {
-                return await Task.Run(delegate
-                {
-                    return WithAuth(() => App.Auth.Session.GetFreshToken().Result).BuildUrl((FirebaseQuery)null);
-                }, token.Value).ConfigureAwait(false);
+                string freshToken = await App.Auth.Session.GetFreshToken();
+                return WithAuth(() => freshToken).BuildUrl((FirebaseQuery)null);
             }
 
             return BuildUrl((FirebaseQuery)null);
