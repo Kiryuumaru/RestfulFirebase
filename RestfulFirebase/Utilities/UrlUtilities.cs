@@ -36,6 +36,65 @@ namespace RestfulFirebase.Utilities
         }
 
         /// <summary>
+        /// Combines url separated with the web url separator '/'.
+        /// </summary>
+        /// <param name="basePath">
+        /// The base path of the url.
+        /// </param>
+        /// <param name="paths">
+        /// The paths of the url.
+        /// </param>
+        /// <returns>
+        /// The resulting url combined <paramref name="paths"/>.
+        /// </returns>
+        public static string Combine(string basePath, params string[] paths)
+        {
+            StringBuilder builder = new StringBuilder();
+            if (string.IsNullOrEmpty(basePath)) builder.Append("/");
+            else if (basePath.EndsWith("/")) builder.Append(basePath);
+            else builder.Append(basePath + "/");
+            foreach (var path in paths)
+            {
+                if (string.IsNullOrEmpty(path)) builder.Append("/");
+                else if (path.EndsWith("/")) builder.Append(path);
+                else builder.Append(path + "/");
+            }
+            if (builder.Length == 0)
+            {
+                builder.Append("/");
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Combines url separated with the web url separator '/'.
+        /// </summary>
+        /// <param name="paths">
+        /// The paths of the url.
+        /// </param>
+        /// <returns>
+        /// The resulting url combined <paramref name="paths"/>.
+        /// </returns>
+        public static string Combine(params IEnumerable<string>[] paths)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (var path in paths)
+            {
+                foreach (var subPath in path)
+                {
+                    if (string.IsNullOrEmpty(subPath)) builder.Append("/");
+                    else if (subPath.EndsWith("/")) builder.Append(subPath);
+                    else builder.Append(subPath + "/");
+                }
+            }
+            if (builder.Length == 0)
+            {
+                builder.Append("/");
+            }
+            return builder.ToString();
+        }
+
+        /// <summary>
         /// Separates url to its ordered sub-paths.
         /// </summary>
         /// <param name="url">

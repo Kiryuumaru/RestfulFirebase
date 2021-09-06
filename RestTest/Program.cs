@@ -245,8 +245,9 @@ namespace RestTest
             //TestObjectNullable();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
+            TestPropertyDictionarySub4();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
@@ -864,6 +865,39 @@ namespace RestTest
             {
                 string line = Console.ReadLine();
                 dict.Remove(line);
+            }
+        }
+
+        public static void TestPropertyDictionarySub4()
+        {
+            var dict = new FirebaseDictionary<string>();
+            dict.CollectionChanged += (s, e) =>
+            {
+                //Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+
+            var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
+            wire.Start();
+            wire.SubModel(dict);
+            wire.DataEvaluated += (s, e) =>
+            {
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
+                Console.WriteLine("Count: " + dict.Keys.Count);
+            };
+
+            Console.WriteLine("START");
+            Console.ReadLine();
+
+            for (int i = 0; i < 100; i++)
+            {
+                dict.Add(UIDFactory.GenerateSafeUID(), i.ToString());
+            }
+
+            while (true)
+            {
+                string line = Console.ReadLine();
+                dict.Add(UIDFactory.GenerateSafeUID(), line);
             }
         }
 

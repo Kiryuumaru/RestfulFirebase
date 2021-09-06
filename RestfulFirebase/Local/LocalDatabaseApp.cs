@@ -246,7 +246,7 @@ namespace RestfulFirebase.Local
 
         private void DBSet(ILocalDatabase localDatabase, string key, string value)
         {
-            if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = App.Config.LocalEncryption.EncryptValue(value);
@@ -256,7 +256,7 @@ namespace RestfulFirebase.Local
 
         private string DBGet(ILocalDatabase localDatabase, string key)
         {
-            if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
             string encryptedValue = null;
@@ -268,7 +268,7 @@ namespace RestfulFirebase.Local
 
         private bool DBContainsKey(ILocalDatabase localDatabase, string key)
         {
-            if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 
@@ -277,7 +277,7 @@ namespace RestfulFirebase.Local
 
         private void DBDelete(ILocalDatabase localDatabase, string key)
         {
-            if (string.IsNullOrEmpty(key)) throw new Exception("Key is null or empty");
+            if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
             string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
 

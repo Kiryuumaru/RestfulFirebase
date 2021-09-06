@@ -205,14 +205,6 @@ namespace RestfulFirebase.Database.Models
             }
             else
             {
-                if (!Serializer.CanSerialize<T>())
-                {
-                    if (typeof(IEnumerable).IsAssignableFrom(typeof(T)))
-                    {
-
-                    }
-                }
-
                 var blob = Serializer.Serialize(value);
 
                 if (SetObject(blob))

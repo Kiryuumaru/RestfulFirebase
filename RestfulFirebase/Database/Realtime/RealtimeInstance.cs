@@ -29,6 +29,11 @@ namespace RestfulFirebase.Database.Realtime
         public RestfulFirebaseApp App { get; }
 
         /// <summary>
+        /// The firebase url of the instance.
+        /// </summary>
+        public string Url { get; }
+
+        /// <summary>
         /// The firebase query of the instance.
         /// </summary>
         public IFirebaseQuery Query { get; }
@@ -115,6 +120,7 @@ namespace RestfulFirebase.Database.Realtime
         private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
         {
             App = app;
+            Url = query.GetAbsolutePath();
             Query = query;
             LocalDatabase = localDatabase;
 
@@ -170,14 +176,23 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// <c>true</c> whether the instance has a child with a provided <paramref name="path"/>; otherwise, <c>false</c>.
         /// </returns>
-        public bool HasChild(string path)
+        public bool HasChild(params string[] path)
         {
             if (IsDisposed)
             {
                 return false;
             }
 
-            var uri = UrlUtilities.Combine(Query.GetAbsolutePath().Trim('/'), path);
+            string uri;
+            if (path?.Length == 0)
+            {
+                uri = Query.GetAbsolutePath();
+            }
+            else
+            {
+                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+            }
+
             return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).Any(i => i.Blob != null);
         }
 
@@ -190,9 +205,9 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The created child instance.
         /// </returns>
-        public RealtimeInstance Child(string path)
+        public RealtimeInstance Child(params string[] path)
         {
-            return Child(path, true);
+            return Child(UrlUtilities.Combine(path), true);
         }
 
         /// <summary>
@@ -303,14 +318,22 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="blob">
         /// The blob to set.
         /// </param>
+        /// <param name="path">
+        /// The path of the operation.
+        /// </param>
         /// <returns>
         /// <c>true</c> whether the blob was set; otherwise, <c>false</c>.
         /// </returns>
-        public bool SetBlob(string blob)
+        public bool SetBlob(string blob, params string[] path)
         {
             if (IsDisposed)
             {
                 return false;
+            }
+
+            if (path?.Length != 0)
+            {
+                return Child(UrlUtilities.Combine(path), false).SetBlob(blob);
             }
 
             var hasChanges = false;
@@ -368,32 +391,61 @@ namespace RestfulFirebase.Database.Realtime
             return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).All(i => i.Blob == null);
         }
 
-        /// <inheritdoc/>
-        public string GetBlob()
+        /// <summary>
+        /// Gets the blob of the instance.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the operation.
+        /// </param>
+        /// <returns>
+        /// The blob of the instance.
+        /// </returns>
+        public string GetBlob(params string[] path)
         {
             if (IsDisposed)
             {
                 return default;
             }
 
-            var uri = Query.GetAbsolutePath();
+            string uri;
+            if (path?.Length == 0)
+            {
+                uri = Query.GetAbsolutePath();
+            }
+            else
+            {
+                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+            }
+
             return App.Database.OfflineDatabase.GetData(LocalDatabase, uri).Blob;
         }
 
         /// <summary>
         /// Gets the cached sub paths of the instance.
         /// </summary>
+        /// <param name="path">
+        /// The path of the operation.
+        /// </param>
         /// <returns>
         /// The cached sub paths.
         /// </returns>
-        public IEnumerable<string> GetSubPaths()
+        public IEnumerable<string> GetSubPaths(params string[] path)
         {
             if (IsDisposed)
             {
                 return null;
             }
 
-            var uri = Query.GetAbsolutePath();
+            string uri;
+            if (path?.Length == 0)
+            {
+                uri = Query.GetAbsolutePath();
+            }
+            else
+            {
+                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+            }
+
             return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false)
                 .Select(i => i.Replace(uri, "").Trim('/'))
                 .Where(i => !string.IsNullOrEmpty(i));
@@ -402,17 +454,29 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Gets the cached sub uris of the instance.
         /// </summary>
+        /// <param name="path">
+        /// The path of the operation.
+        /// </param>
         /// <returns>
         /// The cached sub path of the instance.
         /// </returns>
-        public IEnumerable<string> GetSubUris()
+        public IEnumerable<string> GetSubUris(params string[] path)
         {
             if (IsDisposed)
             {
                 return null;
             }
 
-            var uri = Query.GetAbsolutePath();
+            string uri;
+            if (path?.Length == 0)
+            {
+                uri = Query.GetAbsolutePath();
+            }
+            else
+            {
+                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+            }
+
             return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false);
         }
 

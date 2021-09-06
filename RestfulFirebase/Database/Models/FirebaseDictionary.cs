@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Serializers;
 using RestfulFirebase.Utilities;
 
 namespace RestfulFirebase.Database.Models
@@ -18,7 +19,6 @@ namespace RestfulFirebase.Database.Models
     /// The undelying type of the dictionary item value.
     /// </typeparam>
     public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IRealtimeModel
-        where T : IRealtimeModel
     {
         #region Properties
 
@@ -41,6 +41,8 @@ namespace RestfulFirebase.Database.Models
 
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
 
+        private bool isCascadeRealtimeItems;
+
         #endregion
 
         #region Initializer
@@ -48,11 +50,29 @@ namespace RestfulFirebase.Database.Models
         /// <summary>
         /// Creates new instance of <see cref="FirebaseDictionary{T}"/> class.
         /// </summary>
+        /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
+        /// Throws when cascade <see cref="IRealtimeModel"/> type <typeparamref name="T"/> has not provided with item initializer and no parameterless constructor.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws when <typeparamref name="T"/> has no supported serializer.
+        /// </exception>
         public FirebaseDictionary()
         {
-            if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
             {
-                throw new Exception("FirebaseDictionary item with no parameterless constructor should have an item initializer.");
+                if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+                {
+                    throw new DatabaseInvalidCascadeRealtimeModelException();
+                }
+                isCascadeRealtimeItems = true;
+            }
+            else
+            {
+                if (!Serializer.CanSerialize<T>())
+                {
+                    throw new SerializerNotSupportedException(typeof(T));
+                }
+                isCascadeRealtimeItems = false;
             }
         }
 
@@ -62,9 +82,31 @@ namespace RestfulFirebase.Database.Models
         /// <param name="itemInitializer">
         /// A function item initializer for each item added from the firebase. The function passes the key of the object and returns the <typeparamref name="T"/> item object.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="itemInitializer"/> is null.
+        /// </exception>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Throws when <typeparamref name="T"/> has no supported serializer.
+        /// </exception>
         public FirebaseDictionary(Func<string, T> itemInitializer)
         {
+            if (itemInitializer == null)
+            {
+                throw new ArgumentNullException(nameof(itemInitializer));
+            }
             this.itemInitializer = itemInitializer;
+            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            {
+                isCascadeRealtimeItems = true;
+            }
+            else
+            {
+                if (!Serializer.CanSerialize<T>())
+                {
+                    throw new SerializerNotSupportedException(typeof(T));
+                }
+                isCascadeRealtimeItems = false;
+            }
         }
 
         #endregion
@@ -102,13 +144,38 @@ namespace RestfulFirebase.Database.Models
 
                 foreach (var path in supPaths)
                 {
-                    if (this.Any(i => i.Key == path)) continue;
-                    var item = ObjectFactory(path);
-                    if (item == null) continue;
-                    WireValue(path, item, false);
-                    if (TryAddCore(path, item))
+                    if (this.Any(i => i.Key == path))
                     {
-                        NotifyObserversOfChange();
+                        continue;
+                    }
+                    if (isCascadeRealtimeItems)
+                    {
+                        var item = ObjectFactory(path);
+                        if (item == null)
+                        {
+                            continue;
+                        }
+                        WireValue(path, item, false);
+                        if (TryAddCore(path, item))
+                        {
+                            NotifyObserversOfChange();
+                        }
+                    }
+                    else
+                    {
+                        var item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(path));
+                        if (item == null)
+                        {
+                            return;
+                        }
+                        if (TryGetValueCore(path, out _))
+                        {
+                            this[path] = item;
+                        }
+                        else
+                        {
+                            Add(path, item);
+                        }
                     }
                 }
             }
@@ -132,9 +199,12 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            foreach (var item in this.ToList())
+            if (isCascadeRealtimeItems)
             {
-                item.Value.DetachRealtime();
+                foreach (var item in this.ToList())
+                {
+                    (item.Value as IRealtimeModel).DetachRealtime();
+                }
             }
 
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
@@ -161,17 +231,34 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            foreach (KeyValuePair<string, string> data in values)
+            if (isCascadeRealtimeItems)
             {
-                if (TryGetValueCore(data.Key, out T value))
+                foreach (KeyValuePair<string, string> data in values)
                 {
-                    value.LoadFromSerializedValue(data.Value);
+                    if (TryGetValueCore(data.Key, out T value))
+                    {
+                        (value as IRealtimeModel).LoadFromSerializedValue(data.Value);
+                    }
+                    else
+                    {
+                        value = ObjectFactory(data.Key);
+                        (value as IRealtimeModel).LoadFromSerializedValue(data.Value);
+                        Add(data.Key, value);
+                    }
                 }
-                else
+            }
+            else
+            {
+                foreach (KeyValuePair<string, string> data in values)
                 {
-                    value = ObjectFactory(data.Key);
-                    value.LoadFromSerializedValue(data.Value);
-                    Add(data.Key, value);
+                    if (TryGetValueCore(data.Key, out _))
+                    {
+                        this[data.Key] = Serializer.Deserialize<T>(data.Value);
+                    }
+                    else
+                    {
+                        Add(data.Key, Serializer.Deserialize<T>(data.Value));
+                    }
                 }
             }
         }
@@ -185,9 +272,19 @@ namespace RestfulFirebase.Database.Models
             }
 
             Dictionary<string, string> values = new Dictionary<string, string>();
-            foreach (KeyValuePair<string, T> value in this)
+            if (isCascadeRealtimeItems)
             {
-                values.Add(value.Key, value.Value.GenerateSerializedValue());
+                foreach (KeyValuePair<string, T> value in this)
+                {
+                    values.Add(value.Key, (value.Value as IRealtimeModel).GenerateSerializedValue());
+                }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, T> value in this)
+                {
+                    values.Add(value.Key, Serializer.Serialize(value.Value));
+                }
             }
 
             string serialized = BlobUtilities.Convert(values);
@@ -240,15 +337,25 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            value.SyncOperation.SetContext(this);
-
-            if (invokeSetFirst)
+            if (value is IRealtimeModel model)
             {
-                RealtimeInstance.Child(key, false).PutModel(value);
+                model.SyncOperation.SetContext(this);
+
+                if (invokeSetFirst)
+                {
+                    RealtimeInstance.Child(key, false).PutModel(model);
+                }
+                else
+                {
+                    RealtimeInstance.Child(key, false).SubModel(model);
+                }
             }
             else
             {
-                RealtimeInstance.Child(key, false).SubModel(value);
+                Task.Run(delegate
+                {
+                    RealtimeInstance.Child(key, false).SetBlob(Serializer.Serialize(value));
+                }).ConfigureAwait(false);
             }
         }
 
@@ -333,11 +440,18 @@ namespace RestfulFirebase.Database.Models
             {
                 if (TryGetValueCore(key, out T value))
                 {
-                    if (!value.IsNull())
+                    if (value is IRealtimeModel model)
                     {
-                        value.SetNull();
+                        if (!model.IsNull())
+                        {
+                            model.SetNull();
+                        }
+                        model.Dispose();
                     }
-                    value.Dispose();
+                    else
+                    {
+                        RealtimeInstance?.SetBlob(null, key);
+                    }
                     return true;
                 }
                 else
@@ -376,10 +490,20 @@ namespace RestfulFirebase.Database.Models
             if (disposing)
             {
                 DetachRealtime();
-                foreach (var item in this.ToList())
+                if (isCascadeRealtimeItems)
                 {
-                    TryRemoveWithNotification(item.Key, out _);
-                    item.Value.Dispose();
+                    foreach (var item in this.ToList())
+                    {
+                        TryRemoveWithNotification(item.Key, out _);
+                        (item.Value as IRealtimeModel).Dispose();
+                    }
+                }
+                else
+                {
+                    foreach (var item in this.ToList())
+                    {
+                        TryRemoveWithNotification(item.Key, out _);
+                    }
                 }
             }
             base.Dispose(disposing);
@@ -441,21 +565,42 @@ namespace RestfulFirebase.Database.Models
                     await attachLock.WaitAsync().ConfigureAwait(false);
 
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    var hasChild = RealtimeInstance.HasChild(key);
-                    if (obj.Value == null && hasChild)
+                    if (RealtimeInstance.HasChild(key))
                     {
-                        var item = ObjectFactory(key);
-                        if (item == null)
+                        if (isCascadeRealtimeItems)
                         {
-                            return;
+                            if (obj.Value == null)
+                            {
+                                var item = ObjectFactory(key);
+                                if (item == null)
+                                {
+                                    return;
+                                }
+                                WireValue(key, item, false);
+                                if (TryAddCore(key, item))
+                                {
+                                    NotifyObserversOfChange();
+                                }
+                            }
                         }
-                        WireValue(key, item, false);
-                        if (TryAddCore(key, item))
+                        else
                         {
-                            NotifyObserversOfChange();
+                            var item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(key));
+                            if (item == null)
+                            {
+                                return;
+                            }
+                            if (TryGetValueCore(key, out _))
+                            {
+                                this[key] = item;
+                            }
+                            else
+                            {
+                                Add(key, item);
+                            }
                         }
                     }
-                    else if (obj.Value != null && !hasChild)
+                    else if (obj.Value != null)
                     {
                         Remove(key);
                     }
