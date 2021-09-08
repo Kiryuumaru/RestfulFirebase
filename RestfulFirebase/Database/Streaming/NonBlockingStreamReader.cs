@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Streaming
@@ -30,6 +31,22 @@ namespace RestfulFirebase.Database.Streaming
             while (currentString == null)
             {
                 var read = await stream.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false);
+                var str = Encoding.UTF8.GetString(buffer, 0, read);
+
+                cachedData += str;
+                currentString = TryGetNewLine();
+            }
+
+            return currentString;
+        }
+
+        public async Task<string> ReadLineAsync(CancellationToken token)
+        {
+            var currentString = TryGetNewLine();
+
+            while (currentString == null)
+            {
+                var read = await stream.ReadAsync(buffer, 0, bufferSize, token).ConfigureAwait(false);
                 var str = Encoding.UTF8.GetString(buffer, 0, read);
 
                 cachedData += str;

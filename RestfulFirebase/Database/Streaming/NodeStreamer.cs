@@ -57,24 +57,20 @@ namespace RestfulFirebase.Database.Streaming
 
         #endregion
 
+        private CancellationToken GetTrancientToken()
+        {
+            return CancellationTokenSource.CreateLinkedTokenSource(cancel.Token, new CancellationTokenSource(App.Config.DatabaseColdStreamTimeout).Token).Token;
+        }
+
         private async void ReceiveThread()
         {
             while (true)
             {
-                var url = string.Empty;
-                var line = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
                 bool isReady = true;
 
-                try
-                {
-                    cancel.Token.ThrowIfCancellationRequested();
-                }
-                catch (Exception)
-                {
-                    isReady = false;
-                }
+                if (cancel.IsCancellationRequested) break;
+
+                string url = string.Empty;
 
                 if (isReady)
                 {
@@ -89,23 +85,37 @@ namespace RestfulFirebase.Database.Streaming
                     }
                 }
 
+                if (cancel.IsCancellationRequested) break;
+
+                var statusCode = HttpStatusCode.OK;
+                HttpResponseMessage response = null;
+
                 if (isReady)
                 {
                     try
                     {
-                        var request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
+                        HttpRequestMessage request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
+                        response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, GetTrancientToken()).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        isReady = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        onError?.Invoke(this, ExceptionHelpers.GetException(statusCode, ex));
+                        isReady = false;
+                    }
+                }
 
-                        HttpResponseMessage response = null;
+                if (cancel.IsCancellationRequested) break;
 
-                        if (await Task.Run(async delegate
-                        {
-                            response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancel.Token).ConfigureAwait(false);
-                            return false;
-                        }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
-                        {
-                            continue;
-                        }
+                var line = string.Empty;
 
+                if (isReady)
+                {
+                    try
+                    {
                         var serverEvent = ServerEventType.KeepAlive;
 
                         statusCode = response.StatusCode;
@@ -121,18 +131,21 @@ namespace RestfulFirebase.Database.Streaming
                             catch { }
                             while (true)
                             {
-                                cancel.Token.ThrowIfCancellationRequested();
+                                if (cancel.IsCancellationRequested) break;
 
                                 line = string.Empty;
 
-                                if (await Task.Run(async delegate
+                                try
                                 {
-                                    line = (await reader.ReadLineAsync().ConfigureAwait(false))?.Trim();
-                                    return false;
-                                }).WithTimeout(App.Config.DatabaseColdStreamTimeout, true).ConfigureAwait(false))
+                                    line = (await reader.ReadLineAsync(GetTrancientToken()).ConfigureAwait(false))?.Trim();
+                                }
+                                catch (OperationCanceledException)
                                 {
                                     break;
                                 }
+                                catch { }
+
+                                if (cancel.IsCancellationRequested) break;
 
                                 if (string.IsNullOrWhiteSpace(line))
                                 {
@@ -159,15 +172,13 @@ namespace RestfulFirebase.Database.Streaming
                             }
                         }
                     }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
                     catch (Exception ex)
                     {
                         onError?.Invoke(this, ExceptionHelpers.GetException(statusCode, ex));
                     }
                 }
+
+                if (cancel.IsCancellationRequested) break;
 
                 await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
             }
