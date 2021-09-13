@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -62,6 +63,12 @@ namespace RestfulFirebase.Database.Query
             }
 
             return string.Empty;
+        }
+
+        /// <inheritdoc/>
+        protected override Task<string> BuildUrlParameterAsync()
+        {
+            return Task.FromResult(BuildUrlParameter());
         }
     }
 }

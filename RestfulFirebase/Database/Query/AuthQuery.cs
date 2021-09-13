@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -7,9 +8,9 @@ namespace RestfulFirebase.Database.Query
     /// </summary>
     public class AuthQuery : ParameterQuery
     {
-        private readonly Func<string> tokenFactory;
+        private readonly Func<Task<string>> tokenFactory;
 
-        internal AuthQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> tokenFactory)
+        internal AuthQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<Task<string>> tokenFactory)
             : base(app, parent, () => app.Config.AsAccessToken ? "access_token" : "auth")
         {
             this.tokenFactory = tokenFactory;
@@ -18,7 +19,13 @@ namespace RestfulFirebase.Database.Query
         /// <inheritdoc/>
         protected override string BuildUrlParameter()
         {
-            return tokenFactory();
+            return BuildUrlParameterAsync().Result;
+        }
+
+        /// <inheritdoc/>
+        protected override async Task<string> BuildUrlParameterAsync()
+        {
+            return await tokenFactory();
         }
     }
 }

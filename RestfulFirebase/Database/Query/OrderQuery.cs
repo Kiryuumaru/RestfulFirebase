@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -19,6 +20,12 @@ namespace RestfulFirebase.Database.Query
         protected override string BuildUrlParameter()
         {
             return $"\"{propertyNameFactory()}\"";
+        }
+
+        /// <inheritdoc/>
+        protected override Task<string> BuildUrlParameterAsync()
+        {
+            return Task.FromResult(BuildUrlParameter());
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -23,6 +24,12 @@ namespace RestfulFirebase.Database.Query
             return $"{separator}{parameterFactory()}={BuildUrlParameter()}";
         }
 
+        /// <inheritdoc/>
+        protected override async Task<string> BuildUrlSegmentAsync(FirebaseQuery child)
+        {
+            return $"{separator}{parameterFactory()}={await BuildUrlParameterAsync()}";
+        }
+
         /// <summary>
         /// Builds the URL parameter of the query.
         /// </summary>
@@ -30,6 +37,14 @@ namespace RestfulFirebase.Database.Query
         /// The built URL parameter of the query.
         /// </returns>
         protected abstract string BuildUrlParameter();
+
+        /// <summary>
+        /// Builds the URL parameter of the query.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="Task"/> that represents the built url parameter of the query.
+        /// </returns>
+        protected abstract Task<string> BuildUrlParameterAsync();
 
         /// <summary>
         /// Instructs firebase to send data greater or equal to the <paramref name="valueFactory"/>. This must be preceded by an OrderBy query.

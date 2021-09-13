@@ -122,5 +122,11 @@ namespace RestfulFirebase.Database.Query
             }
             return s;
         }
+
+        /// <inheritdoc/>
+        protected override Task<string> BuildUrlSegmentAsync(FirebaseQuery child)
+        {
+            return Task.FromResult(BuildUrlSegment(child));
+        }
     }
 }

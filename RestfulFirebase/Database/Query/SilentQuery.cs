@@ -1,4 +1,6 @@
-﻿namespace RestfulFirebase.Database.Query
+﻿using System.Threading.Tasks;
+
+namespace RestfulFirebase.Database.Query
 {
     /// <summary>
     /// Appends print=silent to the url.
@@ -14,6 +16,12 @@
         protected override string BuildUrlParameter()
         {
             return "silent";
+        }
+
+        /// <inheritdoc/>
+        protected override Task<string> BuildUrlParameterAsync()
+        {
+            return Task.FromResult(BuildUrlParameter());
         }
     }
 }

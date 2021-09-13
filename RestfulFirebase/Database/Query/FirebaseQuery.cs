@@ -366,11 +366,10 @@ namespace RestfulFirebase.Database.Query
 
             if (App.Auth.IsAuthenticated && AuthenticateRequests)
             {
-                string freshToken = await App.Auth.Session.GetFreshToken();
-                return WithAuth(() => freshToken).BuildUrl((FirebaseQuery)null);
+                return await WithAuth(() => App.Auth.Session.GetFreshToken()).BuildUrlAsync((FirebaseQuery)null);
             }
 
-            return BuildUrl((FirebaseQuery)null);
+            return await BuildUrlAsync((FirebaseQuery)null);
         }
 
         /// <inheritdoc/>
@@ -398,10 +397,89 @@ namespace RestfulFirebase.Database.Query
             return GetAbsolutePath();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Builds the url segement of the query.
+        /// </summary>
+        /// <param name="child">
+        /// The <see cref="FirebaseQuery"/> child of the created url.
+        /// </param>
+        /// <returns>
+        /// The built url segement.
+        /// </returns>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
         protected abstract string BuildUrlSegment(FirebaseQuery child);
 
-        internal AuthQuery WithAuth(Func<string> tokenFactory)
+        /// <summary>
+        /// Builds the url segement of the query.
+        /// </summary>
+        /// <param name="child">
+        /// The <see cref="FirebaseQuery"/> child of the created url.
+        /// </param>
+        /// <returns>
+        /// The created <see cref="Task"/> represents the built url segement.
+        /// </returns>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        protected abstract Task<string> BuildUrlSegmentAsync(FirebaseQuery child);
+
+        internal AuthQuery WithAuth(Func<Task<string>> tokenFactory)
         {
             return new AuthQuery(App, this, tokenFactory);
         }
@@ -418,6 +496,18 @@ namespace RestfulFirebase.Database.Query
             if (Parent != null)
             {
                 url = Parent.BuildUrl(this) + url;
+            }
+
+            return url;
+        }
+
+        private async Task<string> BuildUrlAsync(FirebaseQuery child)
+        {
+            var url = await BuildUrlSegmentAsync(child);
+
+            if (Parent != null)
+            {
+                url = (await Parent.BuildUrlAsync(this)) + url;
             }
 
             return url;
