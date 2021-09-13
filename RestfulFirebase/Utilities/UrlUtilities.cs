@@ -126,6 +126,7 @@ namespace RestfulFirebase.Utilities
         {
             url1 = url1.Trim().Trim('/');
             url2 = url2.Trim().Trim('/');
+            if (url1.Length != url2.Length) return false;
             return url1 == url2;
         }
 

@@ -245,9 +245,9 @@ namespace RestTest
             //TestObjectNullable();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            //TestPropertyDictionarySub2();
+            TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
-            TestPropertyDictionarySub4();
+            //TestPropertyDictionarySub4();
             //TestObjectDictionaryPut();
             //TestObjectDictionarySub();
             //TestObjectDictionarySub2();
@@ -256,7 +256,7 @@ namespace RestTest
             //await TestDef();
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
-            //TestCascadeObjectMassPut();
+            TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
             //await TestCascadeObjectSetNull();
 
@@ -1124,25 +1124,11 @@ namespace RestTest
                 Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
             };
 
-            bool isRun = false;
-            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataChanges += (s, e) =>
+            wire.DataEvaluated += (s, e) =>
             {
-                toRun = true;
-                if (isRun) return;
-                isRun = true;
-                Task.Run(async delegate
-                {
-                    while (toRun)
-                    {
-                        toRun = false;
-                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-                        await Task.Delay(500);
-                    }
-                    isRun = false;
-                }).ConfigureAwait(false);
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
             };
             wire.Start();
 
@@ -1283,25 +1269,11 @@ namespace RestTest
                 Console.WriteLine("ObjectDictionary: " + obj.ObjectDictionary.Count);
             };
 
-            bool isRun = false;
-            bool toRun = false;
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataChanges += (s, e) =>
+            wire.DataEvaluated += (s, e) =>
             {
-                toRun = true;
-                if (isRun) return;
-                isRun = true;
-                Task.Run(async delegate
-                {
-                    while (toRun)
-                    {
-                        toRun = false;
-                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-                        await Task.Delay(500);
-                    }
-                    isRun = false;
-                }).ConfigureAwait(false);
+                Console.WriteLine("Writes: " + app.Database.PendingWrites);
+                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
             };
             wire.Start();
 

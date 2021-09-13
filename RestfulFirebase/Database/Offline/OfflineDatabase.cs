@@ -24,9 +24,11 @@ namespace RestfulFirebase.Database.Offline
 
             public string Uri { get; }
 
-            public string Blob { get; }
+            public string Blob { get; set; }
 
             public IFirebaseQuery Query { get; }
+
+            public bool ReWriteRequested { get; set; }
 
             public bool IsWritting { get; private set; }
 
@@ -34,93 +36,97 @@ namespace RestfulFirebase.Database.Offline
 
             public CancellationToken CancellationToken => cancellationSource.Token;
 
-            private CancellationTokenSource cancellationSource;
+            public event Action<RetryExceptionEventArgs> Error;
+            public event Action Finish;
 
-            private Action<RetryExceptionEventArgs> error;
+            private CancellationTokenSource cancellationSource;
 
             public WriteTask(
                 RestfulFirebaseApp app,
                 string uri,
-                string blob,
-                Action<RetryExceptionEventArgs> error)
+                string blob)
             {
                 App = app;
                 Uri = uri;
                 Blob = blob;
                 Query = new ChildQuery(app, () => uri);
                 cancellationSource = new CancellationTokenSource();
-                this.error = error;
             }
 
-            public async void Run(Action onFinish)
+            public async void Run()
             {
                 if (IsWritting || IsCancelled)
                 {
+                    Finish?.Invoke();
                     return;
                 }
                 IsWritting = true;
 
-                try
+                do
                 {
-                    await App.Database.OfflineDatabase.writeTaskPutControl.SendAsync(async delegate
+                    try
                     {
-                        if (IsCancelled)
+                        await App.Database.OfflineDatabase.writeTaskPutControl.SendAsync(async delegate
                         {
-                            return;
-                        }
-                        try
-                        {
-                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
-                            await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
+                            if (IsCancelled)
                             {
-                                if (IsCancelled)
+                                return;
+                            }
+                            try
+                            {
+                                App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                                await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), cancellationSource.Token, err =>
                                 {
-                                    return;
-                                }
-                                App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
-                                Type exType = err.Exception.GetType();
-                                if (err.Exception is OfflineModeException)
-                                {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                    if (IsCancelled)
                                     {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                                        return true;
-                                    });
-                                }
-                                else if (err.Exception is OperationCanceledException)
-                                {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                        return;
+                                    }
+                                    App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = 1;
+                                    Type exType = err.Exception.GetType();
+                                    if (err.Exception is OfflineModeException)
                                     {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                                        return true;
-                                    });
-                                }
-                                else if (err.Exception is AuthException)
-                                {
-                                    err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                        err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                        {
+                                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                            return true;
+                                        });
+                                    }
+                                    else if (err.Exception is OperationCanceledException)
                                     {
-                                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                                        return true;
-                                    });
-                                }
-                                else
-                                {
-                                    error(err);
-                                }
-                            }).ConfigureAwait(false);
-                        }
-                        catch { }
-                        if (!IsCancelled)
-                        {
-                            App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
-                        }
-                    }, cancellationSource.Token).ConfigureAwait(false);
+                                        err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                        {
+                                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                            return true;
+                                        });
+                                    }
+                                    else if (err.Exception is AuthException)
+                                    {
+                                        err.Retry = App.Database.OfflineDatabase.writeTaskErrorControl.SendAsync(async delegate
+                                        {
+                                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                                            return true;
+                                        });
+                                    }
+                                    else
+                                    {
+                                        Error?.Invoke(err);
+                                    }
+                                }).ConfigureAwait(false);
+                            }
+                            catch { }
+                            if (!IsCancelled)
+                            {
+                                App.Database.OfflineDatabase.writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentWrites;
+                            }
+                        }, cancellationSource.Token).ConfigureAwait(false);
+                    }
+                    catch { }
                 }
-                catch { }
+                while (ReWriteRequested);
 
                 IsWritting = false;
 
-                onFinish?.Invoke();
+                Finish?.Invoke();
             }
 
             public void Cancel()
@@ -203,7 +209,8 @@ namespace RestfulFirebase.Database.Offline
         private OperationInvoker writeTaskPutControl;
         private OperationInvoker writeTaskErrorControl;
 
-        private ConcurrentDictionary<DataHolderCacheKey, DataHolderCache> DataHolderCaches = new ConcurrentDictionary<DataHolderCacheKey, DataHolderCache>();
+        private ConcurrentDictionary<DataHolderCacheKey, DataHolderCache> dataHolderCaches = new ConcurrentDictionary<DataHolderCacheKey, DataHolderCache>();
+        private int dataHolderCachesCount = 0;
 
         #endregion
 
@@ -243,24 +250,30 @@ namespace RestfulFirebase.Database.Offline
 
             DataHolderCacheKey key = new DataHolderCacheKey(uri, localDatabase);
             DataHolderCache cache;
-            if (DataHolderCaches.TryGetValue(key, out cache))
+            if (dataHolderCaches.TryGetValue(key, out cache))
             {
                 cache.Ticks = DateTime.UtcNow.Ticks;
             }
             else
             {
                 cache = new DataHolderCache(new DataHolder(App, uri, localDatabase));
+                if (dataHolderCaches.TryAdd(key, cache))
+                {
+                    dataHolderCachesCount++;
+                }
             }
             key.Update(cache);
-            DataHolderCaches.AddOrUpdate(key, cache, (oldKey, oldValue) => cache);
 
-            while (DataHolderCaches.Count != 0 && DataHolderCaches.Count > App.Config.DatabaseInRuntimeDataCache)
+            while (dataHolderCachesCount != 0 && dataHolderCachesCount > App.Config.DatabaseInRuntimeDataCache)
             {
                 try
                 {
-                    var lowestTick = DataHolderCaches.Min(i => i.Value.Ticks);
-                    var keyOfLowest = DataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
-                    DataHolderCaches.TryRemove(keyOfLowest, out _);
+                    var lowestTick = dataHolderCaches.Min(i => i.Value.Ticks);
+                    var keyOfLowest = dataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
+                    if (dataHolderCaches.TryRemove(keyOfLowest, out _))
+                    {
+                        dataHolderCachesCount--;
+                    }
                 }
                 catch { }
             }
@@ -422,31 +435,27 @@ namespace RestfulFirebase.Database.Offline
 
         internal void Put(DataHolder data, Action onWrite, Action<RetryExceptionEventArgs> onError)
         {
-            var uris = GetDataUris(data.LocalDatabase, data.Uri, false, true).ToList();
-            foreach (var uri in data.HierarchyUri)
+            if (writeTasks.TryGetValue(data.Uri, out WriteTask writeTask))
             {
-                if (GetData(data.LocalDatabase, uri).IsExists)
+                writeTask.Error += onError;
+                writeTask.Finish += onWrite;
+                if (writeTask.Blob != data.Blob)
                 {
-                    uris.Add(uri);
-                }
-            }
-            foreach (var uri in uris)
-            {
-                CancelPut(uri);
-            }
-
-            var existing = writeTasks.FirstOrDefault(i => UrlUtilities.Compare(i.Value.Uri, data.Uri)).Value;
-            if (existing != null)
-            {
-                if (existing.Blob != data.Blob)
-                {
-                    existing.Cancel();
-                    QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError), onWrite);
+                    writeTask.ReWriteRequested = true;
+                    writeTask.Blob = data.Blob;
                 }
             }
             else
             {
-                QueueWrite(new WriteTask(App, data.Uri, data.Changes?.Blob, onError), onWrite);
+                writeTask = new WriteTask(App, data.Uri, data.Changes?.Blob);
+                writeTask.Error += onError;
+                writeTask.Finish += delegate
+                {
+                    writeTasks.TryRemove(data.Uri, out _);
+                    onWrite();
+                };
+                writeTasks.TryAdd(data.Uri, writeTask);
+                writeTask.Run();
             }
         }
 
@@ -467,44 +476,33 @@ namespace RestfulFirebase.Database.Offline
         {
             DataHolderCacheKey key = new DataHolderCacheKey(dataHolder.Uri, dataHolder.LocalDatabase);
             DataHolderCache cache;
-            if (DataHolderCaches.TryGetValue(key, out cache))
+            if (dataHolderCaches.TryGetValue(key, out cache))
             {
                 cache.Ticks = DateTime.UtcNow.Ticks;
             }
             else
             {
                 cache = new DataHolderCache(dataHolder);
+                if (dataHolderCaches.TryAdd(key, cache))
+                {
+                    dataHolderCachesCount++;
+                }
             }
             key.Update(cache);
-            DataHolderCaches.AddOrUpdate(key, cache, (oldKey, oldValue) => cache);
 
-            while (DataHolderCaches.Count != 0 && DataHolderCaches.Count > App.Config.DatabaseInRuntimeDataCache)
+            while (dataHolderCachesCount != 0 && dataHolderCachesCount > App.Config.DatabaseInRuntimeDataCache)
             {
                 try
                 {
-                    var lowestTick = DataHolderCaches.Min(i => i.Value.Ticks);
-                    var keyOfLowest = DataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
-                    DataHolderCaches.TryRemove(keyOfLowest, out _);
+                    var lowestTick = dataHolderCaches.Min(i => i.Value.Ticks);
+                    var keyOfLowest = dataHolderCaches.FirstOrDefault(i => i.Value.Ticks == lowestTick).Key;
+                    if (dataHolderCaches.TryRemove(keyOfLowest, out _))
+                    {
+                        dataHolderCachesCount--;
+                    }
                 }
                 catch { }
             }
-        }
-
-        private void QueueWrite(WriteTask writeTask, Action onWrite)
-        {
-            string key;
-
-            do
-            {
-                key = UIDFactory.GenerateUID();
-            }
-            while (!writeTasks.TryAdd(key, writeTask));
-
-            writeTask.Run(delegate
-            {
-                writeTasks.TryRemove(key, out _);
-                onWrite?.Invoke();
-            });
         }
 
         private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

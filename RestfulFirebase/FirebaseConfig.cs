@@ -173,7 +173,7 @@ namespace RestfulFirebase
         /// </summary>
         public int DatabaseMaxConcurrentWrites
         {
-            get => GetProperty<int>(100);
+            get => GetProperty<int>(10);
             set => SetProperty(value);
         }
 
