@@ -4,7 +4,6 @@ using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers;
 using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;

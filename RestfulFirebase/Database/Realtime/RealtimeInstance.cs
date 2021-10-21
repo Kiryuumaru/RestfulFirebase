@@ -1,15 +1,13 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Abstraction;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
-using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -505,6 +503,30 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         /// <summary>
+        /// Writes and subscribes realtime model to the node instance.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the realtime model.
+        /// </typeparam>
+        /// <param name="model">
+        /// The realtime model to write and subscribe.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
+        /// </returns>
+        public async Task<T> PutModelAsync<T>(T model)
+            where T : IRealtimeModel
+        {
+            if (IsDisposed)
+            {
+                return model;
+            }
+
+            await model.AttachRealtimeAsync(this, true);
+            return model;
+        }
+
+        /// <summary>
         /// Subscribes realtime model to the node instance.
         /// </summary>
         /// <typeparam name="T">
@@ -525,6 +547,30 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             model.AttachRealtime(this, false);
+            return model;
+        }
+
+        /// <summary>
+        /// Subscribes realtime model to the node instance.
+        /// </summary>
+        /// <typeparam name="T">
+        /// The underlying type of the realtime model.
+        /// </typeparam>
+        /// <param name="model">
+        /// The realtime model to subscribe.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
+        /// </returns>
+        public async Task<T> SubModelAsync<T>(T model)
+            where T : IRealtimeModel
+        {
+            if (IsDisposed)
+            {
+                return model;
+            }
+
+            await model.AttachRealtimeAsync(this, false);
             return model;
         }
 

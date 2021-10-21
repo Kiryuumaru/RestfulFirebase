@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase
+﻿namespace RestfulFirebase
 {
     /// <summary>
     /// The app module interface for the <see cref="RestfulFirebaseApp"/> app uses.

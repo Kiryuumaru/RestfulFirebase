@@ -1,8 +1,5 @@
-﻿using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Utilities;
+﻿using RestfulFirebase.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RestfulFirebase.Database.Realtime
 {

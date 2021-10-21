@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class ULongSerializer : Serializer<ulong>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override ulong Deserialize(string data)
+        public override ulong Deserialize(string data, ulong defaultValue = default)
         {
-            return ulong.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return ulong.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

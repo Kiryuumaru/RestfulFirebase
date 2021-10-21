@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class FloatSerializer : Serializer<float>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override float Deserialize(string data)
+        public override float Deserialize(string data, float defaultValue = default)
         {
-            return float.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return float.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

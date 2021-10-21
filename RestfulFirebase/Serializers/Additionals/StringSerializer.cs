@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Additionals
+﻿namespace RestfulFirebase.Serializers.Additionals
 {
     /// <inheritdoc/>
     public class StringSerializer : Serializer<string>
@@ -14,7 +10,7 @@ namespace RestfulFirebase.Serializers.Additionals
         }
 
         /// <inheritdoc/>
-        public override string Deserialize(string data)
+        public override string Deserialize(string data, string defaultValue = default)
         {
             return data;
         }

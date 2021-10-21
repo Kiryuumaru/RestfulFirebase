@@ -1,15 +1,11 @@
 ﻿using ObservableHelpers;
 using ObservableHelpers.Exceptions;
-using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Realtime;
-using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,6 +54,12 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        /// <inheritdoc/>
+        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
             if (IsDisposed)
             {
                 return;
@@ -66,6 +68,8 @@ namespace RestfulFirebase.Database.Models
             try
             {
                 await attachLock.WaitAsync().ConfigureAwait(false);
+
+                List<Task> tasks = new List<Task>();
 
                 Subscribe(realtimeInstance);
 
@@ -84,11 +88,11 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (invokeSetFirst)
                     {
-                        RealtimeInstance.Child(prop.Key, false).PutModel((FirebaseProperty)prop.Property);
+                        tasks.Add(RealtimeInstance.Child(prop.Key, false).PutModelAsync((FirebaseProperty)prop.Property));
                     }
                     else
                     {
-                        RealtimeInstance.Child(prop.Key, false).SubModel((FirebaseProperty)prop.Property);
+                        tasks.Add(RealtimeInstance.Child(prop.Key, false).SubModelAsync((FirebaseProperty)prop.Property));
                     }
                     supPaths.RemoveAll(i => i == prop.Key);
                 }
@@ -102,10 +106,12 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (!postAction.isUpdate && postAction.namedProperty != null)
                             {
-                                RealtimeInstance.Child(path, false).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                                tasks.Add(RealtimeInstance.Child(path, false).SubModelAsync((FirebaseProperty)postAction.namedProperty.Property));
                             }
                         });
                 }
+
+                await Task.WhenAll(tasks);
             }
             catch
             {

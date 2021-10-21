@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Database.Models
+﻿namespace RestfulFirebase.Database.Models
 {
     /// <summary>
     /// Provides convenient model for object serialization and encryption

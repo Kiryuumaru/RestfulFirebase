@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
@@ -104,6 +103,11 @@ namespace RestfulFirebase.Database.Query
         protected override string BuildUrlSegment(FirebaseQuery child)
         {
             var s = pathFactory();
+
+            if (string.IsNullOrEmpty(s))
+            {
+                throw new ArgumentNullException("path");
+            }
 
             if (!(child is ChildQuery))
             {

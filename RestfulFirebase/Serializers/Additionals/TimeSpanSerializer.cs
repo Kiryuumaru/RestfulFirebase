@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RestfulFirebase.Serializers.Additionals
 {
@@ -14,9 +12,21 @@ namespace RestfulFirebase.Serializers.Additionals
         }
 
         /// <inheritdoc/>
-        public override TimeSpan Deserialize(string data)
+        public override TimeSpan Deserialize(string data, TimeSpan defaultValue = default)
         {
-            return TimeSpan.FromHours(double.Parse(data));
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return TimeSpan.FromHours(double.Parse(data));
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

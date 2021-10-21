@@ -116,7 +116,7 @@ namespace RestfulFirebase.Utilities
             if (data.Equals(NullIdentifier)) return null;
             if (data.Equals(EmptyIdentifier)) return Array.Empty<string>();
             if (data.Length < 4) return new string[] { "" };
-            var d = (string)data.Clone();
+            var d = data.Clone() as string;
 
             int indexDigits = FromBase62(d[0].ToString());
             int indexCount = FromBase62(d.Substring(1, indexDigits));

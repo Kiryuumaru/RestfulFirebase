@@ -1,12 +1,4 @@
 ﻿using RestfulFirebase.Utilities;
-using RestfulFirebase.Local;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.Local
 {

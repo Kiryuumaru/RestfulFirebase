@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Realtime;
-using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
@@ -30,6 +27,9 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="ChildQuery"/> node.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="pathFactory"/> is null.
+        /// </exception>
         ChildQuery Child(Func<string> pathFactory);
 
         /// <summary>
@@ -41,6 +41,9 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="ChildQuery"/> node.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="path"/> is null or empty.
+        /// </exception>
         ChildQuery Child(string path);
 
         /// <summary>

@@ -1,15 +1,10 @@
-﻿using ObservableHelpers;
-using RestfulFirebase.Database.Models;
-using RestfulFirebase.Database.Offline;
-using RestfulFirebase.Database.Query;
+﻿using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 

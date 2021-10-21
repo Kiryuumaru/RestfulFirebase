@@ -1,18 +1,9 @@
-﻿using Newtonsoft.Json;
-using ObservableHelpers;
-using RestfulFirebase.Auth;
-using RestfulFirebase.Database.Query;
-using RestfulFirebase.Database.Realtime;
+﻿using ObservableHelpers;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Offline
 {

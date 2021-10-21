@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Local
+﻿namespace RestfulFirebase.Local
 {
     /// <summary>
     /// The local encryption declarations used for local database security.

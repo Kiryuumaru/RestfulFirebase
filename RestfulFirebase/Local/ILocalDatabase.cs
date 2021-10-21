@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RestfulFirebase.Local
+﻿namespace RestfulFirebase.Local
 {
     /// <summary>
     /// The local database declarations used for app persistency and offline database.

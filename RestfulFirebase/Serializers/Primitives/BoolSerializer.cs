@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class BoolSerializer : Serializer<bool>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override bool Deserialize(string data)
+        public override bool Deserialize(string data, bool defaultValue = default)
         {
-            return data.Equals("1");
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return data.Equals("1");
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

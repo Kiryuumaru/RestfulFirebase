@@ -1,9 +1,6 @@
 ﻿using RestfulFirebase.Exceptions;
-using RestfulFirebase.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 namespace RestfulFirebase.Database
 {

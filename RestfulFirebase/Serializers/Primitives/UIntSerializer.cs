@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class UIntSerializer : Serializer<uint>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override uint Deserialize(string data)
+        public override uint Deserialize(string data, uint defaultValue = default)
         {
-            return uint.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return uint.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

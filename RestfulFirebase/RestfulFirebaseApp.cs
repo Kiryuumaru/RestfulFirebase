@@ -1,12 +1,8 @@
 ﻿using ObservableHelpers;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
-using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Local;
-using RestfulFirebase.Serializers;
 using RestfulFirebase.Storage;
-using System;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase
 {

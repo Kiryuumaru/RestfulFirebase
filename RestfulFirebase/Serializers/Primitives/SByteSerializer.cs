@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class SByteSerializer : Serializer<sbyte>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override sbyte Deserialize(string data)
+        public override sbyte Deserialize(string data, sbyte defaultValue = default)
         {
-            return sbyte.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return sbyte.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

@@ -7,7 +7,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace RestfulFirebase.Serializers
 {
@@ -259,10 +258,13 @@ namespace RestfulFirebase.Serializers
         /// <param name="data">
         /// The data to deserialize.
         /// </param>
+        /// <param name="defaultValue">
+        /// The default value return if operation failed.
+        /// </param>
         /// <returns>
         /// The deserialized value.
         /// </returns>
-        public abstract object DeserializeObject(string data);
+        public abstract object DeserializeObject(string data, object defaultValue = default);
 
         /// <summary>
         /// Serialize the provided <paramref name="value"/> with the specified type <see cref="Type"/>.
@@ -281,10 +283,13 @@ namespace RestfulFirebase.Serializers
         /// <param name="data">
         /// The data to deserialize.
         /// </param>
+        /// <param name="defaultValue">
+        /// The default value return if operation failed.
+        /// </param>
         /// <returns>
         /// The deserialized value.
         /// </returns>
-        public abstract object DeserializeEnumerableObject(string data);
+        public abstract object DeserializeEnumerableObject(string data, object defaultValue = default);
 
         /// <summary>
         /// Serialize the provided nullable <paramref name="value"/> with the specified type <see cref="Type"/>.
@@ -303,10 +308,13 @@ namespace RestfulFirebase.Serializers
         /// <param name="data">
         /// The data to deserialize.
         /// </param>
+        /// <param name="defaultValue">
+        /// The default value return if operation failed.
+        /// </param>
         /// <returns>
         /// The deserialized value.
         /// </returns>
-        public abstract object DeserializeNullableObject(string data);
+        public abstract object DeserializeNullableObject(string data, object defaultValue = default);
 
         internal static T GetSerializerInternal<T>(
             Type type,
@@ -329,14 +337,7 @@ namespace RestfulFirebase.Serializers
                         {
                             if (onGet == null)
                             {
-                                try
-                                {
-                                    return conv.DeserializeObject(data);
-                                }
-                                catch
-                                {
-                                    return defaultValue;
-                                }
+                                return conv.DeserializeObject(data, defaultValue);
                             }
                             else
                             {
@@ -357,21 +358,7 @@ namespace RestfulFirebase.Serializers
                     },
                     (conv, data, defaultValue) =>
                     {
-                        if (data == null)
-                        {
-                            return defaultValue;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                return conv.DeserializeObject(data);
-                            }
-                            catch
-                            {
-                                return defaultValue;
-                            }
-                        }
+                        return conv.DeserializeObject(data, defaultValue);
                     });
             }
 
@@ -387,14 +374,7 @@ namespace RestfulFirebase.Serializers
                         },
                         (conv, data, defaultValue) =>
                         {
-                            try
-                            {
-                                return conv.DeserializeEnumerableObject(data);
-                            }
-                            catch
-                            {
-                                return defaultValue;
-                            }
+                            return conv.DeserializeEnumerableObject(data, defaultValue);
                         });
                 }
 
@@ -492,14 +472,7 @@ namespace RestfulFirebase.Serializers
                                 },
                                 (conv, data, defaultValue) =>
                                 {
-                                    try
-                                    {
-                                        return constructor.Invoke(new object[] { conv.DeserializeEnumerableObject(data) });
-                                    }
-                                    catch
-                                    {
-                                        return defaultValue;
-                                    }
+                                    return constructor.Invoke(new object[] { conv.DeserializeEnumerableObject(data, defaultValue) });
                                 });
                         }
                     }
@@ -605,7 +578,7 @@ namespace RestfulFirebase.Serializers
         public abstract string Serialize(T value);
 
         /// <inheritdoc/>
-        public abstract T Deserialize(string data);
+        public abstract T Deserialize(string data, T defaultValue = default);
 
         /// <inheritdoc/>
         public string SerializeEnumerable(IEnumerable<T> values)
@@ -623,8 +596,19 @@ namespace RestfulFirebase.Serializers
         /// <inheritdoc/>
         public IEnumerable<T> DeserializeEnumerable(string data, IEnumerable<T> defaultValue = default)
         {
-            var encodedValues = StringUtilities.Deserialize(data);
-            if (encodedValues == null) return defaultValue;
+            string[] encodedValues;
+            try
+            {
+                encodedValues = StringUtilities.Deserialize(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
+            if (encodedValues == null)
+            {
+                return defaultValue;
+            }
             var decodedValues = new T[encodedValues.Length];
             for (int i = 0; i < encodedValues.Length; i++)
             {
@@ -640,9 +624,16 @@ namespace RestfulFirebase.Serializers
         }
 
         /// <inheritdoc/>
-        public override object DeserializeObject(string data)
+        public override object DeserializeObject(string data, object defaultValue = default)
         {
-            return Deserialize(data);
+            if (defaultValue is T value)
+            {
+                return Deserialize(data, value);
+            }
+            else
+            {
+                return Deserialize(data);
+            }
         }
 
         /// <inheritdoc/>
@@ -652,9 +643,16 @@ namespace RestfulFirebase.Serializers
         }
 
         /// <inheritdoc/>
-        public override object DeserializeEnumerableObject(string data)
+        public override object DeserializeEnumerableObject(string data, object defaultValue = default)
         {
-            return DeserializeEnumerable(data);
+            if (defaultValue is IEnumerable<T> value)
+            {
+                return DeserializeEnumerable(data, value);
+            }
+            else
+            {
+                return DeserializeEnumerable(data);
+            }
         }
 
         /// <inheritdoc/>
@@ -665,10 +663,17 @@ namespace RestfulFirebase.Serializers
         }
 
         /// <inheritdoc/>
-        public override object DeserializeNullableObject(string data)
+        public override object DeserializeNullableObject(string data, object defaultValue = default)
         {
             if (data == null) return null;
-            return Deserialize(data);
+            if (defaultValue is T value)
+            {
+                return Deserialize(data, value);
+            }
+            else
+            {
+                return Deserialize(data);
+            }
         }
 
         #endregion

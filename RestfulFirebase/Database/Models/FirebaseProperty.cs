@@ -4,12 +4,10 @@ using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using RestfulFirebase.Serializers;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections;
+using System.Collections.Generic;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -56,6 +54,12 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        /// <inheritdoc/>
+        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
             if (IsDisposed)
             {
                 return;
@@ -67,11 +71,13 @@ namespace RestfulFirebase.Database.Models
             {
                 await attachLock.WaitAsync().ConfigureAwait(false);
 
+                List<Task> tasks = new List<Task>();
+
                 Subscribe(realtimeInstance);
 
                 if (obj is IRealtimeModel model)
                 {
-                    model.AttachRealtime(realtimeInstance, invokeSetFirst);
+                    tasks.Add(model.AttachRealtimeAsync(realtimeInstance, invokeSetFirst));
                 }
                 else
                 {
@@ -98,6 +104,8 @@ namespace RestfulFirebase.Database.Models
                         SetObject(RealtimeInstance.GetBlob());
                     }
                 }
+
+                await Task.WhenAll(tasks);
             }
             catch
             {

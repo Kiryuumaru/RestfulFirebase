@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class DecimalSerializer : Serializer<decimal>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override decimal Deserialize(string data)
+        public override decimal Deserialize(string data, decimal defaultValue = default)
         {
-            return decimal.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return decimal.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

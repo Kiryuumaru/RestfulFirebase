@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace RestfulFirebase.Local
+﻿namespace RestfulFirebase.Local
 {
     /// <summary>
     /// The provided stock <see cref="ILocalEncryption"/> implementation to be used.

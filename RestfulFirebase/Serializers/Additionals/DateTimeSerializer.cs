@@ -1,7 +1,6 @@
 ﻿using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace RestfulFirebase.Serializers.Additionals
 {
@@ -21,17 +20,29 @@ namespace RestfulFirebase.Serializers.Additionals
         }
 
         /// <inheritdoc/>
-        public override DateTime Deserialize(string data)
+        public override DateTime Deserialize(string data, DateTime defaultValue = default)
         {
-            var indexes = new List<uint>();
-            foreach (var num in data)
+            if (string.IsNullOrEmpty(data))
             {
-                var indexOf = StringUtilities.Base64Charset.IndexOf(num);
-                indexes.Add((uint)indexOf);
+                return defaultValue;
             }
-            var ticks = MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
 
-            return new DateTime((long)ticks);
+            try
+            {
+                var indexes = new List<uint>();
+                foreach (var num in data)
+                {
+                    var indexOf = StringUtilities.Base64Charset.IndexOf(num);
+                    indexes.Add((uint)indexOf);
+                }
+                var ticks = MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
+
+                return new DateTime((long)ticks);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

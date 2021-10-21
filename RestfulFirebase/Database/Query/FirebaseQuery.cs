@@ -2,16 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using RestfulFirebase.Database.Streaming;
 using System.Net;
 using RestfulFirebase.Http;
-using System.Linq;
-using RestfulFirebase.Database.Models;
-using System.IO;
 using System.Threading;
-using RestfulFirebase.Auth;
 using RestfulFirebase.Database.Realtime;
-using System.Collections.Concurrent;
 using RestfulFirebase.Utilities;
 using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
@@ -49,12 +43,20 @@ namespace RestfulFirebase.Database.Query
         /// <inheritdoc/>
         public ChildQuery Child(Func<string> pathFactory)
         {
+            if (pathFactory == null)
+            {
+                throw new ArgumentNullException(nameof(pathFactory));
+            }
             return new ChildQuery(App, this, pathFactory);
         }
 
         /// <inheritdoc/>
         public ChildQuery Child(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
             return Child(() => path);
         }
 

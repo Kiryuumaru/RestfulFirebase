@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ObservableHelpers;
@@ -116,6 +115,12 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
+            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        /// <inheritdoc/>
+        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
             if (IsDisposed)
             {
                 return;
@@ -124,6 +129,8 @@ namespace RestfulFirebase.Database.Models
             try
             {
                 await attachLock.WaitAsync().ConfigureAwait(false);
+
+                List<Task> tasks = new List<Task>();
 
                 Subscribe(realtimeInstance);
 
@@ -138,46 +145,39 @@ namespace RestfulFirebase.Database.Models
 
                 foreach (var obj in objs)
                 {
-                    WireValue(obj.Key, obj.Value, invokeSetFirst);
+                    tasks.Add(WireValueAsync(obj.Key, obj.Value, invokeSetFirst));
                     supPaths.RemoveAll(i => i == obj.Key);
                 }
 
                 foreach (var path in supPaths)
                 {
-                    if (this.Any(i => i.Key == path))
+                    if (this.ContainsKey(path))
                     {
                         continue;
                     }
+                    T item = default;
                     if (isCascadeRealtimeItems)
                     {
-                        var item = ObjectFactory(path);
+                        item = ObjectFactory(path);
                         if (item == null)
                         {
                             continue;
                         }
-                        WireValue(path, item, false);
-                        if (TryAddCore(path, item))
-                        {
-                            NotifyObserversOfChange();
-                        }
+                        tasks.Add(WireValueAsync(path, item, false));
+                        TryAdd(path, item);
                     }
                     else
                     {
-                        var item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(path));
+                        item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(path));
                         if (item == null)
                         {
                             return;
                         }
-                        if (TryGetValueCore(path, out _))
-                        {
-                            this[path] = item;
-                        }
-                        else
-                        {
-                            Add(path, item);
-                        }
+                        AddOrUpdate(path, item);
                     }
                 }
+
+                await Task.WhenAll(tasks);
             }
             catch
             {
@@ -235,30 +235,23 @@ namespace RestfulFirebase.Database.Models
             {
                 foreach (KeyValuePair<string, string> data in values)
                 {
-                    if (TryGetValueCore(data.Key, out T value))
+                    AddOrUpdate(data.Key, key =>
                     {
+                        T value = ObjectFactory(data.Key);
                         (value as IRealtimeModel).LoadFromSerializedValue(data.Value);
-                    }
-                    else
+                        return value;
+                    }, args =>
                     {
-                        value = ObjectFactory(data.Key);
-                        (value as IRealtimeModel).LoadFromSerializedValue(data.Value);
-                        Add(data.Key, value);
-                    }
+                        (args.oldValue as IRealtimeModel).LoadFromSerializedValue(data.Value);
+                        return args.oldValue;
+                    });
                 }
             }
             else
             {
                 foreach (KeyValuePair<string, string> data in values)
                 {
-                    if (TryGetValueCore(data.Key, out _))
-                    {
-                        this[data.Key] = Serializer.Deserialize<T>(data.Value);
-                    }
-                    else
-                    {
-                        Add(data.Key, Serializer.Deserialize<T>(data.Value));
-                    }
+                    AddOrUpdate(data.Key, Serializer.Deserialize<T>(data.Value));
                 }
             }
         }
@@ -330,7 +323,27 @@ namespace RestfulFirebase.Database.Models
         /// <param name="invokeSetFirst">
         /// Specify <c>true</c> whether the value should be put and subscribe to the realtime instance; otherwise <c>false</c> to only subscribe to the realtime instance.
         /// </param>
-        protected void WireValue(string key, T value, bool invokeSetFirst)
+        protected async void WireValue(string key, T value, bool invokeSetFirst)
+        {
+            await WireValueAsync(key, value, invokeSetFirst).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Wires the provided <paramref name="value"/> to the realtime instance of the model.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the <typeparamref name="T"/> item object to wire.
+        /// </param>
+        /// <param name="value">
+        /// The value to wire.
+        /// </param>
+        /// <param name="invokeSetFirst">
+        /// Specify <c>true</c> whether the value should be put and subscribe to the realtime instance; otherwise <c>false</c> to only subscribe to the realtime instance.
+        /// </param>
+        /// <return>
+        /// A <see cref="Task"/> that represents the wire value operation.
+        /// </return>
+        protected async Task WireValueAsync(string key, T value, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
@@ -343,19 +356,23 @@ namespace RestfulFirebase.Database.Models
 
                 if (invokeSetFirst)
                 {
-                    RealtimeInstance.Child(key, false).PutModel(model);
+                    await RealtimeInstance.Child(key, false).PutModelAsync(model);
                 }
                 else
                 {
-                    RealtimeInstance.Child(key, false).SubModel(model);
+                    await RealtimeInstance.Child(key, false).SubModelAsync(model);
                 }
             }
             else
             {
-                Task.Run(delegate
+                void setBlob()
                 {
-                    RealtimeInstance.Child(key, false).SetBlob(Serializer.Serialize(value));
-                }).ConfigureAwait(false);
+                    Task.Run(delegate
+                    {
+                        RealtimeInstance.Child(key, false).SetBlob(Serializer.Serialize(value));
+                    }).ConfigureAwait(false);
+                }
+                setBlob();
             }
         }
 
@@ -403,42 +420,34 @@ namespace RestfulFirebase.Database.Models
         }
 
         /// <inheritdoc/>
-        protected override bool ValidateSetItem(string key, T value)
+        protected override void PreAddItems(IEnumerable<KeyValuePair<string, T>> items)
         {
-            if (IsDisposed)
+            if (HasAttachedRealtime)
             {
-                return false;
-            }
-
-            var baseValidation = base.ValidateSetItem(key, value);
-
-            if (baseValidation)
-            {
-                if (HasAttachedRealtime)
+                foreach (var item in items)
                 {
                     Task.Run(delegate
                     {
-                        WireValue(key, value, true);
+                        WireValue(item.Key, item.Value, true);
                     }).ConfigureAwait(false);
                 }
             }
-
-            return baseValidation;
+            base.PreAddItems(items);
         }
 
         /// <inheritdoc/>
-        protected override bool ValidateRemoveItem(string key)
+        protected override void PreUpdateItems(IEnumerable<KeyValuePair<string, T>> items)
         {
-            if (IsDisposed)
-            {
-                return false;
-            }
+            PreAddItems(items);
+            base.PreUpdateItems(items);
+        }
 
-            var baseValidation = base.ValidateRemoveItem(key);
-
-            if (baseValidation)
+        /// <inheritdoc/>
+        protected override void PreRemoveItems(IEnumerable<KeyValuePair<string, T>> items)
+        {
+            foreach (var item in items)
             {
-                if (TryGetValueCore(key, out T value))
+                if (TryGetValue(item.Key, out T value))
                 {
                     if (value is IRealtimeModel model)
                     {
@@ -450,38 +459,18 @@ namespace RestfulFirebase.Database.Models
                     }
                     else
                     {
-                        RealtimeInstance?.SetBlob(null, key);
+                        RealtimeInstance?.SetBlob(null, item.Key);
                     }
-                    return true;
-                }
-                else
-                {
-                    return false;
                 }
             }
-
-            return baseValidation;
+            base.PreRemoveItems(items);
         }
 
         /// <inheritdoc/>
-        protected override bool ValidateClear()
+        protected override void PreClearItems()
         {
-            if (IsDisposed)
-            {
-                return false;
-            }
-
-            var baseValidation = base.ValidateClear();
-
-            if (baseValidation)
-            {
-                foreach (var item in this.ToList())
-                {
-                    ValidateRemoveItem(item.Key);
-                }
-            }
-
-            return baseValidation;
+            PreRemoveItems(this);
+            base.PreClearItems();
         }
 
         /// <inheritdoc/>
@@ -494,7 +483,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     foreach (var item in this.ToList())
                     {
-                        TryRemoveWithNotification(item.Key, out _);
+                        Remove(item.Key);
                         (item.Value as IRealtimeModel).Dispose();
                     }
                 }
@@ -502,7 +491,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     foreach (var item in this.ToList())
                     {
-                        TryRemoveWithNotification(item.Key, out _);
+                        Remove(item.Key);
                     }
                 }
             }
@@ -567,37 +556,29 @@ namespace RestfulFirebase.Database.Models
                     KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
                     if (RealtimeInstance.HasChild(key))
                     {
+                        T item = default;
                         if (isCascadeRealtimeItems)
                         {
-                            if (obj.Value == null)
+                            if (obj.Value != null)
                             {
-                                var item = ObjectFactory(key);
-                                if (item == null)
-                                {
-                                    return;
-                                }
-                                WireValue(key, item, false);
-                                if (TryAddCore(key, item))
-                                {
-                                    NotifyObserversOfChange();
-                                }
+                                return;
                             }
-                        }
-                        else
-                        {
-                            var item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(key));
+                            item = ObjectFactory(key);
                             if (item == null)
                             {
                                 return;
                             }
-                            if (TryGetValueCore(key, out _))
+                            WireValue(key, item, false);
+                            TryAdd(key, item);
+                        }
+                        else
+                        {
+                            item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(key));
+                            if (item == null)
                             {
-                                this[key] = item;
+                                return;
                             }
-                            else
-                            {
-                                Add(key, item);
-                            }
+                            AddOrUpdate(key, item);
                         }
                     }
                     else if (obj.Value != null)

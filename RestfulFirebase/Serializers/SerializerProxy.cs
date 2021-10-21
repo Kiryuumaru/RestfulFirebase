@@ -1,12 +1,4 @@
-﻿using RestfulFirebase.Exceptions;
-using RestfulFirebase.Utilities;
-using RestfulFirebase.Serializers.Additionals;
-using RestfulFirebase.Serializers.Primitives;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System;
 
 namespace RestfulFirebase.Serializers
 {

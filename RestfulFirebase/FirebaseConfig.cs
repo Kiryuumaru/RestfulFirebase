@@ -1,16 +1,8 @@
 ﻿using ObservableHelpers;
-using RestfulFirebase.Auth;
-using RestfulFirebase.Database;
-using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Http;
 using RestfulFirebase.Local;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase
 {

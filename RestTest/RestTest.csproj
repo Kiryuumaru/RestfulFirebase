@@ -58,20 +58,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="mock.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\RestfulFirebase\RestfulFirebase.csproj">
       <Project>{e4febf06-51b5-4ada-a4b6-87b48013cbe1}</Project>
       <Name>RestfulFirebase</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="ObservableHelpers">
-      <Version>1.1.12</Version>
-    </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

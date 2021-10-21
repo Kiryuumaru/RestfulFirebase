@@ -1,15 +1,9 @@
 ﻿using ObservableHelpers;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
-using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Utilities;
-using RestfulFirebase.Http;
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using RestfulFirebase.Local;
+using System;
 
 namespace RestfulFirebase.Database
 {
@@ -55,8 +49,15 @@ namespace RestfulFirebase.Database
         /// <returns>
         /// The created <see cref="ChildQuery"/> node.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="resourceName"/> is null or empty.
+        /// </exception>
         public ChildQuery Child(string resourceName)
         {
+            if (string.IsNullOrEmpty(resourceName))
+            {
+                throw new ArgumentNullException(nameof(resourceName));
+            }
             return new ChildQuery(App, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceName));
         }
 

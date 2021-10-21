@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class UShortSerializer : Serializer<ushort>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override ushort Deserialize(string data)
+        public override ushort Deserialize(string data, ushort defaultValue = default)
         {
-            return ushort.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return ushort.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }

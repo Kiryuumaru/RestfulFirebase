@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Serializers.Primitives
+﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
     public class DoubleSerializer : Serializer<double>
@@ -14,9 +10,21 @@ namespace RestfulFirebase.Serializers.Primitives
         }
 
         /// <inheritdoc/>
-        public override double Deserialize(string data)
+        public override double Deserialize(string data, double defaultValue = default)
         {
-            return double.Parse(data);
+            if (string.IsNullOrEmpty(data))
+            {
+                return defaultValue;
+            }
+
+            try
+            {
+                return double.Parse(data);
+            }
+            catch
+            {
+                return defaultValue;
+            }
         }
     }
 }
