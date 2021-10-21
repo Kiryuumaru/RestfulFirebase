@@ -22,7 +22,7 @@ using RestfulFirebase.Local;
 using System.Collections;
 using System.Collections.Concurrent;
 
-namespace RestTest
+namespace Playground
 {
     public class TestStorable : FirebaseObject
     {

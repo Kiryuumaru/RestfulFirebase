@@ -211,11 +211,36 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
         /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
         /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForSynced(TimeSpan timeout)
+        {
+            return WaitForSynced(true, new CancellationTokenSource(timeout).Token);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForSynced(CancellationToken cancellationToken)
+        {
+            return WaitForSynced(true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
         /// </param>
         /// <param name="timeout">
         /// The <see cref="TimeSpan"/> timeout of the created task.
@@ -223,7 +248,24 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task<bool> WaitForSynced(bool cancelOnError = false, TimeSpan? timeout = null, CancellationToken? cancellationToken = null)
+        public Task<bool> WaitForSynced(bool cancelOnError, TimeSpan timeout)
+        {
+            return WaitForSynced(cancelOnError, new CancellationTokenSource(timeout).Token);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public async Task<bool> WaitForSynced(bool cancelOnError = false, CancellationToken? cancellationToken = null)
         {
             if (IsDisposed)
             {
@@ -258,56 +300,12 @@ namespace RestfulFirebase.Database.Realtime
                 }
                 return IsSynced;
             }
-            bool result = timeout.HasValue
-                ? await Task.Run(waitTask).WithTimeout(timeout.Value, false).ConfigureAwait(false)
-                : await Task.Run(waitTask).ConfigureAwait(false);
+            bool result = await Task.Run(waitTask).ConfigureAwait(false);
             if (cancelOnError)
             {
                 Error -= RealtimeInstance_Error;
             }
             return result;
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(bool cancelOnError)
-        {
-            return WaitForSynced(cancelOnError, null, null);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(TimeSpan timeout)
-        {
-            return WaitForSynced(false, timeout, null);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(CancellationToken cancellationToken)
-        {
-            return WaitForSynced(false, null, cancellationToken);
         }
 
         /// <summary>

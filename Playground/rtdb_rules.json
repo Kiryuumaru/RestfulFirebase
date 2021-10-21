@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "public": {
+      ".read": "true",
+      ".write": "true"
+    },
+    "users": {
+      "$user_id": {
+        ".read": "$user_id === auth.uid",
+        ".write": "$user_id === auth.uid"
+      }
+    }
+  }
+}

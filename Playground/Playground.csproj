@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D7A7BB54-2B34-441A-8B18-2F51FE907C62}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>RestTest</RootNamespace>
-    <AssemblyName>RestTest</AssemblyName>
+    <RootNamespace>Playground</RootNamespace>
+    <AssemblyName>Playground</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -56,6 +56,7 @@
       <Link>.editorconfig</Link>
     </None>
     <None Include="App.config" />
+    <None Include="rtdb_rules.json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RestfulFirebase\RestfulFirebase.csproj">

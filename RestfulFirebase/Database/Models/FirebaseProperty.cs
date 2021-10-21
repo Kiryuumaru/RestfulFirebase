@@ -188,6 +188,71 @@ namespace RestfulFirebase.Database.Models
             return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
         }
 
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForSynced(TimeSpan timeout)
+        {
+            return WaitForSynced(true, new CancellationTokenSource(timeout).Token);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForSynced(CancellationToken cancellationToken)
+        {
+            return WaitForSynced(true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public Task<bool> WaitForSynced(bool cancelOnError, TimeSpan timeout)
+        {
+            return WaitForSynced(cancelOnError, new CancellationTokenSource(timeout).Token);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
+        /// </summary>
+        /// <param name="cancelOnError">
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// The <see cref="CancellationToken"/> for the wait synced status.
+        /// </param>
+        /// <param name="timeout">
+        /// The <see cref="TimeSpan"/> timeout of the created task.
+        /// </param>
+        /// <returns>
+        /// A <see cref="Task"/> that represents the fully sync status.
+        /// </returns>
+        public async Task<bool> WaitForSynced(bool cancelOnError = false, CancellationToken? cancellationToken = null)
+        {
+            return await RealtimeInstance.WaitForSynced(cancelOnError, cancellationToken);
+        }
+
         /// <inheritdoc/>
         /// <exception cref="SerializerNotSupportedException">
         /// Occurs when the object has no supported serializer.

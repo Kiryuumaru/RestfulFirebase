@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestTest
+namespace Playground
 {
     public class EncryptTest : ILocalEncryption
     {
