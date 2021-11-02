@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Utilities;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;

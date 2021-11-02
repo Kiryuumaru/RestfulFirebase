@@ -4,6 +4,7 @@ using RestfulFirebase.Database.Query;
 using RestfulFirebase.Utilities;
 using RestfulFirebase.Local;
 using System;
+using ObservableHelpers.Utilities;
 
 namespace RestfulFirebase.Database
 {

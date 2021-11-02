@@ -8,13 +8,25 @@ namespace RestfulFirebase.Exceptions
     public class DatabaseUndefinedException : DatabaseException
     {
         internal DatabaseUndefinedException()
-            : this(null)
+            : this(default(Exception))
+        {
+
+        }
+
+        internal DatabaseUndefinedException(string message)
+            : base(message)
         {
 
         }
 
         internal DatabaseUndefinedException(Exception innerException)
             : base("An unidentified error occured.", innerException)
+        {
+
+        }
+
+        internal DatabaseUndefinedException(string message, Exception innerException)
+            : base(message, innerException)
         {
 
         }

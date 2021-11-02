@@ -8,13 +8,28 @@ namespace RestfulFirebase.Database.Query
     /// </summary>
     public class OrderQuery : ParameterQuery
     {
+        #region Properties
+
         private readonly Func<string> propertyNameFactory;
+
+        #endregion
+
+        #region Initializers
 
         internal OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
             : base(app, parent, () => "orderBy")
         {
             this.propertyNameFactory = propertyNameFactory;
         }
+
+        #endregion
+
+        #region Methods
+
+
+        #endregion
+
+        #region ParameterQuery Members
 
         /// <inheritdoc/>
         protected override string BuildUrlParameter()
@@ -27,5 +42,7 @@ namespace RestfulFirebase.Database.Query
         {
             return Task.FromResult(BuildUrlParameter());
         }
+
+        #endregion
     }
 }

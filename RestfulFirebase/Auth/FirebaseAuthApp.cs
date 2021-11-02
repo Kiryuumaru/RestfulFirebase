@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using ObservableHelpers;
 using RestfulFirebase.Exceptions;
+using ObservableHelpers.Utilities;
 
 namespace RestfulFirebase.Auth
 {

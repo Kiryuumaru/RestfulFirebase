@@ -7,10 +7,27 @@ namespace RestfulFirebase.Database.Query
     /// </summary>
     public class ShallowQuery : ParameterQuery
     {
-        internal ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent) 
+        #region Properties
+
+
+        #endregion
+
+        #region Initializers
+
+        internal ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent)
             : base(app, parent, () => "shallow")
         {
+
         }
+
+        #endregion
+
+        #region Methods
+
+
+        #endregion
+
+        #region ParameterQuery Members
 
         /// <inheritdoc/>
         protected override string BuildUrlParameter()
@@ -23,5 +40,7 @@ namespace RestfulFirebase.Database.Query
         {
             return Task.FromResult(BuildUrlParameter());
         }
+
+        #endregion
     }
 }

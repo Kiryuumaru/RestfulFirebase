@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Utilities;
 using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
 using RestfulFirebase.Local;

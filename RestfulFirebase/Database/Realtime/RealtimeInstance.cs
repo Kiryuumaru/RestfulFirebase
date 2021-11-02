@@ -1,5 +1,6 @@
 ﻿using ObservableHelpers;
 using ObservableHelpers.Abstraction;
+using ObservableHelpers.Utilities;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
@@ -7,6 +8,7 @@ using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -27,11 +29,6 @@ namespace RestfulFirebase.Database.Realtime
         public RestfulFirebaseApp App { get; }
 
         /// <summary>
-        /// The firebase url of the instance.
-        /// </summary>
-        public string Url { get; }
-
-        /// <summary>
         /// The firebase query of the instance.
         /// </summary>
         public IFirebaseQuery Query { get; }
@@ -49,17 +46,12 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Local database used by this realtime instance.
         /// </summary>
-        public ILocalDatabase LocalDatabase { get; private set; }
+        public ILocalDatabase LocalDatabase { get; }
 
         /// <summary>
-        /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// The childrens <see cref="RealtimeInstance"/> of the instance.
         /// </summary>
-        public bool IsSynced => TotalDataCount == SyncedDataCount && dataInitialized;
-
-        /// <summary>
-        /// Gets <c>true</c> whether the node is locally available; otherwise <c>false</c>.
-        /// </summary>
-        public bool IsLocallyAvailable => TotalDataCount != 0 && dataInitialized;
+        public ConcurrentDictionary<string, RealtimeInstance> Childrens { get; }
 
         /// <summary>
         /// Gets the total data cached of the instance.
@@ -72,14 +64,24 @@ namespace RestfulFirebase.Database.Realtime
         public int SyncedDataCount { get; private set; }
 
         /// <summary>
+        /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// </summary>
+        public bool IsSynced => TotalDataCount == SyncedDataCount && dataInitialized;
+
+        /// <summary>
+        /// Gets <c>true</c> whether the node is locally available; otherwise <c>false</c>.
+        /// </summary>
+        public bool IsLocallyAvailable => TotalDataCount != 0 && dataInitialized;
+
+        /// <summary>
         /// Event raised on the current context when there is data changes on the node or sub nodes.
         /// </summary>
         public event EventHandler<DataChangesEventArgs> DataChanges;
 
         /// <summary>
-        /// Event raised on the current context when the data changes has evaluated.
+        /// Event raised on the current context when there is sync changes.
         /// </summary>
-        public event EventHandler<DataEvaluatedEventArgs> DataEvaluated;
+        public event EventHandler<SyncChangesEventArgs> SyncChanges;
 
         /// <summary>
         /// Event raised on the current context when there is an error occured.
@@ -118,9 +120,9 @@ namespace RestfulFirebase.Database.Realtime
         private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
         {
             App = app;
-            Url = query.GetAbsolutePath();
             Query = query;
             LocalDatabase = localDatabase;
+            Childrens = new ConcurrentDictionary<string, RealtimeInstance>();
 
             EvaluateDataQueue();
         }
@@ -184,11 +186,11 @@ namespace RestfulFirebase.Database.Realtime
             string uri;
             if (path?.Length == 0)
             {
-                uri = Query.GetAbsolutePath();
+                uri = Query.GetAbsoluteUrl();
             }
             else
             {
-                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+                uri = UrlUtilities.Combine(Query.GetAbsoluteUrl(), path);
             }
 
             return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).Any(i => i.Blob != null);
@@ -320,11 +322,18 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// <c>true</c> whether the blob was set; otherwise, <c>false</c>.
         /// </returns>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has element that is null or empty.
+        /// </exception>
         public bool SetBlob(string blob, params string[] path)
         {
             if (IsDisposed)
             {
                 return false;
+            }
+            if (path?.Any(i => string.IsNullOrEmpty(i)) ?? false)
+            {
+                throw StringNullOrEmptyException.FromEnumerableArgument(nameof(path));
             }
 
             if (path?.Length != 0)
@@ -336,7 +345,7 @@ namespace RestfulFirebase.Database.Realtime
 
             var affectedUris = new List<string>();
 
-            var uri = Query.GetAbsolutePath();
+            var uri = Query.GetAbsoluteUrl();
 
             // Delete related changes
             var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, false, true);
@@ -369,24 +378,6 @@ namespace RestfulFirebase.Database.Realtime
             return hasChanges;
         }
 
-        /// <inheritdoc/>
-        public bool SetNull()
-        {
-            return SetBlob(null);
-        }
-
-        /// <inheritdoc/>
-        public bool IsNull()
-        {
-            if (IsDisposed)
-            {
-                return true;
-            }
-
-            var uri = Query.GetAbsolutePath();
-            return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).All(i => i.Blob == null);
-        }
-
         /// <summary>
         /// Gets the blob of the instance.
         /// </summary>
@@ -406,11 +397,11 @@ namespace RestfulFirebase.Database.Realtime
             string uri;
             if (path?.Length == 0)
             {
-                uri = Query.GetAbsolutePath();
+                uri = Query.GetAbsoluteUrl();
             }
             else
             {
-                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+                uri = UrlUtilities.Combine(Query.GetAbsoluteUrl(), path);
             }
 
             return App.Database.OfflineDatabase.GetData(LocalDatabase, uri).Blob;
@@ -435,11 +426,11 @@ namespace RestfulFirebase.Database.Realtime
             string uri;
             if (path?.Length == 0)
             {
-                uri = Query.GetAbsolutePath();
+                uri = Query.GetAbsoluteUrl();
             }
             else
             {
-                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+                uri = UrlUtilities.Combine(Query.GetAbsoluteUrl(), path);
             }
 
             return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false)
@@ -466,11 +457,11 @@ namespace RestfulFirebase.Database.Realtime
             string uri;
             if (path?.Length == 0)
             {
-                uri = Query.GetAbsolutePath();
+                uri = Query.GetAbsoluteUrl();
             }
             else
             {
-                uri = UrlUtilities.Combine(Query.GetAbsolutePath(), path);
+                uri = UrlUtilities.Combine(Query.GetAbsoluteUrl(), path);
             }
 
             return App.Database.OfflineDatabase.GetSubUris(LocalDatabase, uri, false);
@@ -580,17 +571,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </returns>
         public override string ToString()
         {
-            return Query.GetAbsolutePath();
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                UnsubscribeToParent();
-            }
-            base.Dispose(disposing);
+            return Query.GetAbsoluteUrl();
         }
 
         /// <summary>
@@ -609,7 +590,7 @@ namespace RestfulFirebase.Database.Realtime
             if (Root == null)
             {
                 var affectedPaths = new List<string>();
-                var baseUri = Query.GetAbsolutePath();
+                var baseUri = Query.GetAbsoluteUrl();
                 affectedPaths.Add("");
                 foreach (var u in uris)
                 {
@@ -746,7 +727,7 @@ namespace RestfulFirebase.Database.Realtime
 
         internal void EvaluateData()
         {
-            var uri = Query.GetAbsolutePath();
+            var uri = Query.GetAbsoluteUrl();
             int totalCount = 0;
             int synedCount = 0;
             foreach (var data in App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true))
@@ -760,7 +741,7 @@ namespace RestfulFirebase.Database.Realtime
             TotalDataCount = totalCount;
             SyncedDataCount = synedCount;
             dataInitialized = true;
-            DataEvaluated?.Invoke(this, new DataEvaluatedEventArgs(totalCount, synedCount));
+            SyncChanges?.Invoke(this, new SyncChangesEventArgs(totalCount, synedCount));
         }
 
         private void OnWrite()
@@ -802,7 +783,7 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            string baseUri = Query.GetAbsolutePath().Trim('/');
+            string baseUri = Query.GetAbsoluteUrl().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
                 var path = e.Uri.Replace(baseUri, "");
@@ -820,7 +801,7 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            string baseUri = Query.GetAbsolutePath().Trim('/');
+            string baseUri = Query.GetAbsoluteUrl().Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
                 SelfError(e);
@@ -875,6 +856,42 @@ namespace RestfulFirebase.Database.Realtime
                 }
                 dataCountEvaluating = false;
             });
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                UnsubscribeToParent();
+            }
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region INullableObject Members
+
+        /// <inheritdoc/>
+        public bool SetNull()
+        {
+            return SetBlob(null);
+        }
+
+        /// <inheritdoc/>
+        public bool IsNull()
+        {
+            if (IsDisposed)
+            {
+                return true;
+            }
+
+            var uri = Query.GetAbsoluteUrl();
+            return App.Database.OfflineDatabase.GetDatas(LocalDatabase, uri, true).All(i => i.Blob == null);
         }
 
         #endregion

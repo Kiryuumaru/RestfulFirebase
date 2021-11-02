@@ -18,21 +18,6 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        /// <inheritdoc/>
-        public RealtimeInstance RealtimeInstance { get; private set; }
-
-        /// <inheritdoc/>
-        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-
-        /// <inheritdoc/>
-        public event EventHandler<WireExceptionEventArgs> WireError;
-
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
 
         #endregion
@@ -50,191 +35,6 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Methods
-
-        /// <inheritdoc/>
-        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
-        }
-
-        /// <inheritdoc/>
-        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            try
-            {
-                await attachLock.WaitAsync().ConfigureAwait(false);
-
-                List<Task> tasks = new List<Task>();
-
-                Subscribe(realtimeInstance);
-
-                InitializeProperties();
-
-                IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
-                List<string> supPaths = new List<string>();
-                foreach (var path in RealtimeInstance.GetSubPaths())
-                {
-                    var separatedPath = UrlUtilities.Separate(path);
-                    var key = separatedPath[0];
-                    if (!supPaths.Contains(key)) supPaths.Add(key);
-                }
-
-                foreach (var prop in props)
-                {
-                    if (invokeSetFirst)
-                    {
-                        tasks.Add(RealtimeInstance.Child(prop.Key, false).PutModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    else
-                    {
-                        tasks.Add(RealtimeInstance.Child(prop.Key, false).SubModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    supPaths.RemoveAll(i => i == prop.Key);
-                }
-
-                foreach (var path in supPaths)
-                {
-                    AddOrUpdatePropertyCore(path, null, nameof(FirebaseObject),
-                        newNamedProperty => true,
-                        existingNamedProperty => false,
-                        postAction =>
-                        {
-                            if (!postAction.isUpdate && postAction.namedProperty != null)
-                            {
-                                tasks.Add(RealtimeInstance.Child(path, false).SubModelAsync((FirebaseProperty)postAction.namedProperty.Property));
-                            }
-                        });
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                attachLock.Release();
-            }
-
-            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-        }
-
-        /// <inheritdoc/>
-        public void DetachRealtime()
-        {
-            if (IsDisposed || !HasAttachedRealtime)
-            {
-                return;
-            }
-
-            foreach (var item in GetRawProperties())
-            {
-                if (item.Property is IRealtimeModel model)
-                {
-                    model.DetachRealtime();
-                }
-            }
-
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-
-            Unsubscribe();
-
-            OnRealtimeDetached(args);
-        }
-
-        /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized, params int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            string decrypted = Cryptography.VigenereCipherDecrypt(serialized, encryptionPattern);
-
-            string[] properties = StringUtilities.Deserialize(decrypted);
-
-            if (properties == null)
-            {
-                return;
-            }
-
-            foreach (string data in properties)
-            {
-                string[] property = StringUtilities.Deserialize(data);
-                if (property.Length != 4)
-                {
-                    continue;
-                }
-                string key = property[0];
-                string name = property[1];
-                string group = property[2];
-                string value = property[3];
-                try
-                {
-                    bool hasChanges = false;
-
-                    AddOrUpdatePropertyCore(key, name, group,
-                        newNamedProperty => true,
-                        existingNamedProperty => true,
-                        postAction =>
-                        {
-                            hasChanges = postAction.hasChanges;
-
-                            if (postAction.isUpdate)
-                            {
-                                var hasSetChanges = false;
-
-                                if (postAction.namedProperty.Property.SetValue(value))
-                                {
-                                    hasSetChanges = true;
-                                    hasChanges = true;
-                                }
-
-                                if (!hasSetChanges && hasChanges)
-                                {
-                                    OnPropertyChanged(postAction.namedProperty.Key, postAction.namedProperty.PropertyName, postAction.namedProperty.Group);
-                                }
-                            }
-                            else if (postAction.namedProperty != null)
-                            {
-                                ((FirebaseProperty)postAction.namedProperty.Property).LoadFromSerializedValue(value);
-                            }
-                        });
-                }
-                catch { }
-            }
-        }
-
-        /// <inheritdoc/>
-        public string GenerateSerializedValue(params int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return default;
-            }
-
-            List<string> properties = new List<string>();
-            foreach (NamedProperty namedProperty in GetRawProperties())
-            {
-                string data = StringUtilities.Serialize(
-                    namedProperty.Key,
-                    namedProperty.PropertyName,
-                    namedProperty.Group,
-                    ((FirebaseProperty)namedProperty.Property).GenerateSerializedValue());
-                properties.Add(data);
-            }
-
-            string serialized = StringUtilities.Serialize(properties.ToArray());
-
-            return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
-        }
 
         /// <summary>
         /// Sets a firebase property value with the provided firebase <paramref name="key"/>.
@@ -254,7 +54,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="validate">
         /// The value set validator function.
         /// </param>
-        /// <param name="onSet">
+        /// <param name="postAction">
         /// The callback after set operation.
         /// </param>
         /// <returns>
@@ -274,7 +74,7 @@ namespace RestfulFirebase.Database.Models
             string key,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            Action<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<(string key, string propertyName, string group, T oldValue, T newValue, bool HasChanges)> postAction = null)
         {
             if (IsDisposed)
             {
@@ -289,7 +89,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validate, onSet);
+            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validate, postAction);
         }
 
         /// <summary>
@@ -310,7 +110,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="validate">
         /// The value set validator function.
         /// </param>
-        /// <param name="onSet">
+        /// <param name="postAction">
         /// The callback after set operation.
         /// </param>
         /// <returns>
@@ -330,7 +130,7 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            Action<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<(string key, string propertyName, string group, T oldValue, T newValue, bool HasChanges)> postAction = null)
         {
             if (IsDisposed)
             {
@@ -349,7 +149,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), validate, onSet);
+            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), validate, postAction);
         }
 
         /// <summary>
@@ -367,7 +167,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="validate">
         /// The value set validator function.
         /// </param>
-        /// <param name="onSet">
+        /// <param name="postAction">
         /// The callback after set operation.
         /// </param>
         /// <returns>
@@ -386,9 +186,9 @@ namespace RestfulFirebase.Database.Models
             T value,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            Action<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<(string key, string propertyName, string group, T oldValue, T newValue, bool HasChanges)> postAction = null)
         {
-            return SetFirebasePropertyWithKey(value, propertyName, propertyName, validate, onSet);
+            return SetFirebasePropertyWithKey(value, propertyName, propertyName, validate, postAction);
         }
 
         /// <summary>
@@ -406,7 +206,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="validate">
         /// The value set validator function.
         /// </param>
-        /// <param name="onSet">
+        /// <param name="postAction">
         /// The callback after set operation.
         /// </param>
         /// <returns>
@@ -425,40 +225,9 @@ namespace RestfulFirebase.Database.Models
             T defaultValue = default,
             [CallerMemberName] string propertyName = null,
             Func<(T oldValue, T newValue), bool> validate = null,
-            Action<ObjectPropertySetEventArgs<T>> onSet = null)
+            Action<(string key, string propertyName, string group, T oldValue, T newValue, bool HasChanges)> postAction = null)
         {
-            return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, onSet);
-        }
-
-        /// <inheritdoc/>
-        protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
-        {
-            if (IsDisposed)
-            {
-                return null;
-            }
-
-            return new NamedProperty()
-            {
-                Property = new FirebaseProperty(),
-                Key = key,
-                PropertyName = propertyName,
-                Group = group
-            };
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DetachRealtime();
-                foreach (var item in GetRawProperties())
-                {
-                    item.Property.Dispose();
-                }
-            }
-            base.Dispose(disposing);
+            return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, postAction);
         }
 
         /// <summary>
@@ -557,17 +326,16 @@ namespace RestfulFirebase.Database.Models
                 try
                 {
                     await attachLock.WaitAsync().ConfigureAwait(false);
-                    AddOrUpdatePropertyCore(key, null, nameof(FirebaseObject),
-                        newNamedProperty =>
-                        {
-                            return RealtimeInstance.HasChild(key);
-                        },
-                        existingNamedProperty => false,
+                    GetOrCreateNamedProperty(default(string), key, null, nameof(FirebaseObject),
+                        newNamedProperty => RealtimeInstance.HasChild(key),
                         postAction =>
                         {
-                            if (!postAction.isUpdate && postAction.namedProperty != null)
+                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
                             {
-                                RealtimeInstance.Child(key, false).SubModel((FirebaseProperty)postAction.namedProperty.Property);
+                                if (!firebaseProperty.HasAttachedRealtime)
+                                {
+                                    RealtimeInstance.Child(key, false).SubModel(firebaseProperty);
+                                }
                             }
                         });
                 }
@@ -600,6 +368,161 @@ namespace RestfulFirebase.Database.Models
             }
 
             DetachRealtime();
+        }
+
+        #endregion
+
+        #region ObservableObject Members
+
+        /// <inheritdoc/>
+        protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
+        {
+            if (IsDisposed)
+            {
+                return null;
+            }
+
+            return new NamedProperty()
+            {
+                Property = new FirebaseProperty(),
+                Key = key,
+                PropertyName = propertyName,
+                Group = group
+            };
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                DetachRealtime();
+                foreach (var item in GetRawProperties())
+                {
+                    item.Property.Dispose();
+                }
+            }
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region IRealtimeModel Members
+
+        /// <inheritdoc/>
+        public RealtimeInstance RealtimeInstance { get; private set; }
+
+        /// <inheritdoc/>
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireExceptionEventArgs> WireError;
+
+        /// <inheritdoc/>
+        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        /// <inheritdoc/>
+        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
+                Subscribe(realtimeInstance);
+
+                List<Task> tasks = new List<Task>();
+
+                IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
+                List<string> supPaths = new List<string>();
+                foreach (var path in RealtimeInstance.GetSubPaths())
+                {
+                    var separatedPath = UrlUtilities.Separate(path);
+                    var key = separatedPath[0];
+                    if (!supPaths.Contains(key)) supPaths.Add(key);
+                }
+
+                foreach (var prop in props)
+                {
+                    if (invokeSetFirst)
+                    {
+                        tasks.Add(RealtimeInstance.Child(prop.Key, false).PutModelAsync((FirebaseProperty)prop.Property));
+                    }
+                    else
+                    {
+                        tasks.Add(RealtimeInstance.Child(prop.Key, false).SubModelAsync((FirebaseProperty)prop.Property));
+                    }
+                    supPaths.RemoveAll(i => i == prop.Key);
+                }
+
+                foreach (var path in supPaths)
+                {
+                    GetOrCreateNamedProperty(default(string), path, null, nameof(FirebaseObject),
+                        newNamedProperty => true,
+                        postAction =>
+                        {
+                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
+                            {
+                                if (!firebaseProperty.HasAttachedRealtime)
+                                {
+                                    RealtimeInstance.Child(path, false).SubModel(firebaseProperty);
+                                }
+                            }
+                        });
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                attachLock.Release();
+            }
+
+            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+        }
+
+        /// <inheritdoc/>
+        public void DetachRealtime()
+        {
+            if (IsDisposed || !HasAttachedRealtime)
+            {
+                return;
+            }
+
+            foreach (var item in GetRawProperties())
+            {
+                if (item.Property is IRealtimeModel model)
+                {
+                    model.DetachRealtime();
+                }
+            }
+
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+
+            Unsubscribe();
+
+            OnRealtimeDetached(args);
         }
 
         #endregion

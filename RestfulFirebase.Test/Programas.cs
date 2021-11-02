@@ -17,12 +17,13 @@ using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Utilities;
 using System.ComponentModel;
-using System.Windows.Threading;
 using RestfulFirebase.Local;
 using System.Collections;
 using System.Collections.Concurrent;
+using Newtonsoft.Json.Linq;
+using RestfulFirebase.Test.Utilities;
 
-namespace Playground
+namespace RestfulFirebaseTestwd
 {
     public class TestStorable : FirebaseObject
     {
@@ -89,7 +90,6 @@ namespace Playground
         public TestStorable()
         {
             Dummy = "test";
-            InitializeProperties();
         }
 
         #endregion
@@ -200,13 +200,12 @@ namespace Playground
         #endregion
     }
 
-    public class Program
+    public class Progrsdfam
     {
         private static RestfulFirebaseApp app;
         private static ChildQuery userNode;
 
-
-        public static void Main(string[] args)
+        public static void Maisdvn(string[] args)
         {
             Run().GetAwaiter().GetResult();
         }
@@ -231,7 +230,6 @@ namespace Playground
 
             Console.WriteLine("FIN");
 
-            //TestSerializers();
             //TestObservableObject();
             //TestRealtimeWire();
             //TestRealtimeWire2();
@@ -245,7 +243,7 @@ namespace Playground
             //TestObjectNullable();
             //TestPropertyDictionaryPut();
             //TestPropertyDictionarySub();
-            TestPropertyDictionarySub2();
+            //TestPropertyDictionarySub2();
             //TestPropertyDictionarySub3();
             //TestPropertyDictionarySub4();
             //TestObjectDictionaryPut();
@@ -256,45 +254,12 @@ namespace Playground
             //await TestDef();
             //await TestRoutineWrite();
             //TestCascadeObjectPut();
-            TestCascadeObjectMassPut();
+            //TestCascadeObjectMassPut();
             //TestCascadeObjectSub();
             //await TestCascadeObjectSetNull();
 
             while (true)
             {
-            }
-        }
-
-        public static void TestSerializers()
-        {
-            var dict = new FirebaseDictionary<FirebaseProperty>();
-            dict.CollectionChanged += (s, e) =>
-            {
-                Console.WriteLine("Count: " + dict.Keys.Count);
-            };
-            while (true)
-            {
-                string line = Console.ReadLine();
-                if (line == "end")
-                {
-                    break;
-                }
-                var prop = new FirebaseProperty();
-                prop.SetValue(line);
-                dict.Add(UIDFactory.GenerateUID(5), prop);
-            }
-
-            var serialized = dict.GenerateSerializedValue();
-            var dictFromS = new FirebaseDictionary<FirebaseProperty>();
-            dictFromS.LoadFromSerializedValue(serialized);
-
-            var encrypted = dict.GenerateSerializedValue(1, 4, 2, 3);
-            var dictFromE = new FirebaseDictionary<FirebaseProperty>();
-            dictFromS.LoadFromSerializedValue(encrypted, 1, 4, 2, 3);
-
-            while (true)
-            {
-                Console.ReadLine();
             }
         }
 
@@ -810,7 +775,7 @@ namespace Playground
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
@@ -879,7 +844,7 @@ namespace Playground
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
@@ -965,7 +930,7 @@ namespace Playground
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
@@ -1125,7 +1090,7 @@ namespace Playground
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
@@ -1193,7 +1158,7 @@ namespace Playground
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
@@ -1270,7 +1235,7 @@ namespace Playground
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.DataEvaluated += (s, e) =>
+            wire.SyncChanges += (s, e) =>
             {
                 Console.WriteLine("Writes: " + app.Database.PendingWrites);
                 Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);

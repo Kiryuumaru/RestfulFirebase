@@ -9,7 +9,7 @@ namespace RestfulFirebase.Utilities
     /// <summary>
     /// Provides convenient url utilities.
     /// </summary>
-    public static class UrlUtilities
+    public static class UrlUtilities2
     {
         /// <summary>
         /// Combines url separated with the web url separator '/'.

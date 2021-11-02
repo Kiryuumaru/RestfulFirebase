@@ -151,12 +151,12 @@ namespace RestfulFirebase.Utilities
         public static string ToBase62(int number)
         {
             var arbitraryBase = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)number, 62);
-            StringBuilder builder = new StringBuilder();
+            string str = "";
             foreach (var num in arbitraryBase)
             {
-                builder.Append(Base62Charset[(int)num]);
+                str += Base62Charset[(int)num];
             }
-            return builder.ToString();
+            return str;
         }
 
         /// <summary>
@@ -195,12 +195,12 @@ namespace RestfulFirebase.Utilities
         public static string ToBase64(int number)
         {
             var arbitraryBase = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)number, 64);
-            StringBuilder builder = new StringBuilder();
+            string str = "";
             foreach (var num in arbitraryBase)
             {
-                builder.Append(Base64Charset[(int)num]);
+                str += Base64Charset[(int)num];
             }
-            return builder.ToString();
+            return str;
         }
 
         /// <summary>

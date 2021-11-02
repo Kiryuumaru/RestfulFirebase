@@ -7,12 +7,18 @@ namespace RestfulFirebase.Database.Query
     /// <summary>
     /// Represents a firebase filtering query, e.g. "?LimitToLast=10".
     /// </summary>
-    public class FilterQuery : ParameterQuery 
+    public class FilterQuery : ParameterQuery
     {
+        #region Properties
+
         private readonly Func<string> valueFactory;
         private readonly Func<double> doubleValueFactory;
         private readonly Func<long> longValueFactory;
         private readonly Func<bool> boolValueFactory;
+
+        #endregion
+
+        #region Initializers
 
         internal FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<string> valueFactory)
             : base(app, parent, filterFactory)
@@ -38,12 +44,21 @@ namespace RestfulFirebase.Database.Query
             boolValueFactory = valueFactory;
         }
 
+        #endregion
+
+        #region Methods
+
+
+        #endregion
+
+        #region ParameterQuery Members
+
         /// <inheritdoc/>
         protected override string BuildUrlParameter()
         {
             if (valueFactory != null)
             {
-                if(valueFactory() == null)
+                if (valueFactory() == null)
                 {
                     return $"null";
                 }
@@ -70,5 +85,7 @@ namespace RestfulFirebase.Database.Query
         {
             return Task.FromResult(BuildUrlParameter());
         }
+
+        #endregion
     }
 }

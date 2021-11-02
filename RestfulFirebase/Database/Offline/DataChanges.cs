@@ -2,11 +2,6 @@
 
 namespace RestfulFirebase.Database.Offline
 {
-    internal enum DataChangesType
-    {
-        Create, Update, Delete, None
-    }
-
     internal class DataChanges
     {
         public string Blob { get; }

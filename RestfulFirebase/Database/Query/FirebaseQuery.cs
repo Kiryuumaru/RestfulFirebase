@@ -10,20 +10,32 @@ using RestfulFirebase.Utilities;
 using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
+using ObservableHelpers.Utilities;
 
 namespace RestfulFirebase.Database.Query
 {
     /// <summary>
     /// The base implementation for firebase query operations.
     /// </summary>
-    public abstract class FirebaseQuery : IFirebaseQuery, IDisposable
+    public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     {
-        private IHttpClientProxy client;
+        #region Properties
+
+        /// <summary>
+        /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
+        /// </summary>
+        public bool AuthenticateRequests { get; set; }
 
         /// <summary>
         /// The parent of the query.
         /// </summary>
         protected FirebaseQuery Parent { get; }
+
+        private IHttpClientProxy client;
+
+        #endregion
+
+        #region Initializers
 
         private protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
         {
@@ -32,10 +44,210 @@ namespace RestfulFirebase.Database.Query
             AuthenticateRequests = true;
         }
 
+        #endregion
+
+        #region Methods
+
         /// <summary>
-        /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
+        /// Builds the url segement of the query.
         /// </summary>
-        public bool AuthenticateRequests { get; set; }
+        /// <param name="child">
+        /// The <see cref="FirebaseQuery"/> child of the created url.
+        /// </param>
+        /// <returns>
+        /// The built url segement.
+        /// </returns>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        protected abstract string BuildUrlSegment(IFirebaseQuery child);
+
+        /// <summary>
+        /// Builds the url segement of the query.
+        /// </summary>
+        /// <param name="child">
+        /// The <see cref="FirebaseQuery"/> child of the created url.
+        /// </param>
+        /// <returns>
+        /// The created <see cref="Task"/> represents the built url segement.
+        /// </returns>
+        /// <exception cref="AuthAPIKeyNotValidException">
+        /// API key not valid. Please pass a valid API key.
+        /// </exception>
+        /// <exception cref="AuthTokenExpiredException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthUserDisabledException">
+        /// The user account has been disabled by an administrator.
+        /// </exception>
+        /// <exception cref="AuthUserNotFoundException">
+        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+        /// </exception>
+        /// <exception cref="AuthInvalidIDTokenException">
+        /// The user's credential is no longer valid. The user must sign in again.
+        /// </exception>
+        /// <exception cref="AuthInvalidRefreshTokenException">
+        /// An invalid refresh token is provided.
+        /// </exception>
+        /// <exception cref="AuthInvalidJSONReceivedException">
+        /// Invalid JSON payload received.
+        /// </exception>
+        /// <exception cref="AuthMissingRefreshTokenException">
+        /// No refresh token provided.
+        /// </exception>
+        /// <exception cref="AuthUndefinedException">
+        /// The error occured is undefined.
+        /// </exception>
+        /// <exception cref="OperationCanceledException">
+        /// The operation was cancelled.
+        /// </exception>
+        protected abstract Task<string> BuildUrlSegmentAsync(IFirebaseQuery child);
+
+        internal AuthQuery WithAuth(Func<Task<string>> tokenFactory)
+        {
+            return new AuthQuery(App, this, tokenFactory);
+        }
+
+        internal SilentQuery Silent()
+        {
+            return new SilentQuery(App, this);
+        }
+
+        internal string BuildUrl(IFirebaseQuery child)
+        {
+            var url = BuildUrlSegment(child);
+
+            if (Parent != null)
+            {
+                url = Parent.BuildUrl(this) + url;
+            }
+
+            return url;
+        }
+
+        private async Task<string> BuildUrlAsync(FirebaseQuery child)
+        {
+            var url = await BuildUrlSegmentAsync(child);
+
+            if (Parent != null)
+            {
+                url = (await Parent.BuildUrlAsync(this)) + url;
+            }
+
+            return url;
+        }
+
+        private HttpClient GetClient()
+        {
+            if (client == null)
+            {
+                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.DatabaseRequestTimeout);
+            }
+
+            return client.GetHttpClient();
+        }
+
+        private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
+        {
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+            var requestData = data;
+
+            string url;
+
+            url = await BuildUrl(token).ConfigureAwait(false);
+
+            try
+            {
+                var message = new HttpRequestMessage(method, url)
+                {
+                    Content = new StringContent(requestData)
+                };
+
+                CancellationToken invokeToken;
+                if (token == null)
+                {
+                    invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                }
+                else
+                {
+                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                }
+
+                HttpResponseMessage result = null;
+                result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
+                invokeToken.ThrowIfCancellationRequested();
+                statusCode = result.StatusCode;
+                responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                result.EnsureSuccessStatusCode();
+
+                return responseData;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw ExceptionHelpers.GetException(statusCode, ex);
+            }
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                client?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region Object Members
+
+        /// <inheritdoc/>
+        public override string ToString()
+        {
+            return GetAbsoluteUrl();
+        }
+
+        #endregion
+
+        #region IFirebaseQuery Members
 
         /// <inheritdoc/>
         public RestfulFirebaseApp App { get; }
@@ -375,201 +587,11 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public string GetAbsolutePath()
+        public virtual string GetAbsoluteUrl()
         {
-            var url = BuildUrlSegment(this);
-
-            if (Parent != null)
-            {
-                url = Parent.BuildUrl(this) + url;
-            }
-
-            return url;
+            return BuildUrl(this);
         }
 
-        /// <inheritdoc/>
-        public void Dispose()
-        {
-            client?.Dispose();
-        }
-
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return GetAbsolutePath();
-        }
-
-        /// <summary>
-        /// Builds the url segement of the query.
-        /// </summary>
-        /// <param name="child">
-        /// The <see cref="FirebaseQuery"/> child of the created url.
-        /// </param>
-        /// <returns>
-        /// The built url segement.
-        /// </returns>
-        /// <exception cref="AuthAPIKeyNotValidException">
-        /// API key not valid. Please pass a valid API key.
-        /// </exception>
-        /// <exception cref="AuthTokenExpiredException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthUserDisabledException">
-        /// The user account has been disabled by an administrator.
-        /// </exception>
-        /// <exception cref="AuthUserNotFoundException">
-        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
-        /// </exception>
-        /// <exception cref="AuthInvalidIDTokenException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthInvalidRefreshTokenException">
-        /// An invalid refresh token is provided.
-        /// </exception>
-        /// <exception cref="AuthInvalidJSONReceivedException">
-        /// Invalid JSON payload received.
-        /// </exception>
-        /// <exception cref="AuthMissingRefreshTokenException">
-        /// No refresh token provided.
-        /// </exception>
-        /// <exception cref="AuthUndefinedException">
-        /// The error occured is undefined.
-        /// </exception>
-        /// <exception cref="OperationCanceledException">
-        /// The operation was cancelled.
-        /// </exception>
-        protected abstract string BuildUrlSegment(FirebaseQuery child);
-
-        /// <summary>
-        /// Builds the url segement of the query.
-        /// </summary>
-        /// <param name="child">
-        /// The <see cref="FirebaseQuery"/> child of the created url.
-        /// </param>
-        /// <returns>
-        /// The created <see cref="Task"/> represents the built url segement.
-        /// </returns>
-        /// <exception cref="AuthAPIKeyNotValidException">
-        /// API key not valid. Please pass a valid API key.
-        /// </exception>
-        /// <exception cref="AuthTokenExpiredException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthUserDisabledException">
-        /// The user account has been disabled by an administrator.
-        /// </exception>
-        /// <exception cref="AuthUserNotFoundException">
-        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
-        /// </exception>
-        /// <exception cref="AuthInvalidIDTokenException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthInvalidRefreshTokenException">
-        /// An invalid refresh token is provided.
-        /// </exception>
-        /// <exception cref="AuthInvalidJSONReceivedException">
-        /// Invalid JSON payload received.
-        /// </exception>
-        /// <exception cref="AuthMissingRefreshTokenException">
-        /// No refresh token provided.
-        /// </exception>
-        /// <exception cref="AuthUndefinedException">
-        /// The error occured is undefined.
-        /// </exception>
-        /// <exception cref="OperationCanceledException">
-        /// The operation was cancelled.
-        /// </exception>
-        protected abstract Task<string> BuildUrlSegmentAsync(FirebaseQuery child);
-
-        internal AuthQuery WithAuth(Func<Task<string>> tokenFactory)
-        {
-            return new AuthQuery(App, this, tokenFactory);
-        }
-
-        internal SilentQuery Silent()
-        {
-            return new SilentQuery(App, this);
-        }
-
-        private string BuildUrl(FirebaseQuery child)
-        {
-            var url = BuildUrlSegment(child);
-
-            if (Parent != null)
-            {
-                url = Parent.BuildUrl(this) + url;
-            }
-
-            return url;
-        }
-
-        private async Task<string> BuildUrlAsync(FirebaseQuery child)
-        {
-            var url = await BuildUrlSegmentAsync(child);
-
-            if (Parent != null)
-            {
-                url = (await Parent.BuildUrlAsync(this)) + url;
-            }
-
-            return url;
-        }
-
-        private HttpClient GetClient()
-        {
-            if (client == null)
-            {
-                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.DatabaseRequestTimeout);
-            }
-
-            return client.GetHttpClient();
-        }
-
-        private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
-        {
-            var responseData = string.Empty;
-            var statusCode = HttpStatusCode.OK;
-            var requestData = data;
-
-            string url;
-
-            url = await BuildUrl(token).ConfigureAwait(false);
-
-            try
-            {
-                var message = new HttpRequestMessage(method, url)
-                {
-                    Content = new StringContent(requestData)
-                };
-
-                CancellationToken invokeToken;
-                if (token == null)
-                {
-                    invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-                }
-                else
-                {
-                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-                }
-
-                HttpResponseMessage result = null;
-                result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
-                invokeToken.ThrowIfCancellationRequested();
-                statusCode = result.StatusCode;
-                responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                result.EnsureSuccessStatusCode();
-
-                return responseData;
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                throw ExceptionHelpers.GetException(statusCode, ex);
-            }
-        }
+        #endregion
     }
 }

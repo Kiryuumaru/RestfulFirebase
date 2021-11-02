@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Utilities;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
@@ -17,13 +18,7 @@ namespace RestfulFirebase.Database.Offline
 
         public string Uri { get; }
 
-        public bool IsExists
-        {
-            get
-            {
-                return ShortKey != null;
-            }
-        }
+        public bool IsExists => ShortKey != null;
 
         public string ShortKey
         {

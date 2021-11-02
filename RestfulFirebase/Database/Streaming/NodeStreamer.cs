@@ -11,10 +11,11 @@ using RestfulFirebase.Utilities;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
+using ObservableHelpers.Utilities;
 
 namespace RestfulFirebase.Database.Streaming
 {
-    internal class NodeStreamer : IDisposable
+    internal class NodeStreamer : Disposable
     {
         #region Properties
 
@@ -25,7 +26,7 @@ namespace RestfulFirebase.Database.Streaming
         private readonly HttpClient http;
 
         private EventHandler<StreamObject> onNext;
-        private EventHandler<Exception> onError;
+        private EventHandler<ErrorEventArgs> onError;
 
         #endregion
 
@@ -35,7 +36,7 @@ namespace RestfulFirebase.Database.Streaming
             RestfulFirebaseApp app,
             IFirebaseQuery query,
             EventHandler<StreamObject> onNext,
-            EventHandler<Exception> onError)
+            EventHandler<ErrorEventArgs> onError)
         {
             App = app;
             this.query = query;
@@ -53,6 +54,14 @@ namespace RestfulFirebase.Database.Streaming
 
         #endregion
 
+        #region Methods
+
+        public IDisposable Run()
+        {
+            Task.Run(ReceiveThread);
+            return this;
+        }
+
         private CancellationToken GetTrancientToken()
         {
             return CancellationTokenSource.CreateLinkedTokenSource(cancel.Token, new CancellationTokenSource(App.Config.DatabaseColdStreamTimeout).Token).Token;
@@ -62,54 +71,47 @@ namespace RestfulFirebase.Database.Streaming
         {
             while (true)
             {
-                bool isReady = true;
-
-                if (cancel.IsCancellationRequested) break;
-
-                string url = string.Empty;
-
-                if (isReady)
+                try
                 {
+                    if (cancel.IsCancellationRequested) break;
+
+                    string requestUrl = string.Empty;
+                    string absoluteUrl = query.GetAbsoluteUrl();
+
                     try
                     {
-                        url = await query.BuildUrl().ConfigureAwait(false);
+                        requestUrl = await query.BuildUrl().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        onError?.Invoke(this, ex);
-                        isReady = false;
+                        onError?.Invoke(this, new ErrorEventArgs(absoluteUrl, ex));
+                        continue;
                     }
-                }
 
-                if (cancel.IsCancellationRequested) break;
+                    if (cancel.IsCancellationRequested) break;
 
-                var statusCode = HttpStatusCode.OK;
-                HttpResponseMessage response = null;
+                    var statusCode = HttpStatusCode.OK;
+                    HttpResponseMessage response = null;
 
-                if (isReady)
-                {
                     try
                     {
-                        HttpRequestMessage request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, url);
+                        HttpRequestMessage request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, requestUrl);
                         response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, GetTrancientToken()).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
                     {
-                        isReady = false;
+                        continue;
                     }
                     catch (Exception ex)
                     {
-                        onError?.Invoke(this, ExceptionHelpers.GetException(statusCode, ex));
-                        isReady = false;
+                        onError?.Invoke(this, new ErrorEventArgs(absoluteUrl, ExceptionHelpers.GetException(statusCode, ex)));
+                        continue;
                     }
-                }
 
-                if (cancel.IsCancellationRequested) break;
+                    if (cancel.IsCancellationRequested) break;
 
-                var line = string.Empty;
+                    var line = string.Empty;
 
-                if (isReady)
-                {
                     try
                     {
                         var serverEvent = ServerEventType.KeepAlive;
@@ -156,7 +158,7 @@ namespace RestfulFirebase.Database.Streaming
                                         serverEvent = ParseServerEvent(serverEvent, tuple[1]);
                                         break;
                                     case "data":
-                                        ProcessServerData(url, serverEvent, tuple[1]);
+                                        ProcessServerData(absoluteUrl, serverEvent, tuple[1]);
                                         break;
                                 }
 
@@ -170,13 +172,15 @@ namespace RestfulFirebase.Database.Streaming
                     }
                     catch (Exception ex)
                     {
-                        onError?.Invoke(this, ExceptionHelpers.GetException(statusCode, ex));
+                        onError?.Invoke(this, new ErrorEventArgs(absoluteUrl, ExceptionHelpers.GetException(statusCode, ex)));
                     }
+
+                    if (cancel.IsCancellationRequested) break;
                 }
-
-                if (cancel.IsCancellationRequested) break;
-
-                await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                finally
+                {
+                    await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                }
             }
         }
 
@@ -211,23 +215,14 @@ namespace RestfulFirebase.Database.Streaming
                 case ServerEventType.Put:
                 case ServerEventType.Patch:
                     var result = JObject.Parse(serverData);
-                    var pathToken = result["path"];
                     var dataToken = result["data"];
-                    var streamPath = pathToken.ToString();
-                    var absolutePath = query.GetAbsolutePath();
-
-                    var uri = streamPath == "/" ?
-                        absolutePath : UrlUtilities.Combine(absolutePath, streamPath.Substring(1));
-
-                    var type = dataToken.Type;
-
-                    onNext?.Invoke(this, new StreamObject(Convert(dataToken), uri));
-
+                    var streamPath = result["path"].ToString();
+                    onNext?.Invoke(this, new StreamObject(Convert(dataToken), url, streamPath));
                     break;
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
-                    onError?.Invoke(this, new DatabaseUnauthorizedException());
+                    onError?.Invoke(this, new ErrorEventArgs(url, new DatabaseUnauthorizedException()));
                     break;
             }
         }
@@ -238,32 +233,30 @@ namespace RestfulFirebase.Database.Streaming
                 token.Type == JTokenType.Comment ||
                 token.Type == JTokenType.Undefined)
             {
-                throw new Exception("Unknown stream data type");
+                throw new DatabaseUndefinedException("Unknown stream data type");
             }
             else if (token.Type == JTokenType.Object)
             {
-                var datas = JsonConvert.DeserializeObject<Dictionary<string, object>>(token.ToString());
                 var subDatas = new Dictionary<string, StreamData>();
-                foreach (var entry in datas)
+                foreach (var entry in token as JObject)
                 {
-                    subDatas.Add(entry.Key, Convert(JToken.FromObject(entry.Value)));
+                    subDatas.Add(entry.Key, Convert(entry.Value));
                 }
                 return new MultiStreamData(subDatas);
             }
             else if (token.Type == JTokenType.Array)
             {
-                var datas = JsonConvert.DeserializeObject<List<object>>(token.ToString());
+                JArray arrToken = token as JArray;
                 var subDatas = new Dictionary<string, StreamData>();
-                for (int i = 0; i < datas.Count; i++)
+                for (int i = 0; i < arrToken.Count; i++)
                 {
-                    if (datas[i] == null) subDatas.Add(i.ToString(), null);
-                    else subDatas.Add(i.ToString(), Convert(JToken.FromObject(datas[i])));
+                    subDatas.Add(i.ToString(), Convert(arrToken[i]));
                 }
                 return new MultiStreamData(subDatas);
             }
             else if (token.Type != JTokenType.Null)
             {
-                return new SingleStreamData(((JValue)token).Value?.ToString());
+                return new SingleStreamData((token as JValue).ToString());
             }
             else if (token.Type == JTokenType.Null)
             {
@@ -275,15 +268,19 @@ namespace RestfulFirebase.Database.Streaming
             }
         }
 
-        public IDisposable Run()
+        #endregion
+
+        #region Disposable Members
+
+        protected override void Dispose(bool disposing)
         {
-            Task.Run(ReceiveThread);
-            return this;
+            if (disposing)
+            {
+                cancel.Cancel();
+            }
+            base.Dispose(disposing);
         }
 
-        public void Dispose()
-        {
-            cancel.Cancel();
-        }
+        #endregion
     }
 }

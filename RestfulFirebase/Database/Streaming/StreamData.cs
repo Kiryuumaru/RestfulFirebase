@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.Utilities;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace RestfulFirebase.Database.Streaming
 {
@@ -11,6 +12,7 @@ namespace RestfulFirebase.Database.Streaming
         }
     }
 
+    [DebuggerDisplay("{Blob}")]
     internal class SingleStreamData : StreamData
     {
         public string Blob { get; }
@@ -18,6 +20,11 @@ namespace RestfulFirebase.Database.Streaming
         public SingleStreamData(string blob)
         {
             Blob = blob;
+        }
+
+        public override string ToString()
+        {
+            return Blob;
         }
     }
 

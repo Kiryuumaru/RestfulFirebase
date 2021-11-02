@@ -34,9 +34,9 @@ namespace RestfulFirebase
         public string DatabaseURL
         {
             get => GetProperty<string>();
-            set => SetProperty(value, onSet: args =>
+            set => SetProperty(value, postAction: args =>
             {
-                if (!args.NewValue.EndsWith("/"))
+                if (!args.newValue.EndsWith("/"))
                 {
                     DatabaseURL += "/";
                 }

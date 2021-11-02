@@ -55,8 +55,8 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            string uri = Query.GetAbsolutePath();
-            subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(uri, e)).Run();
+            string uri = Query.GetAbsoluteUrl();
+            subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(e.Url, e.Exception)).Run();
         }
 
         /// <summary>
@@ -71,27 +71,6 @@ namespace RestfulFirebase.Database.Realtime
 
             subscription?.Dispose();
             subscription = null;
-        }
-
-        /// <inheritdoc/>
-        public override RealtimeInstance Clone()
-        {
-            if (IsDisposed)
-            {
-                return default;
-            }
-
-            var clone = new RealtimeWire(App, Query, LocalDatabase);
-            clone.SyncOperation.SetContext(this);
-            clone.EvaluateData();
-            Next += clone.OnNext;
-            Disposing += delegate
-            {
-                Next -= clone.OnNext;
-                clone.Dispose();
-            };
-
-            return clone;
         }
 
         /// <summary>
@@ -194,16 +173,6 @@ namespace RestfulFirebase.Database.Realtime
             return result;
         }
 
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                Stop();
-            }
-            base.Dispose(disposing);
-        }
-
         private void OnNext(object sender, StreamObject streamObject)
         {
             if (IsDisposed)
@@ -213,12 +182,12 @@ namespace RestfulFirebase.Database.Realtime
 
             Next?.Invoke(sender, streamObject);
 
-            var urisToInvoke = new List<string>() { streamObject.Uri };
+            var urisToInvoke = new List<string>() { streamObject.Url };
 
             if (streamObject.Data is null)
             {
                 // Delete all
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Uri, true, true, Query.GetAbsolutePath());
+                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, true, true, streamObject.AbsoluteUrl);
                 foreach (var subData in subDatas)
                 {
                     if (MakeSync(subData, null))
@@ -233,7 +202,7 @@ namespace RestfulFirebase.Database.Realtime
             else if (streamObject.Data is SingleStreamData single)
             {
                 // Delete related
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Uri, false, true, Query.GetAbsolutePath());
+                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, false, true, streamObject.AbsoluteUrl);
                 foreach (var subData in subDatas)
                 {
                     if (MakeSync(subData, null))
@@ -246,7 +215,7 @@ namespace RestfulFirebase.Database.Realtime
                 }
 
                 // Make single
-                var data = App.Database.OfflineDatabase.GetData(LocalDatabase, streamObject.Uri);
+                var data = App.Database.OfflineDatabase.GetData(LocalDatabase, streamObject.Url);
                 if (MakeSync(data, single.Blob))
                 {
                     if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, data.Uri)))
@@ -257,9 +226,9 @@ namespace RestfulFirebase.Database.Realtime
             }
             else if (streamObject.Data is MultiStreamData multi)
             {
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Uri, true, true, Query.GetAbsolutePath());
+                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, true, true, streamObject.AbsoluteUrl);
                 var descendants = multi.GetDescendants();
-                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (UrlUtilities.Combine(streamObject.Uri, i.path), i.blob)));
+                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (UrlUtilities.Combine(streamObject.Url, i.path), i.blob)));
 
                 // Delete related
                 var excluded = subDatas.Where(i => !syncDatas.Any(j => UrlUtilities.Compare(j.path, i.Uri)));
@@ -293,6 +262,45 @@ namespace RestfulFirebase.Database.Realtime
             }
             OnDataChanges(urisToInvoke.ToArray());
             if (!HasFirstStream) HasFirstStream = true;
+        }
+
+        #endregion
+
+        #region RealtimeInstance Members
+
+        /// <inheritdoc/>
+        public override RealtimeInstance Clone()
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            var clone = new RealtimeWire(App, Query, LocalDatabase);
+            clone.SyncOperation.SetContext(this);
+            clone.EvaluateData();
+            Next += clone.OnNext;
+            Disposing += delegate
+            {
+                Next -= clone.OnNext;
+                clone.Dispose();
+            };
+
+            return clone;
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Stop();
+            }
+            base.Dispose(disposing);
         }
 
         #endregion

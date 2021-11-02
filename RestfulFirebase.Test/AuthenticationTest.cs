@@ -1,6 +1,7 @@
-using Playground;
 using RestfulFirebase;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Test.Utilities;
+using RestfulFirebase.Test;
 using Xunit;
 
 namespace AuthenticationTest

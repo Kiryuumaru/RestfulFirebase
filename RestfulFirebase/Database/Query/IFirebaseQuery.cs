@@ -380,6 +380,6 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The absolute path of the query.
         /// </returns>
-        string GetAbsolutePath();
+        string GetAbsoluteUrl();
     }
 }

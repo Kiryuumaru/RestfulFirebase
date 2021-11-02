@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Playground
+namespace RestfulFirebase.Test.Utilities
 {
     public class EncryptTest : ILocalEncryption
     {

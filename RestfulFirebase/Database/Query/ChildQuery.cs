@@ -8,7 +8,13 @@ namespace RestfulFirebase.Database.Query
     /// </summary>
     public class ChildQuery : FirebaseQuery
     {
+        #region Properties
+
         private readonly Func<string> pathFactory;
+
+        #endregion
+
+        #region Initializers
 
         internal ChildQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> pathFactory)
             : base(app, parent)
@@ -19,7 +25,12 @@ namespace RestfulFirebase.Database.Query
         internal ChildQuery(RestfulFirebaseApp app, Func<string> pathFactory)
             : this(app, null, pathFactory)
         {
+
         }
+
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Creates a shallow query that appends shallow=true to the url parameters. This cannot be used with any other filtering parameters.
@@ -99,8 +110,12 @@ namespace RestfulFirebase.Database.Query
             return OrderBy("$priority");
         }
 
+        #endregion
+
+        #region ParameterQuery Members
+
         /// <inheritdoc/>
-        protected override string BuildUrlSegment(FirebaseQuery child)
+        protected override string BuildUrlSegment(IFirebaseQuery child)
         {
             var s = pathFactory();
 
@@ -128,9 +143,11 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        protected override Task<string> BuildUrlSegmentAsync(FirebaseQuery child)
+        protected override Task<string> BuildUrlSegmentAsync(IFirebaseQuery child)
         {
             return Task.FromResult(BuildUrlSegment(child));
         }
+
+        #endregion
     }
 }

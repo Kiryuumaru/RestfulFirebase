@@ -5,7 +5,7 @@ namespace RestfulFirebase.Database.Realtime
     /// <summary>
     /// Event arguments for data evaluated invokes.
     /// </summary>
-    public class DataEvaluatedEventArgs : EventArgs
+    public class SyncChangesEventArgs : EventArgs
     {
         /// <summary>
         /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
@@ -22,7 +22,7 @@ namespace RestfulFirebase.Database.Realtime
         /// </summary>
         public int SyncedDataCount { get; private set; }
 
-        internal DataEvaluatedEventArgs(int totalDataCount, int syncedDataCount)
+        internal SyncChangesEventArgs(int totalDataCount, int syncedDataCount)
         {
             TotalDataCount = totalDataCount;
             SyncedDataCount = syncedDataCount;

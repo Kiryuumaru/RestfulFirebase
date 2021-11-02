@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Utilities;
 using System.Net.Http;
 
 namespace RestfulFirebase.Http

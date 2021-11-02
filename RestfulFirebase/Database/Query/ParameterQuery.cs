@@ -8,8 +8,14 @@ namespace RestfulFirebase.Database.Query
     /// </summary>
     public abstract class ParameterQuery : FirebaseQuery
     {
+        #region Properties
+
         private readonly Func<string> parameterFactory;
         private readonly string separator;
+
+        #endregion
+
+        #region Initializers
 
         private protected ParameterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> parameterFactory)
             : base(app, parent)
@@ -18,17 +24,9 @@ namespace RestfulFirebase.Database.Query
             separator = (Parent is ChildQuery) ? "?" : "&";
         }
 
-        /// <inheritdoc/>
-        protected override string BuildUrlSegment(FirebaseQuery child)
-        {
-            return $"{separator}{parameterFactory()}={BuildUrlParameter()}";
-        }
+        #endregion
 
-        /// <inheritdoc/>
-        protected override async Task<string> BuildUrlSegmentAsync(FirebaseQuery child)
-        {
-            return $"{separator}{parameterFactory()}={await BuildUrlParameterAsync()}";
-        }
+        #region Methods
 
         /// <summary>
         /// Builds the URL parameter of the query.
@@ -390,5 +388,33 @@ namespace RestfulFirebase.Database.Query
         {
             return LimitToLast(() => count);
         }
+
+        #endregion
+
+        #region FirebaseQuery Members
+
+        /// <inheritdoc/>
+        protected override string BuildUrlSegment(IFirebaseQuery child)
+        {
+            return $"{separator}{parameterFactory()}={BuildUrlParameter()}";
+        }
+
+        /// <inheritdoc/>
+        protected override async Task<string> BuildUrlSegmentAsync(IFirebaseQuery child)
+        {
+            return $"{separator}{parameterFactory()}={await BuildUrlParameterAsync()}";
+        }
+
+        #endregion
+
+        #region IFirebaseQuery Members
+
+        /// <inheritdoc/>
+        public override string GetAbsoluteUrl()
+        {
+            return Parent.BuildUrl(this);
+        }
+
+        #endregion
     }
 }

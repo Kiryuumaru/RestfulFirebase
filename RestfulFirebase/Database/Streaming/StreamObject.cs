@@ -1,15 +1,23 @@
-﻿namespace RestfulFirebase.Database.Streaming
+﻿using RestfulFirebase.Utilities;
+
+namespace RestfulFirebase.Database.Streaming
 {
     internal class StreamObject
     {
         public StreamData Data { get; }
 
-        public string Uri { get; }
+        public string AbsoluteUrl { get; }
 
-        public StreamObject(StreamData data, string uri)
+        public string Path { get; }
+
+        public string Url { get; }
+
+        public StreamObject(StreamData data, string absoluteUrl, string path)
         {
             Data = data;
-            Uri = uri;
+            AbsoluteUrl = absoluteUrl;
+            Path = path;
+            Url = path == "/" ? absoluteUrl : UrlUtilities.Combine(absoluteUrl, path.Substring(1));
         }
     }
 }

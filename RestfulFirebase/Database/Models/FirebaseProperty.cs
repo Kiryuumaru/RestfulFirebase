@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace RestfulFirebase.Database.Models
 {
@@ -17,21 +18,6 @@ namespace RestfulFirebase.Database.Models
     public class FirebaseProperty : ObservableProperty, IRealtimeModel
     {
         #region Properties
-
-        /// <inheritdoc/>
-        public RealtimeInstance RealtimeInstance { get; private set; }
-
-        /// <inheritdoc/>
-        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-
-        /// <inheritdoc/>
-        public event EventHandler<WireExceptionEventArgs> WireError;
 
         private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
 
@@ -50,143 +36,6 @@ namespace RestfulFirebase.Database.Models
         #endregion
 
         #region Methods
-
-        /// <inheritdoc/>
-        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
-        }
-
-        /// <inheritdoc/>
-        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            var obj = GetObject();
-
-            try
-            {
-                await attachLock.WaitAsync().ConfigureAwait(false);
-
-                List<Task> tasks = new List<Task>();
-
-                Subscribe(realtimeInstance);
-
-                if (obj is IRealtimeModel model)
-                {
-                    tasks.Add(model.AttachRealtimeAsync(realtimeInstance, invokeSetFirst));
-                }
-                else
-                {
-                    string blob = null;
-                    if (obj is string objBlob)
-                    {
-                        blob = objBlob;
-                    }
-                    else if (obj is null)
-                    {
-                        blob = null;
-                    }
-                    else
-                    {
-                        throw new SerializerNotSupportedException(obj.GetType());
-                    }
-
-                    if (invokeSetFirst)
-                    {
-                        RealtimeInstance.SetBlob(blob);
-                    }
-                    else
-                    {
-                        SetObject(RealtimeInstance.GetBlob());
-                    }
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                attachLock.Release();
-            }
-
-            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-        }
-
-        /// <inheritdoc/>
-        public void DetachRealtime()
-        {
-            if (IsDisposed || !HasAttachedRealtime)
-            {
-                return;
-            }
-
-            if (GetObject() is IRealtimeModel model)
-            {
-                model.DetachRealtime();
-            }
-
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-
-            Unsubscribe();
-
-            OnRealtimeDetached(args);
-        }
-
-        /// <inheritdoc/>
-        public void LoadFromSerializedValue(string serialized, params int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            string decrypted = Cryptography.VigenereCipherDecrypt(serialized, encryptionPattern);
-
-            if (GetObject() is IRealtimeModel model)
-            {
-                model.LoadFromSerializedValue(decrypted);
-            }
-            else
-            {
-                if (SetObject(decrypted))
-                {
-                    if (HasAttachedRealtime)
-                    {
-                        RealtimeInstance.SetBlob(decrypted);
-                    }
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public string GenerateSerializedValue(params int[] encryptionPattern)
-        {
-            if (IsDisposed)
-            {
-                return default;
-            }
-
-            string serialized = null;
-
-            object obj = GetObject();
-            if (obj is IRealtimeModel model)
-            {
-                serialized = model.GenerateSerializedValue();
-            }
-            else if (obj is string value)
-            {
-                serialized = value;
-            }
-
-            return Cryptography.VigenereCipherEncrypt(serialized, encryptionPattern);
-        }
 
         /// <summary>
         /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
@@ -242,140 +91,12 @@ namespace RestfulFirebase.Database.Models
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
         /// </param>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
         public async Task<bool> WaitForSynced(bool cancelOnError = false, CancellationToken? cancellationToken = null)
         {
             return await RealtimeInstance.WaitForSynced(cancelOnError, cancellationToken);
-        }
-
-        /// <inheritdoc/>
-        /// <exception cref="SerializerNotSupportedException">
-        /// Occurs when the object has no supported serializer.
-        /// </exception>
-        public override bool SetValue<T>(T value)
-        {
-            if (IsDisposed)
-            {
-                return false;
-            }
-
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
-            {
-                if (value is IRealtimeModel model)
-                {
-                    if (HasAttachedRealtime)
-                    {
-                        model.AttachRealtime(RealtimeInstance, true);
-                    }
-                }
-
-                return SetObject(value);
-            }
-            else
-            {
-                var blob = Serializer.Serialize(value);
-
-                if (SetObject(blob))
-                {
-                    if (HasAttachedRealtime)
-                    {
-                        RealtimeInstance.SetBlob(blob);
-                    }
-
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        /// <exception cref="SerializerNotSupportedException">
-        /// Occurs when the object has no supported serializer.
-        /// </exception>
-        public override T GetValue<T>(T defaultValue = default)
-        {
-            if (IsDisposed)
-            {
-                return defaultValue;
-            }
-
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
-            {
-                return base.GetValue(defaultValue);
-            }
-            else
-            {
-                var obj = GetObject();
-
-                if (obj is string objBlob)
-                {
-                    return Serializer.Deserialize<T>(objBlob, defaultValue);
-                }
-                else if (obj is null)
-                {
-                    return defaultValue;
-                }
-                else
-                {
-                    throw new SerializerNotSupportedException(obj.GetType());
-                }
-
-            }
-        }
-
-        /// <inheritdoc/>
-        public override bool SetNull()
-        {
-            if (IsDisposed)
-            {
-                return false;
-            }
-
-            if (GetObject() is IRealtimeModel)
-            {
-                return base.SetNull();
-            }
-            else
-            {
-                if (base.SetNull())
-                {
-                    if (HasAttachedRealtime)
-                    {
-                        RealtimeInstance.SetBlob(null);
-                    }
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                var obj = GetObject();
-
-                DetachRealtime();
-                SetObject(null);
-
-                if (obj is IDisposable model)
-                {
-                    model.Dispose();
-                }
-            }
-            base.Dispose(disposing);
         }
 
         /// <summary>
@@ -473,9 +194,9 @@ namespace RestfulFirebase.Database.Models
                 try
                 {
                     await attachLock.WaitAsync().ConfigureAwait(false);
-                    if (!(GetObject() is IRealtimeModel))
+                    if (!(base.GetObject() is IRealtimeModel))
                     {
-                        SetObject(RealtimeInstance.GetBlob());
+                        base.SetObject(RealtimeInstance.GetBlob(), typeof(string));
                     }
                 }
                 catch
@@ -510,6 +231,267 @@ namespace RestfulFirebase.Database.Models
         }
 
         #endregion
+
+        #region ObservableProperty Members
+
+        /// <summary>
+        /// Sets the object of the property.
+        /// </summary>
+        /// <param name="obj">
+        /// The value object of the property.
+        /// </param>
+        /// <param name="type">
+        /// The underlying type of the object.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the property has changed; otherwise <c>false</c>.
+        /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
+        protected override bool SetObject(object obj, Type type)
+        {
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            if (typeof(IRealtimeModel).IsAssignableFrom(type))
+            {
+                if (obj is IRealtimeModel model)
+                {
+                    if (HasAttachedRealtime)
+                    {
+                        model.AttachRealtime(RealtimeInstance, true);
+                    }
+                }
+
+                return base.SetObject(obj, type);
+            }
+            else
+            {
+                string blob = Serializer.Serialize(obj, type);
+
+                if (base.SetObject(blob, typeof(string)))
+                {
+                    if (HasAttachedRealtime)
+                    {
+                        RealtimeInstance.SetBlob(blob);
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the value object of the property.
+        /// </summary>
+        /// <returns>
+        /// The value object of the property.
+        /// </returns>
+        /// <exception cref="SerializerNotSupportedException">
+        /// Occurs when the object has no supported serializer.
+        /// </exception>
+        protected override object GetObject(Type type = null)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            object obj = base.GetObject(type);
+
+            if (type == null || typeof(IRealtimeModel).IsAssignableFrom(type))
+            {
+                if (obj is IRealtimeModel)
+                {
+                    return obj;
+                }
+            }
+
+            if (obj is string objBlob)
+            {
+                return Serializer.Deserialize(objBlob, type, default);
+            }
+            else if (obj is null)
+            {
+                return default;
+            }
+            else
+            {
+                throw new SerializerNotSupportedException(obj.GetType());
+            }
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                var obj = base.GetObject();
+
+                DetachRealtime();
+
+                if (obj is IDisposable model)
+                {
+                    model.Dispose();
+                }
+
+                base.SetObject(null);
+            }
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region IRealtimeModel Members
+
+        /// <inheritdoc/>
+        public RealtimeInstance RealtimeInstance { get; private set; }
+
+        /// <inheritdoc/>
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireExceptionEventArgs> WireError;
+
+        /// <inheritdoc/>
+        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        /// <inheritdoc/>
+        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            var obj = base.GetObject();
+
+            try
+            {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
+                List<Task> tasks = new List<Task>();
+
+                Subscribe(realtimeInstance);
+
+                if (obj is IRealtimeModel model)
+                {
+                    tasks.Add(model.AttachRealtimeAsync(realtimeInstance, invokeSetFirst));
+                }
+                else
+                {
+                    string blob = null;
+                    if (obj is string objBlob)
+                    {
+                        blob = objBlob;
+                    }
+                    else if (obj is null)
+                    {
+                        blob = null;
+                    }
+                    else
+                    {
+                        throw new SerializerNotSupportedException(obj.GetType());
+                    }
+
+                    if (invokeSetFirst)
+                    {
+                        RealtimeInstance.SetBlob(blob);
+                    }
+                    else
+                    {
+                        base.SetObject(RealtimeInstance.GetBlob(), typeof(string));
+                    }
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                attachLock.Release();
+            }
+
+            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+        }
+
+        /// <inheritdoc/>
+        public void DetachRealtime()
+        {
+            if (IsDisposed || !HasAttachedRealtime)
+            {
+                return;
+            }
+
+            if (base.GetObject() is IRealtimeModel model)
+            {
+                model.DetachRealtime();
+            }
+
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+
+            Unsubscribe();
+
+            OnRealtimeDetached(args);
+        }
+
+        #endregion
+
+        #region INullableObject Members
+
+        /// <inheritdoc/>
+        public override bool SetNull()
+        {
+            if (IsDisposed)
+            {
+                return false;
+            }
+
+            if (base.GetObject() is IRealtimeModel)
+            {
+                return base.SetNull();
+            }
+            else
+            {
+                if (base.SetNull())
+                {
+                    if (HasAttachedRealtime)
+                    {
+                        RealtimeInstance.SetBlob(null);
+                    }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        #endregion
     }
 
     /// <inheritdoc/>
@@ -520,7 +502,7 @@ namespace RestfulFirebase.Database.Models
         /// <summary>
         /// Gets the value of the property.
         /// </summary>
-        public T Value
+        public new T Value
         {
             get => base.GetValue<T>(default);
             set => base.SetValue(value);
@@ -541,20 +523,6 @@ namespace RestfulFirebase.Database.Models
             if (!Serializer.CanSerialize<T>())
             {
                 throw new SerializerNotSupportedException(typeof(T));
-            }
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <inheritdoc/>
-        protected override void OnPropertyChanged(PropertyChangedEventArgs args)
-        {
-            base.OnPropertyChanged(args);
-            if (args.PropertyName == nameof(Property))
-            {
-                base.OnPropertyChanged(new PropertyChangedEventArgs(nameof(Value)));
             }
         }
 
