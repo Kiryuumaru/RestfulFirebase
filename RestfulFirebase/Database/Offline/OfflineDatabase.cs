@@ -75,9 +75,10 @@ namespace RestfulFirebase.Database.Offline
             DataHolderCache cache = dataHolderCaches.GetOrAdd(key, _ =>
             {
                 dataHolderCachesCount++;
-                return new DataHolderCache(new DataHolder(App, uri, localDatabase));
+                DataHolderCache newCache = new DataHolderCache(new DataHolder(App, uri, localDatabase));
+                key.Update(newCache);
+                return newCache;
             });
-            key.Update(cache);
 
             while (dataHolderCachesCount != 0 && dataHolderCachesCount > App.Config.DatabaseInRuntimeDataCache)
             {
@@ -295,13 +296,14 @@ namespace RestfulFirebase.Database.Offline
             {
                 isNew = true;
                 dataHolderCachesCount++;
-                return new DataHolderCache(dataHolder);
+                DataHolderCache newCache = new DataHolderCache(dataHolder);
+                key.Update(newCache);
+                return newCache;
             });
             if (!isNew)
             {
                 cache.Ticks = DateTime.UtcNow.Ticks;
             }
-            key.Update(cache);
 
             while (dataHolderCachesCount != 0 && dataHolderCachesCount > App.Config.DatabaseInRuntimeDataCache)
             {
