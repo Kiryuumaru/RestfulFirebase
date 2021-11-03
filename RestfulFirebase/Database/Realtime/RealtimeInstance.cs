@@ -49,11 +49,6 @@ namespace RestfulFirebase.Database.Realtime
         public ILocalDatabase LocalDatabase { get; }
 
         /// <summary>
-        /// The childrens <see cref="RealtimeInstance"/> of the instance.
-        /// </summary>
-        public ConcurrentDictionary<string, RealtimeInstance> Childrens { get; }
-
-        /// <summary>
         /// Gets the total data cached of the instance.
         /// </summary>
         public int TotalDataCount { get; private set; }
@@ -122,7 +117,6 @@ namespace RestfulFirebase.Database.Realtime
             App = app;
             Query = query;
             LocalDatabase = localDatabase;
-            Childrens = new ConcurrentDictionary<string, RealtimeInstance>();
 
             EvaluateDataQueue();
         }

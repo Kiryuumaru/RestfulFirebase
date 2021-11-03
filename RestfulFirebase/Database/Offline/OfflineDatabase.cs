@@ -72,13 +72,17 @@ namespace RestfulFirebase.Database.Offline
             uri = uri.EndsWith("/") ? uri : uri + "/";
 
             DataHolderCacheKey key = new DataHolderCacheKey(uri, localDatabase);
+            DataHolderCache newCache = null;
             DataHolderCache cache = dataHolderCaches.GetOrAdd(key, _ =>
             {
-                dataHolderCachesCount++;
-                DataHolderCache newCache = new DataHolderCache(new DataHolder(App, uri, localDatabase));
+                newCache = new DataHolderCache(new DataHolder(App, uri, localDatabase));
                 key.Update(newCache);
                 return newCache;
             });
+            if (newCache == cache)
+            {
+                dataHolderCachesCount++;
+            }
 
             while (dataHolderCachesCount != 0 && dataHolderCachesCount > App.Config.DatabaseInRuntimeDataCache)
             {
@@ -292,14 +296,18 @@ namespace RestfulFirebase.Database.Offline
         {
             bool isNew = false;
             DataHolderCacheKey key = new DataHolderCacheKey(dataHolder.Uri, dataHolder.LocalDatabase);
+            DataHolderCache newCache = null;
             DataHolderCache cache = dataHolderCaches.GetOrAdd(key, _ =>
             {
                 isNew = true;
-                dataHolderCachesCount++;
-                DataHolderCache newCache = new DataHolderCache(dataHolder);
+                newCache = new DataHolderCache(dataHolder);
                 key.Update(newCache);
                 return newCache;
             });
+            if (newCache == cache)
+            {
+                dataHolderCachesCount++;
+            }
             if (!isNew)
             {
                 cache.Ticks = DateTime.UtcNow.Ticks;
@@ -469,7 +477,7 @@ namespace RestfulFirebase.Database.Offline
             }
         }
 
-        private struct DataHolderCacheKey
+        private class DataHolderCacheKey
         {
             public string Url { get => dataHolderCache?.Holder?.Uri ?? url; }
             public ILocalDatabase LocalDatabase { get => dataHolderCache?.Holder?.LocalDatabase ?? localDatabase; }
@@ -507,6 +515,11 @@ namespace RestfulFirebase.Database.Offline
             public override int GetHashCode()
             {
                 return -1887812163 + EqualityComparer<ILocalDatabase>.Default.GetHashCode(LocalDatabase);
+            }
+
+            public override string ToString()
+            {
+                return Url;
             }
         }
 
