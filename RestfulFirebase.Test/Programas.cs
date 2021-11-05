@@ -1,7 +1,6 @@
 ﻿using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
 using RestfulFirebase.Database.Query;
-using RestfulFirebase.Database.Offline;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -268,7 +267,8 @@ namespace RestfulFirebaseTestwd
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -291,7 +291,7 @@ namespace RestfulFirebaseTestwd
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        subWire.SetBlob(null);
+                        subWire.SetValue(null);
                     }
                     else
                     {
@@ -302,7 +302,7 @@ namespace RestfulFirebaseTestwd
                         {
                             subWire = subWire.Child(separated[i]);
                         }
-                        subWire.SetBlob(data);
+                        subWire.SetValue(data);
                     }
                 }
                 else if (line == "view")
@@ -321,7 +321,8 @@ namespace RestfulFirebaseTestwd
             var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Main Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
             {
@@ -330,7 +331,8 @@ namespace RestfulFirebaseTestwd
             var subWire1 = wire.Child("sub1");
             subWire1.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub1 Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             subWire1.Error += (s, e) =>
             {
@@ -339,7 +341,8 @@ namespace RestfulFirebaseTestwd
             var subWire2 = wire.Child("sub2");
             subWire2.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sub2 Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount + " Path: " + e.Path);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             subWire2.Error += (s, e) =>
             {
@@ -365,7 +368,7 @@ namespace RestfulFirebaseTestwd
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(null);
+                            subWire.SetValue(null);
                         }
                         else
                         {
@@ -376,7 +379,7 @@ namespace RestfulFirebaseTestwd
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(data);
+                            subWire.SetValue(data);
                         }
                     }
                 }
@@ -395,7 +398,7 @@ namespace RestfulFirebaseTestwd
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(null);
+                            subWire.SetValue(null);
                         }
                         else
                         {
@@ -406,7 +409,7 @@ namespace RestfulFirebaseTestwd
                             {
                                 subWire = subWire.Child(separated[i]);
                             }
-                            subWire.SetBlob(data);
+                            subWire.SetValue(data);
                         }
                     }
                 }
@@ -753,7 +756,8 @@ namespace RestfulFirebaseTestwd
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             while (true)
             {
@@ -775,12 +779,6 @@ namespace RestfulFirebaseTestwd
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
-                Console.WriteLine("Count: " + dict.Keys.Count);
-            };
 
             Console.WriteLine("START");
             Console.ReadLine();
@@ -814,7 +812,8 @@ namespace RestfulFirebaseTestwd
             wire.SubModel(dict);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
 
             string lin11e = Console.ReadLine();
@@ -844,12 +843,6 @@ namespace RestfulFirebaseTestwd
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
-                Console.WriteLine("Count: " + dict.Keys.Count);
-            };
 
             Console.WriteLine("START");
             Console.ReadLine();
@@ -930,12 +923,6 @@ namespace RestfulFirebaseTestwd
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.Start();
             wire.SubModel(dict);
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + e.TotalDataCount + " Sync: " + e.SyncedDataCount);
-                Console.WriteLine("Count: " + dict.Keys.Count);
-            };
 
             string lin11e = Console.ReadLine();
 
@@ -964,7 +951,8 @@ namespace RestfulFirebaseTestwd
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             wire.Start();
             wire.SubModel(dict);
@@ -997,7 +985,8 @@ namespace RestfulFirebaseTestwd
             wire.PutModel(obj);
             wire.DataChanges += (s, e) =>
             {
-                Console.WriteLine("Sync: " + wire.SyncedDataCount + "/" + wire.TotalDataCount);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
 
             await wire.WaitForSynced();
@@ -1090,11 +1079,6 @@ namespace RestfulFirebaseTestwd
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-            };
             wire.Start();
 
             wire.PutModel(obj);
@@ -1158,11 +1142,6 @@ namespace RestfulFirebaseTestwd
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-            };
             wire.Start();
 
             wire.PutModel(obj);
@@ -1172,8 +1151,8 @@ namespace RestfulFirebaseTestwd
             while (lin11e != "q")
             {
                 lin11e = Console.ReadLine();
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total);
             }
 
             obj.Test = "cscs";
@@ -1235,11 +1214,6 @@ namespace RestfulFirebaseTestwd
             };
 
             var wire = userNode.Child("testing").Child("mock").AsRealtimeWire();
-            wire.SyncChanges += (s, e) =>
-            {
-                Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
-            };
             wire.Start();
 
             Console.WriteLine("STARTSUB");
@@ -1317,8 +1291,8 @@ namespace RestfulFirebaseTestwd
                     while (toRun)
                     {
                         toRun = false;
-                        Console.WriteLine("Writes: " + app.Database.PendingWrites);
-                        Console.WriteLine("Total: " + wire.TotalDataCount + " Sync: " + wire.SyncedDataCount);
+                        (int total, int sycned) = wire.GetDataCount();
+                        Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
                         await Task.Delay(500);
                     }
                     isRun = false;

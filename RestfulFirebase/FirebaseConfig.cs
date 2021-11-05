@@ -161,24 +161,6 @@ namespace RestfulFirebase
         }
 
         /// <summary>
-        /// Gets or sets the firebase realtime database max concurrent writes.
-        /// </summary>
-        public int DatabaseMaxConcurrentWrites
-        {
-            get => GetProperty<int>(10);
-            set => SetProperty(value);
-        }
-
-        /// <summary>
-        /// Gets or sets the firebase realtime database in-runtime data cache.
-        /// </summary>
-        public int DatabaseInRuntimeDataCache
-        {
-            get => GetProperty<int>(10000);
-            set => SetProperty(value);
-        }
-
-        /// <summary>
         /// Gets or sets whether the <see cref="IEnumerable{T}"/> types will be serialized as blobs.
         /// </summary>
         public bool DatabaseSerializeEnumerableAsBlobs

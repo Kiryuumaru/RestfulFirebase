@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Database.Query;
+﻿using Newtonsoft.Json.Linq;
+using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
@@ -55,8 +56,11 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            string uri = Query.GetAbsoluteUrl();
-            subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(e.Url, e.Exception)).Run();
+            if (subscription == null)
+            {
+                string uri = Query.GetAbsoluteUrl();
+                subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(e.Url, e.Exception)).Run();
+            }
         }
 
         /// <summary>
@@ -69,8 +73,11 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            subscription?.Dispose();
-            subscription = null;
+            if (subscription != null)
+            {
+                subscription.Dispose();
+                subscription = null;
+            }
         }
 
         /// <summary>
@@ -130,7 +137,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task<bool> WaitForFirstStream(bool cancelOnError = false, CancellationToken? cancellationToken = null)
+        public async Task<bool> WaitForFirstStream(bool cancelOnError = true, CancellationToken? cancellationToken = null)
         {
             if (IsDisposed)
             {
@@ -154,11 +161,11 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         if (cancellationToken.HasValue)
                         {
-                            await Task.Delay(500, cancellationToken.Value).ConfigureAwait(false);
+                            await Task.Delay(App.Config.DatabaseRetryDelay, cancellationToken.Value).ConfigureAwait(false);
                         }
                         else
                         {
-                            await Task.Delay(500).ConfigureAwait(false);
+                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
                         }
                     }
                     catch { }
@@ -182,86 +189,39 @@ namespace RestfulFirebase.Database.Realtime
 
             Next?.Invoke(sender, streamObject);
 
-            var urisToInvoke = new List<string>() { streamObject.Url };
+            string[] path = UrlUtilities.Separate(streamObject.Path);
 
-            if (streamObject.Data is null)
+            if (streamObject.JToken.Type == JTokenType.Null)
             {
-                // Delete all
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, true, true, streamObject.AbsoluteUrl);
-                foreach (var subData in subDatas)
-                {
-                    if (MakeSync(subData, null))
-                    {
-                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
-                        {
-                            urisToInvoke.Add(subData.Uri);
-                        }
-                    }
-                }
+                MakeSync(default(string), path);
             }
-            else if (streamObject.Data is SingleStreamData single)
+            else if (streamObject.JToken is JValue jValue)
             {
-                // Delete related
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, false, true, streamObject.AbsoluteUrl);
-                foreach (var subData in subDatas)
-                {
-                    if (MakeSync(subData, null))
-                    {
-                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
-                        {
-                            urisToInvoke.Add(subData.Uri);
-                        }
-                    }
-                }
-
-                // Make single
-                var data = App.Database.OfflineDatabase.GetData(LocalDatabase, streamObject.Url);
-                if (MakeSync(data, single.Blob))
-                {
-                    if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, data.Uri)))
-                    {
-                        urisToInvoke.Add(data.Uri);
-                    }
-                }
+                MakeSync(jValue.ToString(), path);
             }
-            else if (streamObject.Data is MultiStreamData multi)
+            else if (streamObject.JToken is JObject || streamObject.JToken is JArray)
             {
-                var subDatas = App.Database.OfflineDatabase.GetDatas(LocalDatabase, streamObject.Url, true, true, streamObject.AbsoluteUrl);
-                var descendants = multi.GetDescendants();
-                var syncDatas = new List<(string path, string blob)>(descendants.Select(i => (UrlUtilities.Combine(streamObject.Url, i.path), i.blob)));
-
-                // Delete related
-                var excluded = subDatas.Where(i => !syncDatas.Any(j => UrlUtilities.Compare(j.path, i.Uri)));
-                foreach (var subData in excluded)
+                IDictionary<string[], object> pairs = streamObject.JToken.GetFlatHierarchy();
+                Dictionary<string[], string> values = new Dictionary<string[], string>(pairs.Count, PathEqualityComparer.Instance);
+                if (path.Length == 0)
                 {
-                    if (MakeSync(subData, null))
+                    foreach (KeyValuePair<string[], object> pair in pairs)
                     {
-                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
-                        {
-                            urisToInvoke.Add(subData.Uri);
-                        }
+                        values.Add(pair.Key, pair.Value.ToString());
                     }
                 }
-
-                // Make multi
-                foreach (var syncData in syncDatas)
+                else
                 {
-                    var subData = subDatas.FirstOrDefault(i => i.Uri == syncData.path);
-                    if (subData == null)
+                    foreach (KeyValuePair<string[], object> pair in pairs)
                     {
-                        subData = App.Database.OfflineDatabase.GetData(LocalDatabase, syncData.path);
-                    }
-                    if (MakeSync(subData, syncData.blob))
-                    {
-                        if (!urisToInvoke.Any(i => UrlUtilities.Compare(i, subData.Uri)))
-                        {
-                            urisToInvoke.Add(subData.Uri);
-                        }
+                        string[] subPath = new string[pair.Key.Length + path.Length];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        Array.Copy(pair.Key, 0, subPath, path.Length - 1, pair.Key.Length);
+                        values.Add(subPath, pair.Value.ToString());
                     }
                 }
+                MakeSync(values, path);
             }
-            OnDataChanges(urisToInvoke.ToArray());
-            if (!HasFirstStream) HasFirstStream = true;
         }
 
         #endregion
@@ -278,7 +238,7 @@ namespace RestfulFirebase.Database.Realtime
 
             var clone = new RealtimeWire(App, Query, LocalDatabase);
             clone.SyncOperation.SetContext(this);
-            clone.EvaluateData();
+
             Next += clone.OnNext;
             Disposing += delegate
             {

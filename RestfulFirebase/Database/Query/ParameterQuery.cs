@@ -29,22 +29,6 @@ namespace RestfulFirebase.Database.Query
         #region Methods
 
         /// <summary>
-        /// Builds the URL parameter of the query.
-        /// </summary>
-        /// <returns>
-        /// The built URL parameter of the query.
-        /// </returns>
-        protected abstract string BuildUrlParameter();
-
-        /// <summary>
-        /// Builds the URL parameter of the query.
-        /// </summary>
-        /// <returns>
-        /// The <see cref="Task"/> that represents the built url parameter of the query.
-        /// </returns>
-        protected abstract Task<string> BuildUrlParameterAsync();
-
-        /// <summary>
         /// Instructs firebase to send data greater or equal to the <paramref name="valueFactory"/>. This must be preceded by an OrderBy query.
         /// </summary>
         /// <param name="valueFactory">
@@ -388,6 +372,22 @@ namespace RestfulFirebase.Database.Query
         {
             return LimitToLast(() => count);
         }
+
+        /// <summary>
+        /// Builds the URL parameter of the query.
+        /// </summary>
+        /// <returns>
+        /// The built URL parameter of the query.
+        /// </returns>
+        protected abstract string BuildUrlParameter();
+
+        /// <summary>
+        /// Builds the URL parameter of the query.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="Task"/> that represents the built url parameter of the query.
+        /// </returns>
+        protected abstract Task<string> BuildUrlParameterAsync();
 
         #endregion
 

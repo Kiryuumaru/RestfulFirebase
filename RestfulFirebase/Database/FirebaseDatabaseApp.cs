@@ -1,5 +1,4 @@
 ﻿using ObservableHelpers;
-using RestfulFirebase.Database.Offline;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Utilities;
 using RestfulFirebase.Local;
@@ -18,12 +17,7 @@ namespace RestfulFirebase.Database
         /// <inheritdoc/>
         public RestfulFirebaseApp App { get; private set; }
 
-        /// <summary>
-        /// Gets the pending write tasks count on syncer.
-        /// </summary>
-        public int PendingWrites { get => OfflineDatabase.WriteTaskCount; }
-
-        internal OfflineDatabase OfflineDatabase { get; private set; }
+        internal const string OfflineDatabaseLocalIndicator = "db";
 
         #endregion
 
@@ -34,7 +28,6 @@ namespace RestfulFirebase.Database
             SyncOperation.SetContext(app);
 
             App = app;
-            OfflineDatabase = new OfflineDatabase(app);
         }
 
         #endregion
@@ -59,7 +52,7 @@ namespace RestfulFirebase.Database
             {
                 throw new ArgumentNullException(nameof(resourceName));
             }
-            return new ChildQuery(App, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceName));
+            return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceName));
         }
 
         /// <summary>
@@ -70,17 +63,7 @@ namespace RestfulFirebase.Database
         /// </param>
         public void Flush(ILocalDatabase localDatabase = default)
         {
-            OfflineDatabase.Flush(localDatabase ?? App.Config.LocalDatabase);
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                OfflineDatabase?.Dispose();
-            }
-            base.Dispose(disposing);
+            App.LocalDatabase.InternalDelete(localDatabase, new string[] { OfflineDatabaseLocalIndicator });
         }
 
         #endregion

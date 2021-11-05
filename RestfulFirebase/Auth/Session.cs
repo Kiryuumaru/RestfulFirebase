@@ -784,12 +784,12 @@ namespace RestfulFirebase.Auth
             PhotoUrl = default;
             PhoneNumber = default;
 
-            App.LocalDatabase.Delete(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, Root);
+            App.LocalDatabase.InternalDelete(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
         }
 
         internal void Fetch()
         {
-            var auth = App.LocalDatabase.Get(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, Root);
+            var auth = App.LocalDatabase.InternalGetValue(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
 
             FirebaseToken = BlobUtilities.GetValue(auth, "tok");
             RefreshToken = BlobUtilities.GetValue(auth, "ref");
@@ -824,7 +824,7 @@ namespace RestfulFirebase.Auth
             auth = BlobUtilities.SetValue(auth, "purl", PhotoUrl);
             auth = BlobUtilities.SetValue(auth, "pnum", PhoneNumber);
 
-            App.LocalDatabase.Set(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, Root, auth);
+            App.LocalDatabase.InternalSetValue(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, auth, new string[] { Root });
         }
 
         private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

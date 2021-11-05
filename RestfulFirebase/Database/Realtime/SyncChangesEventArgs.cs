@@ -15,12 +15,12 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Gets the total data cached of the instance.
         /// </summary>
-        public int TotalDataCount { get; private set; }
+        public int TotalDataCount { get; }
 
         /// <summary>
         /// Gets the total synced data cached of node instance.
         /// </summary>
-        public int SyncedDataCount { get; private set; }
+        public int SyncedDataCount { get; }
 
         internal SyncChangesEventArgs(int totalDataCount, int syncedDataCount)
         {

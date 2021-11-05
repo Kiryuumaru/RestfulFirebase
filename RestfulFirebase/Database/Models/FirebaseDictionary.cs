@@ -6,18 +6,19 @@ using System.Threading.Tasks;
 using ObservableHelpers;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Local;
 using RestfulFirebase.Serializers;
 using RestfulFirebase.Utilities;
 
 namespace RestfulFirebase.Database.Models
 {
     /// <summary>
-    /// Provides an observable model for the firebase realtime instance for an observable dictionary.
+    /// Provides an observable model <see cref="ObservableDictionary{TKey, TValue}"/> for the <see cref="RestfulFirebase.Database.Realtime.RealtimeInstance"/>.
     /// </summary>
     /// <typeparam name="T">
     /// The undelying type of the dictionary item value.
     /// </typeparam>
-    public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IRealtimeModel
+    public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalRealtimeModel
     {
         #region Properties
 
@@ -35,14 +36,14 @@ namespace RestfulFirebase.Database.Models
         /// Creates new instance of <see cref="FirebaseDictionary{T}"/> class.
         /// </summary>
         /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
-        /// Throws when cascade <see cref="IRealtimeModel"/> type <typeparamref name="T"/> has not provided with item initializer and no parameterless constructor.
+        /// Throws when cascade <see cref="IInternalRealtimeModel"/> type <typeparamref name="T"/> has not provided with item initializer and no parameterless constructor.
         /// </exception>
         /// <exception cref="SerializerNotSupportedException">
         /// Throws when <typeparamref name="T"/> has no supported serializer.
         /// </exception>
         public FirebaseDictionary()
         {
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            if (typeof(IInternalRealtimeModel).IsAssignableFrom(typeof(T)))
             {
                 if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
                 {
@@ -79,7 +80,7 @@ namespace RestfulFirebase.Database.Models
                 throw new ArgumentNullException(nameof(itemInitializer));
             }
             this.itemInitializer = itemInitializer;
-            if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+            if (typeof(IInternalRealtimeModel).IsAssignableFrom(typeof(T)))
             {
                 isCascadeRealtimeItems = true;
             }
@@ -115,7 +116,7 @@ namespace RestfulFirebase.Database.Models
 
             if (itemInitializer == null)
             {
-                return (T)Activator.CreateInstance(typeof(T));
+                return Activator.CreateInstance<T>();
             }
             else
             {
@@ -162,73 +163,225 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (value is IRealtimeModel model)
+            if (value is IInternalRealtimeModel model)
             {
                 model.SyncOperation.SetContext(this);
 
                 if (invokeSetFirst)
                 {
-                    await RealtimeInstance.Child(key, false).PutModelAsync(model);
+                    await RealtimeInstance.Child(key).PutModelAsync(model);
                 }
                 else
                 {
-                    await RealtimeInstance.Child(key, false).SubModelAsync(model);
+                    await RealtimeInstance.Child(key).SubModelAsync(model);
                 }
             }
             else
             {
-                void setBlob()
-                {
-                    Task.Run(delegate
-                    {
-                        RealtimeInstance.Child(key, false).SetBlob(Serializer.Serialize(value));
-                    }).ConfigureAwait(false);
-                }
-                setBlob();
+                RealtimeInstance.Child(key).SetValue(Serializer.Serialize(value));
             }
         }
 
+        #endregion
 
-        /// <summary>
-        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
+        #region ObservableCollection<T> Members
+
+        /// <inheritdoc/>
+        protected override bool InternalClearItems(out int lastCount)
         {
-            ContextSend(delegate
+            if (base.InternalClearItems(out lastCount))
             {
-                RealtimeAttached?.Invoke(this, args);
-            });
+                Task.Run(() => RemoveFromWire(this.ToList()));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
-        /// <summary>
-        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
+        /// <inheritdoc/>
+        protected override bool InternalInsertItems(int index, IEnumerable<KeyValuePair<string, T>> items, out int lastCount)
         {
-            ContextSend(delegate
+            if (base.InternalInsertItems(index, items, out lastCount))
             {
-                RealtimeDetached?.Invoke(this, args);
-            });
+                Task.Run(() => AddToWire(items));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
-        /// <summary>
-        /// Invokes <see cref="WireError"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnWireError(WireExceptionEventArgs args)
+        /// <inheritdoc/>
+        protected override bool InternalRemoveItems(int index, int count, out IEnumerable<KeyValuePair<string, T>> oldItems)
         {
-            ContextPost(delegate
+            if (base.InternalRemoveItems(index, count, out oldItems))
             {
-                WireError?.Invoke(this, args);
-            });
+                IEnumerable<KeyValuePair<string, T>> proxy = oldItems;
+                Task.Run(() => RemoveFromWire(proxy));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override bool InternalSetItem(int index, KeyValuePair<string, T> item, out KeyValuePair<string, T> originalItem)
+        {
+            if (base.InternalSetItem(index, item, out originalItem))
+            {
+                Task.Run(() => AddToWire(new KeyValuePair<string, T>[] { item }));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private void AddToWire(IEnumerable<KeyValuePair<string, T>> items)
+        {
+            if (HasAttachedRealtime)
+            {
+                foreach (var item in items)
+                {
+                    WireValue(item.Key, item.Value, true);
+                }
+            }
+        }
+
+        private void RemoveFromWire(IEnumerable<KeyValuePair<string, T>> items)
+        {
+            if (HasAttachedRealtime)
+            {
+                foreach (var item in items)
+                {
+                    if (item.Value is IInternalRealtimeModel model)
+                    {
+                        if (!model.IsNull())
+                        {
+                            model.SetNull();
+                        }
+                        model.Dispose();
+                    }
+                    else
+                    {
+                        RealtimeInstance?.SetValue(null, item.Key);
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (isCascadeRealtimeItems)
+                {
+                    foreach (var item in this)
+                    {
+                        (item.Value as IInternalRealtimeModel).Dispose();
+                    }
+                }
+                (this as IInternalRealtimeModel).DetachRealtime();
+            }
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region IInternalRealtimeModel Members
+
+        async void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            await (this as IInternalRealtimeModel).AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+        }
+
+        async Task IInternalRealtimeModel.AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
+                List<Task> tasks = new List<Task>();
+
+                Subscribe(realtimeInstance);
+
+                List<string> subPaths = new List<string>();
+                //foreach (var path in RealtimeInstance.GetSubPaths())
+                //{
+                //    int keyLastIndex = path.IndexOf('/');
+                //    string key = keyLastIndex == -1 ? path : path.Substring(0, keyLastIndex);
+                //    subPaths.Add(key);
+                //}
+
+                foreach (var obj in this)
+                {
+                    tasks.Add(WireValueAsync(obj.Key, obj.Value, invokeSetFirst));
+                    subPaths.RemoveAll(i => i == obj.Key);
+                }
+
+                foreach (var path in subPaths)
+                {
+                    if (isCascadeRealtimeItems)
+                    {
+                        TryAdd(path, _ =>
+                        {
+                            T item = ObjectFactory(path);
+                            tasks.Add(WireValueAsync(path, item, false));
+                            return item;
+                        });
+                    }
+                    else
+                    {
+                        AddOrUpdate(path, _ => Serializer.Deserialize<T>(RealtimeInstance.GetValue(path)));
+                    }
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            finally
+            {
+                attachLock.Release();
+            }
+
+            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+        }
+
+        void IInternalRealtimeModel.DetachRealtime()
+        {
+            if (IsDisposed || !HasAttachedRealtime)
+            {
+                return;
+            }
+
+            if (isCascadeRealtimeItems)
+            {
+                foreach (var item in this.ToList())
+                {
+                    (item.Value as IInternalRealtimeModel).DetachRealtime();
+                }
+            }
+
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+
+            Unsubscribe();
+
+            OnRealtimeDetached(args);
         }
 
         private void Subscribe(RealtimeInstance realtimeInstance)
@@ -277,57 +430,48 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (!string.IsNullOrEmpty(e.Path))
-            {
-                var separated = UrlUtilities.Separate(e.Path);
-                var key = separated[0];
+            //if (string.IsNullOrEmpty(e.Path))
+            //{
+            //    return;
+            //}
 
-                try
-                {
-                    await attachLock.WaitAsync().ConfigureAwait(false);
+            //int keyLastIndex = e.Path.IndexOf('/');
+            //string key = keyLastIndex == -1 ? e.Path : e.Path.Substring(0, keyLastIndex);
 
-                    KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
-                    if (RealtimeInstance.HasChild(key))
-                    {
-                        T item = default;
-                        if (isCascadeRealtimeItems)
-                        {
-                            if (obj.Value != null)
-                            {
-                                return;
-                            }
-                            item = ObjectFactory(key);
-                            if (item == null)
-                            {
-                                return;
-                            }
-                            WireValue(key, item, false);
-                            TryAdd(key, item);
-                        }
-                        else
-                        {
-                            item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(key));
-                            if (item == null)
-                            {
-                                return;
-                            }
-                            AddOrUpdate(key, item);
-                        }
-                    }
-                    else if (obj.Value != null)
-                    {
-                        Remove(key);
-                    }
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    attachLock.Release();
-                }
-            }
+            //try
+            //{
+            //    await attachLock.WaitAsync().ConfigureAwait(false);
+
+            //    KeyValuePair<string, T> obj = this.FirstOrDefault(i => i.Key == key);
+            //    if (RealtimeInstance.HasChild(key))
+            //    {
+            //        if (isCascadeRealtimeItems)
+            //        {
+            //            if (obj.Value != null)
+            //            {
+            //                return;
+            //            }
+            //            TryAdd(key, _ =>
+            //            {
+            //                T item = ObjectFactory(key);
+            //                WireValue(key, ObjectFactory(key), false);
+            //                return item;
+            //            });
+            //        }
+            //        else
+            //        {
+            //            AddOrUpdate(key, _ => Serializer.Deserialize<T>(RealtimeInstance.GetBlob(key)));
+            //        }
+            //    }
+            //    else if (obj.Value != null)
+            //    {
+            //        Remove(key);
+            //    }
+            //}
+            //finally
+            //{
+            //    attachLock.Release();
+            //}
         }
 
         private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
@@ -347,94 +491,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            DetachRealtime();
-        }
-
-        #endregion
-
-        #region ObservableDictionary Members
-
-        /// <inheritdoc/>
-        protected override void PreAddItems(IEnumerable<KeyValuePair<string, T>> items)
-        {
-            if (HasAttachedRealtime)
-            {
-                foreach (var item in items)
-                {
-                    Task.Run(delegate
-                    {
-                        WireValue(item.Key, item.Value, true);
-                    }).ConfigureAwait(false);
-                }
-            }
-            base.PreAddItems(items);
-        }
-
-        /// <inheritdoc/>
-        protected override void PreUpdateItems(IEnumerable<KeyValuePair<string, T>> items)
-        {
-            PreAddItems(items);
-            base.PreUpdateItems(items);
-        }
-
-        /// <inheritdoc/>
-        protected override void PreRemoveItems(IEnumerable<KeyValuePair<string, T>> items)
-        {
-            foreach (var item in items)
-            {
-                if (TryGetValue(item.Key, out T value))
-                {
-                    if (value is IRealtimeModel model)
-                    {
-                        if (!model.IsNull())
-                        {
-                            model.SetNull();
-                        }
-                        model.Dispose();
-                    }
-                    else
-                    {
-                        RealtimeInstance?.SetBlob(null, item.Key);
-                    }
-                }
-            }
-            base.PreRemoveItems(items);
-        }
-
-        /// <inheritdoc/>
-        protected override void PreClearItems()
-        {
-            PreRemoveItems(this);
-            base.PreClearItems();
-        }
-
-        #endregion
-
-        #region Disposable Members
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DetachRealtime();
-                if (isCascadeRealtimeItems)
-                {
-                    foreach (var item in this.ToList())
-                    {
-                        Remove(item.Key);
-                        (item.Value as IRealtimeModel).Dispose();
-                    }
-                }
-                else
-                {
-                    foreach (var item in this.ToList())
-                    {
-                        Remove(item.Key);
-                    }
-                }
-            }
-            base.Dispose(disposing);
+            (this as IInternalRealtimeModel).DetachRealtime();
         }
 
         #endregion
@@ -456,106 +513,46 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public event EventHandler<WireExceptionEventArgs> WireError;
 
-        /// <inheritdoc/>
-        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+            ContextSend(delegate
+            {
+                RealtimeAttached?.Invoke(this, args);
+            });
         }
 
-        /// <inheritdoc/>
-        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposed)
+            ContextSend(delegate
             {
-                return;
-            }
-
-            try
-            {
-                await attachLock.WaitAsync().ConfigureAwait(false);
-
-                List<Task> tasks = new List<Task>();
-
-                Subscribe(realtimeInstance);
-
-                List<KeyValuePair<string, T>> objs = this.ToList();
-                List<string> supPaths = new List<string>();
-                foreach (var path in RealtimeInstance.GetSubPaths())
-                {
-                    var separatedPath = UrlUtilities.Separate(path);
-                    var key = separatedPath[0];
-                    if (!supPaths.Contains(key)) supPaths.Add(key);
-                }
-
-                foreach (var obj in objs)
-                {
-                    tasks.Add(WireValueAsync(obj.Key, obj.Value, invokeSetFirst));
-                    supPaths.RemoveAll(i => i == obj.Key);
-                }
-
-                foreach (var path in supPaths)
-                {
-                    if (this.ContainsKey(path))
-                    {
-                        continue;
-                    }
-                    T item = default;
-                    if (isCascadeRealtimeItems)
-                    {
-                        item = ObjectFactory(path);
-                        if (item == null)
-                        {
-                            continue;
-                        }
-                        tasks.Add(WireValueAsync(path, item, false));
-                        TryAdd(path, item);
-                    }
-                    else
-                    {
-                        item = Serializer.Deserialize<T>(RealtimeInstance.GetBlob(path));
-                        if (item == null)
-                        {
-                            return;
-                        }
-                        AddOrUpdate(path, item);
-                    }
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                attachLock.Release();
-            }
-
-            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                RealtimeDetached?.Invoke(this, args);
+            });
         }
 
-        /// <inheritdoc/>
-        public void DetachRealtime()
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireExceptionEventArgs args)
         {
-            if (IsDisposed || !HasAttachedRealtime)
+            ContextPost(delegate
             {
-                return;
-            }
-
-            if (isCascadeRealtimeItems)
-            {
-                foreach (var item in this.ToList())
-                {
-                    (item.Value as IRealtimeModel).DetachRealtime();
-                }
-            }
-
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-
-            Unsubscribe();
-
-            OnRealtimeDetached(args);
+                WireError?.Invoke(this, args);
+            });
         }
 
         #endregion

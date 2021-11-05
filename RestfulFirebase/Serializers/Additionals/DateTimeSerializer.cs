@@ -10,13 +10,7 @@ namespace RestfulFirebase.Serializers.Additionals
         /// <inheritdoc/>
         public override string Serialize(DateTime value)
         {
-            var bytes = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)value.Ticks, 64);
-            string base64 = "";
-            foreach (var num in bytes)
-            {
-                base64 += StringUtilities.Base64Charset[(int)num];
-            }
-            return base64;
+            return StringUtilities.CompressNumber(value.Ticks);
         }
 
         /// <inheritdoc/>
@@ -29,15 +23,7 @@ namespace RestfulFirebase.Serializers.Additionals
 
             try
             {
-                var indexes = new List<uint>();
-                foreach (var num in data)
-                {
-                    var indexOf = StringUtilities.Base64Charset.IndexOf(num);
-                    indexes.Add((uint)indexOf);
-                }
-                var ticks = MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
-
-                return new DateTime((long)ticks);
+                return new DateTime(StringUtilities.ExtractNumber(data));
             }
             catch
             {

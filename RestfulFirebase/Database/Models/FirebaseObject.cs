@@ -2,6 +2,7 @@
 using ObservableHelpers.Exceptions;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
+using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,9 @@ using System.Threading.Tasks;
 namespace RestfulFirebase.Database.Models
 {
     /// <summary>
-    /// Provides an observable model for the firebase realtime instance for an observable object.
+    /// Provides an observable model <see cref="ObservableObject"/> for the <see cref="RestfulFirebase.Database.Realtime.RealtimeInstance"/>.
     /// </summary>
-    public class FirebaseObject : ObservableObject, IRealtimeModel
+    public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     {
         #region Properties
 
@@ -230,47 +231,138 @@ namespace RestfulFirebase.Database.Models
             return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, postAction);
         }
 
-        /// <summary>
-        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
+        #endregion
+
+        #region ObservableObject Members
+
+        /// <inheritdoc/>
+        protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
         {
-            ContextSend(delegate
+            if (IsDisposed)
             {
-                RealtimeAttached?.Invoke(this, args);
-            });
+                return null;
+            }
+
+            return new NamedProperty()
+            {
+                Property = new FirebaseProperty(),
+                Key = key,
+                PropertyName = propertyName,
+                Group = group
+            };
         }
 
-        /// <summary>
-        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
         {
-            ContextSend(delegate
+            if (disposing)
             {
-                RealtimeDetached?.Invoke(this, args);
-            });
+                foreach (var item in GetRawProperties())
+                {
+                    item.Property.Dispose();
+                }
+                (this as IInternalRealtimeModel).DetachRealtime();
+            }
+            base.Dispose(disposing);
         }
 
-        /// <summary>
-        /// Invokes <see cref="WireError"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnWireError(WireExceptionEventArgs args)
+        #endregion
+
+        #region IInternalRealtimeModel Members
+
+        async void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            ContextPost(delegate
-            {
-                WireError?.Invoke(this, args);
-            });
+            await (this as IInternalRealtimeModel).AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
         }
+        
+        async Task IInternalRealtimeModel.AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            try
+            {
+                await attachLock.WaitAsync().ConfigureAwait(false);
+
+                List<Task> tasks = new List<Task>();
+
+                Subscribe(realtimeInstance);
+
+                List<string> subPaths = new List<string>();
+                //foreach (var path in RealtimeInstance.GetSubPaths())
+                //{
+                //    int keyLastIndex = path.IndexOf('/');
+                //    string key = keyLastIndex == -1 ? path : path.Substring(0, keyLastIndex);
+                //    subPaths.Add(key);
+                //}
+
+                foreach (var prop in GetRawProperties(nameof(FirebaseObject)))
+                {
+                    if (invokeSetFirst)
+                    {
+                        tasks.Add(RealtimeInstance.Child(prop.Key).PutModelAsync((FirebaseProperty)prop.Property));
+                    }
+                    else
+                    {
+                        tasks.Add(RealtimeInstance.Child(prop.Key).SubModelAsync((FirebaseProperty)prop.Property));
+                    }
+                    subPaths.RemoveAll(i => i == prop.Key);
+                }
+
+                foreach (var path in subPaths)
+                {
+                    GetOrCreateNamedProperty(default(string), path, null, nameof(FirebaseObject),
+                        newNamedProperty => true,
+                        postAction =>
+                        {
+                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
+                            {
+                                if (!firebaseProperty.HasAttachedRealtime)
+                                {
+                                    RealtimeInstance.Child(path).SubModel(firebaseProperty);
+                                }
+                            }
+                        });
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            finally
+            {
+                attachLock.Release();
+            }
+
+            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+        }
+
+        void IInternalRealtimeModel.DetachRealtime()
+        {
+            if (IsDisposed || !HasAttachedRealtime)
+            {
+                return;
+            }
+
+            foreach (var item in GetRawProperties())
+            {
+                if (item.Property is IInternalRealtimeModel model)
+                {
+                    model.DetachRealtime();
+                }
+            }
+
+            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+
+            Unsubscribe();
+
+            OnRealtimeDetached(args);
+        }
+
 
         private void Subscribe(RealtimeInstance realtimeInstance)
         {
@@ -318,36 +410,34 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (!string.IsNullOrEmpty(e.Path))
-            {
-                var separated = UrlUtilities.Separate(e.Path);
-                var key = separated[0];
+            //if (string.IsNullOrEmpty(e.Path))
+            //{
+            //    return;
+            //}
 
-                try
-                {
-                    await attachLock.WaitAsync().ConfigureAwait(false);
-                    GetOrCreateNamedProperty(default(string), key, null, nameof(FirebaseObject),
-                        newNamedProperty => RealtimeInstance.HasChild(key),
-                        postAction =>
-                        {
-                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
-                            {
-                                if (!firebaseProperty.HasAttachedRealtime)
-                                {
-                                    RealtimeInstance.Child(key, false).SubModel(firebaseProperty);
-                                }
-                            }
-                        });
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    attachLock.Release();
-                }
-            }
+            //int keyLastIndex = e.Path.IndexOf('/');
+            //string key = keyLastIndex == -1 ? e.Path : e.Path.Substring(0, keyLastIndex);
+
+            //try
+            //{
+            //    await attachLock.WaitAsync().ConfigureAwait(false);
+            //    GetOrCreateNamedProperty(default(string), key, null, nameof(FirebaseObject),
+            //        newNamedProperty => RealtimeInstance.HasChild(key),
+            //        postAction =>
+            //        {
+            //            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
+            //            {
+            //                if (!firebaseProperty.HasAttachedRealtime)
+            //                {
+            //                    RealtimeInstance.Child(key, false).SubModel(firebaseProperty);
+            //                }
+            //            }
+            //        });
+            //}
+            //finally
+            //{
+            //    attachLock.Release();
+            //}
         }
 
         private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
@@ -367,46 +457,7 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            DetachRealtime();
-        }
-
-        #endregion
-
-        #region ObservableObject Members
-
-        /// <inheritdoc/>
-        protected override NamedProperty NamedPropertyFactory(string key, string propertyName, string group)
-        {
-            if (IsDisposed)
-            {
-                return null;
-            }
-
-            return new NamedProperty()
-            {
-                Property = new FirebaseProperty(),
-                Key = key,
-                PropertyName = propertyName,
-                Group = group
-            };
-        }
-
-        #endregion
-
-        #region Disposable Members
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DetachRealtime();
-                foreach (var item in GetRawProperties())
-                {
-                    item.Property.Dispose();
-                }
-            }
-            base.Dispose(disposing);
+            (this as IInternalRealtimeModel).DetachRealtime();
         }
 
         #endregion
@@ -428,101 +479,46 @@ namespace RestfulFirebase.Database.Models
         /// <inheritdoc/>
         public event EventHandler<WireExceptionEventArgs> WireError;
 
-        /// <inheritdoc/>
-        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+            ContextSend(delegate
+            {
+                RealtimeAttached?.Invoke(this, args);
+            });
         }
 
-        /// <inheritdoc/>
-        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            if (IsDisposed)
+            ContextSend(delegate
             {
-                return;
-            }
-
-            try
-            {
-                await attachLock.WaitAsync().ConfigureAwait(false);
-
-                Subscribe(realtimeInstance);
-
-                List<Task> tasks = new List<Task>();
-
-                IEnumerable<NamedProperty> props = GetRawProperties(nameof(FirebaseObject));
-                List<string> supPaths = new List<string>();
-                foreach (var path in RealtimeInstance.GetSubPaths())
-                {
-                    var separatedPath = UrlUtilities.Separate(path);
-                    var key = separatedPath[0];
-                    if (!supPaths.Contains(key)) supPaths.Add(key);
-                }
-
-                foreach (var prop in props)
-                {
-                    if (invokeSetFirst)
-                    {
-                        tasks.Add(RealtimeInstance.Child(prop.Key, false).PutModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    else
-                    {
-                        tasks.Add(RealtimeInstance.Child(prop.Key, false).SubModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    supPaths.RemoveAll(i => i == prop.Key);
-                }
-
-                foreach (var path in supPaths)
-                {
-                    GetOrCreateNamedProperty(default(string), path, null, nameof(FirebaseObject),
-                        newNamedProperty => true,
-                        postAction =>
-                        {
-                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
-                            {
-                                if (!firebaseProperty.HasAttachedRealtime)
-                                {
-                                    RealtimeInstance.Child(path, false).SubModel(firebaseProperty);
-                                }
-                            }
-                        });
-                }
-
-                await Task.WhenAll(tasks);
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                attachLock.Release();
-            }
-
-            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                RealtimeDetached?.Invoke(this, args);
+            });
         }
 
-        /// <inheritdoc/>
-        public void DetachRealtime()
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireExceptionEventArgs args)
         {
-            if (IsDisposed || !HasAttachedRealtime)
+            ContextPost(delegate
             {
-                return;
-            }
-
-            foreach (var item in GetRawProperties())
-            {
-                if (item.Property is IRealtimeModel model)
-                {
-                    model.DetachRealtime();
-                }
-            }
-
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
-
-            Unsubscribe();
-
-            OnRealtimeDetached(args);
+                WireError?.Invoke(this, args);
+            });
         }
 
         #endregion

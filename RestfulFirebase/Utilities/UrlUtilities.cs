@@ -97,14 +97,14 @@ namespace RestfulFirebase.Utilities
             StringBuilder builder = new StringBuilder();
             void append(string pathToAppend)
             {
-                if (string.IsNullOrEmpty(baseUrl))
+                if (string.IsNullOrEmpty(pathToAppend))
                 {
                     builder.Append("/");
                 }
                 else
                 {
-                    builder.Append(baseUrl);
-                    if (!baseUrl.EndsWith("/"))
+                    builder.Append(pathToAppend);
+                    if (!pathToAppend.EndsWith("/"))
                     {
                         builder.Append("/");
                     }

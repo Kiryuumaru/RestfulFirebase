@@ -22,12 +22,6 @@ namespace RestfulFirebase.Database.Query
             this.pathFactory = pathFactory;
         }
 
-        internal ChildQuery(RestfulFirebaseApp app, Func<string> pathFactory)
-            : this(app, null, pathFactory)
-        {
-
-        }
-
         #endregion
 
         #region Methods
@@ -124,20 +118,20 @@ namespace RestfulFirebase.Database.Query
                 throw new ArgumentNullException("path");
             }
 
-            if (!(child is ChildQuery))
+            if (child is ChildQuery)
+            {
+                if (s != string.Empty && !s.EndsWith("/"))
+                {
+                    s += '/';
+                }
+            }
+            else
             {
                 if (s != string.Empty && s.EndsWith("/"))
                 {
                     s = s.Substring(0, s.Length - 1);
                 }
                 s += ".json";
-            }
-            else
-            {
-                if (s != string.Empty && !s.EndsWith("/"))
-                {
-                    s += '/';
-                }
             }
             return s;
         }

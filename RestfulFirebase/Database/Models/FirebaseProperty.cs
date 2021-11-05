@@ -9,13 +9,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using RestfulFirebase.Local;
 
 namespace RestfulFirebase.Database.Models
 {
     /// <summary>
-    /// Provides an observable model for the firebase realtime instance for an observable property.
+    /// Provides an observable model <see cref="ObservableProperty"/> for the <see cref="RestfulFirebase.Database.Realtime.RealtimeInstance"/>.
     /// </summary>
-    public class FirebaseProperty : ObservableProperty, IRealtimeModel
+    public class FirebaseProperty : ObservableProperty, IInternalRealtimeModel
     {
         #region Properties
 
@@ -37,198 +38,7 @@ namespace RestfulFirebase.Database.Models
 
         #region Methods
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(TimeSpan timeout)
-        {
-            return WaitForSynced(true, new CancellationTokenSource(timeout).Token);
-        }
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(CancellationToken cancellationToken)
-        {
-            return WaitForSynced(true, cancellationToken);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
-        /// </param>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForSynced(bool cancelOnError, TimeSpan timeout)
-        {
-            return WaitForSynced(cancelOnError, new CancellationTokenSource(timeout).Token);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
-        /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
-        /// </param>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public async Task<bool> WaitForSynced(bool cancelOnError = false, CancellationToken? cancellationToken = null)
-        {
-            return await RealtimeInstance.WaitForSynced(cancelOnError, cancellationToken);
-        }
-
-        /// <summary>
-        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
-        {
-            ContextSend(delegate
-            {
-                RealtimeAttached?.Invoke(this, args);
-            });
-        }
-
-        /// <summary>
-        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
-        {
-            ContextSend(delegate
-            {
-                RealtimeDetached?.Invoke(this, args);
-            });
-        }
-
-        /// <summary>
-        /// Invokes <see cref="WireError"/> event on the current context.
-        /// </summary>
-        /// <param name="args">
-        /// The event arguments for the event to invoke.
-        /// </param>
-        protected virtual void OnWireError(WireExceptionEventArgs args)
-        {
-            ContextPost(delegate
-            {
-                WireError?.Invoke(this, args);
-            });
-        }
-
-        private void Subscribe(RealtimeInstance realtimeInstance)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            if (HasAttachedRealtime)
-            {
-                Unsubscribe();
-            }
-
-            RealtimeInstance = realtimeInstance;
-
-            if (HasAttachedRealtime)
-            {
-                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
-                RealtimeInstance.Error += RealtimeInstance_Error;
-                RealtimeInstance.Disposing += RealtimeInstance_Disposing;
-            }
-        }
-
-        private void Unsubscribe()
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            if (HasAttachedRealtime)
-            {
-                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
-                RealtimeInstance.Error -= RealtimeInstance_Error;
-                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
-            }
-
-            RealtimeInstance = null;
-        }
-
-        private async void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            var path = UrlUtilities.Separate(e.Path);
-
-            if (path.Length == 0)
-            {
-                try
-                {
-                    await attachLock.WaitAsync().ConfigureAwait(false);
-                    if (!(base.GetObject() is IRealtimeModel))
-                    {
-                        base.SetObject(RealtimeInstance.GetBlob(), typeof(string));
-                    }
-                }
-                catch
-                {
-                    throw;
-                }
-                finally
-                {
-                    attachLock.Release();
-                }
-            }
-        }
-
-        private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            OnWireError(e);
-        }
-
-        private void RealtimeInstance_Disposing(object sender, EventArgs e)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            DetachRealtime();
-        }
 
         #endregion
 
@@ -256,9 +66,9 @@ namespace RestfulFirebase.Database.Models
                 return false;
             }
 
-            if (typeof(IRealtimeModel).IsAssignableFrom(type))
+            if (typeof(IInternalRealtimeModel).IsAssignableFrom(type))
             {
-                if (obj is IRealtimeModel model)
+                if (obj is IInternalRealtimeModel model)
                 {
                     if (HasAttachedRealtime)
                     {
@@ -276,7 +86,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (HasAttachedRealtime)
                     {
-                        RealtimeInstance.SetBlob(blob);
+                        RealtimeInstance.SetValue(blob);
                     }
 
                     return true;
@@ -337,47 +147,25 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
-                var obj = base.GetObject();
-
-                DetachRealtime();
-
-                if (obj is IDisposable model)
+                if (base.GetObject() is IInternalRealtimeModel model)
                 {
                     model.Dispose();
                 }
-
-                base.SetObject(null);
+                (this as IInternalRealtimeModel).DetachRealtime();
             }
             base.Dispose(disposing);
         }
 
         #endregion
 
-        #region IRealtimeModel Members
+        #region IInternalRealtimeModel Members
 
-        /// <inheritdoc/>
-        public RealtimeInstance RealtimeInstance { get; private set; }
-
-        /// <inheritdoc/>
-        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
-
-        /// <inheritdoc/>
-        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
-
-        /// <inheritdoc/>
-        public event EventHandler<WireExceptionEventArgs> WireError;
-
-        /// <inheritdoc/>
-        public async void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        async void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            await AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
+            await (this as IInternalRealtimeModel).AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
         }
 
-        /// <inheritdoc/>
-        public async Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        async Task IInternalRealtimeModel.AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
@@ -394,7 +182,7 @@ namespace RestfulFirebase.Database.Models
 
                 Subscribe(realtimeInstance);
 
-                if (obj is IRealtimeModel model)
+                if (obj is IInternalRealtimeModel model)
                 {
                     tasks.Add(model.AttachRealtimeAsync(realtimeInstance, invokeSetFirst));
                 }
@@ -416,19 +204,15 @@ namespace RestfulFirebase.Database.Models
 
                     if (invokeSetFirst)
                     {
-                        RealtimeInstance.SetBlob(blob);
+                        RealtimeInstance.SetValue(blob);
                     }
                     else
                     {
-                        base.SetObject(RealtimeInstance.GetBlob(), typeof(string));
+                        base.SetObject(RealtimeInstance.GetValue(), typeof(string));
                     }
                 }
 
                 await Task.WhenAll(tasks);
-            }
-            catch
-            {
-                throw;
             }
             finally
             {
@@ -438,15 +222,14 @@ namespace RestfulFirebase.Database.Models
             OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
         }
 
-        /// <inheritdoc/>
-        public void DetachRealtime()
+        void IInternalRealtimeModel.DetachRealtime()
         {
             if (IsDisposed || !HasAttachedRealtime)
             {
                 return;
             }
 
-            if (base.GetObject() is IRealtimeModel model)
+            if (base.GetObject() is IInternalRealtimeModel model)
             {
                 model.DetachRealtime();
             }
@@ -456,6 +239,152 @@ namespace RestfulFirebase.Database.Models
             Unsubscribe();
 
             OnRealtimeDetached(args);
+        }
+
+        private void Subscribe(RealtimeInstance realtimeInstance)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (HasAttachedRealtime)
+            {
+                Unsubscribe();
+            }
+
+            RealtimeInstance = realtimeInstance;
+
+            if (HasAttachedRealtime)
+            {
+                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
+                RealtimeInstance.Error += RealtimeInstance_Error;
+                RealtimeInstance.Disposing += RealtimeInstance_Disposing;
+            }
+        }
+
+        private void Unsubscribe()
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            if (HasAttachedRealtime)
+            {
+                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
+                RealtimeInstance.Error -= RealtimeInstance_Error;
+                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+            }
+
+            RealtimeInstance = null;
+        }
+
+        private async void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            //if (e.Path.IndexOf('/') != -1)
+            //{
+            //    return;
+            //}
+
+            //try
+            //{
+            //    await attachLock.WaitAsync().ConfigureAwait(false);
+            //    if (!(base.GetObject() is IRealtimeModel))
+            //    {
+            //        base.SetObject(RealtimeInstance.GetValue(), typeof(string));
+            //    }
+            //}
+            //finally
+            //{
+            //    attachLock.Release();
+            //}
+        }
+
+        private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            OnWireError(e);
+        }
+
+        private void RealtimeInstance_Disposing(object sender, EventArgs e)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            (this as IInternalRealtimeModel).DetachRealtime();
+        }
+
+        #endregion
+
+        #region IRealtimeModel Members
+
+        /// <inheritdoc/>
+        public RealtimeInstance RealtimeInstance { get; private set; }
+
+        /// <inheritdoc/>
+        public bool HasAttachedRealtime { get => !(RealtimeInstance?.IsDisposed ?? true); }
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeAttached;
+
+        /// <inheritdoc/>
+        public event EventHandler<RealtimeInstanceEventArgs> RealtimeDetached;
+
+        /// <inheritdoc/>
+        public event EventHandler<WireExceptionEventArgs> WireError;
+
+        /// <summary>
+        /// Invokes <see cref="RealtimeAttached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
+        {
+            ContextSend(delegate
+            {
+                RealtimeAttached?.Invoke(this, args);
+            });
+        }
+
+        /// <summary>
+        /// Invokes <see cref="RealtimeDetached"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
+        {
+            ContextSend(delegate
+            {
+                RealtimeDetached?.Invoke(this, args);
+            });
+        }
+
+        /// <summary>
+        /// Invokes <see cref="WireError"/> event on the current context.
+        /// </summary>
+        /// <param name="args">
+        /// The event arguments for the event to invoke.
+        /// </param>
+        protected virtual void OnWireError(WireExceptionEventArgs args)
+        {
+            ContextPost(delegate
+            {
+                WireError?.Invoke(this, args);
+            });
         }
 
         #endregion
@@ -480,7 +409,7 @@ namespace RestfulFirebase.Database.Models
                 {
                     if (HasAttachedRealtime)
                     {
-                        RealtimeInstance.SetBlob(null);
+                        RealtimeInstance.SetValue(null);
                     }
                     return true;
                 }

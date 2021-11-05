@@ -73,14 +73,16 @@ namespace RestfulFirebase.Database.Streaming
             {
                 try
                 {
-                    if (cancel.IsCancellationRequested) break;
+                    CancellationToken initToken = GetTrancientToken();
+
+                    if (initToken.IsCancellationRequested) break;
 
                     string requestUrl = string.Empty;
                     string absoluteUrl = query.GetAbsoluteUrl();
 
                     try
                     {
-                        requestUrl = await query.BuildUrl().ConfigureAwait(false);
+                        requestUrl = await query.BuildUrl(initToken).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
@@ -88,9 +90,9 @@ namespace RestfulFirebase.Database.Streaming
                         continue;
                     }
 
-                    if (cancel.IsCancellationRequested) break;
+                    if (initToken.IsCancellationRequested) break;
 
-                    var statusCode = HttpStatusCode.OK;
+                    HttpStatusCode statusCode = HttpStatusCode.OK;
                     HttpResponseMessage response = null;
 
                     try
@@ -108,7 +110,7 @@ namespace RestfulFirebase.Database.Streaming
                         continue;
                     }
 
-                    if (cancel.IsCancellationRequested) break;
+                    if (initToken.IsCancellationRequested) break;
 
                     var line = string.Empty;
 
@@ -129,13 +131,15 @@ namespace RestfulFirebase.Database.Streaming
                             catch { }
                             while (true)
                             {
-                                if (cancel.IsCancellationRequested) break;
+                                CancellationToken inStreamToken = GetTrancientToken();
+
+                                if (inStreamToken.IsCancellationRequested) break;
 
                                 line = string.Empty;
 
                                 try
                                 {
-                                    line = (await reader.ReadLineAsync(GetTrancientToken()).ConfigureAwait(false))?.Trim();
+                                    line = (await reader.ReadLineAsync(inStreamToken).ConfigureAwait(false))?.Trim();
                                 }
                                 catch (OperationCanceledException)
                                 {
@@ -143,7 +147,7 @@ namespace RestfulFirebase.Database.Streaming
                                 }
                                 catch { }
 
-                                if (cancel.IsCancellationRequested) break;
+                                if (inStreamToken.IsCancellationRequested) break;
 
                                 if (string.IsNullOrWhiteSpace(line))
                                 {
@@ -217,54 +221,13 @@ namespace RestfulFirebase.Database.Streaming
                     var result = JObject.Parse(serverData);
                     var dataToken = result["data"];
                     var streamPath = result["path"].ToString();
-                    onNext?.Invoke(this, new StreamObject(Convert(dataToken), url, streamPath));
+                    onNext?.Invoke(this, new StreamObject(dataToken, url, streamPath.Substring(1)));
                     break;
                 case ServerEventType.KeepAlive:
                     break;
                 case ServerEventType.Cancel:
                     onError?.Invoke(this, new ErrorEventArgs(url, new DatabaseUnauthorizedException()));
                     break;
-            }
-        }
-
-        private StreamData Convert(JToken token)
-        {
-            if (token.Type == JTokenType.Property ||
-                token.Type == JTokenType.Comment ||
-                token.Type == JTokenType.Undefined)
-            {
-                throw new DatabaseUndefinedException("Unknown stream data type");
-            }
-            else if (token.Type == JTokenType.Object)
-            {
-                var subDatas = new Dictionary<string, StreamData>();
-                foreach (var entry in token as JObject)
-                {
-                    subDatas.Add(entry.Key, Convert(entry.Value));
-                }
-                return new MultiStreamData(subDatas);
-            }
-            else if (token.Type == JTokenType.Array)
-            {
-                JArray arrToken = token as JArray;
-                var subDatas = new Dictionary<string, StreamData>();
-                for (int i = 0; i < arrToken.Count; i++)
-                {
-                    subDatas.Add(i.ToString(), Convert(arrToken[i]));
-                }
-                return new MultiStreamData(subDatas);
-            }
-            else if (token.Type != JTokenType.Null)
-            {
-                return new SingleStreamData((token as JValue).ToString());
-            }
-            else if (token.Type == JTokenType.Null)
-            {
-                return null;
-            }
-            else
-            {
-                throw new Exception("Unknown stream data type");
             }
         }
 

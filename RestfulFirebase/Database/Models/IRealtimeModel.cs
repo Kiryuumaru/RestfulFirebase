@@ -57,39 +57,5 @@ namespace RestfulFirebase.Database.Models
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         event EventHandler<WireExceptionEventArgs> WireError;
-
-        /// <summary>
-        /// Attaches the realtime instance to the model and detaches the current realtime instance.
-        /// </summary>
-        /// <param name="realtimeInstance">
-        /// The realtime instance to attach.
-        /// </param>
-        /// <param name="invokeSetFirst">
-        /// </param>
-        /// <exception cref="SerializerNotSupportedException">
-        /// Occurs when the object has no supported serializer.
-        /// </exception>
-        void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst);
-
-        /// <summary>
-        /// Attaches the realtime instance to the model and detaches the current realtime instance.
-        /// </summary>
-        /// <param name="realtimeInstance">
-        /// The realtime instance to attach.
-        /// </param>
-        /// <param name="invokeSetFirst">
-        /// </param>
-        /// <exception cref="SerializerNotSupportedException">
-        /// Occurs when the object has no supported serializer.
-        /// </exception>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the realtime attach operation.
-        /// </returns>
-        Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst);
-
-        /// <summary>
-        /// Detaches the realtime instance from the model, if there's an attached realtime instance.
-        /// </summary>
-        void DetachRealtime();
     }
 }

@@ -253,6 +253,32 @@ namespace RestfulFirebase.Database.Query
         public RestfulFirebaseApp App { get; }
 
         /// <inheritdoc/>
+        public RealtimeWire AsRealtimeWire(ILocalDatabase customLocalDatabase = default)
+        {
+            return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.LocalDatabase);
+        }
+
+        /// <inheritdoc/>
+        public async Task<string> BuildUrl(CancellationToken? token = null)
+        {
+            if (token == null)
+            {
+                token = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+            }
+            else
+            {
+                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+            }
+
+            if (App.Auth.IsAuthenticated && AuthenticateRequests)
+            {
+                return await WithAuth(() => App.Auth.Session.GetFreshToken()).BuildUrlAsync((FirebaseQuery)null);
+            }
+
+            return await BuildUrlAsync((FirebaseQuery)null);
+        }
+
+        /// <inheritdoc/>
         public ChildQuery Child(Func<string> pathFactory)
         {
             if (pathFactory == null)
@@ -270,186 +296,6 @@ namespace RestfulFirebase.Database.Query
                 throw new ArgumentNullException(nameof(path));
             }
             return Child(() => path);
-        }
-
-        /// <inheritdoc/>
-        public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            async Task invoke(Func<string> invokeJsonData)
-            {
-                string url;
-                var responseData = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
-                if (App.Config.OfflineMode)
-                {
-                    throw new OfflineModeException();
-                }
-
-                var c = GetClient();
-
-                var currentJsonToInvoke = invokeJsonData();
-
-                if (currentJsonToInvoke == null)
-                {
-                    url = await BuildUrl(token).ConfigureAwait(false);
-
-                    try
-                    {
-                        CancellationToken invokeToken;
-
-                        if (token == null)
-                        {
-                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-                        }
-                        else
-                        {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-                        }
-
-                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                        invokeToken.ThrowIfCancellationRequested();
-                        statusCode = result.StatusCode;
-                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                        result.EnsureSuccessStatusCode();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ExceptionHelpers.GetException(statusCode, ex);
-                    }
-                }
-                else
-                {
-                    await Silent().SendAsync(c, currentJsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
-                }
-            };
-
-            async Task recursive()
-            {
-                try
-                {
-                    await invoke(jsonData).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
-                    {
-                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                        return false;
-                    }));
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry != null)
-                    {
-                        if (await retryEx.Retry)
-                        {
-                            await recursive().ConfigureAwait(false);
-                        }
-                    }
-                }
-            }
-
-            await recursive().ConfigureAwait(false);
-        }
-
-        /// <inheritdoc/>
-        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            await Put(() => jsonData, token, onException).ConfigureAwait(false);
-        }
-
-        /// <inheritdoc/>
-        public async Task Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            async Task invoke(Func<string> invokeJsonData)
-            {
-                string url;
-                var responseData = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
-                if (App.Config.OfflineMode)
-                {
-                    throw new OfflineModeException();
-                }
-
-                var c = GetClient();
-
-                var currentJsonToInvoke = invokeJsonData();
-
-                if (currentJsonToInvoke == null)
-                {
-                    url = await BuildUrl(token).ConfigureAwait(false);
-
-                    try
-                    {
-                        CancellationToken invokeToken;
-
-                        if (token == null)
-                        {
-                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-                        }
-                        else
-                        {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-                        }
-
-                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                        invokeToken.ThrowIfCancellationRequested();
-                        statusCode = result.StatusCode;
-                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                        result.EnsureSuccessStatusCode();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ExceptionHelpers.GetException(statusCode, ex);
-                    }
-                }
-                else
-                {
-                    await Silent().SendAsync(c, currentJsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
-                }
-            };
-
-            async Task recursive()
-            {
-                try
-                {
-                    await invoke(jsonData).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
-                    {
-                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                        return false;
-                    }));
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry != null)
-                    {
-                        if (await retryEx.Retry)
-                        {
-                            await recursive().ConfigureAwait(false);
-                        }
-                    }
-                }
-            }
-
-            await recursive().ConfigureAwait(false);
-        }
-
-        /// <inheritdoc/>
-        public async Task Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            await Patch(() => jsonData, token, onException).ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
@@ -559,37 +405,185 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public RealtimeWire AsRealtimeWire(ILocalDatabase customLocalDatabase = default)
-        {
-            var wire = new RealtimeWire(App, this, customLocalDatabase ?? App.Config.LocalDatabase);
-            wire.EvaluateData();
-            return wire;
-        }
-
-        /// <inheritdoc/>
-        public async Task<string> BuildUrl(CancellationToken? token = null)
-        {
-            if (token == null)
-            {
-                token = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
-            }
-            else
-            {
-                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
-            }
-
-            if (App.Auth.IsAuthenticated && AuthenticateRequests)
-            {
-                return await WithAuth(() => App.Auth.Session.GetFreshToken()).BuildUrlAsync((FirebaseQuery)null);
-            }
-
-            return await BuildUrlAsync((FirebaseQuery)null);
-        }
-
-        /// <inheritdoc/>
         public virtual string GetAbsoluteUrl()
         {
             return BuildUrl(this);
+        }
+
+        /// <inheritdoc/>
+        public async Task Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            async Task invoke(string jsonToInvoke)
+            {
+                string url;
+                var responseData = string.Empty;
+                var statusCode = HttpStatusCode.OK;
+
+                if (App.Config.OfflineMode)
+                {
+                    throw new OfflineModeException();
+                }
+
+                var c = GetClient();
+
+                if (jsonToInvoke == null)
+                {
+                    url = await BuildUrl(token).ConfigureAwait(false);
+
+                    try
+                    {
+                        CancellationToken invokeToken;
+
+                        if (token == null)
+                        {
+                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                        }
+                        else
+                        {
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                        }
+
+                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                        invokeToken.ThrowIfCancellationRequested();
+                        statusCode = result.StatusCode;
+                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                        result.EnsureSuccessStatusCode();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ExceptionHelpers.GetException(statusCode, ex);
+                    }
+                }
+                else
+                {
+                    await Silent().SendAsync(c, jsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
+                }
+            };
+
+            async Task recursive()
+            {
+                try
+                {
+                    await invoke(jsonData()).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
+                    {
+                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        return false;
+                    }));
+                    onException?.Invoke(retryEx);
+                    if (retryEx.Retry != null)
+                    {
+                        if (await retryEx.Retry)
+                        {
+                            await recursive().ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+
+            await recursive().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            await Patch(() => jsonData, token, onException).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            async Task invoke(string jsonToInvoke)
+            {
+                string url;
+                var responseData = string.Empty;
+                var statusCode = HttpStatusCode.OK;
+
+                if (App.Config.OfflineMode)
+                {
+                    throw new OfflineModeException();
+                }
+
+                var c = GetClient();
+
+                if (jsonToInvoke == null)
+                {
+                    url = await BuildUrl(token).ConfigureAwait(false);
+
+                    try
+                    {
+                        CancellationToken invokeToken;
+
+                        if (token == null)
+                        {
+                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                        }
+                        else
+                        {
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                        }
+
+                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                        invokeToken.ThrowIfCancellationRequested();
+                        statusCode = result.StatusCode;
+                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                        result.EnsureSuccessStatusCode();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ExceptionHelpers.GetException(statusCode, ex);
+                    }
+                }
+                else
+                {
+                    await Silent().SendAsync(c, jsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
+                }
+            };
+
+            async Task recursive()
+            {
+                try
+                {
+                    await invoke(jsonData()).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
+                    {
+                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        return false;
+                    }));
+                    onException?.Invoke(retryEx);
+                    if (retryEx.Retry != null)
+                    {
+                        if (await retryEx.Retry)
+                        {
+                            await recursive().ConfigureAwait(false);
+                        }
+                    }
+                }
+            }
+
+            await recursive().ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        {
+            await Put(() => jsonData, token, onException).ConfigureAwait(false);
         }
 
         #endregion

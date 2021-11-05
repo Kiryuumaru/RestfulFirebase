@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Utilities
 {
@@ -12,6 +13,7 @@ namespace RestfulFirebase.Utilities
     /// </summary>
     public static class StringUtilities
     {
+        private const string NegativeIdentifier = "-";
         private const string NullIdentifier = "-";
         private const string EmptyIdentifier = "_";
 
@@ -82,23 +84,95 @@ namespace RestfulFirebase.Utilities
         /// </returns>
         public static string Serialize(params string[] data)
         {
-            if (data == null) return NullIdentifier;
-            if (data.Length == 0) return EmptyIdentifier;
-            var dataLength = ToBase62(data.Length);
-            var lengths = data.Select(i => i == null ? NullIdentifier : (string.IsNullOrEmpty(i) ? EmptyIdentifier : ToBase62(i.Length))).ToArray();
-            int maxDigitLength = Math.Max(lengths.Max(i => i.Length), dataLength.Length);
-            var maxDigitLength62 = ToBase62(maxDigitLength); ;
-            for (int i = 0; i < data.Length; i++)
+            if (data == null)
+            {
+                return NullIdentifier;
+            }
+            if (data.Length == 0)
+            {
+                return EmptyIdentifier;
+            }
+            return Serialize(0, data.Length, data);
+        }
+
+        /// <summary>
+        /// Serializes an array of <see cref="string"/>.
+        /// </summary>
+        /// <param name="startIndex">
+        /// The index of <paramref name="data"/> to start serialize.
+        /// </param>
+        /// <param name="count">
+        /// The count of <paramref name="data"/> to serialize.
+        /// </param>
+        /// <param name="data">
+        /// The array of string to serialize.
+        /// </param>
+        /// <returns>
+        /// The serialized value of the provided <paramref name="data"/> parameter.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="startIndex"/> + <paramref name="count"/> is greater than to <paramref name="data"/> length.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="data"/> is a null reference.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startIndex"/> or <paramref name="count"/> is below zero.
+        /// </exception>
+        public static string Serialize(int startIndex, int count, params string[] data)
+        {
+            if (data == null)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
+            if (startIndex + count > data.Length)
+            {
+                throw new ArgumentException(nameof(count) + " is greater than to " + nameof(data) + " length.");
+            }
+            if (data.Length == 0)
+            {
+                return EmptyIdentifier;
+            }
+            string dataLength = CompressNumber(count);
+            string[] lengths = new string[count];
+            int maxDigitLength = dataLength.Length;
+            for (int i = 0; i < count; i++)
+            {
+                if (data[i] == null)
+                {
+                    lengths[i] = NullIdentifier;
+                }
+                else if (string.IsNullOrEmpty(data[startIndex + i]))
+                {
+                    lengths[i] = EmptyIdentifier;
+                }
+                else
+                {
+                    lengths[i] = CompressNumber(data[startIndex + i].Length);
+                }
+                if (maxDigitLength < lengths[i].Length)
+                {
+                    maxDigitLength = lengths[i].Length;
+                }
+            }
+            for (int i = 0; i < count; i++)
             {
                 lengths[i] = lengths[i].PadLeft(maxDigitLength, Base62Charset[0]);
             }
-            var lengthsAndDatas = new string[lengths.Length + data.Length];
-            Array.Copy(lengths, lengthsAndDatas, lengths.Length);
-            Array.Copy(data, 0, lengthsAndDatas, lengths.Length, data.Length);
-            var joinedLengthsAndDatas = string.Join("", lengthsAndDatas);
-            string serialized = string.Join("", maxDigitLength62, dataLength.PadLeft(maxDigitLength, Base62Charset[0]));
-            var joinedArr = new string[] { serialized, joinedLengthsAndDatas };
-            return string.Join("", joinedArr);
+            string[] serialized = new string[lengths.Length + count + 2];
+            serialized[0] = CompressNumber(maxDigitLength);
+            serialized[1] = dataLength.PadLeft(maxDigitLength, Base62Charset[0]);
+            Array.Copy(lengths, 0, serialized, 2, lengths.Length);
+            Array.Copy(data, startIndex, serialized, lengths.Length + 2, count);
+            return string.Join("", serialized);
         }
 
         /// <summary>
@@ -118,8 +192,8 @@ namespace RestfulFirebase.Utilities
             if (data.Length < 4) return new string[] { "" };
             var d = data.Clone() as string;
 
-            int indexDigits = FromBase62(d[0].ToString());
-            int indexCount = FromBase62(d.Substring(1, indexDigits));
+            int indexDigits = (int)ExtractNumber(d[0].ToString());
+            int indexCount = (int)ExtractNumber(d.Substring(1, indexDigits));
             var indices = d.Substring(1 + indexDigits, indexDigits * indexCount);
             var dataPart = d.Substring(1 + indexDigits + (indexDigits * indexCount));
             string[] datas = new string[indexCount];
@@ -131,32 +205,12 @@ namespace RestfulFirebase.Utilities
                 else if (subData.Equals(EmptyIdentifier)) datas[i] = "";
                 else
                 {
-                    var currLength = FromBase62(subData);
+                    int currLength = (int)ExtractNumber(subData);
                     datas[i] = dataPart.Substring(currIndex, currLength);
                     currIndex += currLength;
                 }
             }
             return datas;
-        }
-
-        /// <summary>
-        /// Converts number to its base62 value.
-        /// </summary>
-        /// <param name="number">
-        /// The number to convert.
-        /// </param>
-        /// <returns>
-        /// The base62 representation of the provided <paramref name="number"/> parameter.
-        /// </returns>
-        public static string ToBase62(int number)
-        {
-            var arbitraryBase = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)number, 62);
-            string str = "";
-            foreach (var num in arbitraryBase)
-            {
-                str += Base62Charset[(int)num];
-            }
-            return str;
         }
 
         /// <summary>
@@ -168,63 +222,57 @@ namespace RestfulFirebase.Utilities
         /// <returns>
         /// The value of the provided base62 representation <paramref name="number"/> parameter.
         /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
+        /// <exception cref="ArgumentException">
         /// Throws when the provided <paramref name="number"/> is not from a base62 value.
         /// </exception>
-        public static int FromBase62(string number)
+        public static long ExtractNumber(string number)
         {
-            var indexes = new List<uint>();
-            foreach (var num in number)
+            int[] indexes = new int[number.Length];
+            if (!string.IsNullOrEmpty(number))
             {
-                var indexOf = Base62Charset.IndexOf(num);
-                if (indexOf == -1) throw new ArgumentOutOfRangeException("The number is not a base62 value.");
-                indexes.Add((uint)indexOf);
+                int floorLoop = 0;
+                if (number[0] == NegativeIdentifier[0])
+                {
+                    indexes[0] = -1;
+                    floorLoop = 1;
+                }
+                for (int i = floorLoop; i < number.Length; i++)
+                {
+                    int indexOf = Base62Charset.IndexOf(number[i]);
+                    if (indexOf < 0)
+                    {
+                        throw new ArgumentException("The number is not a base62 value.");
+                    }
+                    indexes[i] = indexOf;
+                }
             }
-            return (int)MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 62);
+            return MathUtilities.ToNormalBaseSystem(indexes, 62);
         }
 
         /// <summary>
-        /// Converts number to its base64 value.
+        /// Converts number to its base62 value.
         /// </summary>
         /// <param name="number">
         /// The number to convert.
         /// </param>
         /// <returns>
-        /// The base64 representation of the provided <paramref name="number"/> parameter.
+        /// The base62 representation of the provided <paramref name="number"/> parameter.
         /// </returns>
-        public static string ToBase64(int number)
+        public static string CompressNumber(long number)
         {
-            var arbitraryBase = MathUtilities.ToUnsignedArbitraryBaseSystem((ulong)number, 64);
+            int[] arbitraryBase = MathUtilities.ToArbitraryBaseSystem(number, 62);
             string str = "";
-            foreach (var num in arbitraryBase)
+            int floorLoop = 0;
+            if (arbitraryBase[0] < 0)
             {
-                str += Base64Charset[(int)num];
+                str += NegativeIdentifier;
+                floorLoop = 1;
+            }
+            for (int i = floorLoop; i < arbitraryBase.Length; i++)
+            {
+                str += Base62Charset[arbitraryBase[i]];
             }
             return str;
-        }
-
-        /// <summary>
-        /// Converts base64 representation number to its value.
-        /// </summary>
-        /// <param name="number">
-        /// The number to convert.
-        /// </param>
-        /// <returns>
-        /// The value of the provided base64 representation <paramref name="number"/> parameter.
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// Throws when the provided <paramref name="number"/> is not from a base64 value.
-        /// </exception>
-        public static int FromBase64(string number)
-        {
-            var indexes = new List<uint>();
-            foreach (var num in number)
-            {
-                var indexOf = Base64Charset.IndexOf(num);
-                if (indexOf == -1) throw new ArgumentOutOfRangeException("The number is not a base64 value.");
-                indexes.Add((uint)indexOf);
-            }
-            return (int)MathUtilities.ToUnsignedNormalBaseSystem(indexes.ToArray(), 64);
         }
 
         /// <summary>

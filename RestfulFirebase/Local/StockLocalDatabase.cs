@@ -7,7 +7,7 @@ namespace RestfulFirebase.Local
     /// </summary>
     public sealed class StockLocalDatabase : ILocalDatabase
     {
-        private static volatile ConcurrentDictionary<string, string> db = new ConcurrentDictionary<string, string>();
+        private ConcurrentDictionary<string, string> db { get; } = new ConcurrentDictionary<string, string>();
 
         /// <summary>
         /// Creates new instance of <see cref="StockLocalDatabase"/> class.
