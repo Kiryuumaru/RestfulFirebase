@@ -53,12 +53,8 @@ namespace RestfulFirebase.Database.Realtime
         /// </summary>
         public int MaxConcurrentWrites
         {
-            get => maxConcurrentWrites;
-            set
-            {
-                writeTaskPutControl.ConcurrentTokenCount = value;
-                maxConcurrentWrites = value;
-            }
+            get => writeTaskPutControl.ConcurrentTokenCount;
+            set => writeTaskPutControl.ConcurrentTokenCount = value;
         }
 
         /// <summary>
@@ -92,15 +88,13 @@ namespace RestfulFirebase.Database.Realtime
         /// </remarks>
         public event EventHandler<WireExceptionEventArgs> Error;
 
-        private int maxConcurrentWrites = 10;
-
         private string absoluteUrl;
         private string[] absolutePath;
 
-        private OperationInvoker writeTaskPutControl;
-        private OperationInvoker writeTaskErrorControl;
-        private ConcurrentDictionary<string[], WriteTask> writeTasks;
-        private RWLockDictionary<string[]> rwLock;
+        private readonly OperationInvoker writeTaskPutControl = new OperationInvoker(10);
+        private readonly OperationInvoker writeTaskErrorControl = new OperationInvoker(0);
+        private readonly ConcurrentDictionary<string[], WriteTask> writeTasks = new ConcurrentDictionary<string[], WriteTask>(PathEqualityComparer.Instance);
+        private readonly RWLockDictionary<string[]> rwLock = new RWLockDictionary<string[]>(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
 
         #endregion
 
@@ -108,11 +102,6 @@ namespace RestfulFirebase.Database.Realtime
 
         private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
         {
-            writeTaskPutControl = new OperationInvoker(0);
-            writeTaskErrorControl = new OperationInvoker(0);
-            writeTasks = new ConcurrentDictionary<string[], WriteTask>(PathEqualityComparer.Instance);
-            rwLock = new RWLockDictionary<string[]>(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
-
             App = app;
             Query = query;
             LocalDatabase = localDatabase;
@@ -529,7 +518,7 @@ namespace RestfulFirebase.Database.Realtime
         private void ReloadQueryUrlValues()
         {
             absoluteUrl = Query.GetAbsoluteUrl();
-            absolutePath = UrlUtilities.Separate(absoluteUrl.Substring(8));
+            absolutePath = UrlUtilities.Separate(absoluteUrl.Substring(8)); // Removes 'https://'
         }
 
         #endregion
@@ -775,7 +764,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                     else
                     {
-                        DBSetData(value, local, LocalDataChangesType.Create, absoluteDataPath);
+                        DBSetData(value, local, LocalDataChangesType.Synced, absoluteDataPath);
                     }
                 }
                 else if (local == value)
@@ -1128,7 +1117,7 @@ namespace RestfulFirebase.Database.Realtime
             {
                 RealtimeInstance = realtimeInstance;
                 Path = path;
-                Uri = "https://" + UrlUtilities.Combine(path);
+                Uri = "https://" + UrlUtilities.Combine(path.Skip(1));
                 Blob = blob;
                 this.finish = finish;
                 this.error = error;

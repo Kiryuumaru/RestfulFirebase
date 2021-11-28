@@ -109,14 +109,24 @@ namespace DummyTest
 
             var userNode = app.Database.Child("users").Child(app.Auth.Session.LocalId);
 
-            var wire = app.Database.Child("publisdc").AsRealtimeWire();
-
+            var wire = app.Database.Child("public").AsRealtimeWire();
             wire.DataChanges += (s, e) =>
             {
                 (int total, int sycned) = wire.GetDataCount();
                 Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
             };
             wire.Error += (s, e) =>
+            {
+                Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
+            };
+
+            var inst = wire.Child("test");
+            inst.DataChanges += (s, e) =>
+            {
+                (int total, int sycned) = wire.GetDataCount();
+                Console.WriteLine("Sync: " + sycned + "/" + total + " Path: " + e.Path);
+            };
+            inst.Error += (s, e) =>
             {
                 Console.WriteLine("OnError: " + e.Uri + " Message: " + e.Exception.Message);
             };
@@ -132,26 +142,30 @@ namespace DummyTest
 
             var ssss = wire.GetAllChildren();
 
-            wire.SetValue("test21", "one", "two", "threee1");
-            ////await Task.Delay(5000);
-            //var s3 = wire.GetAllChildren();
-            //wire.SetValue("test22", "one", "two", "threee2");
-            ////await Task.Delay(5000);
-            //var s4 = wire.GetAllChildren();
-            //wire.SetValue("test23", "one", "two", "threee3");
-            ////await Task.Delay(5000);
-            //var s5 = wire.GetAllChildren();
-            //wire.SetValue(null, "one", "two", "threee3");
-            ////await Task.Delay(5000);
-            //var s6 = wire.GetAllChildren();
-            //wire.SetValue("test23", "one", "two", "threee3");
-            ////await Task.Delay(5000);
-            //var s7 = wire.GetAllChildren();
-            //wire.SetValue("t", "one");
-            ////await Task.Delay(5000);
-            //var s8 = wire.GetAllChildren();
+            await Task.Delay(5000);
+            var s3 = wire.GetAllChildren();
+            wire.SetValue("test22", "one", "two", "threee2");
+            await Task.Delay(5000);
+            var s4 = wire.GetAllChildren();
+            wire.SetValue("test23", "one", "two", "threee3");
+            await Task.Delay(5000);
+            var s5 = wire.GetAllChildren();
+            wire.SetValue(null, "one", "two", "threee3");
+            await Task.Delay(5000);
+            var s6 = wire.GetAllChildren();
+            wire.SetValue("test23", "one", "two", "threee3");
+            await Task.Delay(5000);
+            var s7 = wire.GetAllChildren();
+            wire.SetValue("t", "one");
+            await Task.Delay(5000);
+            var s8 = wire.GetAllChildren();
 
-            while (true) { }
+
+            while (true)
+            {
+                await Task.Delay(5000);
+                (int total, int sycned) = wire.GetDataCount();
+            }
         }
 
         [Fact]

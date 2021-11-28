@@ -8,6 +8,11 @@ namespace RestfulFirebase.Database.Realtime
     public enum LocalDataChangesType
     {
         /// <summary>
+        /// Data is synced on both local and online database.
+        /// </summary>
+        Synced,
+
+        /// <summary>
         /// Data is created locally and is not present yet on online database.
         /// </summary>
         Create,
@@ -20,11 +25,6 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Data is deleted locally and is not deleted yet on online database.
         /// </summary>
-        Delete,
-
-        /// <summary>
-        /// Data is synced on both local and online database.
-        /// </summary>
-        Synced
+        Delete
     }
 }

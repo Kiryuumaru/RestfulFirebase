@@ -674,36 +674,38 @@ namespace RestfulFirebase.Local
                     (string[] path, string serializedPath)[] absolutePaths = new (string[] path, string serializedPath)[path.Length - 1];
                     int startIndex = path.Length - 2;
                     string lastValueToSet = null;
+                    bool skipLast = false;
 
                     for (int i = path.Length - 2; i >= 0; i--)
                     {
-                        startIndex = i;
                         int nextI = i + 1;
                         string[] keyHier = new string[nextI];
                         Array.Copy(path, 0, keyHier, 0, nextI);
                         string serializedKeyHier = StringUtilities.Serialize(keyHier);
+
+                        startIndex = i;
                         absolutePaths[i] = (keyHier, serializedKeyHier);
 
                         string data = DBGet(localDatabase, serializedKeyHier);
                         if (data?.Length > 0 && data[0] == PathIndicator)
                         {
                             string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
-                            if (deserialized?.Length == 0)
+                            if (deserialized?.Length != 0)
                             {
-                                continue;
-                            }
-
-                            if (!deserialized.Contains(path[nextI]))
-                            {
-                                string[] modified = new string[deserialized.Length + 1];
-                                Array.Copy(deserialized, 0, modified, 0, deserialized.Length);
-                                modified[modified.Length - 1] = path[nextI];
-                                lastValueToSet = PathIndicator + StringUtilities.Serialize(modified);
-                                break;
-                            }
-                            else
-                            {
-                                break;
+                                if (!deserialized.Contains(path[nextI]))
+                                {
+                                    string[] modified = new string[deserialized.Length + 1];
+                                    Array.Copy(deserialized, 0, modified, 0, deserialized.Length);
+                                    modified[modified.Length - 1] = path[nextI];
+                                    lastValueToSet = PathIndicator + StringUtilities.Serialize(modified);
+                                    skipLast = true;
+                                    break;
+                                }
+                                else
+                                {
+                                    skipLast = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -714,24 +716,14 @@ namespace RestfulFirebase.Local
                             absolutePaths[startIndex].path,
                             () => DBSet(localDatabase, absolutePaths[startIndex].serializedPath, lastValueToSet));
                         OnDataChanges(holder, absolutePaths[startIndex].path);
-
-                        for (int i = startIndex + 1; i < absolutePaths.Length; i++)
-                        {
-                            string valueToSet = PathIndicator + StringUtilities.Serialize(new string[] { path[i + 1] });
-                            rwLock.LockWrite(absolutePaths[i].path,
-                                () => DBSet(localDatabase, absolutePaths[i].serializedPath, valueToSet));
-                            OnDataChanges(holder, absolutePaths[i].path);
-                        }
                     }
-                    else
+
+                    for (int i = skipLast ? startIndex + 1 : startIndex; i < absolutePaths.Length; i++)
                     {
-                        for (int i = startIndex; i < absolutePaths.Length; i++)
-                        {
-                            string valueToSet = PathIndicator + StringUtilities.Serialize(new string[] { path[i + 1] });
-                            rwLock.LockWrite(absolutePaths[i].path,
-                                () => DBSet(localDatabase, absolutePaths[i].serializedPath, valueToSet));
-                            OnDataChanges(holder, absolutePaths[i].path);
-                        }
+                        string valueToSet = PathIndicator + StringUtilities.Serialize(new string[] { path[i + 1] });
+                        rwLock.LockWrite(absolutePaths[i].path,
+                            () => DBSet(localDatabase, absolutePaths[i].serializedPath, valueToSet));
+                        OnDataChanges(holder, absolutePaths[i].path);
                     }
                 }
 
