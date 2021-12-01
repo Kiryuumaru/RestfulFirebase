@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
@@ -18,19 +19,16 @@ namespace RestfulFirebase.Database.Realtime
     {
         #region Properties
 
-        /// <summary>
-        /// Gets <c>true</c> whether the wire has first stream since creation; otherwise, <c>false</c>.
-        /// </summary>
-        public bool HasFirstStream { get; private set; }
+        /// <inheritdoc/>
+        public override bool HasFirstStream => hasFirstStream;
 
-        /// <summary>
-        /// Gets <c>true</c> whether the wire has started the node subscription; otherwise, <c>false</c>.
-        /// </summary>
-        public bool Started => subscription != null;
+        /// <inheritdoc/>
+        public override bool Started => subscription != null;
 
         internal EventHandler<StreamObject> Next;
 
         private IDisposable subscription;
+        private bool hasFirstStream;
 
         #endregion
 
@@ -80,105 +78,121 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForFirstStream(TimeSpan timeout)
-        {
-            return WaitForFirstStream(true, new CancellationTokenSource(timeout).Token);
-        }
+        ///// <summary>
+        ///// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        ///// </summary>
+        ///// <param name="timeout">
+        ///// The <see cref="TimeSpan"/> timeout of the created task.
+        ///// </param>
+        ///// <returns>
+        ///// A <see cref="Task"/> that represents the fully sync status.
+        ///// </returns>
+        ///// <exception cref="DatabaseRealtimeWireNotStarted">
+        ///// Throws when wire was not started.
+        ///// </exception>
+        //public Task<bool> WaitForFirstStream(TimeSpan timeout)
+        //{
+        //    return WaitForFirstStream(true, new CancellationTokenSource(timeout).Token);
+        //}
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
-        {
-            return WaitForFirstStream(true, cancellationToken);
-        }
+        ///// <summary>
+        ///// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        ///// </summary>
+        ///// <param name="cancellationToken">
+        ///// The <see cref="CancellationToken"/> for the wait synced status.
+        ///// </param>
+        ///// <returns>
+        ///// A <see cref="Task"/> that represents the fully sync status.
+        ///// </returns>
+        ///// <exception cref="DatabaseRealtimeWireNotStarted">
+        ///// Throws when wire was not started.
+        ///// </exception>
+        //public Task<bool> WaitForFirstStream(CancellationToken cancellationToken)
+        //{
+        //    return WaitForFirstStream(true, cancellationToken);
+        //}
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
-        /// </param>
-        /// <param name="timeout">
-        /// The <see cref="TimeSpan"/> timeout of the created task.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public Task<bool> WaitForFirstStream(bool cancelOnError, TimeSpan timeout)
-        {
-            return WaitForFirstStream(cancelOnError, new CancellationTokenSource(timeout).Token);
-        }
+        ///// <summary>
+        ///// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        ///// </summary>
+        ///// <param name="cancelOnError">
+        ///// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        ///// </param>
+        ///// <param name="timeout">
+        ///// The <see cref="TimeSpan"/> timeout of the created task.
+        ///// </param>
+        ///// <returns>
+        ///// A <see cref="Task"/> that represents the fully sync status.
+        ///// </returns>
+        ///// <exception cref="DatabaseRealtimeWireNotStarted">
+        ///// Throws when wire was not started.
+        ///// </exception>
+        //public Task<bool> WaitForFirstStream(bool cancelOnError, TimeSpan timeout)
+        //{
+        //    return WaitForFirstStream(cancelOnError, new CancellationTokenSource(timeout).Token);
+        //}
 
-        /// <summary>
-        /// Creates a <see cref="Task"/> that will complete when the wire has first stream.
-        /// </summary>
-        /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
-        /// </param>
-        /// <param name="cancellationToken">
-        /// The <see cref="CancellationToken"/> for the wait synced status.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the fully sync status.
-        /// </returns>
-        public async Task<bool> WaitForFirstStream(bool cancelOnError = true, CancellationToken? cancellationToken = null)
-        {
-            if (IsDisposed)
-            {
-                return false;
-            }
+        ///// <summary>
+        ///// Creates a <see cref="Task"/> that will complete when the wire has first stream.
+        ///// </summary>
+        ///// <param name="cancelOnError">
+        ///// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        ///// </param>
+        ///// <param name="cancellationToken">
+        ///// The <see cref="CancellationToken"/> for the wait synced status.
+        ///// </param>
+        ///// <returns>
+        ///// A <see cref="Task"/> that represents the fully sync status.
+        ///// </returns>
+        ///// <exception cref="DatabaseRealtimeWireNotStarted">
+        ///// Throws when wire was not started.
+        ///// </exception>
+        //public async Task<bool> WaitForFirstStream(bool cancelOnError = true, CancellationToken? cancellationToken = null)
+        //{
+        //    if (IsDisposed)
+        //    {
+        //        return false;
+        //    }
+        //    if (!Started)
+        //    {
+        //        throw new DatabaseRealtimeWireNotStarted(nameof(WaitForFirstStream));
+        //    }
 
-            bool cancel = false;
-            void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
-            {
-                cancel = true;
-            }
-            if (cancelOnError)
-            {
-                Error += RealtimeInstance_Error;
-            }
-            async Task<bool> waitTask()
-            {
-                while (!HasFirstStream && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
-                {
-                    try
-                    {
-                        if (cancellationToken.HasValue)
-                        {
-                            await Task.Delay(App.Config.DatabaseRetryDelay, cancellationToken.Value).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
-                        }
-                    }
-                    catch { }
-                }
-                return HasFirstStream;
-            }
-            bool result = await Task.Run(waitTask).ConfigureAwait(false);
-            if (cancelOnError)
-            {
-                Error -= RealtimeInstance_Error;
-            }
-            return result;
-        }
+        //    bool cancel = false;
+        //    void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+        //    {
+        //        cancel = true;
+        //    }
+        //    if (cancelOnError)
+        //    {
+        //        Error += RealtimeInstance_Error;
+        //    }
+        //    async Task<bool> waitTask()
+        //    {
+        //        while (!HasFirstStream && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
+        //        {
+        //            try
+        //            {
+        //                if (cancellationToken.HasValue)
+        //                {
+        //                    await Task.Delay(App.Config.DatabaseRetryDelay, cancellationToken.Value).ConfigureAwait(false);
+        //                }
+        //                else
+        //                {
+        //                    await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+        //                }
+        //            }
+        //            catch { }
+        //        }
+        //        return HasFirstStream;
+        //    }
+        //    bool result = await Task.Run(waitTask).ConfigureAwait(false);
+        //    if (cancelOnError)
+        //    {
+        //        Error -= RealtimeInstance_Error;
+        //    }
+        //    return result;
+        //}
 
         private void OnNext(object sender, StreamObject streamObject)
         {
@@ -221,6 +235,11 @@ namespace RestfulFirebase.Database.Realtime
                     }
                 }
                 MakeSync(values, path);
+            }
+
+            if (!HasFirstStream)
+            {
+                hasFirstStream = true;
             }
         }
 

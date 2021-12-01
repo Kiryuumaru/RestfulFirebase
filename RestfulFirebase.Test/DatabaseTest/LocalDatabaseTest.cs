@@ -12,103 +12,30 @@ using RestfulFirebase.Local;
 using System.Collections.Concurrent;
 using RestfulFirebase.Exceptions;
 
-namespace LocalDatabaseTest
+namespace DatabaseTest.LocalDatabaseTest
 {
-    public class SampleLocalDatabase : ILocalDatabase
+    public static class Helpers
     {
-        public ConcurrentDictionary<string, string> db { get; } = new ConcurrentDictionary<string, string>();
-
-        public bool ContainsKey(string key)
+        public static RestfulFirebaseApp Empty()
         {
-            return db.ContainsKey(key);
+            return RestfulFirebase.Test.Helpers.AppGenerator()();
         }
 
-        public string? Get(string key)
+        public static RestfulFirebaseApp Hier()
         {
-            if (!db.TryGetValue(key, out string? value))
-            {
-                return null;
-            }
-            return value;
-        }
+            var generator = RestfulFirebase.Test.Helpers.AppGenerator();
+            var app = generator();
 
-        public void Set(string key, string value)
-        {
-            db.AddOrUpdate(key, value, delegate { return value; });
-        }
+            app.LocalDatabase.SetValue("test", "0", "1", "1.1");
+            app.LocalDatabase.SetValue("test", "0", "1", "1.2");
 
-        public void Delete(string key)
-        {
-            db.TryRemove(key, out _);
-        }
+            app.LocalDatabase.SetValue("test", "0", "2", "2.1", "2.1.1");
+            app.LocalDatabase.SetValue("test", "0", "2", "2.1", "2.1.2");
 
-        public void Clear()
-        {
-            db.Clear();
-        }
-    }
-
-    public class Helpers
-    {
-        public static RestfulFirebaseApp EmptySample()
-        {
-            FirebaseConfig config = Config.YourConfig();
-            config.LocalDatabase = new SampleLocalDatabase();
-            var app = new RestfulFirebaseApp(config);
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
+            app.LocalDatabase.SetValue("test", "0", "3", "3.1", "3.1.1", "3.1.1.1");
+            app.LocalDatabase.SetValue("test", "0", "3", "3.1", "3.1.1", "3.1.1.2");
 
             return app;
-        }
-
-        public static RestfulFirebaseApp HierSample()
-        {
-            FirebaseConfig config = Config.YourConfig();
-            config.LocalDatabase = new SampleLocalDatabase();
-            var app = new RestfulFirebaseApp(config);
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            db.SetValue("test", "0", "1", "1.1");
-            db.SetValue("test", "0", "1", "1.2");
-
-            db.SetValue("test", "0", "2", "2.1", "2.1.1");
-            db.SetValue("test", "0", "2", "2.1", "2.1.2");
-
-            db.SetValue("test", "0", "3", "3.1", "3.1.1", "3.1.1.1");
-            db.SetValue("test", "0", "3", "3.1", "3.1.1", "3.1.1.2");
-
-            return app;
-        }
-
-        public static (string[] path, string key)[] GetChildren(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetChildren(path);
-        }
-
-        public static (string key, LocalDataType type)[] GetRelativeTypedChildren(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetRelativeTypedChildren(path);
-        }
-
-        public static (string[] path, LocalDataType type)[] GetTypedChildren(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetTypedChildren(path);
-        }
-
-        public static string[][] GetRecursiveChildren(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetRecursiveChildren(path);
-        }
-
-        public static string[][] GetRecursiveRelativeChildren(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetRecursiveRelativeChildren(path);
-        }
-
-        public static string GetValue(LocalDatabaseApp db, params string[] path)
-        {
-            return db.GetValue(path);
         }
     }
 
@@ -117,7 +44,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -139,7 +66,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -159,13 +86,13 @@ namespace LocalDatabaseTest
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             db.Delete("0", "1", "1.1");
-            Assert.Null(Helpers.GetValue(db, "0", "1", "1.1"));
-            string[][] test1 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Null(db.GetValue("0", "1", "1.1"));
+            string[][] test1 = db.GetRecursiveChildren("0");
             Assert.Collection(test1,
                 i =>
                 {
@@ -210,8 +137,8 @@ namespace LocalDatabaseTest
                 });
 
             db.Delete("0", "2");
-            Assert.Null(Helpers.GetValue(db, "0", "2"));
-            string[][] test2 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Null(db.GetValue("0", "2"));
+            string[][] test2 = db.GetRecursiveChildren("0");
             Assert.Collection(test2,
                 i =>
                 {
@@ -240,8 +167,8 @@ namespace LocalDatabaseTest
                 });
 
             db.Delete("0", "3", "3.1");
-            Assert.Null(Helpers.GetValue(db, "0", "3", "3.1"));
-            string[][] test3 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Null(db.GetValue("0", "3", "3.1"));
+            string[][] test3 = db.GetRecursiveChildren("0");
             Assert.Collection(test3,
                 i =>
                 {
@@ -255,7 +182,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -275,7 +202,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -404,7 +331,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -419,12 +346,222 @@ namespace LocalDatabaseTest
         }
     }
 
+    public class GetDataTypeTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.1"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.2"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.1"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.2"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "3", "3.1", "3.1.1", "3.1.1.2"));
+
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "1"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "1"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2", "2.1"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2", "2.1"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1", "3.1.1"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1", "3.1.1"));
+
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2"));
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1"));
+
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3"));
+
+            Assert.Equal(LocalDataType.Path, db.GetDataType("0"));
+
+            // Null values
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.3"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.4"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.1", "2.1.1.1"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.2", "2.1.2.1"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "4"));
+            Assert.Equal(LocalDataType.Value, db.GetDataType("1"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType());
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[] { "path", "" }));
+        }
+    }
+
+    public class GetRecursiveChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            string[][] test1 = db.GetRecursiveChildren("0");
+            Assert.Collection(test1,
+                i =>
+                {
+                    Assert.Equal(3, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("1", i[1]);
+                    Assert.Equal("1.1", i[2]);
+                },
+                i =>
+                {
+                    Assert.Equal(3, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("1", i[1]);
+                    Assert.Equal("1.2", i[2]);
+                },
+                i =>
+                {
+                    Assert.Equal(4, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("2", i[1]);
+                    Assert.Equal("2.1", i[2]);
+                    Assert.Equal("2.1.1", i[3]);
+                },
+                i =>
+                {
+                    Assert.Equal(4, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("2", i[1]);
+                    Assert.Equal("2.1", i[2]);
+                    Assert.Equal("2.1.2", i[3]);
+                },
+                i =>
+                {
+                    Assert.Equal(5, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("3", i[1]);
+                    Assert.Equal("3.1", i[2]);
+                    Assert.Equal("3.1.1", i[3]);
+                    Assert.Equal("3.1.1.1", i[4]);
+                },
+                i =>
+                {
+                    Assert.Equal(5, i.Length);
+                    Assert.Equal("0", i[0]);
+                    Assert.Equal("3", i[1]);
+                    Assert.Equal("3.1", i[2]);
+                    Assert.Equal("3.1.1", i[3]);
+                    Assert.Equal("3.1.1.2", i[4]);
+                });
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren());
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[] { "path", "" }));
+        }
+    }
+
+    public class GetRecursiveRelativeChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            string[][] test1 = db.GetRecursiveRelativeChildren("0");
+            Assert.Collection(test1,
+                i =>
+                {
+                    Assert.Equal(2, i.Length);
+                    Assert.Equal("1", i[0]);
+                    Assert.Equal("1.1", i[1]);
+                },
+                i =>
+                {
+                    Assert.Equal(2, i.Length);
+                    Assert.Equal("1", i[0]);
+                    Assert.Equal("1.2", i[1]);
+                },
+                i =>
+                {
+                    Assert.Equal(3, i.Length);
+                    Assert.Equal("2", i[0]);
+                    Assert.Equal("2.1", i[1]);
+                    Assert.Equal("2.1.1", i[2]);
+                },
+                i =>
+                {
+                    Assert.Equal(3, i.Length);
+                    Assert.Equal("2", i[0]);
+                    Assert.Equal("2.1", i[1]);
+                    Assert.Equal("2.1.2", i[2]);
+                },
+                i =>
+                {
+                    Assert.Equal(4, i.Length);
+                    Assert.Equal("3", i[0]);
+                    Assert.Equal("3.1", i[1]);
+                    Assert.Equal("3.1.1", i[2]);
+                    Assert.Equal("3.1.1.1", i[3]);
+                },
+                i =>
+                {
+                    Assert.Equal(4, i.Length);
+                    Assert.Equal("3", i[0]);
+                    Assert.Equal("3.1", i[1]);
+                    Assert.Equal("3.1.1", i[2]);
+                    Assert.Equal("3.1.1.2", i[3]);
+                });
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren());
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[] { "path", "" }));
+        }
+    }
+
     public class GetRelativeTypedChildrenTest
     {
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -513,7 +650,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -533,7 +670,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -662,7 +799,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -677,222 +814,12 @@ namespace LocalDatabaseTest
         }
     }
 
-    public class GetDataTypeTest
-    {
-        [Fact]
-        public void Normal()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.1"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.2"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.1"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.2"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "3", "3.1", "3.1.1", "3.1.1.1"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "3", "3.1", "3.1.1", "3.1.1.2"));
-
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "1"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "1"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2", "2.1"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2", "2.1"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1", "3.1.1"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1", "3.1.1"));
-
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "2"));
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3", "3.1"));
-
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0", "3"));
-
-            Assert.Equal(LocalDataType.Path, db.GetDataType("0"));
-
-            // Null values
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.3"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.4"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.1", "2.1.1.1"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.2", "2.1.2.1"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("0", "4"));
-            Assert.Equal(LocalDataType.Value, db.GetDataType("1"));
-        }
-
-        [Fact]
-        public void Throws()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[0]));
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[] { "path", "" }));
-        }
-    }
-
-    public class GetRecursiveChildrenTest
-    {
-        [Fact]
-        public void Normal()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            string[][] test1 = db.GetRecursiveChildren("0");
-            Assert.Collection(test1,
-                i =>
-                {
-                    Assert.Equal(3, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("1", i[1]);
-                    Assert.Equal("1.1", i[2]);
-                },
-                i =>
-                {
-                    Assert.Equal(3, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("1", i[1]);
-                    Assert.Equal("1.2", i[2]);
-                },
-                i =>
-                {
-                    Assert.Equal(4, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("2", i[1]);
-                    Assert.Equal("2.1", i[2]);
-                    Assert.Equal("2.1.1", i[3]);
-                },
-                i =>
-                {
-                    Assert.Equal(4, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("2", i[1]);
-                    Assert.Equal("2.1", i[2]);
-                    Assert.Equal("2.1.2", i[3]);
-                },
-                i =>
-                {
-                    Assert.Equal(5, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("3", i[1]);
-                    Assert.Equal("3.1", i[2]);
-                    Assert.Equal("3.1.1", i[3]);
-                    Assert.Equal("3.1.1.1", i[4]);
-                },
-                i =>
-                {
-                    Assert.Equal(5, i.Length);
-                    Assert.Equal("0", i[0]);
-                    Assert.Equal("3", i[1]);
-                    Assert.Equal("3.1", i[2]);
-                    Assert.Equal("3.1.1", i[3]);
-                    Assert.Equal("3.1.1.2", i[4]);
-                });
-        }
-
-        [Fact]
-        public void Throws()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[0]));
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[] { "path", "" }));
-        }
-    }
-    
-    public class GetRecursiveRelativeChildrenTest
-    {
-        [Fact]
-        public void Normal()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            string[][] test1 = db.GetRecursiveRelativeChildren("0");
-            Assert.Collection(test1,
-                i =>
-                {
-                    Assert.Equal(2, i.Length);
-                    Assert.Equal("1", i[0]);
-                    Assert.Equal("1.1", i[1]);
-                },
-                i =>
-                {
-                    Assert.Equal(2, i.Length);
-                    Assert.Equal("1", i[0]);
-                    Assert.Equal("1.2", i[1]);
-                },
-                i =>
-                {
-                    Assert.Equal(3, i.Length);
-                    Assert.Equal("2", i[0]);
-                    Assert.Equal("2.1", i[1]);
-                    Assert.Equal("2.1.1", i[2]);
-                },
-                i =>
-                {
-                    Assert.Equal(3, i.Length);
-                    Assert.Equal("2", i[0]);
-                    Assert.Equal("2.1", i[1]);
-                    Assert.Equal("2.1.2", i[2]);
-                },
-                i =>
-                {
-                    Assert.Equal(4, i.Length);
-                    Assert.Equal("3", i[0]);
-                    Assert.Equal("3.1", i[1]);
-                    Assert.Equal("3.1.1", i[2]);
-                    Assert.Equal("3.1.1.1", i[3]);
-                },
-                i =>
-                {
-                    Assert.Equal(4, i.Length);
-                    Assert.Equal("3", i[0]);
-                    Assert.Equal("3.1", i[1]);
-                    Assert.Equal("3.1.1", i[2]);
-                    Assert.Equal("3.1.1.2", i[3]);
-                });
-        }
-
-        [Fact]
-        public void Throws()
-        {
-            var app = Helpers.HierSample();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
-            var db = app.LocalDatabase;
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[0]));
-
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[] { "path", "" }));
-        }
-    }
-
     public class GetValueTest
     {
         [Fact]
         public void Normal()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -920,7 +847,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -940,15 +867,15 @@ namespace LocalDatabaseTest
         [Fact]
         public void Normal()
         {
-            var app = Helpers.EmptySample();
+            var app = Helpers.Empty();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             db.SetValue("testValue01", "0", "1", "1.1");
             db.SetValue("testValue02", "0", "1", "1.2");
-            Assert.Equal("testValue01", Helpers.GetValue(db, "0", "1", "1.1"));
-            Assert.Equal("testValue02", Helpers.GetValue(db, "0", "1", "1.2"));
-            string[][] test1 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue01", db.GetValue("0", "1", "1.1"));
+            Assert.Equal("testValue02", db.GetValue("0", "1", "1.2"));
+            string[][] test1 = db.GetRecursiveChildren("0");
             Assert.Collection(test1,
                 i =>
                 {
@@ -967,9 +894,9 @@ namespace LocalDatabaseTest
 
             db.SetValue("testValue03", "0", "2", "2.1", "2.1.1");
             db.SetValue("testValue04", "0", "2", "2.1", "2.1.2");
-            Assert.Equal("testValue03", Helpers.GetValue(db, "0", "2", "2.1", "2.1.1"));
-            Assert.Equal("testValue04", Helpers.GetValue(db, "0", "2", "2.1", "2.1.2"));
-            string[][] test2 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue03", db.GetValue("0", "2", "2.1", "2.1.1"));
+            Assert.Equal("testValue04", db.GetValue("0", "2", "2.1", "2.1.2"));
+            string[][] test2 = db.GetRecursiveChildren("0");
             Assert.Collection(test2,
                 i =>
                 {
@@ -1004,9 +931,9 @@ namespace LocalDatabaseTest
 
             db.SetValue("testValue05", "0", "3", "3.1", "3.1.1", "3.1.1.1");
             db.SetValue("testValue06", "0", "3", "3.1", "3.1.1", "3.1.1.2");
-            Assert.Equal("testValue05", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
-            Assert.Equal("testValue06", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
-            string[][] test3 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue05", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.Equal("testValue06", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            string[][] test3 = db.GetRecursiveChildren("0");
             Assert.Collection(test3,
                 i =>
                 {
@@ -1061,15 +988,15 @@ namespace LocalDatabaseTest
         [Fact]
         public void WithExistingData()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             db.SetValue("testValue01", "0", "1", "1.1");
             db.SetValue("testValue02", "0", "1", "1.2");
-            Assert.Equal("testValue01", Helpers.GetValue(db, "0", "1", "1.1"));
-            Assert.Equal("testValue02", Helpers.GetValue(db, "0", "1", "1.2"));
-            string[][] test1 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue01", db.GetValue("0", "1", "1.1"));
+            Assert.Equal("testValue02", db.GetValue("0", "1", "1.2"));
+            string[][] test1 = db.GetRecursiveChildren("0");
             Assert.Collection(test1,
                 i =>
                 {
@@ -1122,9 +1049,9 @@ namespace LocalDatabaseTest
 
             db.SetValue("testValue03", "0", "2", "2.1", "2.1.1");
             db.SetValue("testValue04", "0", "2", "2.1", "2.1.2");
-            Assert.Equal("testValue03", Helpers.GetValue(db, "0", "2", "2.1", "2.1.1"));
-            Assert.Equal("testValue04", Helpers.GetValue(db, "0", "2", "2.1", "2.1.2"));
-            string[][] test2 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue03", db.GetValue("0", "2", "2.1", "2.1.1"));
+            Assert.Equal("testValue04", db.GetValue("0", "2", "2.1", "2.1.2"));
+            string[][] test2 = db.GetRecursiveChildren("0");
             Assert.Collection(test2,
                 i =>
                 {
@@ -1177,9 +1104,9 @@ namespace LocalDatabaseTest
 
             db.SetValue("testValue05", "0", "3", "3.1", "3.1.1", "3.1.1.1");
             db.SetValue("testValue06", "0", "3", "3.1", "3.1.1", "3.1.1.2");
-            Assert.Equal("testValue05", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
-            Assert.Equal("testValue06", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
-            string[][] test3 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue05", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.Equal("testValue06", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            string[][] test3 = db.GetRecursiveChildren("0");
             Assert.Collection(test3,
                 i =>
                 {
@@ -1237,13 +1164,13 @@ namespace LocalDatabaseTest
             db.SetValue("testValue10", "0", "3", "3.1", "3.1.2", "3.1.2.2");
             db.SetValue("testValue11", "0", "4", "4.1", "4.1.1", "4.1.1.1");
             db.SetValue("testValue12", "0", "4", "4.1", "4.1.1", "4.1.1.2");
-            Assert.Equal("testValue07", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
-            Assert.Equal("testValue08", Helpers.GetValue(db, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
-            Assert.Equal("testValue09", Helpers.GetValue(db, "0", "3", "3.1", "3.1.2", "3.1.2.1"));
-            Assert.Equal("testValue10", Helpers.GetValue(db, "0", "3", "3.1", "3.1.2", "3.1.2.2"));
-            Assert.Equal("testValue11", Helpers.GetValue(db, "0", "4", "4.1", "4.1.1", "4.1.1.1"));
-            Assert.Equal("testValue12", Helpers.GetValue(db, "0", "4", "4.1", "4.1.1", "4.1.1.2"));
-            string[][] test4 = Helpers.GetRecursiveChildren(db, "0");
+            Assert.Equal("testValue07", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.Equal("testValue08", db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.Equal("testValue09", db.GetValue("0", "3", "3.1", "3.1.2", "3.1.2.1"));
+            Assert.Equal("testValue10", db.GetValue("0", "3", "3.1", "3.1.2", "3.1.2.2"));
+            Assert.Equal("testValue11", db.GetValue("0", "4", "4.1", "4.1.1", "4.1.1.1"));
+            Assert.Equal("testValue12", db.GetValue("0", "4", "4.1", "4.1.1", "4.1.1.2"));
+            string[][] test4 = db.GetRecursiveChildren("0");
             Assert.Collection(test4,
                 i =>
                 {
@@ -1352,7 +1279,7 @@ namespace LocalDatabaseTest
         [Fact]
         public void Throws()
         {
-            var app = Helpers.HierSample();
+            var app = Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1364,6 +1291,1665 @@ namespace LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("1.1", i.key);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.1", i.path[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("1.2", i.key);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.2", i.path[2]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("2.1", i.key);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("2.1.1", i.key);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.1", i.path[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("2.1.2", i.key);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.2", i.path[3]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1", i.key);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1.1", i.key);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1.1.1", i.key);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.1", i.path[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("3.1.1.2", i.key);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.2", i.path[4]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrPathTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.Equal("test", value);
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(true);
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrPath(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, delegate
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrRecursiveChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(3, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("1", i[1]);
+                        Assert.Equal("1.1", i[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(3, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("1", i[1]);
+                        Assert.Equal("1.2", i[2]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(4, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("2", i[1]);
+                        Assert.Equal("2.1", i[2]);
+                        Assert.Equal("2.1.1", i[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(4, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("2", i[1]);
+                        Assert.Equal("2.1", i[2]);
+                        Assert.Equal("2.1.2", i[3]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(4, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("2", i[1]);
+                        Assert.Equal("2.1", i[2]);
+                        Assert.Equal("2.1.1", i[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(4, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("2", i[1]);
+                        Assert.Equal("2.1", i[2]);
+                        Assert.Equal("2.1.2", i[3]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.1", i[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.2", i[4]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.1", i[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.2", i[4]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.1", i[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(5, i.Length);
+                        Assert.Equal("0", i[0]);
+                        Assert.Equal("3", i[1]);
+                        Assert.Equal("3.1", i[2]);
+                        Assert.Equal("3.1.1", i[3]);
+                        Assert.Equal("3.1.1.2", i[4]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrRecursiveChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+    
+    public class TryGetValueOrRecursiveRelativeChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("1.1", i[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("1.2", i[0]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(2, i.Length);
+                        Assert.Equal("2.1", i[0]);
+                        Assert.Equal("2.1.1", i[1]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(2, i.Length);
+                        Assert.Equal("2.1", i[0]);
+                        Assert.Equal("2.1.2", i[1]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("2.1.1", i[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("2.1.2", i[0]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(3, i.Length);
+                        Assert.Equal("3.1", i[0]);
+                        Assert.Equal("3.1.1", i[1]);
+                        Assert.Equal("3.1.1.1", i[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(3, i.Length);
+                        Assert.Equal("3.1", i[0]);
+                        Assert.Equal("3.1.1", i[1]);
+                        Assert.Equal("3.1.1.2", i[2]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(2, i.Length);
+                        Assert.Equal("3.1.1", i[0]);
+                        Assert.Equal("3.1.1.1", i[1]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(2, i.Length);
+                        Assert.Equal("3.1.1", i[0]);
+                        Assert.Equal("3.1.1.2", i[1]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("3.1.1.1", i[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(1, i.Length);
+                        Assert.Equal("3.1.1.2", i[0]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrRecursiveRelativeChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrRecursiveValueTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.1", i.path[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.2", i.path[2]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.1", i.path[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.2", i.path[3]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.1", i.path[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.2", i.path[3]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.1", i.path[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.2", i.path[4]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.1", i.path[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.2", i.path[4]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.1", i.path[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.2", i.path[4]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrRecursiveValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrRecursiveRelativeValueTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("1.1", i.path[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("1.2", i.path[0]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(2, i.path.Length);
+                        Assert.Equal("2.1", i.path[0]);
+                        Assert.Equal("2.1.1", i.path[1]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(2, i.path.Length);
+                        Assert.Equal("2.1", i.path[0]);
+                        Assert.Equal("2.1.2", i.path[1]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("2.1.1", i.path[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("2.1.2", i.path[0]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("3.1", i.path[0]);
+                        Assert.Equal("3.1.1", i.path[1]);
+                        Assert.Equal("3.1.1.1", i.path[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("3.1", i.path[0]);
+                        Assert.Equal("3.1.1", i.path[1]);
+                        Assert.Equal("3.1.1.2", i.path[2]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(2, i.path.Length);
+                        Assert.Equal("3.1.1", i.path[0]);
+                        Assert.Equal("3.1.1.1", i.path[1]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(2, i.path.Length);
+                        Assert.Equal("3.1.1", i.path[0]);
+                        Assert.Equal("3.1.1.2", i.path[1]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("3.1.1.1", i.path[0]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("test", i.value);
+                        Assert.Equal(1, i.path.Length);
+                        Assert.Equal("3.1.1.2", i.path[0]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrRecursiveRelativeValues(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrRelativeTypedChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("1.1", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("1.2", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("2.1", i.key);
+                        Assert.Equal(LocalDataType.Path, i.type);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("2.1.1", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("2.1.2", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1", i.key);
+                        Assert.Equal(LocalDataType.Path, i.type);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1.1", i.key);
+                        Assert.Equal(LocalDataType.Path, i.type);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal("3.1.1.1", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    },
+                    i =>
+                    {
+                        Assert.Equal("3.1.1.2", i.key);
+                        Assert.Equal(LocalDataType.Value, i.type);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrRelativeTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+        }
+    }
+
+    public class TryGetValueOrTypedChildrenTest
+    {
+        [Fact]
+        public void Normal()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.1"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "1", "1.2"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.1", i.path[2]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("1", i.path[1]);
+                        Assert.Equal("1.2", i.path[2]);
+                    });
+            }, "0", "1"));
+
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.1"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "2", "2.1", "2.1.2"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Path, i.type);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                    });
+            }, "0", "2"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.1", i.path[3]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("2", i.path[1]);
+                        Assert.Equal("2.1", i.path[2]);
+                        Assert.Equal("2.1.2", i.path[3]);
+                    });
+            }, "0", "2", "2.1"));
+
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.1"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.Equal("test", value);
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.2"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Path, i.type);
+                        Assert.Equal(3, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                    });
+            }, "0", "3"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Path, i.type);
+                        Assert.Equal(4, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                    });
+            }, "0", "3", "3.1"));
+            Assert.True(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.Collection(children,
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.1", i.path[4]);
+                    },
+                    i =>
+                    {
+                        Assert.Equal(LocalDataType.Value, i.type);
+                        Assert.Equal(5, i.path.Length);
+                        Assert.Equal("0", i.path[0]);
+                        Assert.Equal("3", i.path[1]);
+                        Assert.Equal("3.1", i.path[2]);
+                        Assert.Equal("3.1.1", i.path[3]);
+                        Assert.Equal("3.1.1.2", i.path[4]);
+                    });
+            }, "0", "3", "3.1", "3.1.1"));
+
+            Assert.False(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.3"));
+            Assert.False(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "3", "3.1", "3.1.1", "3.1.1.4"));
+            Assert.False(db.TryGetValueOrTypedChildren(value =>
+            {
+                Assert.True(false, "Path contains value.");
+            }, children =>
+            {
+                Assert.True(false, "Path contains another path.");
+            }, "0", "4"));
+        }
+
+        [Fact]
+        public void Throws()
+        {
+            var app = Helpers.Hier();
+            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
+            var db = app.LocalDatabase;
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[0]));
+
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
+            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
         }
     }
 }

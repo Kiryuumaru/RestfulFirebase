@@ -7,6 +7,7 @@ using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -75,7 +76,7 @@ namespace RestfulFirebase.Local
         /// The path to check.
         /// </param>
         /// <returns>
-        /// <c>true</c> if the <paramref name="path"/> exists; otherwise <c>false</c>.
+        /// <c>true</c> if the <paramref name="path"/> exists; otherwise, <c>false</c>.
         /// </returns>
         /// <exception cref="ArgumentException">
         /// <paramref name="path"/> is null or empty.
@@ -123,46 +124,6 @@ namespace RestfulFirebase.Local
         public (string[] path, string key)[] GetChildren(params string[] path)
         {
             return InternalGetChildren(App.Config.LocalDatabase, path);
-        }
-
-        /// <summary>
-        /// Gets the children relative to the specified <paramref name="path"/> with its corresponding <see cref="LocalDataType"/>.
-        /// </summary>
-        /// <param name="path">
-        /// The path of the children to get.
-        /// </param>
-        /// <returns>
-        /// The children of the specified <paramref name="path"/>.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        /// <paramref name="path"/> is null or empty.
-        /// </exception>
-        /// <exception cref="StringNullOrEmptyException">
-        /// <paramref name="path"/> has null or empty path.
-        /// </exception>
-        public (string key, LocalDataType type)[] GetRelativeTypedChildren(params string[] path)
-        {
-            return InternalGetRelativeTypedChildren(App.Config.LocalDatabase, path);
-        }
-
-        /// <summary>
-        /// Gets the children with its corresponding <see cref="LocalDataType"/> of the specified <paramref name="path"/>.
-        /// </summary>
-        /// <param name="path">
-        /// The path of the children to get.
-        /// </param>
-        /// <returns>
-        /// The children of the specified <paramref name="path"/>.
-        /// </returns>
-        /// <exception cref="ArgumentException">
-        /// <paramref name="path"/> is null or empty.
-        /// </exception>
-        /// <exception cref="StringNullOrEmptyException">
-        /// <paramref name="path"/> has null or empty path.
-        /// </exception>
-        public (string[] path, LocalDataType type)[] GetTypedChildren(params string[] path)
-        {
-            return InternalGetTypedChildren(App.Config.LocalDatabase, path);
         }
 
         /// <summary>
@@ -226,6 +187,46 @@ namespace RestfulFirebase.Local
         }
 
         /// <summary>
+        /// Gets the children relative to the specified <paramref name="path"/> with its corresponding <see cref="LocalDataType"/>.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the children to get.
+        /// </param>
+        /// <returns>
+        /// The children of the specified <paramref name="path"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public (string key, LocalDataType type)[] GetRelativeTypedChildren(params string[] path)
+        {
+            return InternalGetRelativeTypedChildren(App.Config.LocalDatabase, path);
+        }
+
+        /// <summary>
+        /// Gets the children with its corresponding <see cref="LocalDataType"/> of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the children to get.
+        /// </param>
+        /// <returns>
+        /// The children of the specified <paramref name="path"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public (string[] path, LocalDataType type)[] GetTypedChildren(params string[] path)
+        {
+            return InternalGetTypedChildren(App.Config.LocalDatabase, path);
+        }
+
+        /// <summary>
         /// Gets the value of the specified <paramref name="path"/>.
         /// </summary>
         /// <param name="path">
@@ -263,6 +264,214 @@ namespace RestfulFirebase.Local
         public void SetValue(string value, params string[] path)
         {
             InternalSetValue(App.Config.LocalDatabase, value, path);
+        }
+
+        /// <summary>
+        /// Gets the value or children of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrChildren(Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrChildren(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains another path.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrPath(Action<string> onValue, Action onPath, params string[] path)
+        {
+            return InternalTryGetValueOrPath(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or recursive children of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrRecursiveChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrRecursiveChildren(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or recursive relative children of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrRecursiveRelativeChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrRecursiveRelativeChildren(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or recursive values of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrRecursiveValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrRecursiveValues(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or recursive relative values of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrRecursiveRelativeValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrRecursiveRelativeValues(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or relative typed children of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrRelativeTypedChildren(Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrRelativeTypedChildren(App.Config.LocalDatabase, onValue, onPath, path);
+        }
+
+        /// <summary>
+        /// Gets the value or typed children of the specified <paramref name="path"/>.
+        /// </summary>
+        /// <param name="onValue">
+        /// Action executed whether the <paramref name="path"/> contains a value.
+        /// </param>
+        /// <param name="onPath">
+        /// Action executed whether the <paramref name="path"/> contains children.
+        /// </param>
+        /// <param name="path">
+        /// The path to get.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        public bool TryGetValueOrTypedChildren(Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
+        {
+            return InternalTryGetValueOrTypedChildren(App.Config.LocalDatabase, onValue, onPath, path);
         }
 
         #endregion
@@ -380,124 +589,9 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-
             string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            if (data?.Length > 0 && data[0] == PathIndicator)
-            {
-                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
-                if (deserialized != null)
-                {
-                    (string[] path, string key)[] paths = new (string[] path, string key)[deserialized.Length];
-                    for (int i = 0; i < deserialized.Length; i++)
-                    {
-                        string[] subPath = new string[path.Length + 1];
-                        subPath[subPath.Length - 1] = deserialized[i];
-                        Array.Copy(path, 0, subPath, 0, path.Length);
-                        paths[i] = (subPath, deserialized[i]);
-                    }
-                    return paths;
-                }
-            }
-            return new (string[] path, string key)[0];
-        }
-
-        internal (string[] path, LocalDataType type)[] InternalGetTypedChildren(ILocalDatabase localDatabase, string[] path)
-        {
-            Validate(localDatabase, path);
-
-            List<(string[] path, LocalDataType type)> paths = new List<(string[] path, LocalDataType type)>();
-
-            void recursive(string[] recvPath, string serializedRecvPath, int root)
-            {
-                int nextRoot = root + 1;
-
-                string recvData = DBGet(localDatabase, serializedRecvPath);
-
-                if (root == 0)
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(subPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        paths.Add((recvPath, LocalDataType.Path));
-                    }
-                    else
-                    {
-                        paths.Add((recvPath, LocalDataType.Value));
-                    }
-                }
-            }
-
-            string serializedPath = StringUtilities.Serialize(path);
-            LockReadHierarchy(path, () => recursive(path, serializedPath, 0));
-
-            return paths.ToArray();
-        }
-
-        internal (string key, LocalDataType type)[] InternalGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path)
-        {
-            Validate(localDatabase, path);
-
-            List<(string key, LocalDataType type)> paths = new List<(string key, LocalDataType type)>();
-
-            void recursive(string[] recvPath, string serializedRecvPath, int root)
-            {
-                int nextRoot = root + 1;
-
-                string recvData = DBGet(localDatabase, serializedRecvPath);
-
-                if (root == 0)
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(subPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        paths.Add((recvPath[recvPath.Length - 1], LocalDataType.Path));
-                    }
-                    else
-                    {
-                        paths.Add((recvPath[recvPath.Length - 1], LocalDataType.Value));
-                    }
-                }
-            }
-
-            string serializedPath = StringUtilities.Serialize(path);
-            LockReadHierarchy(path, () => recursive(path, serializedPath, 0));
-
-            return paths.ToArray();
+            return GetChildren(localDatabase, path, serializedPath, data);
         }
 
         internal LocalDataType InternalGetDataType(ILocalDatabase localDatabase, string[] path)
@@ -508,7 +602,7 @@ namespace RestfulFirebase.Local
 
             string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            if (data?.Length > 0 && data[0] == PathIndicator)
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
             {
                 return LocalDataType.Path;
             }
@@ -518,126 +612,44 @@ namespace RestfulFirebase.Local
             }
         }
 
+        internal (string[] path, LocalDataType type)[] InternalGetTypedChildren(ILocalDatabase localDatabase, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            string serializedPath = StringUtilities.Serialize(path);
+            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+
+            return GetTypedChildren(localDatabase, path, serializedPath, data);
+        }
+
         internal string[][] InternalGetRecursiveChildren(ILocalDatabase localDatabase, string[] path)
         {
             Validate(localDatabase, path);
 
-            List<string[]> paths = new List<string[]>();
-
-            void recursive(string[] recvPath, string serializedRecvPath, int root)
-            {
-                int nextRoot = root + 1;
-
-                string recvData = DBGet(localDatabase, serializedRecvPath);
-
-                if (root == 0)
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        paths.Add(recvPath);
-                    }
-                }
-            }
-
             string serializedPath = StringUtilities.Serialize(path);
-            LockReadHierarchy(path, () => recursive(path, serializedPath, 0));
+            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            return paths.ToArray();
+            return GetRecursiveChildren(localDatabase, path, serializedPath, data);
         }
 
         internal string[][] InternalGetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path)
         {
             Validate(localDatabase, path);
 
-            List<string[]> paths = new List<string[]>();
+            string serializedPath = StringUtilities.Serialize(path);
+            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            void recursive(string[] recvPath, string serializedRecvPath, int root)
-            {
-                int nextRoot = root + 1;
+            return GetRecursiveRelativeChildren(localDatabase, path, serializedPath, data);
+        }
 
-                string recvData = DBGet(localDatabase, serializedRecvPath);
-
-                if (root == 0)
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    if (recvData?.Length > 0 && recvData[0] == PathIndicator)
-                    {
-                        string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
-                        if (deserialized != null)
-                        {
-                            for (int i = 0; i < deserialized.Length; i++)
-                            {
-                                string[] subPath = new string[recvPath.Length + 1];
-                                subPath[subPath.Length - 1] = deserialized[i];
-                                Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
-                                string serializedSubPath = StringUtilities.Serialize(subPath);
-                                rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        string[] pathToAdd = new string[root];
-                        Array.Copy(recvPath, recvPath.Length - root, pathToAdd, 0, root);
-                        paths.Add(pathToAdd);
-                    }
-                }
-            }
+        internal (string key, LocalDataType type)[] InternalGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path)
+        {
+            Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            LockReadHierarchy(path, () => recursive(path, serializedPath, 0));
+            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            return paths.ToArray();
+            return GetRelativeTypedChildren(localDatabase, path, serializedPath, data);
         }
 
         internal string InternalGetValue(ILocalDatabase localDatabase, string[] path)
@@ -648,7 +660,7 @@ namespace RestfulFirebase.Local
 
             string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-            if (data?.Length > 0)
+            if (data != null && data.Length > 0)
             {
                 return data[0] == ValueIndicator ? data.Substring(1) : default;
             }
@@ -687,10 +699,10 @@ namespace RestfulFirebase.Local
                         absolutePaths[i] = (keyHier, serializedKeyHier);
 
                         string data = DBGet(localDatabase, serializedKeyHier);
-                        if (data?.Length > 0 && data[0] == PathIndicator)
+                        if (data != null && data.Length > 0 && data[0] == PathIndicator)
                         {
                             string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
-                            if (deserialized?.Length != 0)
+                            if (deserialized != null && deserialized.Length != 0)
                             {
                                 if (!deserialized.Contains(path[nextI]))
                                 {
@@ -730,6 +742,408 @@ namespace RestfulFirebase.Local
                 rwLock.LockWrite(path, () => DBSet(localDatabase, serializedPath, ValueIndicator + value));
                 OnDataChanges(holder, path);
             });
+        }
+
+        internal bool InternalTryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetChildren(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrPath(ILocalDatabase localDatabase, Action<string> onValue, Action onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p => onPath?.Invoke(), path);
+        }
+
+        internal bool InternalTryGetValueOrRecursiveChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetRecursiveChildren(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrRecursiveRelativeChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetRecursiveRelativeChildren(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrRecursiveValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetRecursiveValues(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrRecursiveRelativeValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetRecursiveRelativeValues(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrRelativeTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetRelativeTypedChildren(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        internal bool InternalTryGetValueOrTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+            {
+                onPath?.Invoke(GetTypedChildren(localDatabase, path, p.serializedPath, p.data));
+            }, path);
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private bool TryGetValueOrPath(ILocalDatabase localDatabase, Action<(string value, string serializedPath)> onValue, Action<(string data, string serializedPath)> onPath, string[] path)
+        {
+            string serializedPath = StringUtilities.Serialize(path);
+
+            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+
+            if (data != null && data.Length > 0)
+            {
+                if (data[0] == ValueIndicator)
+                {
+                    onValue?.Invoke((data.Substring(1), serializedPath));
+                    return true;
+                }
+                else if (data[0] == PathIndicator)
+                {
+                    onPath?.Invoke((data, serializedPath));
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        private (string[] path, string key)[] GetChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    (string[] path, string key)[] paths = new (string[] path, string key)[deserialized.Length];
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        paths[i] = (subPath, deserialized[i]);
+                    }
+                    return paths;
+                }
+            }
+            return new (string[] path, string key)[0];
+        }
+
+        private (string[] path, LocalDataType type)[] GetTypedChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<(string[] path, LocalDataType type)> paths = new List<(string[] path, LocalDataType type)>();
+
+            LockReadHierarchy(path, () =>
+            {
+                if (data != null && data.Length > 0 && data[0] == PathIndicator)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                    if (deserialized != null)
+                    {
+                        for (int i = 0; i < deserialized.Length; i++)
+                        {
+                            string[] subPath = new string[path.Length + 1];
+                            subPath[subPath.Length - 1] = deserialized[i];
+                            Array.Copy(path, 0, subPath, 0, path.Length);
+                            string serializedSubPath = StringUtilities.Serialize(subPath);
+                            rwLock.LockRead(subPath, () =>
+                            {
+                                string subData = DBGet(localDatabase, serializedSubPath);
+
+                                if (subData != null && subData.Length > 0 && subData[0] == PathIndicator)
+                                {
+                                    paths.Add((subPath, LocalDataType.Path));
+                                }
+                                else
+                                {
+                                    paths.Add((subPath, LocalDataType.Value));
+                                }
+                            });
+                        }
+                    }
+                }
+            });
+
+            return paths.ToArray();
+        }
+
+        private (string key, LocalDataType type)[] GetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<(string key, LocalDataType type)> paths = new List<(string key, LocalDataType type)>();
+
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        string serializedSubPath = StringUtilities.Serialize(subPath);
+                        rwLock.LockRead(subPath, () =>
+                        {
+                            string subData = DBGet(localDatabase, serializedSubPath);
+
+                            if (subData != null && subData.Length > 0 && subData[0] == PathIndicator)
+                            {
+                                paths.Add((subPath[subPath.Length - 1], LocalDataType.Path));
+                            }
+                            else
+                            {
+                                paths.Add((subPath[subPath.Length - 1], LocalDataType.Value));
+                            }
+                        });
+                    }
+                }
+            }
+
+            return paths.ToArray();
+        }
+
+        private string[][] GetRecursiveChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<string[]> paths = new List<string[]>();
+
+            void recursive(string[] recvPath, string serializedRecvPath, int root)
+            {
+                int nextRoot = root + 1;
+
+                string recvData = DBGet(localDatabase, serializedRecvPath);
+
+                if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
+                    if (deserialized != null)
+                    {
+                        for (int i = 0; i < deserialized.Length; i++)
+                        {
+                            string[] subPath = new string[recvPath.Length + 1];
+                            subPath[subPath.Length - 1] = deserialized[i];
+                            Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
+                            string serializedSubPath = StringUtilities.Serialize(subPath);
+                            rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
+                        }
+                    }
+                }
+                else
+                {
+                    paths.Add(recvPath);
+                }
+            }
+
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        string serializedSubPath = StringUtilities.Serialize(subPath);
+                        rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
+                    }
+                }
+            }
+
+            return paths.ToArray();
+        }
+
+        private string[][] GetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<string[]> paths = new List<string[]>();
+
+            void recursive(string[] recvPath, string serializedRecvPath, int root)
+            {
+                int nextRoot = root + 1;
+
+                string recvData = DBGet(localDatabase, serializedRecvPath);
+
+                if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
+                    if (deserialized != null)
+                    {
+                        for (int i = 0; i < deserialized.Length; i++)
+                        {
+                            string[] subPath = new string[recvPath.Length + 1];
+                            subPath[subPath.Length - 1] = deserialized[i];
+                            Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
+                            string serializedSubPath = StringUtilities.Serialize(subPath);
+                            rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
+                        }
+                    }
+                }
+                else
+                {
+                    string[] pathToAdd = new string[root];
+                    Array.Copy(recvPath, recvPath.Length - root, pathToAdd, 0, root);
+                    paths.Add(pathToAdd);
+                }
+            }
+
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        string serializedSubPath = StringUtilities.Serialize(subPath);
+                        rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
+                    }
+                }
+            }
+
+            return paths.ToArray();
+        }
+
+        private (string[] path, string value)[] GetRecursiveValues(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<(string[] path, string value)> paths = new List<(string[] path, string value)>();
+
+            void recursive(string[] recvPath, string serializedRecvPath, int root)
+            {
+                int nextRoot = root + 1;
+
+                string recvData = DBGet(localDatabase, serializedRecvPath);
+
+                if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
+                    if (deserialized != null)
+                    {
+                        for (int i = 0; i < deserialized.Length; i++)
+                        {
+                            string[] subPath = new string[recvPath.Length + 1];
+                            subPath[subPath.Length - 1] = deserialized[i];
+                            Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
+                            string serializedSubPath = StringUtilities.Serialize(subPath);
+                            rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
+                        }
+                    }
+                }
+                else
+                {
+                    paths.Add((recvPath, recvData.Substring(1)));
+                }
+            }
+
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        string serializedSubPath = StringUtilities.Serialize(subPath);
+                        rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
+                    }
+                }
+            }
+
+            return paths.ToArray();
+        }
+
+        private (string[] path, string value)[] GetRecursiveRelativeValues(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+        {
+            List<(string[] path, string value)> paths = new List<(string[] path, string value)>();
+
+            void recursive(string[] recvPath, string serializedRecvPath, int root)
+            {
+                int nextRoot = root + 1;
+
+                string recvData = DBGet(localDatabase, serializedRecvPath);
+
+                if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(recvData.Substring(1));
+                    if (deserialized != null)
+                    {
+                        for (int i = 0; i < deserialized.Length; i++)
+                        {
+                            string[] subPath = new string[recvPath.Length + 1];
+                            subPath[subPath.Length - 1] = deserialized[i];
+                            Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
+                            string serializedSubPath = StringUtilities.Serialize(subPath);
+                            rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
+                        }
+                    }
+                }
+                else
+                {
+                    string[] pathToAdd = new string[root];
+                    Array.Copy(recvPath, recvPath.Length - root, pathToAdd, 0, root);
+                    paths.Add((pathToAdd, recvData.Substring(1)));
+                }
+            }
+
+            if (data != null && data.Length > 0 && data[0] == PathIndicator)
+            {
+                string[] deserialized = StringUtilities.Deserialize(data.Substring(1));
+                if (deserialized != null)
+                {
+                    for (int i = 0; i < deserialized.Length; i++)
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        subPath[subPath.Length - 1] = deserialized[i];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        string serializedSubPath = StringUtilities.Serialize(subPath);
+                        rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
+                    }
+                }
+            }
+
+            return paths.ToArray();
         }
 
         private void DeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder holder, bool includeSelf, string[] path, string serializedPath)
@@ -825,7 +1239,7 @@ namespace RestfulFirebase.Local
             {
                 throw new ArgumentNullException(nameof(localDatabase));
             }
-            if (path == null || path?.Length == 0)
+            if (path == null || path.Length == 0)
             {
                 throw StringNullOrEmptyException.FromSingleArgument(nameof(path));
             }
@@ -905,6 +1319,7 @@ namespace RestfulFirebase.Local
 
             public void Invoke(DataChangesEventArgs args)
             {
+                //Changes?.Invoke(localDatabaseApp, args);
                 invokes.Enqueue(args);
 
                 if (!isInvoking)

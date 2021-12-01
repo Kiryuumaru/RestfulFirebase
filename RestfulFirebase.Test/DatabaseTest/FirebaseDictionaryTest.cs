@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DatabaseTest
+namespace DatabaseTest.DatabaseTest
 {
     public class FirebaseDictionaryTest
     {

@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ObservableHelpers.Utilities;
+using RestfulFirebase.Local;
 
 namespace RestfulFirebase.Auth
 {
@@ -121,7 +122,7 @@ namespace RestfulFirebase.Auth
 
             App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
 
-            Fetch();
+            Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
         }
 
         /// <inheritdoc/>
@@ -169,7 +170,7 @@ namespace RestfulFirebase.Auth
         {
             var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{newEmail}\",\"returnSecureToken\":true}}";
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
@@ -205,7 +206,7 @@ namespace RestfulFirebase.Auth
         {
             var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
@@ -236,7 +237,7 @@ namespace RestfulFirebase.Auth
             {
                 var content = $"{{ \"idToken\": \"{FirebaseToken}\" }}";
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(FirebaseAuthApp.GoogleDeleteUserUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleDeleteUserUrl, App.Config.ApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
                     new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -288,7 +289,7 @@ namespace RestfulFirebase.Auth
             try
             {
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(FirebaseAuthApp.GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
                     new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -351,7 +352,7 @@ namespace RestfulFirebase.Auth
 
             var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
@@ -406,7 +407,7 @@ namespace RestfulFirebase.Auth
             var providerId = App.Auth.GetProviderId(authType);
             var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
@@ -455,7 +456,7 @@ namespace RestfulFirebase.Auth
 
             var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
 
             await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
         }
@@ -497,7 +498,7 @@ namespace RestfulFirebase.Auth
             {
                 string content = $"{{\"identifier\":\"{email}\", \"continueUri\": \"http://localhost\"}}";
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(FirebaseAuthApp.GoogleCreateAuthUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleCreateAuthUrl, App.Config.ApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
                     new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -572,7 +573,7 @@ namespace RestfulFirebase.Auth
                 {
                     HttpResponseMessage response = null;
                     response = await App.Auth.GetClient().PostAsync(
-                        new Uri(string.Format(FirebaseAuthApp.GoogleRefreshAuth, App.Config.ApiKey)),
+                        new Uri(string.Format(AuthApp.GoogleRefreshAuth, App.Config.ApiKey)),
                         new StringContent(content, Encoding.UTF8, "Application/json"),
                         new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
 
@@ -690,21 +691,21 @@ namespace RestfulFirebase.Auth
             else if (!string.IsNullOrWhiteSpace(displayName))
             {
                 sb.Append($",\"displayName\":\"{displayName}\"");
-                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
+                sb.Append($",\"deleteAttribute\":[\"{AuthApp.ProfileDeletePhotoUrl}\"]");
             }
             else if (!string.IsNullOrWhiteSpace(photoUrl))
             {
                 sb.Append($",\"photoUrl\":\"{photoUrl}\"");
-                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\"]");
+                sb.Append($",\"deleteAttribute\":[\"{AuthApp.ProfileDeleteDisplayName}\"]");
             }
             else
             {
-                sb.Append($",\"deleteAttribute\":[\"{FirebaseAuthApp.ProfileDeleteDisplayName}\",\"{FirebaseAuthApp.ProfileDeletePhotoUrl}\"]");
+                sb.Append($",\"deleteAttribute\":[\"{AuthApp.ProfileDeleteDisplayName}\",\"{AuthApp.ProfileDeletePhotoUrl}\"]");
             }
 
             sb.Append($",\"returnSecureToken\":true}}");
 
-            var auth = await App.Auth.ExecuteWithPostContent(FirebaseAuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
+            var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
 
             UpdateAuth(auth);
         }
@@ -734,8 +735,18 @@ namespace RestfulFirebase.Auth
         }
 
         /// <summary>
-        /// Invokes <see cref="AuthRefreshed"/> event into the current context.
+        /// Copies authentication from another <see cref="RestfulFirebaseApp"/>.
         /// </summary>
+        /// <param name="app">
+        /// The <see cref="RestfulFirebaseApp"/> to copy from
+        /// </param>
+        public void CopyAuthenticationFrom(RestfulFirebaseApp app)
+        {
+            ILocalDatabase localDatabase = app.Config.CustomAuthLocalDatabase ?? app.Config.LocalDatabase;
+            Fetch(localDatabase);
+            Store(localDatabase);
+        }
+
         internal void OnAuthRefreshed()
         {
             App.Auth.OnAuthRefreshed();
@@ -765,7 +776,7 @@ namespace RestfulFirebase.Auth
             IsEmailVerified = user.IsEmailVerified;
             PhotoUrl = user.PhoneNumber;
             PhoneNumber = user.PhoneNumber;
-            Store();
+            Store(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
         }
 
         internal void Purge()
@@ -787,9 +798,9 @@ namespace RestfulFirebase.Auth
             App.LocalDatabase.InternalDelete(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
         }
 
-        internal void Fetch()
+        internal void Fetch(ILocalDatabase localDatabase)
         {
-            var auth = App.LocalDatabase.InternalGetValue(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
+            var auth = App.LocalDatabase.InternalGetValue(localDatabase, new string[] { Root });
 
             FirebaseToken = BlobUtilities.GetValue(auth, "tok");
             RefreshToken = BlobUtilities.GetValue(auth, "ref");
@@ -806,7 +817,7 @@ namespace RestfulFirebase.Auth
             PhoneNumber = BlobUtilities.GetValue(auth, "pnum");
         }
 
-        internal void Store()
+        internal void Store(ILocalDatabase localDatabase)
         {
             var auth = "";
 
@@ -824,7 +835,7 @@ namespace RestfulFirebase.Auth
             auth = BlobUtilities.SetValue(auth, "purl", PhotoUrl);
             auth = BlobUtilities.SetValue(auth, "pnum", PhoneNumber);
 
-            App.LocalDatabase.InternalSetValue(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, auth, new string[] { Root });
+            App.LocalDatabase.InternalSetValue(localDatabase, auth, new string[] { Root });
         }
 
         private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -832,7 +843,7 @@ namespace RestfulFirebase.Auth
             if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
                 e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))
             {
-                Fetch();
+                Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
             }
         }
 

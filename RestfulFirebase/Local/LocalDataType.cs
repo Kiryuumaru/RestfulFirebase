@@ -8,13 +8,13 @@ namespace RestfulFirebase.Local
     public enum LocalDataType
     {
         /// <summary>
-        /// The data is a path type.
-        /// </summary>
-        Path,
-
-        /// <summary>
         /// The data is a value type.
         /// </summary>
-        Value
+        Value,
+
+        /// <summary>
+        /// The data is a path type.
+        /// </summary>
+        Path
     }
 }

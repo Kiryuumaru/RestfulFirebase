@@ -4,6 +4,7 @@ using RestfulFirebase.Auth;
 using RestfulFirebase.Database;
 using RestfulFirebase.Local;
 using RestfulFirebase.Storage;
+using System;
 
 namespace RestfulFirebase
 {
@@ -17,27 +18,27 @@ namespace RestfulFirebase
         /// <summary>
         /// Gets <see cref="FirebaseConfig"/> of the app session 
         /// </summary>
-        public FirebaseConfig Config { get; }
+        public FirebaseConfig Config { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="LocalDatabaseApp"/> used for the app persistency.
         /// </summary>
-        public LocalDatabaseApp LocalDatabase { get; }
+        public LocalDatabaseApp LocalDatabase { get; private set; }
 
         /// <summary>
-        /// Gets the <see cref="FirebaseAuthApp"/> for firebase authentication app module.
+        /// Gets the <see cref="AuthApp"/> for firebase authentication app module.
         /// </summary>
-        public FirebaseAuthApp Auth { get; }
+        public AuthApp Auth { get; private set; }
 
         /// <summary>
-        /// Gets the <see cref="FirebaseDatabaseApp"/> for firebase database app module.
+        /// Gets the <see cref="DatabaseApp"/> for firebase database app module.
         /// </summary>
-        public FirebaseDatabaseApp Database { get; }
+        public DatabaseApp Database { get; private set; }
 
         /// <summary>
-        /// Gets the <see cref="FirebaseStorageApp"/> for firebase storage app module.
+        /// Gets the <see cref="StorageApp"/> for firebase storage app module.
         /// </summary>
-        public FirebaseStorageApp Storage { get; }
+        public StorageApp Storage { get; private set; }
 
         #endregion
 
@@ -52,16 +53,21 @@ namespace RestfulFirebase
         public RestfulFirebaseApp(FirebaseConfig config)
         {
             Config = config;
-
             LocalDatabase = new LocalDatabaseApp(this);
-            Database = new FirebaseDatabaseApp(this);
-            Storage = new FirebaseStorageApp(this);
-            Auth = new FirebaseAuthApp(this);
+            Database = new DatabaseApp(this);
+            Storage = new StorageApp(this);
+            Auth = new AuthApp(this);
         }
 
         #endregion
 
         #region Methods
+
+
+
+        #endregion
+
+        #region Disposable Members
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)

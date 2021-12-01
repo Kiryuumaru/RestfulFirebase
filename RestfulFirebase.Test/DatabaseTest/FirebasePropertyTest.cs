@@ -9,17 +9,15 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DatabaseTest
+namespace DatabaseTest.DatabaseTest
 {
     public class FirebasePropertyTest
     {
         [Fact]
         public async void Normal()
         {
-            var app = new RestfulFirebaseApp(Config.YourConfig());
-            await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
-
-            Assert.True(app.Auth.IsAuthenticated);
+            var generator = await Helpers.AuthenticatedAppGenerator();
+            var app = generator();
 
             var model = new FirebaseProperty<string>();
 
@@ -52,6 +50,10 @@ namespace DatabaseTest
             await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1));
 
             Assert.Equal(model.Value, model2.Value);
+
+            Assert.True(wire.SetNull());
+            wire.MaxConcurrentWrites = 10;
+            Assert.True(await wire.WaitForSynced(true));
         }
     }
 }

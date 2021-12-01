@@ -1,4 +1,6 @@
+using RestfulFirebase.Exceptions;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Database.Query
@@ -20,6 +22,30 @@ namespace RestfulFirebase.Database.Query
             : base(app, parent)
         {
             this.pathFactory = pathFactory;
+            if (parent != null)
+            {
+                if (pathFactory().Any(
+                    c =>
+                    {
+                        switch (c)
+                        {
+                            case '$': return true;
+                            case '#': return true;
+                            case '[': return true;
+                            case ']': return true;
+                            case '.': return true;
+                            default:
+                                if ((c >= 0 && c <= 31) || c == 127)
+                                {
+                                    return true;
+                                }
+                                return false;
+                        }
+                    }))
+                {
+                    throw new DatabaseForbiddenNodeNameCharacter();
+                }
+            }
         }
 
         #endregion
@@ -116,6 +142,32 @@ namespace RestfulFirebase.Database.Query
             if (string.IsNullOrEmpty(s))
             {
                 throw new ArgumentNullException("path");
+            }
+            if (s.Any(
+                c =>
+                {
+                    switch (c)
+                    {
+                        case '$': return true;
+                        case '[': return true;
+                        case ']': return true;
+                        case '#': return true;
+                        case '.': 
+                            if (Parent != null)
+                            {
+                                return true;
+                            }
+                            return false;
+                        default:
+                            if ((c >= 0 && c <= 31) || c == 127)
+                            {
+                                return true;
+                            }
+                            return false;
+                    }
+                }))
+            {
+                throw new DatabaseForbiddenNodeNameCharacter();
             }
 
             if (child is ChildQuery)

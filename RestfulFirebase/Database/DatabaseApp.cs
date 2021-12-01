@@ -10,20 +10,20 @@ namespace RestfulFirebase.Database
     /// <summary>
     /// App module that provides firebase realtime database implementations.
     /// </summary>
-    public class FirebaseDatabaseApp : SyncContext, IAppModule
+    public class DatabaseApp : SyncContext, IAppModule
     {
         #region Properties
 
         /// <inheritdoc/>
         public RestfulFirebaseApp App { get; private set; }
 
-        internal const string OfflineDatabaseLocalIndicator = "db";
+        internal const string OfflineDatabaseIndicator = "db";
 
         #endregion
 
         #region Initializers
 
-        internal FirebaseDatabaseApp(RestfulFirebaseApp app)
+        internal DatabaseApp(RestfulFirebaseApp app)
         {
             SyncOperation.SetContext(app);
 
@@ -33,6 +33,27 @@ namespace RestfulFirebase.Database
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Creates new instance of <see cref="ChildQuery"/> node with the specified child <paramref name="resourceName"/>.
+        /// </summary>
+        /// <param name="resourceNameFactory">
+        /// The resource name factory of the node.
+        /// </param>
+        /// <returns>
+        /// The created <see cref="ChildQuery"/> node.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="resourceNameFactory"/> is null.
+        /// </exception>
+        public ChildQuery Child(Func<string> resourceNameFactory)
+        {
+            if (resourceNameFactory == null)
+            {
+                throw new ArgumentNullException(nameof(resourceNameFactory));
+            }
+            return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceNameFactory()));
+        }
 
         /// <summary>
         /// Creates new instance of <see cref="ChildQuery"/> node with the specified child <paramref name="resourceName"/>.
@@ -52,7 +73,7 @@ namespace RestfulFirebase.Database
             {
                 throw new ArgumentNullException(nameof(resourceName));
             }
-            return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceName));
+            return Child(() => resourceName);
         }
 
         /// <summary>
@@ -63,7 +84,7 @@ namespace RestfulFirebase.Database
         /// </param>
         public void Flush(ILocalDatabase localDatabase = default)
         {
-            App.LocalDatabase.InternalDelete(localDatabase, new string[] { OfflineDatabaseLocalIndicator });
+            App.LocalDatabase.InternalDelete(localDatabase, new string[] { OfflineDatabaseIndicator });
         }
 
         #endregion

@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using ObservableHelpers.Utilities;
+using System.Linq;
 
 namespace RestfulFirebase.Database.Query
 {
@@ -84,6 +85,9 @@ namespace RestfulFirebase.Database.Query
         /// <exception cref="AuthUndefinedException">
         /// The error occured is undefined.
         /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -124,6 +128,9 @@ namespace RestfulFirebase.Database.Query
         /// </exception>
         /// <exception cref="AuthUndefinedException">
         /// The error occured is undefined.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
         /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
@@ -304,6 +311,30 @@ namespace RestfulFirebase.Database.Query
             if (relativePaths == null)
             {
                 throw new ArgumentNullException(nameof(relativePaths));
+            }
+            foreach (var path in relativePaths)
+            {
+                if (path.Any(
+                    c =>
+                    {
+                        switch (c)
+                        {
+                            case '$': return true;
+                            case '[': return true;
+                            case ']': return true;
+                            case '#': return true;
+                            case '.': return true;
+                            default:
+                                if ((c >= 0 && c <= 31) || c == 127)
+                                {
+                                    return true;
+                                }
+                                return false;
+                        }
+                    }))
+                {
+                    throw new DatabaseForbiddenNodeNameCharacter();
+                }
             }
 
             await Patch(() =>

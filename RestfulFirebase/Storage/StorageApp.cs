@@ -9,7 +9,7 @@ namespace RestfulFirebase.Storage
     /// <summary>
     /// App module that provides firebase storage implementations
     /// </summary>
-    public class FirebaseStorageApp : SyncContext, IAppModule
+    public class StorageApp : SyncContext, IAppModule
     {
         #region Properties
 
@@ -20,7 +20,7 @@ namespace RestfulFirebase.Storage
 
         #region Initializers
 
-        internal FirebaseStorageApp(RestfulFirebaseApp app)
+        internal StorageApp(RestfulFirebaseApp app)
         {
             SyncOperation.SetContext(app);
 

@@ -11,13 +11,7 @@ namespace RestfulFirebase
     /// </summary>
     public class FirebaseConfig : ObservableObject
     {
-        /// <summary>
-        /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
-        /// </summary>
-        public FirebaseConfig()
-        {
-
-        }
+        #region Properties
 
         /// <summary>
         /// Gets or sets the firebase api key used by the app.
@@ -168,5 +162,25 @@ namespace RestfulFirebase
             get => GetProperty<bool>();
             set => SetProperty(value);
         }
+
+        #endregion
+
+        #region Initializers
+
+        /// <summary>
+        /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
+        /// </summary>
+        public FirebaseConfig()
+        {
+
+        }
+
+        #endregion
+
+        #region Methods
+
+
+
+        #endregion
     }
 }

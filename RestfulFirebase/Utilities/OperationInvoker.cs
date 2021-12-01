@@ -40,9 +40,8 @@ namespace RestfulFirebase.Utilities
         /// </param>
         public OperationInvoker(int initialTokenCount)
         {
-            operationLock = new SemaphoreSlim(initialTokenCount);
+            operationLock = new SemaphoreSlim(0);
             ConcurrentTokenCount = initialTokenCount;
-            lastTokenCount = initialTokenCount;
         }
 
         #endregion
@@ -62,12 +61,12 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 action();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) action();
             }
             operationLock.Release();
@@ -86,13 +85,13 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
-                await func().ConfigureAwait(false);
+                await operationLock.WaitAsync();
+                await func();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
-                if (!cancellationToken.Value.IsCancellationRequested) await func().ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
+                if (!cancellationToken.Value.IsCancellationRequested) await func();
             }
             operationLock.Release();
         }
@@ -252,12 +251,12 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 action();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) action();
             }
             operationLock.Release();
@@ -282,7 +281,7 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 if (returnOnLockFree)
                 {
                     void onLockFree()
@@ -303,7 +302,7 @@ namespace RestfulFirebase.Utilities
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested)
                 {
                     if (returnOnLockFree)
@@ -347,13 +346,13 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
-                await func().ConfigureAwait(false);
+                await operationLock.WaitAsync();
+                await func();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
-                if (!cancellationToken.Value.IsCancellationRequested) await func().ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
+                if (!cancellationToken.Value.IsCancellationRequested) await func();
             }
             operationLock.Release();
         }
@@ -377,39 +376,39 @@ namespace RestfulFirebase.Utilities
         {
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 if (returnOnLockFree)
                 {
                     async void onLockFree()
                     {
-                        await func().ConfigureAwait(false);
+                        await func();
                         operationLock.Release();
                     }
                     onLockFree();
                 }
                 else
                 {
-                    await func().ConfigureAwait(false);
+                    await func();
                     operationLock.Release();
                 }
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested)
                 {
                     if (returnOnLockFree)
                     {
                         async void onLockFree()
                         {
-                            await func().ConfigureAwait(false);
+                            await func();
                             operationLock.Release();
                         }
                         onLockFree();
                     }
                     else
                     {
-                        await func().ConfigureAwait(false);
+                        await func();
                         operationLock.Release();
                     }
                 }
@@ -437,12 +436,12 @@ namespace RestfulFirebase.Utilities
             T result = default;
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 result = func();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) result = func();
             }
             operationLock.Release();
@@ -466,12 +465,12 @@ namespace RestfulFirebase.Utilities
             T result = default;
             if (cancellationToken == null)
             {
-                await operationLock.WaitAsync().ConfigureAwait(false);
+                await operationLock.WaitAsync();
                 result = await func();
             }
             else
             {
-                await operationLock.WaitAsync(cancellationToken.Value).ConfigureAwait(false);
+                await operationLock.WaitAsync(cancellationToken.Value);
                 if (!cancellationToken.Value.IsCancellationRequested) result = await func();
             }
             operationLock.Release();
@@ -480,7 +479,7 @@ namespace RestfulFirebase.Utilities
 
         private async void EvaluateTokenCount()
         {
-            int currentToken = ConcurrentTokenCount;
+            int currentToken = tokenCount;
             if (lastTokenCount < currentToken)
             {
                 int tokenToRelease = currentToken - lastTokenCount;

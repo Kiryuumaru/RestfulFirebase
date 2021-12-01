@@ -65,6 +65,9 @@ namespace RestfulFirebase.Database.Query
         /// <exception cref="AuthUndefinedException">
         /// The error occured is undefined.
         /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         /// <exception cref="OperationCanceledException">
         /// The operation was cancelled.
         /// </exception>
@@ -82,6 +85,9 @@ namespace RestfulFirebase.Database.Query
         /// <exception cref="ArgumentNullException">
         /// Throws when <paramref name="pathFactory"/> is null.
         /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when <paramref name="pathFactory"/> has forbidden node name character.
+        /// </exception>
         ChildQuery Child(Func<string> pathFactory);
 
         /// <summary>
@@ -95,6 +101,9 @@ namespace RestfulFirebase.Database.Query
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// Throws when <paramref name="path"/> is null or empty.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when <paramref name="path"/> has forbidden node name character.
         /// </exception>
         ChildQuery Child(string path);
 
@@ -120,6 +129,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
@@ -138,6 +148,9 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed fan out <see cref="Task"/>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when <paramref name="relativePaths"/> has forbidden node name character.
+        /// </exception>
         Task FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
@@ -163,6 +176,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -180,6 +194,9 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed fan out <see cref="Task"/>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when <paramref name="relativePaths"/> has forbidden node name character.
+        /// </exception>
         Task FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
@@ -205,6 +222,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="token">
@@ -224,6 +242,9 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The absolute path of the query.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         string GetAbsoluteUrl();
 
         /// <summary>
@@ -249,6 +270,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -288,6 +310,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -327,6 +350,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">
@@ -366,6 +390,7 @@ namespace RestfulFirebase.Database.Query
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
         /// <para><see cref="AuthUndefinedException"/> - The error occured is undefined.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         /// <param name="jsonData">

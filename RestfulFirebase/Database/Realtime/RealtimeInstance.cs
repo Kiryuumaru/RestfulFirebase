@@ -49,6 +49,16 @@ namespace RestfulFirebase.Database.Realtime
         public ILocalDatabase LocalDatabase { get; }
 
         /// <summary>
+        /// Gets <c>true</c> whether the wire has first stream since creation; otherwise, <c>false</c>.
+        /// </summary>
+        public virtual bool HasFirstStream => Root?.HasFirstStream ?? false;
+
+        /// <summary>
+        /// Gets <c>true</c> whether the wire has started the node subscription; otherwise, <c>false</c>.
+        /// </summary>
+        public virtual bool Started => Root?.Started ?? false;
+
+        /// <summary>
         /// Gets or sets the firebase realtime database max concurrent writes.
         /// </summary>
         public int MaxConcurrentWrites
@@ -84,6 +94,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <para><see cref="AuthInvalidRefreshTokenException"/> - An invalid refresh token is provided.</para>
         /// <para><see cref="AuthInvalidJSONReceivedException"/> - Invalid JSON payload received.</para>
         /// <para><see cref="AuthMissingRefreshTokenException"/> - No refresh token provided.</para>
+        /// <para><see cref="DatabaseForbiddenNodeNameCharacter"/> - Throws when any node has forbidden node name character.</para>
         /// <para><see cref="OperationCanceledException"/> - The operation was cancelled.</para>
         /// </remarks>
         public event EventHandler<WireExceptionEventArgs> Error;
@@ -137,12 +148,21 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="timeout">
         /// The <see cref="TimeSpan"/> timeout of the created task.
         /// </param>
+        /// <param name="path">
+        /// The path of the data to wait for sync.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public Task<bool> WaitForSynced(TimeSpan timeout)
+        /// <exception cref="DatabaseRealtimeWireNotStarted">
+        /// Throws when wire was not started.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public Task<bool> WaitForSynced(TimeSpan timeout, params string[] path)
         {
-            return WaitForSynced(true, new CancellationTokenSource(timeout).Token);
+            return WaitForSynced(true, new CancellationTokenSource(timeout).Token, path);
         }
 
         /// <summary>
@@ -151,12 +171,21 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
         /// </param>
+        /// <param name="path">
+        /// The path of the data to wait for sync.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public Task<bool> WaitForSynced(CancellationToken cancellationToken)
+        /// <exception cref="DatabaseRealtimeWireNotStarted">
+        /// Throws when wire was not started.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public Task<bool> WaitForSynced(CancellationToken cancellationToken, params string[] path)
         {
-            return WaitForSynced(true, cancellationToken);
+            return WaitForSynced(true, cancellationToken, path);
         }
 
         /// <summary>
@@ -168,12 +197,21 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="timeout">
         /// The <see cref="TimeSpan"/> timeout of the created task.
         /// </param>
+        /// <param name="path">
+        /// The path of the data to wait for sync.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public Task<bool> WaitForSynced(bool cancelOnError, TimeSpan timeout)
+        /// <exception cref="DatabaseRealtimeWireNotStarted">
+        /// Throws when wire was not started.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public Task<bool> WaitForSynced(bool cancelOnError, TimeSpan timeout, params string[] path)
         {
-            return WaitForSynced(cancelOnError, new CancellationTokenSource(timeout).Token);
+            return WaitForSynced(cancelOnError, new CancellationTokenSource(timeout).Token, path);
         }
 
         /// <summary>
@@ -185,14 +223,30 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
         /// </param>
+        /// <param name="path">
+        /// The path of the data to wait for sync.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the fully sync status.
         /// </returns>
-        public async Task<bool> WaitForSynced(bool cancelOnError = true, CancellationToken? cancellationToken = null)
+        /// <exception cref="DatabaseRealtimeWireNotStarted">
+        /// Throws when wire was not started.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public async Task<bool> WaitForSynced(bool cancelOnError = true, CancellationToken? cancellationToken = null, params string[] path)
         {
             if (IsDisposed)
             {
                 return false;
+            }
+
+            EnsureValidPath(path);
+
+            if (!Started)
+            {
+                throw new DatabaseRealtimeWireNotStarted(nameof(WaitForSynced));
             }
 
             bool cancel = false;
@@ -206,7 +260,7 @@ namespace RestfulFirebase.Database.Realtime
             }
             async Task<bool> waitTask()
             {
-                while (!IsSynced() && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
+                while (!IsSynced(path) && !App.Config.OfflineMode && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
                 {
                     try
                     {
@@ -221,7 +275,7 @@ namespace RestfulFirebase.Database.Realtime
                     }
                     catch { }
                 }
-                return IsSynced();
+                return IsSynced(path);
             }
             bool result = await Task.Run(waitTask).ConfigureAwait(false);
             if (cancelOnError)
@@ -232,15 +286,31 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         /// <summary>
-        /// Gets the data cached of the instance.
+        /// Gets the data count of the instance.
         /// </summary>
-        public (int total, int synced) GetDataCount()
+        /// <param name="path">
+        /// The path of the data and/or sub data to count.
+        /// </param>
+        /// <returns>
+        /// The total and sync data count of the <paramref name="path"/>.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public (int total, int synced) GetDataCount(params string[] path)
         {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            EnsureValidPath(path);
+
             int total = 0;
             int syned = 0;
-            foreach (string[] path in InternalGetAllChildren())
+            (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] children = InternalGetRecursiveData(path);
+            foreach ((string[] childPath, string sync, string local, string value, LocalDataChangesType changesType) in children)
             {
-                (string sync, string local, string value, LocalDataChangesType changesType) = InternalGetData(path);
                 total++;
                 if (changesType == LocalDataChangesType.Synced)
                 {
@@ -253,18 +323,55 @@ namespace RestfulFirebase.Database.Realtime
         /// <summary>
         /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
         /// </summary>
-        public bool IsSynced()
+        /// <param name="path">
+        /// The path of the data to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public bool IsSynced(params string[] path)
         {
-            (int total, int synced) = GetDataCount();
-            return total == synced;
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            EnsureValidPath(path);
+
+            if (HasFirstStream)
+            {
+                (int total, int synced) = GetDataCount(path);
+                return total == synced;
+            }
+
+            return false;
         }
 
         /// <summary>
         /// Gets <c>true</c> whether the node is locally available; otherwise <c>false</c>.
         /// </summary>
-        public bool IsLocallyAvailable()
+        /// <param name="path">
+        /// The path of the data to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the node is locally available; otherwise <c>false</c>.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public bool IsLocallyAvailable(params string[] path)
         {
-            (int total, int synced) = GetDataCount();
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            EnsureValidPath(path);
+
+            (int total, int synced) = GetDataCount(path);
             return total != 0;
         }
 
@@ -277,13 +384,19 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="model">
         /// The realtime model to write and subscribe.
         /// </param>
+        /// <param name="path">
+        /// The path of the instance to attach.
+        /// </param>
         /// <returns>
         /// The provided <paramref name="model"/>.
         /// </returns>
         /// <exception cref="DatabaseInvalidModel">
         /// Throws when <paramref name="model"/> is not a valid model.
         /// </exception>
-        public T PutModel<T>(T model)
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public T PutModel<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
@@ -293,7 +406,15 @@ namespace RestfulFirebase.Database.Realtime
 
             if (model is IInternalRealtimeModel internalModel)
             {
-                internalModel.AttachRealtime(this, true);
+                if (path == null || path.Length == 0)
+                {
+                    internalModel.AttachRealtime(this, true);
+                }
+                else
+                {
+                    EnsureValidPath(path);
+                    internalModel.AttachRealtime(Child(path), true);
+                }
             }
             else
             {
@@ -312,13 +433,19 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="model">
         /// The realtime model to write and subscribe.
         /// </param>
+        /// <param name="path">
+        /// The path of the instance to attach.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
         /// </returns>
         /// <exception cref="DatabaseInvalidModel">
         /// Throws when <paramref name="model"/> is not a valid model.
         /// </exception>
-        public async Task<T> PutModelAsync<T>(T model)
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public async Task<T> PutModelAsync<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
@@ -328,7 +455,15 @@ namespace RestfulFirebase.Database.Realtime
 
             if (model is IInternalRealtimeModel internalModel)
             {
-                await internalModel.AttachRealtimeAsync(this, true);
+                if (path == null || path.Length == 0)
+                {
+                    await internalModel.AttachRealtimeAsync(this, true);
+                }
+                else
+                {
+                    EnsureValidPath(path);
+                    await internalModel.AttachRealtimeAsync(Child(path), true);
+                }
             }
             else
             {
@@ -346,6 +481,9 @@ namespace RestfulFirebase.Database.Realtime
         /// </typeparam>
         /// <param name="model">
         /// The realtime model to subscribe.
+        /// </param>
+        /// <param name="path">
+        /// The path of the instance to attach.
         /// </param>
         /// <returns>
         /// The provided <paramref name="model"/>.
@@ -353,7 +491,10 @@ namespace RestfulFirebase.Database.Realtime
         /// <exception cref="DatabaseInvalidModel">
         /// Throws when <paramref name="model"/> is not a valid model.
         /// </exception>
-        public T SubModel<T>(T model)
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public T SubModel<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
@@ -363,7 +504,15 @@ namespace RestfulFirebase.Database.Realtime
 
             if (model is IInternalRealtimeModel internalModel)
             {
-                internalModel.AttachRealtime(this, false);
+                if (path == null || path.Length == 0)
+                {
+                    internalModel.AttachRealtime(this, false);
+                }
+                else
+                {
+                    EnsureValidPath(path);
+                    internalModel.AttachRealtime(Child(path), false);
+                }
             }
             else
             {
@@ -382,13 +531,19 @@ namespace RestfulFirebase.Database.Realtime
         /// <param name="model">
         /// The realtime model to subscribe.
         /// </param>
+        /// <param name="path">
+        /// The path of the instance to attach.
+        /// </param>
         /// <returns>
         /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
         /// </returns>
         /// <exception cref="DatabaseInvalidModel">
         /// Throws when <paramref name="model"/> is not a valid model.
         /// </exception>
-        public async Task<T> SubModelAsync<T>(T model)
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public async Task<T> SubModelAsync<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
@@ -398,7 +553,15 @@ namespace RestfulFirebase.Database.Realtime
 
             if (model is IInternalRealtimeModel internalModel)
             {
-                await internalModel.AttachRealtimeAsync(this, false);
+                if (path == null || path.Length == 0)
+                {
+                    await internalModel.AttachRealtimeAsync(this, false);
+                }
+                else
+                {
+                    EnsureValidPath(path);
+                    await internalModel.AttachRealtimeAsync(Child(path), false);
+                }
             }
             else
             {
@@ -443,7 +606,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (err.Exception is DatabaseUnauthorizedException ex)
             {
-                (string sync, string local, LocalDataChangesType changesType) = DBGetData(writeTask.Path);
+                (string sync, string local, string value, LocalDataChangesType changesType) = DBGetData(writeTask.Path);
                 if (sync == null)
                 {
                     DBDeleteData(writeTask.Path);
@@ -534,12 +697,20 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The created child instance.
         /// </returns>
+        /// <exception cref="StringNullOrEmptyException">
+        /// <paramref name="path"/> has null or empty path.
+        /// </exception>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         public RealtimeInstance Child(params string[] path)
         {
             if (IsDisposed)
             {
                 return default;
             }
+
+            EnsureValidAndNonEmptyPath(path);
 
             RealtimeInstance childWire = null;
             if (Root == null && this is RealtimeWire wire)
@@ -584,12 +755,17 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// <c>true</c> whether the specified <paramref name="path"/> has any children; otherwise, <c>false</c>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         public bool HasChildren(params string[] path)
         {
             if (IsDisposed)
             {
                 return default;
             }
+
+            EnsureValidPath(path);
 
             return InternalGetDataType(path) == LocalDataType.Path;
         }
@@ -599,22 +775,27 @@ namespace RestfulFirebase.Database.Realtime
         #region CRUD Methods
 
         /// <summary>
-        /// Gets all sub children of the instance.
+        /// Gets children of the instance.
         /// </summary>
         /// <param name="path">
         /// The path of the sub paths.
         /// </param>
         /// <returns>
-        /// The all sub paths.
+        /// The all children.
         /// </returns>
-        public string[][] GetAllChildren(params string[] path)
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public (string key, LocalDataType type)[] GetChildren(params string[] path)
         {
             if (IsDisposed)
             {
                 return default;
             }
 
-            return InternalGetAllChildren(path);
+            EnsureValidPath(path);
+
+            return InternalGetChildren(path);
         }
 
         /// <summary>
@@ -626,6 +807,9 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The data of the <paramref name="path"/>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         public (string sync, string local, string value, LocalDataChangesType changesType) GetData(params string[] path)
         {
             if (IsDisposed)
@@ -633,7 +817,57 @@ namespace RestfulFirebase.Database.Realtime
                 return default;
             }
 
+            EnsureValidPath(path);
+
             return InternalGetData(path);
+        }
+
+        /// <summary>
+        /// Gets all recursive children of the instance.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the sub paths.
+        /// </param>
+        /// <returns>
+        /// The all recursive children.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public string[][] GetRecursiveChildren(params string[] path)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            EnsureValidPath(path);
+
+            return InternalGetRecursiveChildren(path);
+        }
+
+        /// <summary>
+        /// Gets all sub data of the instance.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the sub data.
+        /// </param>
+        /// <returns>
+        /// The all sub data.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] GetRecursiveData(params string[] path)
+        {
+            if (IsDisposed)
+            {
+                return default;
+            }
+
+            EnsureValidPath(path);
+
+            return InternalGetRecursiveData(path);
         }
 
         /// <summary>
@@ -645,6 +879,9 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// The value of the <paramref name="path"/>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         public string GetValue(params string[] path)
         {
             if (IsDisposed)
@@ -652,7 +889,52 @@ namespace RestfulFirebase.Database.Realtime
                 return default;
             }
 
+            EnsureValidPath(path);
+
             return InternalGetData(path).value;
+        }
+
+        /// <summary>
+        /// Check if object is null.
+        /// </summary>
+        /// <param name="path">
+        /// The path of the value to check.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if this object is null; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
+        public bool IsNull(params string[] path)
+        {
+            if (IsDisposed)
+            {
+                return true;
+            }
+
+            EnsureValidPath(path);
+
+            bool isNull = true;
+
+            InternalGetDataOrRecursiveChildren(
+                delegate { },
+                data =>
+                {
+                    if (data.value != null)
+                    {
+                        isNull = false;
+                    }
+                },
+                children =>
+                {
+                    if (children != null && children.Length != 0)
+                    {
+                        isNull = false;
+                    }
+                }, path);
+
+            return isNull;
         }
 
         /// <summary>
@@ -667,6 +949,9 @@ namespace RestfulFirebase.Database.Realtime
         /// <returns>
         /// <c>true</c> whether the value was set; otherwise, <c>false</c>.
         /// </returns>
+        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+        /// Throws when any node has forbidden node name character.
+        /// </exception>
         public bool SetValue(string value, params string[] path)
         {
             if (IsDisposed)
@@ -674,38 +959,61 @@ namespace RestfulFirebase.Database.Realtime
                 return default;
             }
 
+            EnsureValidPath(path);
+
             return MakeChanges(value, path);
+        }
+
+        private void EnsureValidPath(string[] path)
+        {
+            if (path == null || path.Length == 0)
+            {
+                return;
+            }
+            foreach (string node in path)
+            {
+                if (string.IsNullOrEmpty(node))
+                {
+                    throw StringNullOrEmptyException.FromEnumerableArgument(nameof(path));
+                }
+                else if (node.Any(
+                    c =>
+                    {
+                        switch (c)
+                        {
+                            case '$': return true;
+                            case '#': return true;
+                            case '[': return true;
+                            case ']': return true;
+                            case '.': return true;
+                            default:
+                                if ((c >= 0 && c <= 31) || c == 127)
+                                {
+                                    return true;
+                                }
+                                return false;
+                        }
+                    }))
+                {
+                    throw new DatabaseForbiddenNodeNameCharacter();
+                }
+            }
+        }
+
+        private void EnsureValidAndNonEmptyPath(string[] path)
+        {
+            if (path == null || path.Length == 0)
+            {
+                throw StringNullOrEmptyException.FromSingleArgument(nameof(path));
+            }
+            EnsureValidPath(path);
         }
 
         #endregion
 
         #region Sync Helpers
 
-        private protected (string sync, string local, string value, LocalDataChangesType changesType) InternalGetData(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            (string sync, string local, LocalDataChangesType changesType) = DBGetData(absoluteDataPath);
-            string value = local == null ? sync : local;
-
-            return (sync, local, value, changesType);
-        }
-
-        private protected LocalDataType InternalGetDataType(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetDataType(absoluteDataPath);
-        }
-
-        private protected string[][] InternalGetAllChildren(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetRecursiveRelativeChildren(absoluteDataPath);
-        }
-
-        private protected bool MakeChanges(string value, params string[] path)
+        private protected bool MakeChanges(string newLocal, params string[] path)
         {
             string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
 
@@ -713,113 +1021,115 @@ namespace RestfulFirebase.Database.Realtime
             {
                 DBCancelPut(absoluteDataPath);
 
-                (string sync, string local, LocalDataChangesType changesType) = DBGetData(absoluteDataPath);
-                string oldValue = local == null ? sync : local;
+                bool hasChanges = false;
 
-                if (sync == null)
-                {
-                    if (value == null)
+                DBGetDataOrRecursiveChildren(
+                    delegate
                     {
-                        DBDeleteData(absoluteDataPath);
-                    }
-                    else
-                    {
-                        DBSetData(sync, value, LocalDataChangesType.Create, absoluteDataPath);
-                    }
-                    DBPut(value, absoluteDataPath);
-                }
-                else if (oldValue != value)
-                {
-                    if (value == null)
-                    {
-                        DBSetData(sync, null, LocalDataChangesType.Delete, absoluteDataPath);
-                    }
-                    else
-                    {
-                        DBSetData(sync, value, LocalDataChangesType.Update, absoluteDataPath);
-                    }
-                    DBPut(value, absoluteDataPath);
-                }
+                        if (newLocal != null)
+                        {
+                            DBSetData(null, newLocal, LocalDataChangesType.Create, absoluteDataPath);
+                            DBPut(newLocal, absoluteDataPath);
 
-                return oldValue != value;
-            });
-        }
-
-        private protected bool MakeSync(string value, params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return rwLock.LockWrite(absoluteDataPath, () =>
-            {
-                DBCancelPut(absoluteDataPath);
-
-                (string sync, string local, LocalDataChangesType changesType) = DBGetData(absoluteDataPath);
-                string oldValue = local == null ? sync : local;
-
-                if (local == null)
-                {
-                    if (value == null)
+                            hasChanges = true;
+                        }
+                    },
+                    data =>
                     {
-                        DBDeleteData(absoluteDataPath);
-                    }
-                    else
-                    {
-                        DBSetData(value, local, LocalDataChangesType.Synced, absoluteDataPath);
-                    }
-                }
-                else if (local == value)
-                {
-                    DBSetData(value, null, LocalDataChangesType.Synced, absoluteDataPath);
-                }
-                else
-                {
-                    switch (changesType)
-                    {
-                        case LocalDataChangesType.Create:
-                            if (value == null)
-                            {
-                                DBPut(local, absoluteDataPath);
-                            }
-                            else
-                            {
-                                DBSetData(value, null, LocalDataChangesType.Synced, absoluteDataPath);
-                            }
-                            break;
-                        case LocalDataChangesType.Update:
-                            if (value == null)
+                        if (data.value != newLocal)
+                        {
+                            if (data.sync == null && newLocal == null)
                             {
                                 DBDeleteData(absoluteDataPath);
                             }
-                            else if (sync == value)
+                            else if (data.sync == null && newLocal != null)
                             {
-                                DBPut(local, absoluteDataPath);
+                                DBSetData(data.sync, newLocal, LocalDataChangesType.Create, absoluteDataPath);
+                                DBPut(newLocal, absoluteDataPath);
+                            }
+                            else if (data.sync != null && newLocal == null)
+                            {
+                                DBSetData(data.sync, newLocal, LocalDataChangesType.Delete, absoluteDataPath);
+                                DBPut(newLocal, absoluteDataPath);
                             }
                             else
                             {
-                                DBSetData(value, null, LocalDataChangesType.Synced, absoluteDataPath);
+                                DBSetData(data.sync, newLocal, LocalDataChangesType.Update, absoluteDataPath);
+                                DBPut(newLocal, absoluteDataPath);
                             }
-                            break;
-                        case LocalDataChangesType.Delete:
-                            if (value == null)
-                            {
-                                break;
-                            }
-                            if (sync == value)
-                            {
-                                DBPut(null, absoluteDataPath);
-                            }
-                            else
-                            {
-                                DBSetData(value, null, LocalDataChangesType.Synced, absoluteDataPath);
-                            }
-                            break;
-                        case LocalDataChangesType.Synced:
-                            DBSetData(value, null, LocalDataChangesType.Synced, absoluteDataPath);
-                            break;
-                    }
-                }
 
-                return oldValue != value;
+                            hasChanges = true;
+                        }
+                    },
+                    children =>
+                    {
+                        if (newLocal != null)
+                        {
+                            DBSetData(null, newLocal, LocalDataChangesType.Create, absoluteDataPath);
+                            DBPut(newLocal, absoluteDataPath);
+                        }
+                        else
+                        {
+                            DBSetData(null, null, LocalDataChangesType.Delete, absoluteDataPath);
+                            DBPut(null, absoluteDataPath);
+                        }
+
+                        hasChanges = true;
+                    },
+                    absoluteDataPath);
+
+                return hasChanges;
+            });
+        }
+
+        private protected bool MakeSync(string newSync, params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return rwLock.LockWrite(absoluteDataPath, () =>
+            {
+                DBCancelPut(absoluteDataPath);
+
+                bool hasChanges = false;
+
+                DBGetDataOrRecursiveChildren(
+                    delegate
+                    {
+                        if (newSync != null)
+                        {
+                            DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+
+                            hasChanges = true;
+                        }
+                    },
+                    data =>
+                    {
+                        hasChanges = MakeSyncSingle(newSync, data.sync, data.local, data.value, data.changesType, absoluteDataPath);
+                    },
+                    children =>
+                    {
+                        if (newSync != null)
+                        {
+                            DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+
+                            hasChanges = true;
+                        }
+                        else
+                        {
+                            foreach (string[] child in children)
+                            {
+                                (string oldSync, string local, string value, LocalDataChangesType changesType) = DBGetData(absoluteDataPath);
+                                if (changesType != LocalDataChangesType.Synced)
+                                {
+                                    DBPut(local, absoluteDataPath);
+                                }
+                            }
+                        }
+
+                    },
+                    absoluteDataPath);
+
+                return hasChanges;
             });
         }
 
@@ -829,12 +1139,14 @@ namespace RestfulFirebase.Database.Realtime
 
             return rwLock.LockWrite(absoluteDataPath, () =>
             {
-                string[][] children = InternalGetAllChildren(path);
+                string[][] children = InternalGetRecursiveChildren(path);
                 foreach (string[] child in children)
                 {
                     if (!values.ContainsKey(child))
                     {
-                        MakeSync(default(string), child);
+                        (string oldSync, string local, string value, LocalDataChangesType changesType) = DBGetData(absoluteDataPath);
+                        string[] absoluteChildPath = DBGetAbsoluteDataPath(child);
+                        MakeSyncSingle(null, oldSync, local, value, changesType, absoluteChildPath);
                     }
                 }
 
@@ -873,29 +1185,126 @@ namespace RestfulFirebase.Database.Realtime
             });
         }
 
+        private bool MakeSyncSingle(string newSync, string oldSync, string local, string value, LocalDataChangesType changesType, params string[] absoluteDataPath)
+        {
+            return rwLock.LockWrite(absoluteDataPath, () =>
+            {
+                if (local == null)
+                {
+                    if (newSync == null)
+                    {
+                        DBDeleteData(absoluteDataPath);
+                    }
+                    else
+                    {
+                        DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                    }
+                }
+                else if (local == newSync)
+                {
+                    DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                }
+                else
+                {
+                    switch (changesType)
+                    {
+                        case LocalDataChangesType.Create:
+                            if (newSync == null)
+                            {
+                                DBPut(local, absoluteDataPath);
+                            }
+                            else
+                            {
+                                DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                            }
+                            break;
+                        case LocalDataChangesType.Update:
+                            if (newSync == null)
+                            {
+                                DBDeleteData(absoluteDataPath);
+                            }
+                            else if (oldSync == newSync)
+                            {
+                                DBPut(local, absoluteDataPath);
+                            }
+                            else
+                            {
+                                DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                            }
+                            break;
+                        case LocalDataChangesType.Delete:
+                            if (newSync == null)
+                            {
+                                DBDeleteData(absoluteDataPath);
+                            }
+                            else if (oldSync == newSync)
+                            {
+                                DBPut(null, absoluteDataPath);
+                            }
+                            else
+                            {
+                                DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                            }
+                            break;
+                        case LocalDataChangesType.Synced:
+                            DBSetData(newSync, null, LocalDataChangesType.Synced, absoluteDataPath);
+                            break;
+                    }
+                }
+
+                return value != newSync;
+            });
+        }
+
         #endregion
 
-        #region DB Helpers
+        #region Internal Helpers
 
-        private void DBPut(string blob, string[] path)
+        private protected (string key, LocalDataType type)[] InternalGetChildren(params string[] path)
         {
-            if (writeTasks.TryGetValue(path, out WriteTask writeTask))
-            {
-                if (writeTask.Blob != blob)
-                {
-                    writeTask.ReWriteRequested = true;
-                    writeTask.Blob = blob;
-                }
-            }
-            else
-            {
-                writeTask = new WriteTask(this, path, blob,
-                    (s, e) => writeTasks.TryRemove(path, out _),
-                    (s, e) => OnPutError(writeTask, e));
-                writeTasks.TryAdd(path, writeTask);
-                writeTask.Run();
-            }
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetChildren(absoluteDataPath);
         }
+
+        private protected (string sync, string local, string value, LocalDataChangesType changesType) InternalGetData(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetData(absoluteDataPath);
+        }
+
+        private protected LocalDataType InternalGetDataType(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetDataType(absoluteDataPath);
+        }
+
+        private protected void InternalGetDataOrRecursiveChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            DBGetDataOrRecursiveChildren(onEmpty, onData, onPath, absoluteDataPath);
+        }
+
+        private protected string[][] InternalGetRecursiveChildren(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRecursiveChildren(absoluteDataPath);
+        }
+
+        private protected (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] InternalGetRecursiveData(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRecursiveData(absoluteDataPath);
+        }
+
+        #endregion
+
+        #region DB Sync Helpers
 
         private void DBCancelPut(string[] path)
         {
@@ -917,22 +1326,121 @@ namespace RestfulFirebase.Database.Realtime
             }
         }
 
-        private void DBDeleteData(params string[] path)
+        private void DBPut(string blob, string[] path)
+        {
+            if (writeTasks.TryGetValue(path, out WriteTask writeTask))
+            {
+                if (writeTask.Blob != blob)
+                {
+                    writeTask.ReWriteRequested = true;
+                    writeTask.Blob = blob;
+                }
+            }
+            else
+            {
+                writeTask = new WriteTask(this, path, blob,
+                    (s, e) => writeTasks.TryRemove(path, out _),
+                    (s, e) => OnPutError(writeTask, e));
+                writeTasks.TryAdd(path, writeTask);
+                writeTask.Run();
+            }
+        }
+
+        #endregion
+
+        #region DB Local Helpers
+
+        private void DBDeleteData(string[] path)
         {
             rwLock.LockWrite(path, () => App.LocalDatabase.InternalDelete(LocalDatabase, path));
         }
 
-        private string[][] DBGetRecursiveRelativeChildren(params string[] path)
+        private string[] DBGetAbsoluteDataPath(string[] path)
         {
-            return rwLock.LockRead(path, () => App.LocalDatabase.InternalGetRecursiveRelativeChildren(LocalDatabase, path));
+            int pathLength = path?.Length ?? 0;
+            string[] absoluteDataPath = new string[absolutePath.Length + pathLength + 1];
+            absoluteDataPath[0] = DatabaseApp.OfflineDatabaseIndicator;
+            Array.Copy(absolutePath, 0, absoluteDataPath, 1, absolutePath.Length);
+            if (pathLength > 0)
+            {
+                Array.Copy(path, 0, absoluteDataPath, absolutePath.Length + 1, pathLength);
+            }
+
+            return absoluteDataPath;
         }
 
-        private LocalDataType DBGetDataType(params string[] path)
+        private (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] DBGetRecursiveData(string[] path)
         {
-            return rwLock.LockRead(path, () => App.LocalDatabase.InternalGetDataType(LocalDatabase, path));
+            string data = null;
+            (string[] path, string value)[] children = null;
+
+            rwLock.LockWrite(path, () => App.LocalDatabase.InternalTryGetValueOrRecursiveRelativeValues(LocalDatabase,
+                v => data = v,
+                c => children = c,
+                path));
+
+            if (!string.IsNullOrEmpty(data))
+            {
+                string[] deserialized = StringUtilities.Deserialize(data);
+                if (deserialized != null && deserialized.Length == 3)
+                {
+                    string sync = deserialized[0];
+                    string local = deserialized[1];
+                    string value = local == null ? sync : local;
+                    LocalDataChangesType changesType = LocalDataChangesType.Synced;
+                    switch (deserialized[2])
+                    {
+                        case "c":
+                            changesType = LocalDataChangesType.Create;
+                            break;
+                        case "d":
+                            changesType = LocalDataChangesType.Delete;
+                            break;
+                        case "u":
+                            changesType = LocalDataChangesType.Update;
+                            break;
+                    }
+
+                    return new (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] { (new string[0], sync, local, value, changesType) };
+                }
+            }
+            else if (children != null && children.Length > 0)
+            {
+                (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] values = new (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[children.Length];
+                
+                for (int i = 0; i < values.Length; i++)
+                {
+                    string[] deserialized = StringUtilities.Deserialize(children[i].value);
+                    if (deserialized != null && deserialized.Length == 3)
+                    {
+                        string sync = deserialized[0];
+                        string local = deserialized[1];
+                        string value = local == null ? sync : local;
+                        LocalDataChangesType changesType = LocalDataChangesType.Synced;
+                        switch (deserialized[2])
+                        {
+                            case "c":
+                                changesType = LocalDataChangesType.Create;
+                                break;
+                            case "d":
+                                changesType = LocalDataChangesType.Delete;
+                                break;
+                            case "u":
+                                changesType = LocalDataChangesType.Update;
+                                break;
+                        }
+
+                        values[i] = (children[i].path, sync, local, value, changesType);
+                    }
+                }
+
+                return values;
+            }
+
+            return new (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[0];
         }
 
-        private (string sync, string local, LocalDataChangesType changesType) DBGetData(params string[] path)
+        private (string sync, string local, string value, LocalDataChangesType changesType) DBGetData(string[] path)
         {
             string data = rwLock.LockRead(path, () => App.LocalDatabase.InternalGetValue(LocalDatabase, path));
 
@@ -942,31 +1450,93 @@ namespace RestfulFirebase.Database.Realtime
             }
 
             string[] deserialized = StringUtilities.Deserialize(data);
-            if (deserialized?.Length != 3)
+            if (deserialized != null && deserialized.Length == 3)
             {
-                return (default, default, default);
+                string sync = deserialized[0];
+                string local = deserialized[1];
+                string value = local == null ? sync : local;
+                LocalDataChangesType changesType = LocalDataChangesType.Synced;
+                switch (deserialized[2])
+                {
+                    case "c":
+                        changesType = LocalDataChangesType.Create;
+                        break;
+                    case "d":
+                        changesType = LocalDataChangesType.Delete;
+                        break;
+                    case "u":
+                        changesType = LocalDataChangesType.Update;
+                        break;
+                }
+
+                return (sync, local, value, changesType);
             }
 
-            string sync = deserialized[0];
-            string local = deserialized[1];
-            LocalDataChangesType changesType = LocalDataChangesType.Synced;
-            switch (deserialized[2])
-            {
-                case "c":
-                    changesType = LocalDataChangesType.Create;
-                    break;
-                case "d":
-                    changesType = LocalDataChangesType.Delete;
-                    break;
-                case "u":
-                    changesType = LocalDataChangesType.Update;
-                    break;
-            }
-
-            return (sync, local, changesType);
+            return default;
         }
 
-        private void DBSetData(string sync, string local, LocalDataChangesType changesType, params string[] path)
+        private void DBGetDataOrRecursiveChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, string[] path)
+        {
+            string data = null;
+
+            string[][] children = null;
+
+            rwLock.LockWrite(path, () => App.LocalDatabase.InternalTryGetValueOrRecursiveRelativeChildren(LocalDatabase,
+                v => data = v,
+                c => children = c,
+                path));
+
+            if (!string.IsNullOrEmpty(data))
+            {
+                string[] deserialized = StringUtilities.Deserialize(data);
+                if (deserialized != null && deserialized.Length == 3)
+                {
+                    string sync = deserialized[0];
+                    string local = deserialized[1];
+                    string value = local == null ? sync : local;
+                    LocalDataChangesType changesType = LocalDataChangesType.Synced;
+                    switch (deserialized[2])
+                    {
+                        case "c":
+                            changesType = LocalDataChangesType.Create;
+                            break;
+                        case "d":
+                            changesType = LocalDataChangesType.Delete;
+                            break;
+                        case "u":
+                            changesType = LocalDataChangesType.Update;
+                            break;
+                    }
+
+                    onData?.Invoke((sync, local, value, changesType));
+                }
+            }
+            else if (children != null && children.Length > 0)
+            {
+                onPath?.Invoke(children);
+            }
+            else
+            {
+                onEmpty?.Invoke();
+            }
+        }
+
+        private LocalDataType DBGetDataType(string[] path)
+        {
+            return rwLock.LockRead(path, () => App.LocalDatabase.InternalGetDataType(LocalDatabase, path));
+        }
+
+        private (string key, LocalDataType type)[] DBGetChildren(string[] path)
+        {
+            return rwLock.LockRead(path, () => App.LocalDatabase.InternalGetRelativeTypedChildren(LocalDatabase, path));
+        }
+
+        private string[][] DBGetRecursiveChildren(string[] path)
+        {
+            return rwLock.LockRead(path, () => App.LocalDatabase.InternalGetRecursiveRelativeChildren(LocalDatabase, path));
+        }
+
+        private void DBSetData(string sync, string local, LocalDataChangesType changesType, string[] path)
         {
             string[] data = new string[3];
 
@@ -991,20 +1561,6 @@ namespace RestfulFirebase.Database.Realtime
             string serialized = StringUtilities.Serialize(data);
 
             rwLock.LockWrite(path, () => App.LocalDatabase.InternalSetValue(LocalDatabase, serialized, path));
-        }
-
-        private string[] DBGetAbsoluteDataPath(string[] path)
-        {
-            int pathLength = path?.Length ?? 0;
-            string[] absoluteDataPath = new string[absolutePath.Length + pathLength + 1];
-            absoluteDataPath[0] = FirebaseDatabaseApp.OfflineDatabaseLocalIndicator;
-            Array.Copy(absolutePath, 0, absoluteDataPath, 1, absolutePath.Length);
-            if (pathLength > 0)
-            {
-                Array.Copy(path, 0, absoluteDataPath, absolutePath.Length + 1, pathLength);
-            }
-
-            return absoluteDataPath;
         }
 
         #endregion
@@ -1052,12 +1608,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <inheritdoc/>
         public bool IsNull()
         {
-            if (IsDisposed)
-            {
-                return true;
-            }
-
-            return GetValue() == null;
+            return IsNull(null);
         }
 
         #endregion
@@ -1179,10 +1730,8 @@ namespace RestfulFirebase.Database.Realtime
                                             return true;
                                         });
                                     }
-                                    else
-                                    {
-                                        error?.Invoke(this, err);
-                                    }
+
+                                    error?.Invoke(this, err);
                                 }).ConfigureAwait(false);
                             }
                             catch { }

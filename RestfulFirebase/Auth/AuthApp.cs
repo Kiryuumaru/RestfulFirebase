@@ -17,7 +17,7 @@ namespace RestfulFirebase.Auth
     /// <summary>
     /// App module that provides firebase authentication implementations.
     /// </summary>
-    public class FirebaseAuthApp : SyncContext, IAppModule
+    public class AuthApp : SyncContext, IAppModule
     {
         #region Properties
 
@@ -75,7 +75,7 @@ namespace RestfulFirebase.Auth
 
         #region Initializers
 
-        internal FirebaseAuthApp(RestfulFirebaseApp app)
+        internal AuthApp(RestfulFirebaseApp app)
         {
             SyncOperation.SetContext(app);
 
@@ -555,8 +555,16 @@ namespace RestfulFirebase.Auth
         }
 
         /// <summary>
-        /// Invokes <see cref="AuthRefreshed"/> event into the current context.
+        /// Copies authentication from another <see cref="RestfulFirebaseApp"/>.
         /// </summary>
+        /// <param name="app">
+        /// The <see cref="RestfulFirebaseApp"/> to copy from
+        /// </param>
+        public void CopyAuthenticationFrom(RestfulFirebaseApp app)
+        {
+            session.CopyAuthenticationFrom(app);
+        }
+
         internal void OnAuthRefreshed()
         {
             ContextPost(delegate
@@ -565,9 +573,6 @@ namespace RestfulFirebase.Auth
             });
         }
 
-        /// <summary>
-        /// Invokes authenticate events into the current context.
-        /// </summary>
         internal void InvokeAuthenticationEvents()
         {
             ContextPost(delegate
@@ -586,6 +591,10 @@ namespace RestfulFirebase.Auth
                 AuthenticationChanges?.Invoke(this, new AuthenticationChangesEventArgs(IsAuthenticated));
             });
         }
+
+        #endregion
+
+        #region Disposable Members
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
