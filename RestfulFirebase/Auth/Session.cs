@@ -120,19 +120,9 @@ namespace RestfulFirebase.Auth
 
             App = app;
 
-            App.Config.ImmediatePropertyChanged += Config_PropertyChanged;
+            App.Config.ImmediatePropertyChanged += Config_ImmediatePropertyChanged;
 
             Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
-        }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                App.Config.ImmediatePropertyChanged -= Config_PropertyChanged;
-            }
-            base.Dispose(disposing);
         }
 
         #endregion
@@ -838,13 +828,27 @@ namespace RestfulFirebase.Auth
             App.LocalDatabase.InternalSetValue(localDatabase, auth, new string[] { Root });
         }
 
-        private void Config_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void Config_ImmediatePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
                 e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))
             {
                 Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
             }
+        }
+
+        #endregion
+
+        #region Disposable Members
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                App.Config.ImmediatePropertyChanged -= Config_ImmediatePropertyChanged;
+            }
+            base.Dispose(disposing);
         }
 
         #endregion

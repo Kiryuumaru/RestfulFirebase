@@ -16,8 +16,8 @@ namespace DatabaseTest.DatabaseTest
         [Fact]
         public async void Normal()
         {
-            var app = new RestfulFirebaseApp(Config.YourConfig());
-            await app.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
+            var generator = await Helpers.AuthenticatedAppGenerator();
+            var app = await generator();
 
             Assert.True(app.Auth.IsAuthenticated);
 
@@ -32,6 +32,8 @@ namespace DatabaseTest.DatabaseTest
             wire.Start();
 
             wire.SubModel(dict);
+
+            app.Dispose();
         }
     }
 }

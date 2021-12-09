@@ -73,9 +73,9 @@ namespace RestfulFirebase.Database.Streaming
             {
                 try
                 {
-                    CancellationToken initToken = GetTrancientToken();
+                    if (cancel.IsCancellationRequested) break;
 
-                    if (initToken.IsCancellationRequested) break;
+                    CancellationToken initToken = GetTrancientToken();
 
                     string requestUrl = string.Empty;
                     string absoluteUrl = query.GetAbsoluteUrl();
@@ -83,6 +83,10 @@ namespace RestfulFirebase.Database.Streaming
                     try
                     {
                         requestUrl = await query.BuildUrl(initToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        continue;
                     }
                     catch (Exception ex)
                     {
@@ -173,6 +177,10 @@ namespace RestfulFirebase.Database.Streaming
                                 }
                             }
                         }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        continue;
                     }
                     catch (Exception ex)
                     {

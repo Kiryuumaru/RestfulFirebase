@@ -601,7 +601,7 @@ namespace RestfulFirebase.Auth
         {
             if (disposing)
             {
-                client.Dispose();
+                client?.Dispose();
             }
             base.Dispose(disposing);
         }

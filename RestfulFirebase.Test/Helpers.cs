@@ -46,21 +46,52 @@ namespace RestfulFirebase.Test
 
     public class Helpers
     {
+        private const int MaxAppInstances = 10;
+
         private static RestfulFirebaseApp? app;
         private static bool appInitializing = false;
+        private static int appInstanceCount = 0;
+        private static object appInstancesLocker = new object();
 
-        public static Func<RestfulFirebaseApp> AppGenerator()
+        public static Func<Task<RestfulFirebaseApp>> AppGenerator()
         {
-            return new Func<RestfulFirebaseApp>(
-                delegate
+            return new Func<Task<RestfulFirebaseApp>>(
+                async delegate
                 {
+                    while (true)
+                    {
+                        lock (appInstancesLocker)
+                        {
+                            if (appInstanceCount < MaxAppInstances)
+                            {
+                                appInstanceCount++;
+                                break;
+                            }
+                        }
+                        await Task.Delay(1000);
+                    }
                     FirebaseConfig config = Config.YourConfig();
                     config.LocalDatabase = new SampleLocalDatabase();
-                    return new RestfulFirebaseApp(config);
+                    RestfulFirebaseApp app = new RestfulFirebaseApp(config);
+                    app.Disposing += App_Disposing;
+                    return app;
                 });
         }
 
-        public static async Task<Func<RestfulFirebaseApp>> AuthenticatedAppGenerator()
+        private static void App_Disposing(object? sender, EventArgs e)
+        {
+            if (sender != null)
+            {
+                RestfulFirebaseApp app = (RestfulFirebaseApp)sender;
+                app.Disposing -= App_Disposing;
+            }
+            lock (appInstancesLocker)
+            {
+                appInstanceCount--;
+            }
+        }
+
+        public static async Task<Func<Task<RestfulFirebaseApp>>> AuthenticatedAppGenerator()
         {
             var generator = AppGenerator();
             if (app == null)
@@ -68,7 +99,7 @@ namespace RestfulFirebase.Test
                 if (!appInitializing)
                 {
                     appInitializing = true;
-                    var initApp = generator();
+                    var initApp = await generator();
                     await initApp.Auth.SignInWithEmailAndPassword("t@st.com", "123123");
                     app = initApp;
                     appInitializing = false;
@@ -82,10 +113,10 @@ namespace RestfulFirebase.Test
                 }
             }
 
-            return new Func<RestfulFirebaseApp>(
-                delegate
+            return new Func<Task<RestfulFirebaseApp>>(
+                async delegate
                 {
-                    var appCopy = generator();
+                    var appCopy = await generator();
                     appCopy.Auth.CopyAuthenticationFrom(app);
                     return appCopy;
                 });

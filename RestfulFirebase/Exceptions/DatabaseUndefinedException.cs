@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.Exceptions
 {
@@ -7,28 +8,15 @@ namespace RestfulFirebase.Exceptions
     /// </summary>
     public class DatabaseUndefinedException : DatabaseException
     {
-        internal DatabaseUndefinedException()
-            : this(default(Exception))
-        {
+        /// <summary>
+        /// Gets the status code of the exception occured.
+        /// </summary>
+        public HttpStatusCode StatusCode { get; }
 
-        }
-
-        internal DatabaseUndefinedException(string message)
-            : base(message)
-        {
-
-        }
-
-        internal DatabaseUndefinedException(Exception innerException)
+        internal DatabaseUndefinedException(Exception innerException, HttpStatusCode statusCode)
             : base("An unidentified error occured.", innerException)
         {
-
-        }
-
-        internal DatabaseUndefinedException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-
+            StatusCode = statusCode;
         }
     }
 }

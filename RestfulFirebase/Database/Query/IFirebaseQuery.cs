@@ -151,7 +151,7 @@ namespace RestfulFirebase.Database.Query
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when <paramref name="relativePaths"/> has forbidden node name character.
         /// </exception>
-        Task FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
         /// Fan out given item to multiple locations at once. See https://firebase.googleblog.com/2015/10/client-side-fan-out-for-data-consistency_73.html for details.
@@ -197,7 +197,7 @@ namespace RestfulFirebase.Database.Query
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when <paramref name="relativePaths"/> has forbidden node name character.
         /// </exception>
-        Task FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
         /// Gets the json data of the given location.
@@ -285,7 +285,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed patch <see cref="Task"/>.
         /// </returns>
-        Task Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
         /// Patches data at given location instead of overwriting them.
@@ -325,7 +325,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed patch <see cref="Task"/>.
         /// </returns>
-        Task Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
         /// Puts or overrides data at the given location.
@@ -365,7 +365,7 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed put <see cref="Task"/>.
         /// </returns>
-        Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
 
         /// <summary>
         /// Puts or overrides data at the given location.
@@ -405,6 +405,6 @@ namespace RestfulFirebase.Database.Query
         /// <returns>
         /// The created <see cref="Task"/> represents the executed put <see cref="Task"/>.
         /// </returns>
-        Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
+        Task<bool> Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null);
     }
 }

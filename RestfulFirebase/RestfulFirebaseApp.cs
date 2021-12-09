@@ -76,6 +76,7 @@ namespace RestfulFirebase
             {
                 Auth?.Dispose();
                 Database?.Dispose();
+                Storage?.Dispose();
             }
             base.Dispose(disposing);
         }

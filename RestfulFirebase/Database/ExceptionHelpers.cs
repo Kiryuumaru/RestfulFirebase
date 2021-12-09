@@ -10,20 +10,22 @@ namespace RestfulFirebase.Database
         {
             switch (statusCode)
             {
-                case HttpStatusCode.BadRequest:
+                case HttpStatusCode.BadRequest:                 //400
                     return new DatabaseBadRequestException(originalException);
-                case HttpStatusCode.Unauthorized:
+                case HttpStatusCode.Unauthorized:               //401
                     return new DatabaseUnauthorizedException(originalException);
-                case HttpStatusCode.NotFound:
+                case HttpStatusCode.PaymentRequired:            //402
+                    return new DatabasePaymentRequiredException(originalException);
+                case HttpStatusCode.NotFound:                   //404
                     return new DatabaseNotFoundException(originalException);
-                case HttpStatusCode.InternalServerError:
-                    return new DatabaseInternalServerErrorException(originalException);
-                case HttpStatusCode.ServiceUnavailable:
-                    return new DatabaseServiceUnavailableException(originalException);
-                case HttpStatusCode.PreconditionFailed:
+                case HttpStatusCode.PreconditionFailed:         //412
                     return new DatabasePreconditionFailedException(originalException);
+                case HttpStatusCode.InternalServerError:        //500
+                    return new DatabaseInternalServerErrorException(originalException);
+                case HttpStatusCode.ServiceUnavailable:         //503
+                    return new DatabaseServiceUnavailableException(originalException);
                 default:
-                    return new DatabaseUndefinedException(originalException);
+                    return new DatabaseUndefinedException(originalException, statusCode);
             }
         }
     }

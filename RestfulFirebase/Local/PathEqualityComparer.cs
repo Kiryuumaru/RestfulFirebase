@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -32,7 +33,12 @@ namespace RestfulFirebase.Local
 
         public override int GetHashCode(string[] obj)
         {
-            return 467214278 + (obj == null ? 0 : EqualityComparer<string[]>.Default.GetHashCode(obj));
+            if (obj == null)
+            {
+                return 0;
+            }
+
+            return (obj as IStructuralEquatable).GetHashCode(EqualityComparer<string>.Default);
         }
     }
 }

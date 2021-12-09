@@ -163,6 +163,24 @@ namespace RestfulFirebase
             set => SetProperty(value);
         }
 
+        /// <summary>
+        /// Gets or sets the firebase realtime database max concurrent reads.
+        /// </summary>
+        public int DatabaseMaxConcurrentSyncReads
+        {
+            get => GetProperty<int>(100);
+            set => SetProperty(value);
+        }
+
+        /// <summary>
+        /// Gets or sets the firebase realtime database max concurrent writes.
+        /// </summary>
+        public int DatabaseMaxConcurrentSyncWrites
+        {
+            get => GetProperty<int>(100);
+            set => SetProperty(value);
+        }
+
         #endregion
 
         #region Initializers

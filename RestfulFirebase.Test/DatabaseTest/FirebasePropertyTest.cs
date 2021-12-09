@@ -17,7 +17,7 @@ namespace DatabaseTest.DatabaseTest
         public async void Normal()
         {
             var generator = await Helpers.AuthenticatedAppGenerator();
-            var app = generator();
+            var app = await generator();
 
             var model = new FirebaseProperty<string>();
 
@@ -52,8 +52,9 @@ namespace DatabaseTest.DatabaseTest
             Assert.Equal(model.Value, model2.Value);
 
             Assert.True(wire.SetNull());
-            wire.MaxConcurrentWrites = 10;
             Assert.True(await wire.WaitForSynced(true));
+
+            app.Dispose();
         }
     }
 }

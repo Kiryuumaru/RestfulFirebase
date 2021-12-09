@@ -56,6 +56,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (subscription == null)
             {
+                hasFirstStream = false;
                 string uri = Query.GetAbsoluteUrl();
                 subscription = new NodeStreamer(App, Query, OnNext, (s, e) => OnError(e.Url, e.Exception)).Run();
             }
@@ -73,6 +74,7 @@ namespace RestfulFirebase.Database.Realtime
 
             if (subscription != null)
             {
+                hasFirstStream = false;
                 subscription.Dispose();
                 subscription = null;
             }

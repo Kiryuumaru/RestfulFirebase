@@ -16,15 +16,15 @@ namespace DatabaseTest.LocalDatabaseTest
 {
     public static class Helpers
     {
-        public static RestfulFirebaseApp Empty()
+        public static Task<RestfulFirebaseApp> Empty()
         {
             return RestfulFirebase.Test.Helpers.AppGenerator()();
         }
 
-        public static RestfulFirebaseApp Hier()
+        public static async Task<RestfulFirebaseApp> Hier()
         {
             var generator = RestfulFirebase.Test.Helpers.AppGenerator();
-            var app = generator();
+            var app = await generator();
 
             app.LocalDatabase.SetValue("test", "0", "1", "1.1");
             app.LocalDatabase.SetValue("test", "0", "1", "1.2");
@@ -42,9 +42,9 @@ namespace DatabaseTest.LocalDatabaseTest
     public class ContainsTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -61,12 +61,14 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.False(db.Contains("0", "3", "3.1", "3.1.1", "3.1.1.4"));
             Assert.False(db.Contains("0", "4"));
             Assert.False(db.Contains("0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -78,15 +80,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class DeleteTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -177,12 +181,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("1", i[1]);
                     Assert.Equal("1.2", i[2]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -194,15 +200,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -326,12 +334,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1", i.path[3]);
                     Assert.Equal("3.1.1.2", i.path[4]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -343,15 +353,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetDataTypeTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -384,12 +396,14 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Equal(LocalDataType.Value, db.GetDataType("0", "2", "2.1", "2.1.2", "2.1.2.1"));
             Assert.Equal(LocalDataType.Value, db.GetDataType("0", "4"));
             Assert.Equal(LocalDataType.Value, db.GetDataType("1"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -401,15 +415,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetRecursiveChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -463,12 +479,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1", i[3]);
                     Assert.Equal("3.1.1.2", i[4]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -480,15 +498,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetRecursiveRelativeChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -536,12 +556,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1", i[2]);
                     Assert.Equal("3.1.1.2", i[3]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -553,15 +575,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetRelativeTypedChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -645,12 +669,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1.2", i.key);
                     Assert.Equal(LocalDataType.Value, i.type);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -662,15 +688,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetTypedChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -794,12 +822,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1", i.path[3]);
                     Assert.Equal("3.1.1.2", i.path[4]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -811,15 +841,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class GetValueTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -842,12 +874,14 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Null(db.GetValue("0", "3", "3.1", "3.1.1", "3.1.1.4"));
             Assert.Null(db.GetValue("0", "4"));
             Assert.Null(db.GetValue("0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -859,15 +893,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue("path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class SetTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Empty();
+            var app = await Helpers.Empty();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -983,12 +1019,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("3.1.1", i[3]);
                     Assert.Equal("3.1.1.2", i[4]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void WithExistingData()
+        public async void WithExistingData()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1274,12 +1312,14 @@ namespace DatabaseTest.LocalDatabaseTest
                     Assert.Equal("4.1.1", i[3]);
                     Assert.Equal("4.1.1.2", i[4]);
                 });
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1291,15 +1331,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1490,12 +1532,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1507,15 +1551,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrPathTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1627,12 +1673,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1644,15 +1692,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrRecursiveChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1864,12 +1914,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -1881,15 +1933,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
     
     public class TryGetValueOrRecursiveRelativeChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2069,12 +2123,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2086,15 +2142,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrRecursiveValueTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2318,12 +2376,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2335,15 +2395,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrRecursiveRelativeValueTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2535,12 +2597,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2552,15 +2616,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrRelativeTypedChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2717,12 +2783,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2734,15 +2802,17 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 
     public class TryGetValueOrTypedChildrenTest
     {
         [Fact]
-        public void Normal()
+        public async void Normal()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2933,12 +3003,14 @@ namespace DatabaseTest.LocalDatabaseTest
             {
                 Assert.True(false, "Path contains another path.");
             }, "0", "4"));
+
+            app.Dispose();
         }
 
         [Fact]
-        public void Throws()
+        public async void Throws()
         {
-            var app = Helpers.Hier();
+            var app = await Helpers.Hier();
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
@@ -2950,6 +3022,8 @@ namespace DatabaseTest.LocalDatabaseTest
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", ""));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
             Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+
+            app.Dispose();
         }
     }
 }

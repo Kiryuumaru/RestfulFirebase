@@ -306,7 +306,7 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public async Task FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public async Task<bool> FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             if (relativePaths == null)
             {
@@ -337,7 +337,7 @@ namespace RestfulFirebase.Database.Query
                 }
             }
 
-            await Patch(() =>
+            return await Patch(() =>
             {
                 var fanoutObject = new Dictionary<string, object>(relativePaths.Length);
 
@@ -353,9 +353,9 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public async Task FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public Task<bool> FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            await FanOut(() => jsonData, relativePaths, token, onException);
+            return FanOut(() => jsonData, relativePaths, token, onException);
         }
 
         /// <inheritdoc/>
@@ -407,7 +407,7 @@ namespace RestfulFirebase.Database.Query
                 }
             }
 
-            async Task<string> recursive()
+            while (true)
             {
                 try
                 {
@@ -423,16 +423,14 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry != null)
                     {
-                        if (await retryEx.Retry)
+                        if (await retryEx.Retry.ConfigureAwait(false))
                         {
-                            await recursive().ConfigureAwait(false);
+                            continue;
                         }
                     }
                     return null;
                 }
             }
-
-            return await recursive().ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
@@ -442,7 +440,7 @@ namespace RestfulFirebase.Database.Query
         }
 
         /// <inheritdoc/>
-        public async Task Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public async Task<bool> Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task invoke(string jsonToInvoke)
             {
@@ -496,11 +494,12 @@ namespace RestfulFirebase.Database.Query
                 }
             };
 
-            async Task recursive()
+            while (true)
             {
                 try
                 {
                     await invoke(jsonData()).ConfigureAwait(false);
+                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -512,25 +511,24 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry != null)
                     {
-                        if (await retryEx.Retry)
+                        if (await retryEx.Retry.ConfigureAwait(false))
                         {
-                            await recursive().ConfigureAwait(false);
+                            continue;
                         }
                     }
+                    return false;
                 }
             }
-
-            await recursive().ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async Task Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public Task<bool> Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            await Patch(() => jsonData, token, onException).ConfigureAwait(false);
+            return Patch(() => jsonData, token, onException);
         }
 
         /// <inheritdoc/>
-        public async Task Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public async Task<bool> Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
             async Task invoke(string jsonToInvoke)
             {
@@ -584,11 +582,12 @@ namespace RestfulFirebase.Database.Query
                 }
             };
 
-            async Task recursive()
+            while (true)
             {
                 try
                 {
                     await invoke(jsonData()).ConfigureAwait(false);
+                    return true;
                 }
                 catch (Exception ex)
                 {
@@ -600,21 +599,20 @@ namespace RestfulFirebase.Database.Query
                     onException?.Invoke(retryEx);
                     if (retryEx.Retry != null)
                     {
-                        if (await retryEx.Retry)
+                        if (await retryEx.Retry.ConfigureAwait(false))
                         {
-                            await recursive().ConfigureAwait(false);
+                            continue;
                         }
                     }
+                    return false;
                 }
             }
-
-            await recursive().ConfigureAwait(false);
         }
 
         /// <inheritdoc/>
-        public async Task Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
+        public Task<bool> Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
         {
-            await Put(() => jsonData, token, onException).ConfigureAwait(false);
+            return Put(() => jsonData, token, onException);
         }
 
         #endregion
