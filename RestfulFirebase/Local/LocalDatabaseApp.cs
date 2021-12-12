@@ -1319,22 +1319,22 @@ namespace RestfulFirebase.Local
 
             public void Invoke(DataChangesEventArgs args)
             {
-                //Changes?.Invoke(localDatabaseApp, args);
-                invokes.Enqueue(args);
+                Changes?.Invoke(localDatabaseApp, args);
+                //invokes.Enqueue(args);
 
-                if (!isInvoking)
-                {
-                    isInvoking = true;
+                //if (!isInvoking)
+                //{
+                //    isInvoking = true;
 
-                    Task.Run(delegate
-                    {
-                        while (invokes.TryDequeue(out DataChangesEventArgs argsToInvoke))
-                        {
-                            Changes?.Invoke(localDatabaseApp, argsToInvoke);
-                        }
-                        isInvoking = false;
-                    });
-                }
+                //    Task.Run(delegate
+                //    {
+                //        while (invokes.TryDequeue(out DataChangesEventArgs argsToInvoke))
+                //        {
+                //            Changes?.Invoke(localDatabaseApp, argsToInvoke);
+                //        }
+                //        isInvoking = false;
+                //    });
+                //}
             }
         }
 

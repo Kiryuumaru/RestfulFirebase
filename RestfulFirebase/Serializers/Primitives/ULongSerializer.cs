@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class ULongSerializer : Serializer<ulong>
+    public class ULongSerializer : ISerializer<ulong>
     {
         /// <inheritdoc/>
-        public override string Serialize(ulong value)
+        public string Serialize(ulong value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override ulong Deserialize(string data, ulong defaultValue = default)
+        public ulong Deserialize(string data, ulong defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (ulong.TryParse(data, out ulong value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return ulong.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }

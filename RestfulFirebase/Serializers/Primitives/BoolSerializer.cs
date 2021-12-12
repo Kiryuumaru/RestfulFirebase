@@ -1,27 +1,26 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class BoolSerializer : Serializer<bool>
+    public class BoolSerializer : ISerializer<bool>
     {
         /// <inheritdoc/>
-        public override string Serialize(bool value)
+        public string Serialize(bool value)
         {
             return value ? "1" : "0";
         }
 
         /// <inheritdoc/>
-        public override bool Deserialize(string data, bool defaultValue = default)
+        public bool Deserialize(string data, bool defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (data == "1")
             {
-                return defaultValue;
+                return true;
             }
-
-            try
+            else if (data == "0")
             {
-                return data.Equals("1");
+                return false;
             }
-            catch
+            else
             {
                 return defaultValue;
             }

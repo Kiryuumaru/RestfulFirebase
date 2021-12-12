@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class CharSerializer : Serializer<char>
+    public class CharSerializer : ISerializer<char>
     {
         /// <inheritdoc/>
-        public override string Serialize(char value)
+        public string Serialize(char value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override char Deserialize(string data, char defaultValue = default)
+        public char Deserialize(string data, char defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (char.TryParse(data, out char value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return char.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }

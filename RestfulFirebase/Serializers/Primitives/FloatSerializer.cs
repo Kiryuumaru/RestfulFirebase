@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class FloatSerializer : Serializer<float>
+    public class FloatSerializer : ISerializer<float>
     {
         /// <inheritdoc/>
-        public override string Serialize(float value)
+        public string Serialize(float value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override float Deserialize(string data, float defaultValue = default)
+        public float Deserialize(string data, float defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (float.TryParse(data, out float value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return float.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }

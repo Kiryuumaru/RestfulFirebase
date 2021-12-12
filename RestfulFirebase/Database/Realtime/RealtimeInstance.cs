@@ -92,7 +92,8 @@ namespace RestfulFirebase.Database.Realtime
 
         internal readonly OperationInvoker writeTaskErrorControl = new OperationInvoker(1);
 
-        private string absoluteUrl;
+        internal string AbsoluteUrl { get; private set; }
+
         private string[] absolutePath;
 
         #endregion
@@ -368,12 +369,12 @@ namespace RestfulFirebase.Database.Realtime
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when any node has forbidden node name character.
         /// </exception>
-        public T PutModel<T>(T model, params string[] path)
+        public void PutModel<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
             {
-                return model;
+                return;
             }
 
             if (model is IInternalRealtimeModel internalModel)
@@ -392,57 +393,6 @@ namespace RestfulFirebase.Database.Realtime
             {
                 throw new DatabaseInvalidModel();
             }
-
-            return model;
-        }
-
-        /// <summary>
-        /// Writes and subscribes realtime model to the node instance.
-        /// </summary>
-        /// <typeparam name="T">
-        /// The underlying type of the realtime model.
-        /// </typeparam>
-        /// <param name="model">
-        /// The realtime model to write and subscribe.
-        /// </param>
-        /// <param name="path">
-        /// The path of the instance to attach.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
-        /// </returns>
-        /// <exception cref="DatabaseInvalidModel">
-        /// Throws when <paramref name="model"/> is not a valid model.
-        /// </exception>
-        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
-        /// Throws when any node has forbidden node name character.
-        /// </exception>
-        public async Task<T> PutModelAsync<T>(T model, params string[] path)
-            where T : IRealtimeModel
-        {
-            if (IsDisposed)
-            {
-                return model;
-            }
-
-            if (model is IInternalRealtimeModel internalModel)
-            {
-                if (path == null || path.Length == 0)
-                {
-                    await internalModel.AttachRealtimeAsync(this, true);
-                }
-                else
-                {
-                    EnsureValidPath(path);
-                    await internalModel.AttachRealtimeAsync(Child(path), true);
-                }
-            }
-            else
-            {
-                throw new DatabaseInvalidModel();
-            }
-
-            return model;
         }
 
         /// <summary>
@@ -466,12 +416,12 @@ namespace RestfulFirebase.Database.Realtime
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when any node has forbidden node name character.
         /// </exception>
-        public T SubModel<T>(T model, params string[] path)
+        public void SubModel<T>(T model, params string[] path)
             where T : IRealtimeModel
         {
             if (IsDisposed)
             {
-                return model;
+                return;
             }
 
             if (model is IInternalRealtimeModel internalModel)
@@ -490,57 +440,6 @@ namespace RestfulFirebase.Database.Realtime
             {
                 throw new DatabaseInvalidModel();
             }
-
-            return model;
-        }
-
-        /// <summary>
-        /// Subscribes realtime model to the node instance.
-        /// </summary>
-        /// <typeparam name="T">
-        /// The underlying type of the realtime model.
-        /// </typeparam>
-        /// <param name="model">
-        /// The realtime model to subscribe.
-        /// </param>
-        /// <param name="path">
-        /// The path of the instance to attach.
-        /// </param>
-        /// <returns>
-        /// A <see cref="Task"/> that represents the provided <paramref name="model"/>.
-        /// </returns>
-        /// <exception cref="DatabaseInvalidModel">
-        /// Throws when <paramref name="model"/> is not a valid model.
-        /// </exception>
-        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
-        /// Throws when any node has forbidden node name character.
-        /// </exception>
-        public async Task<T> SubModelAsync<T>(T model, params string[] path)
-            where T : IRealtimeModel
-        {
-            if (IsDisposed)
-            {
-                return model;
-            }
-
-            if (model is IInternalRealtimeModel internalModel)
-            {
-                if (path == null || path.Length == 0)
-                {
-                    await internalModel.AttachRealtimeAsync(this, false);
-                }
-                else
-                {
-                    EnsureValidPath(path);
-                    await internalModel.AttachRealtimeAsync(Child(path), false);
-                }
-            }
-            else
-            {
-                throw new DatabaseInvalidModel();
-            }
-
-            return model;
         }
 
         /// <summary>
@@ -576,7 +475,7 @@ namespace RestfulFirebase.Database.Realtime
                 return;
             }
 
-            string baseUri = absoluteUrl.Trim('/');
+            string baseUri = AbsoluteUrl.Trim('/');
             if (e.Uri.StartsWith(baseUri))
             {
                 SelfError(e);
@@ -629,8 +528,8 @@ namespace RestfulFirebase.Database.Realtime
 
         private void ReloadQueryUrlValues()
         {
-            absoluteUrl = Query.GetAbsoluteUrl();
-            absolutePath = UrlUtilities.Separate(absoluteUrl.Substring(8)); // Removes 'https://'
+            AbsoluteUrl = Query.GetAbsoluteUrl();
+            absolutePath = UrlUtilities.Separate(AbsoluteUrl.Substring(8)); // Removes 'https://'
         }
 
         private void App_Disposing(object sender, EventArgs e)
@@ -988,6 +887,73 @@ namespace RestfulFirebase.Database.Realtime
 
         #endregion
 
+        #region Internal Helpers
+
+        internal (string key, LocalDataType type)[] InternalGetChildren(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRelativeTypedChildren(absoluteDataPath);
+        }
+
+        internal (string sync, string local, string value, LocalDataChangesType changesType)? InternalGetData(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetData(absoluteDataPath);
+        }
+
+        internal void InternalGetDataOrChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            DBGetDataOrRelativeChildren(onEmpty, onData, onPath, absoluteDataPath);
+        }
+
+        internal LocalDataType InternalGetDataType(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetDataType(absoluteDataPath);
+        }
+
+        internal void InternalGetDataOrRecursiveChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            DBGetDataOrRecursiveChildren(onEmpty, onData, onPath, absoluteDataPath);
+        }
+
+        internal void InternalGetDataOrRecursiveRelativeChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            DBGetDataOrRecursiveRelativeChildren(onEmpty, onData, onPath, absoluteDataPath);
+        }
+
+        internal string[][] InternalGetRecursiveRelativeChildren(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRecursiveRelativeChildren(absoluteDataPath);
+        }
+
+        internal (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] InternalGetRecursiveData(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRecursiveData(absoluteDataPath);
+        }
+
+        internal (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] InternalGetRecursiveRelativeData(params string[] path)
+        {
+            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
+
+            return DBGetRecursiveRelativeData(absoluteDataPath);
+        }
+
+        #endregion
+
         #region Sync Helpers
 
         private protected bool MakeChanges(string newLocal, params string[] path)
@@ -1238,66 +1204,6 @@ namespace RestfulFirebase.Database.Realtime
 
         #endregion
 
-        #region Internal Helpers
-
-        private protected (string key, LocalDataType type)[] InternalGetChildren(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetRelativeTypedChildren(absoluteDataPath);
-        }
-
-        private protected (string sync, string local, string value, LocalDataChangesType changesType)? InternalGetData(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetData(absoluteDataPath);
-        }
-
-        private protected LocalDataType InternalGetDataType(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetDataType(absoluteDataPath);
-        }
-
-        private protected void InternalGetDataOrRecursiveChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            DBGetDataOrRecursiveChildren(onEmpty, onData, onPath, absoluteDataPath);
-        }
-
-        private protected void InternalGetDataOrRecursiveRelativeChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            DBGetDataOrRecursiveRelativeChildren(onEmpty, onData, onPath, absoluteDataPath);
-        }
-
-        private protected string[][] InternalGetRecursiveRelativeChildren(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetRecursiveRelativeChildren(absoluteDataPath);
-        }
-
-        private protected (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] InternalGetRecursiveData(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetRecursiveData(absoluteDataPath);
-        }
-
-        private protected (string[] path, string sync, string local, string value, LocalDataChangesType changesType)[] InternalGetRecursiveRelativeData(params string[] path)
-        {
-            string[] absoluteDataPath = DBGetAbsoluteDataPath(path);
-
-            return DBGetRecursiveRelativeData(absoluteDataPath);
-        }
-
-        #endregion
-
         #region DB Sync Helpers
 
         private void DBCancelPut(string[] absolutePath)
@@ -1480,17 +1386,46 @@ namespace RestfulFirebase.Database.Realtime
             {
                 return default;
             }
-            
+
+            var deserialized = DeserializeData(data);
+            if (deserialized.HasValue)
+            {
+                return (deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType);
+            }
+
+            return default;
+        }
+
+        private void DBGetDataOrRelativeChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<(string key, LocalDataType type)[]> onPath, string[] absolutePath)
+        {
+            string data = null;
+
+            (string key, LocalDataType type)[] children = null;
+
+            App.LocalDatabase.InternalTryGetValueOrRelativeTypedChildren(LocalDatabase,
+                v => data = v,
+                c => children = c,
+                absolutePath);
+
             if (!string.IsNullOrEmpty(data))
             {
                 var deserialized = DeserializeData(data);
                 if (deserialized.HasValue)
                 {
-                    return (deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType);
+                    onData?.Invoke((deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType));
+
+                    return;
                 }
             }
 
-            return default;
+            if (children != null && children.Length > 0)
+            {
+                onPath?.Invoke(children);
+
+                return;
+            }
+
+            onEmpty?.Invoke();
         }
 
         private void DBGetDataOrRecursiveChildren(Action onEmpty, Action<(string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[][]> onPath, string[] absolutePath)
@@ -1634,7 +1569,7 @@ namespace RestfulFirebase.Database.Realtime
         /// <inheritdoc/>
         public override string ToString()
         {
-            return absoluteUrl;
+            return AbsoluteUrl;
         }
 
         #endregion

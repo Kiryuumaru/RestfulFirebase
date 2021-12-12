@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class LongSerializer : Serializer<long>
+    public class LongSerializer : ISerializer<long>
     {
         /// <inheritdoc/>
-        public override string Serialize(long value)
+        public string Serialize(long value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override long Deserialize(string data, long defaultValue = default)
+        public long Deserialize(string data, long defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (long.TryParse(data, out long value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return long.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }

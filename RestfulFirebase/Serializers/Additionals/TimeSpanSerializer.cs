@@ -3,30 +3,27 @@
 namespace RestfulFirebase.Serializers.Additionals
 {
     /// <inheritdoc/>
-    public class TimeSpanSerializer : Serializer<TimeSpan>
+    public class TimeSpanSerializer : ISerializer<TimeSpan>
     {
         /// <inheritdoc/>
-        public override string Serialize(TimeSpan value)
+        public string Serialize(TimeSpan value)
         {
             return value.TotalHours.ToString();
         }
 
         /// <inheritdoc/>
-        public override TimeSpan Deserialize(string data, TimeSpan defaultValue = default)
+        public TimeSpan Deserialize(string data, TimeSpan defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (double.TryParse(data, out double value))
             {
-                return defaultValue;
+                try
+                {
+                    return TimeSpan.FromHours(value);
+                }
+                catch { }
             }
 
-            try
-            {
-                return TimeSpan.FromHours(double.Parse(data));
-            }
-            catch
-            {
-                return defaultValue;
-            }
+            return defaultValue;
         }
     }
 }

@@ -5,16 +5,16 @@ using System.Collections.Generic;
 namespace RestfulFirebase.Serializers.Additionals
 {
     /// <inheritdoc/>
-    public class DateTimeSerializer : Serializer<DateTime>
+    public class DateTimeSerializer : ISerializer<DateTime>
     {
         /// <inheritdoc/>
-        public override string Serialize(DateTime value)
+        public string Serialize(DateTime value)
         {
             return StringUtilities.CompressNumber(value.Ticks);
         }
 
         /// <inheritdoc/>
-        public override DateTime Deserialize(string data, DateTime defaultValue = default)
+        public DateTime Deserialize(string data, DateTime defaultValue = default)
         {
             if (string.IsNullOrEmpty(data))
             {

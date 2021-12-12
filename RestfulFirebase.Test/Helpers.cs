@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase;
+using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Local;
 using RestfulFirebase.Test.Utilities;
 using System;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace RestfulFirebase.Test
 {
@@ -120,6 +122,108 @@ namespace RestfulFirebase.Test
                     appCopy.Auth.CopyAuthenticationFrom(app);
                     return appCopy;
                 });
+        }
+
+        public static async Task<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> AuthenticatedTestApp(
+            string unitName,
+            string testName,
+            string factName)
+        {
+            var generator = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+
+            return new Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>(
+                async subNode =>
+                {
+                    RestfulFirebaseApp app = await generator();
+
+                    RealtimeWire wire;
+                    subNode = subNode == null ? new string[0] : subNode;
+                    if (subNode.Length == 0)
+                    {
+                        wire = app.Database
+                            .Child("users")
+                            .Child(app.Auth.Session.LocalId)
+                            .Child(unitName)
+                            .Child(testName)
+                            .Child(factName)
+                            .AsRealtimeWire();
+                    }
+                    else
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        foreach (var subPath in subNode)
+                        {
+                            if (string.IsNullOrEmpty(subPath))
+                            {
+                                builder.Append("/");
+                            }
+                            else
+                            {
+                                builder.Append(subPath);
+                                if (!subPath.EndsWith("/"))
+                                {
+                                    builder.Append("/");
+                                }
+                            }
+                        }
+                        string additionalPath = builder.ToString();
+                        additionalPath = additionalPath.Substring(0, additionalPath.Length - 1);
+                        wire = app.Database
+                            .Child("users")
+                            .Child(app.Auth.Session.LocalId)
+                            .Child(unitName)
+                            .Child(testName)
+                            .Child(factName)
+                            .Child(additionalPath)
+                            .AsRealtimeWire();
+                    }
+                    wire.Error += (s, e) =>
+                    {
+                        Task.Run(delegate
+                        {
+                            Assert.True(false, e.Exception.Message);
+                        });
+                    };
+                    var dataChanges = new List<DataChangesEventArgs>();
+                    wire.DataChanges += (s, e) =>
+                    {
+                        dataChanges.Add(e);
+                    };
+
+                    return (app, wire, dataChanges);
+                });
+        }
+
+        public static async Task CleanTest(
+            string unitName,
+            string testName,
+            string factName,
+            Func<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>, Task> test)
+        {
+            var appGenerator = await AuthenticatedTestApp(unitName, testName, factName);
+
+            var app1 = await appGenerator(null);
+            app1.wire.Start();
+            app1.wire.SetNull();
+            Assert.True(await app1.wire.WaitForSynced(true));
+            app1.app.Dispose();
+
+            await test(appGenerator);
+
+            var app2 = await appGenerator(null);
+            app2.wire.Start();
+            app2.wire.SetNull();
+            Assert.True(await app2.wire.WaitForSynced(true));
+            app2.app.Dispose();
+        }
+
+        public static Task CleanTest(
+            string unitName,
+            string testName,
+            string factName,
+            Action<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> test)
+        {
+            return CleanTest(unitName, testName, factName, t => Task.Run(delegate { test(t); }));
         }
     }
 }

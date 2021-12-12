@@ -42,7 +42,10 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.3.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ObservableHelpers\ObservableHelpers\ObservableHelpers.csproj" />
   </ItemGroup>
 
 </Project>

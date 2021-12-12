@@ -10,9 +10,11 @@ namespace RestfulFirebase.Database.Models
 {
     internal interface IInternalRealtimeModel : IRealtimeModel
     {
-        void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst);
+        bool? IsInvokeToSetFirst { get; }
 
-        Task AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst);
+        bool HasPostAttachedRealtime { get; }
+
+        void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst);
 
         void DetachRealtime();
     }

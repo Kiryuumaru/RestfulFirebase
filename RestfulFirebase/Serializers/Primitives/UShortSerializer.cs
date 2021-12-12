@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class UShortSerializer : Serializer<ushort>
+    public class UShortSerializer : ISerializer<ushort>
     {
         /// <inheritdoc/>
-        public override string Serialize(ushort value)
+        public string Serialize(ushort value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override ushort Deserialize(string data, ushort defaultValue = default)
+        public ushort Deserialize(string data, ushort defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (ushort.TryParse(data, out ushort value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return ushort.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }

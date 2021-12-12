@@ -1,11 +1,13 @@
 ﻿using ObservableHelpers;
 using ObservableHelpers.Exceptions;
+using ObservableHelpers.Utilities;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +21,8 @@ namespace RestfulFirebase.Database.Models
     {
         #region Properties
 
-        private SemaphoreSlim attachLock = new SemaphoreSlim(1, 1);
+        private bool? isInvokeToSetFirst;
+        private bool hasPostAttachedRealtime;
 
         #endregion
 
@@ -245,7 +248,7 @@ namespace RestfulFirebase.Database.Models
 
             return new NamedProperty()
             {
-                Property = new FirebaseProperty(),
+                Property = group == nameof(FirebaseObject) ? new FirebaseProperty() : new ObservableProperty(),
                 Key = key,
                 PropertyName = propertyName,
                 Group = group
@@ -261,11 +264,13 @@ namespace RestfulFirebase.Database.Models
         {
             if (disposing)
             {
-                foreach (var item in GetRawProperties())
+                RWLock.LockWrite(() =>
                 {
-                    item.Property.Dispose();
-                }
-                (this as IInternalRealtimeModel).DetachRealtime();
+                    if (this is IInternalRealtimeModel model)
+                    {
+                        model.DetachRealtime();
+                    }
+                });
             }
             base.Dispose(disposing);
         }
@@ -274,71 +279,80 @@ namespace RestfulFirebase.Database.Models
 
         #region IInternalRealtimeModel Members
 
-        async void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
-        {
-            await (this as IInternalRealtimeModel).AttachRealtimeAsync(realtimeInstance, invokeSetFirst);
-        }
-        
-        async Task IInternalRealtimeModel.AttachRealtimeAsync(RealtimeInstance realtimeInstance, bool invokeSetFirst)
+        bool? IInternalRealtimeModel.IsInvokeToSetFirst => isInvokeToSetFirst;
+
+        bool IInternalRealtimeModel.HasPostAttachedRealtime => hasPostAttachedRealtime;
+
+        void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            try
+            Subscribe(realtimeInstance, invokeSetFirst);
+
+            bool isStaring = false;
+
+            Task.Run(() =>
             {
-                await attachLock.WaitAsync().ConfigureAwait(false);
-
-                List<Task> tasks = new List<Task>();
-
-                Subscribe(realtimeInstance);
-
-                List<string> subPaths = new List<string>();
-                //foreach (var path in RealtimeInstance.GetSubPaths())
-                //{
-                //    int keyLastIndex = path.IndexOf('/');
-                //    string key = keyLastIndex == -1 ? path : path.Substring(0, keyLastIndex);
-                //    subPaths.Add(key);
-                //}
-
-                foreach (var prop in GetRawProperties(nameof(FirebaseObject)))
+                try
                 {
-                    if (invokeSetFirst)
+                    RWLock.LockWrite(() =>
                     {
-                        tasks.Add(RealtimeInstance.Child(prop.Key).PutModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    else
-                    {
-                        tasks.Add(RealtimeInstance.Child(prop.Key).SubModelAsync((FirebaseProperty)prop.Property));
-                    }
-                    subPaths.RemoveAll(i => i == prop.Key);
-                }
+                        isStaring = true;
+                        List<string> children = RealtimeInstance
+                            .GetChildren()
+                            .Select(i => i.key)
+                            .ToList();
 
-                foreach (var path in subPaths)
-                {
-                    GetOrCreateNamedProperty(default(string), path, null, nameof(FirebaseObject),
-                        newNamedProperty => true,
-                        postAction =>
+                        IEnumerable<NamedProperty> properties = GetRawProperties(nameof(FirebaseObject));
+
+                        foreach (var property in properties)
                         {
-                            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
+                            if (property.Property is IInternalRealtimeModel model)
                             {
-                                if (!firebaseProperty.HasAttachedRealtime)
+                                if (invokeSetFirst)
                                 {
-                                    RealtimeInstance.Child(path).SubModel(firebaseProperty);
+                                    RealtimeInstance.Child(property.Key).PutModel(model);
+                                }
+                                else
+                                {
+                                    RealtimeInstance.Child(property.Key).SubModel(model);
                                 }
                             }
-                        });
+                            children.Remove(property.Key);
+                        }
+
+                        foreach (var child in children)
+                        {
+                            GetOrCreateNamedProperty(default(string), child, null, nameof(FirebaseObject),
+                                newNamedProperty => true,
+                                postAction =>
+                                {
+                                    if (postAction.namedProperty.Property is IInternalRealtimeModel model)
+                                    {
+                                        if (!model.HasAttachedRealtime)
+                                        {
+                                            RealtimeInstance.Child(child).SubModel(model);
+                                        }
+                                    }
+                                });
+                        }
+
+                        hasPostAttachedRealtime = true;
+
+                        OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                    });
                 }
+                catch
+                {
+                    Unsubscribe();
+                    throw;
+                }
+            });
 
-                await Task.WhenAll(tasks);
-            }
-            finally
-            {
-                attachLock.Release();
-            }
-
-            OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+            while (!isStaring) { }
         }
 
         void IInternalRealtimeModel.DetachRealtime()
@@ -348,23 +362,26 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            foreach (var item in GetRawProperties())
+            RWLock.LockWrite(() =>
             {
-                if (item.Property is IInternalRealtimeModel model)
+                foreach (var item in GetRawProperties())
                 {
-                    model.DetachRealtime();
+                    if (item.Property is IInternalRealtimeModel model)
+                    {
+                        model.DetachRealtime();
+                    }
                 }
-            }
 
-            var args = new RealtimeInstanceEventArgs(RealtimeInstance);
+                var args = new RealtimeInstanceEventArgs(RealtimeInstance);
 
-            Unsubscribe();
+                Unsubscribe();
 
-            OnRealtimeDetached(args);
+                OnRealtimeDetached(args);
+            });
         }
 
 
-        private void Subscribe(RealtimeInstance realtimeInstance)
+        private void Subscribe(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
             if (IsDisposed)
             {
@@ -377,6 +394,8 @@ namespace RestfulFirebase.Database.Models
             }
 
             RealtimeInstance = realtimeInstance;
+            isInvokeToSetFirst = invokeSetFirst;
+            hasPostAttachedRealtime = false;
 
             if (HasAttachedRealtime)
             {
@@ -401,43 +420,37 @@ namespace RestfulFirebase.Database.Models
             }
 
             RealtimeInstance = null;
+            isInvokeToSetFirst = null;
+            hasPostAttachedRealtime = false;
         }
 
-        private async void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            //if (string.IsNullOrEmpty(e.Path))
-            //{
-            //    return;
-            //}
+            if (e.Path.Length == 0)
+            {
+                return;
+            }
 
-            //int keyLastIndex = e.Path.IndexOf('/');
-            //string key = keyLastIndex == -1 ? e.Path : e.Path.Substring(0, keyLastIndex);
-
-            //try
-            //{
-            //    await attachLock.WaitAsync().ConfigureAwait(false);
-            //    GetOrCreateNamedProperty(default(string), key, null, nameof(FirebaseObject),
-            //        newNamedProperty => RealtimeInstance.HasChild(key),
-            //        postAction =>
-            //        {
-            //            if (postAction.namedProperty.Property is FirebaseProperty firebaseProperty)
-            //            {
-            //                if (!firebaseProperty.HasAttachedRealtime)
-            //                {
-            //                    RealtimeInstance.Child(key, false).SubModel(firebaseProperty);
-            //                }
-            //            }
-            //        });
-            //}
-            //finally
-            //{
-            //    attachLock.Release();
-            //}
+            RWLock.LockWrite(() =>
+            {
+                GetOrCreateNamedProperty(default(string), e.Path[0], null, nameof(FirebaseObject),
+                    newNamedProperty => RealtimeInstance.InternalGetData(e.Path[0]).HasValue,
+                    postAction =>
+                    {
+                        if (postAction.namedProperty.Property is IInternalRealtimeModel model)
+                        {
+                            if (!model.HasAttachedRealtime)
+                            {
+                                RealtimeInstance.Child(e.Path[0]).SubModel(model);
+                            }
+                        }
+                    });
+            });
         }
 
         private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)

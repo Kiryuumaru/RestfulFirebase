@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Collections.Concurrent;
 
 namespace RestfulFirebase.Serializers
 {
@@ -15,25 +16,26 @@ namespace RestfulFirebase.Serializers
     /// </summary>
     public abstract class Serializer
     {
-        private static readonly List<Serializer> serializers = new List<Serializer>()
+        private static readonly ConcurrentDictionary<Type, Serializer> serializers = new ConcurrentDictionary<Type, Serializer>();
+
+        static Serializer()
         {
-            new BoolSerializer(),
-            new ByteSerializer(),
-            new SByteSerializer(),
-            new CharSerializer(),
-            new DecimalSerializer(),
-            new DoubleSerializer(),
-            new FloatSerializer(),
-            new IntSerializer(),
-            new UIntSerializer(),
-            new LongSerializer(),
-            new ULongSerializer(),
-            new ShortSerializer(),
-            new UShortSerializer(),
-            new StringSerializer(),
-            new DateTimeSerializer(),
-            new TimeSpanSerializer()
-        };
+            Register(new BoolSerializer());
+            Register(new SByteSerializer());
+            Register(new CharSerializer());
+            Register(new DecimalSerializer());
+            Register(new DoubleSerializer());
+            Register(new FloatSerializer());
+            Register(new IntSerializer());
+            Register(new UIntSerializer());
+            Register(new LongSerializer());
+            Register(new ULongSerializer());
+            Register(new ShortSerializer());
+            Register(new UShortSerializer());
+            Register(new StringSerializer());
+            Register(new DateTimeSerializer());
+            Register(new TimeSpanSerializer());
+        }
 
         /// <summary>
         /// Gets the serializer for the provided type <paramref name="type"/>.
@@ -225,15 +227,24 @@ namespace RestfulFirebase.Serializers
         }
 
         /// <summary>
-        /// Globally register a <see cref="Serializer"/>.
+        /// Globally register a <see cref="ISerializer{T}"/>.
         /// </summary>
         /// <param name="serializer">
-        /// The <see cref="Serializer"/> to register.
+        /// The <see cref="ISerializer{T}"/> to register.
         /// </param>
-        public static void Register(Serializer serializer)
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="serializer"/> is a null reference.
+        /// </exception>
+        public static void Register<T>(ISerializer<T> serializer)
         {
-            serializers.RemoveAll(i => i.Type == serializer.Type);
-            serializers.Add(serializer);
+            if (serializer == null)
+            {
+                throw new ArgumentNullException(nameof(serializer));
+            }
+
+            Serializer extendedSerializer = new Serializer<T>(serializer);
+
+            serializers.AddOrUpdate(typeof(T), extendedSerializer, (type, onlValue) => extendedSerializer);
         }
 
         /// <summary>
@@ -324,28 +335,25 @@ namespace RestfulFirebase.Serializers
             where T : SerializerProxy
         {
             var proxy = initializer();
-            foreach (var conv in serializers)
+            if (serializers.TryGetValue(type, out Serializer serializer))
             {
-                if (conv.Type == type)
-                {
-                    proxy.Set(
-                        value =>
+                proxy.Set(
+                    value =>
+                    {
+                        return onSet == null ? serializer.SerializeObject(value) : onSet.Invoke(serializer, value);
+                    },
+                    (data, defaultValue) =>
+                    {
+                        if (onGet == null)
                         {
-                            return onSet == null ? conv.SerializeObject(value) : onSet.Invoke(conv, value);
-                        },
-                        (data, defaultValue) =>
+                            return serializer.DeserializeObject(data, defaultValue);
+                        }
+                        else
                         {
-                            if (onGet == null)
-                            {
-                                return conv.DeserializeObject(data, defaultValue);
-                            }
-                            else
-                            {
-                                return onGet.Invoke(conv, data, defaultValue);
-                            }
-                        });
-                    return proxy;
-                }
+                            return onGet.Invoke(serializer, data, defaultValue);
+                        }
+                    });
+                return proxy;
             }
 
             var nullableType = Nullable.GetUnderlyingType(type);
@@ -507,7 +515,7 @@ namespace RestfulFirebase.Serializers
                                                 string serializedValue = deserializedPair[1];
                                                 object deserializedValue = null;
                                                 bool hasDeserializer = false;
-                                                foreach (var conv in serializers)
+                                                foreach (var conv in serializers.Values)
                                                 {
                                                     if (conv.Type.FullName == serializedType)
                                                     {
@@ -557,30 +565,27 @@ namespace RestfulFirebase.Serializers
         }
     }
 
-    /// <summary>
-    /// Provides implementation for value serializer and deserializer.
-    /// </summary>
-    /// <typeparam name="T">
-    /// The specified type of the serializer.
-    /// </typeparam>
-    public abstract class Serializer<T> : Serializer
+    internal class Serializer<T> : Serializer
     {
         #region Properties
 
-        /// <inheritdoc/>
         public override Type Type { get => typeof(T); }
+
+        private ISerializer<T> serializer { get; }
 
         #endregion
 
+        public Serializer(ISerializer<T> serializer)
+        {
+            this.serializer = serializer;
+        }
+
         #region Methods
 
-        /// <inheritdoc/>
-        public abstract string Serialize(T value);
+        public string Serialize(T value) => serializer.Serialize(value);
 
-        /// <inheritdoc/>
-        public abstract T Deserialize(string data, T defaultValue = default);
+        public T Deserialize(string data, T defaultValue = default) => serializer.Deserialize(data, defaultValue);
 
-        /// <inheritdoc/>
         public string SerializeEnumerable(IEnumerable<T> values)
         {
             if (values == null) return null;
@@ -593,7 +598,6 @@ namespace RestfulFirebase.Serializers
             return StringUtilities.Serialize(encodedValues);
         }
 
-        /// <inheritdoc/>
         public IEnumerable<T> DeserializeEnumerable(string data, IEnumerable<T> defaultValue = default)
         {
             string[] encodedValues;
@@ -617,13 +621,11 @@ namespace RestfulFirebase.Serializers
             return decodedValues;
         }
 
-        /// <inheritdoc/>
         public override string SerializeObject(object value)
         {
             return Serialize((T)value);
         }
 
-        /// <inheritdoc/>
         public override object DeserializeObject(string data, object defaultValue = default)
         {
             if (defaultValue is T value)
@@ -636,13 +638,11 @@ namespace RestfulFirebase.Serializers
             }
         }
 
-        /// <inheritdoc/>
         public override string SerializeEnumerableObject(object value)
         {
             return SerializeEnumerable((IEnumerable<T>)value);
         }
 
-        /// <inheritdoc/>
         public override object DeserializeEnumerableObject(string data, object defaultValue = default)
         {
             if (defaultValue is IEnumerable<T> value)
@@ -655,14 +655,12 @@ namespace RestfulFirebase.Serializers
             }
         }
 
-        /// <inheritdoc/>
         public override string SerializeNullableObject(object value)
         {
             if (value == null) return null;
             return Serialize((T)value);
         }
 
-        /// <inheritdoc/>
         public override object DeserializeNullableObject(string data, object defaultValue = default)
         {
             if (data == null) return null;

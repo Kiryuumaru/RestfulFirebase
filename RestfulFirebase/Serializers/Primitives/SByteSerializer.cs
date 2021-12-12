@@ -1,27 +1,22 @@
 ﻿namespace RestfulFirebase.Serializers.Primitives
 {
     /// <inheritdoc/>
-    public class SByteSerializer : Serializer<sbyte>
+    public class SByteSerializer : ISerializer<sbyte>
     {
         /// <inheritdoc/>
-        public override string Serialize(sbyte value)
+        public string Serialize(sbyte value)
         {
             return value.ToString();
         }
 
         /// <inheritdoc/>
-        public override sbyte Deserialize(string data, sbyte defaultValue = default)
+        public sbyte Deserialize(string data, sbyte defaultValue = default)
         {
-            if (string.IsNullOrEmpty(data))
+            if (sbyte.TryParse(data, out sbyte value))
             {
-                return defaultValue;
+                return value;
             }
-
-            try
-            {
-                return sbyte.Parse(data);
-            }
-            catch
+            else
             {
                 return defaultValue;
             }
