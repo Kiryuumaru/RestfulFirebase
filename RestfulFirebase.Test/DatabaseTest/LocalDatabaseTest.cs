@@ -18,13 +18,13 @@ namespace DatabaseTest.LocalDatabaseTest
     {
         public static Task<RestfulFirebaseApp> Empty()
         {
-            return RestfulFirebase.Test.Helpers.AppGenerator()();
+            return RestfulFirebase.Test.Helpers.AppGenerator().generator();
         }
 
         public static async Task<RestfulFirebaseApp> Hier()
         {
-            var generator = RestfulFirebase.Test.Helpers.AppGenerator();
-            var app = await generator();
+            var instance = RestfulFirebase.Test.Helpers.AppGenerator();
+            var app = await instance.generator();
 
             app.LocalDatabase.SetValue("test", "0", "1", "1.1");
             app.LocalDatabase.SetValue("test", "0", "1", "1.2");

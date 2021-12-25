@@ -744,6 +744,52 @@ namespace RestfulFirebase.Local
             });
         }
 
+        internal void InternalTryGetNearestHierarchyValueOrPath(ILocalDatabase localDatabase, Action<(string[] path, string value)> onValue, Action<string[]> onPath, string[] path)
+        {
+            Validate(localDatabase, path);
+
+            string serializedPath = StringUtilities.Serialize(path);
+
+            LockReadHierarchy(path, () =>
+            {
+                string[] hierPath = path;
+
+                while (true)
+                {
+                    string serializedHierPath = StringUtilities.Serialize(hierPath);
+                    string hierData = DBGet(localDatabase, serializedHierPath);
+
+                    if (hierData != null)
+                    {
+                        if (hierData.Length > 1)
+                        {
+                            if (hierData[0] == PathIndicator)
+                            {
+                                onPath?.Invoke(hierPath);
+                                return;
+                            }
+                            else if (hierData[0] == ValueIndicator)
+                            {
+                                onValue?.Invoke((hierPath, hierData.Substring(1)));
+                                return;
+                            }
+                        }
+                    }
+
+                    if (hierPath.Length > 1)
+                    {
+                        int newHierLength = hierPath.Length - 1;
+                        hierPath = new string[newHierLength];
+                        Array.Copy(path, 0, hierPath, 0, newHierLength);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            });
+        }
+
         internal bool InternalTryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, string[] path)
         {
             Validate(localDatabase, path);

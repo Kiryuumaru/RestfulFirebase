@@ -1043,6 +1043,32 @@ namespace RestfulFirebase.Database.Realtime
 
                     hasChanges = true;
                 }
+                else
+                {
+                    DBGetNearestHierarchyDataOrRelativePath(
+                        () =>
+                        {
+
+                        },
+                        hierData =>
+                        {
+                            if (hierData.changesType == LocalDataChangesType.Create)
+                            {
+                                DBPut(hierData.local, hierData.path);
+                            }
+                            else
+                            {
+                                DBDeleteData(absoluteDataPath);
+                                hasChanges = true;
+                            }
+                        },
+                        hierPath =>
+                        {
+                            DBDeleteData(hierPath);
+                            hasChanges = true;
+                        },
+                        absoluteDataPath);
+                }
             }
             else if (data.Length == 1 && data[0].path.Length == 0)
             {
@@ -1495,6 +1521,38 @@ namespace RestfulFirebase.Database.Realtime
         private LocalDataType DBGetDataType(string[] absolutePath)
         {
             return App.LocalDatabase.InternalGetDataType(LocalDatabase, absolutePath);
+        }
+
+        private void DBGetNearestHierarchyDataOrRelativePath(Action onEmpty, Action<(string[] path, string sync, string local, string value, LocalDataChangesType changesType)> onData, Action<string[]> onPath, string[] absolutePath)
+        {
+            (string[] path, string value)? hierData = null;
+
+            string[] hierPath = null;
+
+            App.LocalDatabase.InternalTryGetNearestHierarchyValueOrPath(LocalDatabase,
+                d => hierData = d,
+                p => hierPath = p,
+                absolutePath);
+
+            if (hierData != null)
+            {
+                var deserialized = DeserializeData(hierData.Value.value);
+                if (deserialized.HasValue)
+                {
+                    onData?.Invoke((hierData.Value.path, deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType));
+
+                    return;
+                }
+            }
+
+            if (hierPath != null && hierPath.Length > 0)
+            {
+                onPath?.Invoke(hierPath);
+
+                return;
+            }
+
+            onEmpty?.Invoke();
         }
 
         private (string key, LocalDataType type)[] DBGetRelativeTypedChildren(string[] absolutePath)

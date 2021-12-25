@@ -20,7 +20,7 @@ namespace DatabaseTest.RealtimeModuleTest
 {
     public static class Helpers
     {
-        public static Task<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> AuthenticatedTestApp(string testName, string factName)
+        public static Task<(Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)> AuthenticatedTestApp(string testName, string factName)
         {
             return RestfulFirebase.Test.Helpers.AuthenticatedTestApp(nameof(RealtimeModuleTest), testName, factName);
         }
@@ -362,7 +362,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 dataChanges.Clear();
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal(2, dataChanges.Count);
 
@@ -403,8 +403,8 @@ namespace DatabaseTest.RealtimeModuleTest
         [Fact]
         public async void Normal()
         {
-            var generator = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
-            var app1 = await generator();
+            var instance = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+            var app1 = await instance.generator();
             var wire1 = app1.Database
                 .Child("unauthorized")
                 .AsRealtimeWire();
@@ -415,11 +415,25 @@ namespace DatabaseTest.RealtimeModuleTest
             };
             wire1.Start();
             wire1.SetValue("test");
-            Assert.False(await wire1.WaitForSynced(TimeSpan.FromMinutes(1)));
+            Assert.False(await Task.Run(async delegate
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    if (await wire1.WaitForSynced(TimeSpan.FromMinutes(1)))
+                    {
+                        return true;
+                    }
+                    if (wire1Errors.Any(i => i.Exception.GetType() == typeof(DatabaseUnauthorizedException)))
+                    {
+                        return false;
+                    }
+                }
+                return false;
+            }));
             Assert.True(wire1Errors.Count > 0);
-            Assert.Equal(typeof(DatabaseUnauthorizedException), wire1Errors[0].Exception.GetType());
+            Assert.Contains(wire1Errors, i => i.Exception.GetType() == typeof(DatabaseUnauthorizedException));
 
-            var app2 = await generator();
+            var app2 = await instance.generator();
             var wire2 = app2.Database
                 .Child("users")
                 .Child(app2.Auth.Session.LocalId)
@@ -435,13 +449,26 @@ namespace DatabaseTest.RealtimeModuleTest
             app2.Config.OfflineMode = true;
             wire2.Start();
             wire2.SetValue("test");
-            Assert.False(await wire2.WaitForSynced(TimeSpan.FromMinutes(1)));
+            Assert.False(await Task.Run(async delegate
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    if (await wire1.WaitForSynced(TimeSpan.FromMinutes(1)))
+                    {
+                        return true;
+                    }
+                    if (wire2Errors.Any(i => i.Exception.GetType() == typeof(OfflineModeException)))
+                    {
+                        return false;
+                    }
+                }
+                return false;
+            }));
             await Task.Delay(1000);
             Assert.True(wire2Errors.Count > 0);
-            Assert.Equal(typeof(OfflineModeException), wire2Errors[0].Exception.GetType());
+            Assert.Contains(wire2Errors, i => i.Exception.GetType() == typeof(OfflineModeException));
 
-            app1.Dispose();
-            app2.Dispose();
+            instance.dispose();
         }
     }
 
@@ -555,7 +582,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal((3, 0), appInstance1.wire.GetDataCount("prop4"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal((6, 6), appInstance1.wire.GetDataCount());
                 Assert.Equal((3, 3), appInstance1.wire.GetDataCount("prop4"));
@@ -564,7 +591,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.Equal((6, 6), appInstance2.wire.GetDataCount());
                 Assert.Equal((3, 3), appInstance2.wire.GetDataCount("prop4"));
@@ -573,7 +600,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance3 = await generator(new string[] { "prop4" });
                 appInstance3.wire.Start();
-                Assert.True(await appInstance3.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance3.wire));
 
                 Assert.Equal((3, 3), appInstance3.wire.GetDataCount());
 
@@ -581,7 +608,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance4 = await generator(new string[] { "prop1" });
                 appInstance4.wire.Start();
-                Assert.True(await appInstance4.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance4.wire));
 
                 Assert.Equal((1, 1), appInstance4.wire.GetDataCount());
 
@@ -636,7 +663,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal((null, "test6", "test6", LocalDataChangesType.Create), appInstance1.wire.GetData("prop4", "subProp3"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop1"));
                 Assert.Equal(("test2", null, "test2", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop2"));
@@ -649,7 +676,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), appInstance2.wire.GetData("prop1"));
                 Assert.Equal(("test2", null, "test2", LocalDataChangesType.Synced), appInstance2.wire.GetData("prop2"));
@@ -662,7 +689,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance3 = await generator(new string[] { "prop1" });
                 appInstance3.wire.Start();
-                Assert.True(await appInstance3.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance3.wire));
 
                 Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), appInstance3.wire.GetData());
 
@@ -895,7 +922,9 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+
+                await Task.Delay(5000);
 
                 var children1c = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(children1c,
@@ -990,7 +1019,9 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
+
+                await Task.Delay(5000);
 
                 var children2a = appInstance2.wire.GetRecursiveData();
                 Assert.Collection(children2a,
@@ -1085,7 +1116,9 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance3 = await generator(new string[] { "prop1" });
                 appInstance3.wire.Start();
-                Assert.True(await appInstance3.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance3.wire));
+
+                await Task.Delay(5000);
 
                 var children3 = appInstance3.wire.GetRecursiveData();
                 Assert.Collection(children3,
@@ -1149,7 +1182,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal("test6", appInstance1.wire.GetValue("prop4", "subProp3"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal("test1", appInstance1.wire.GetValue("prop1"));
                 Assert.Equal("test2", appInstance1.wire.GetValue("prop2"));
@@ -1162,7 +1195,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.Equal("test1", appInstance2.wire.GetValue("prop1"));
                 Assert.Equal("test2", appInstance2.wire.GetValue("prop2"));
@@ -1175,7 +1208,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance3 = await generator(new string[] { "prop1" });
                 appInstance3.wire.Start();
-                Assert.True(await appInstance3.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance3.wire));
 
                 Assert.Equal("test1", appInstance3.wire.GetValue());
 
@@ -1229,7 +1262,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(appInstance1.wire.HasChildren("prop4"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.True(appInstance1.wire.HasChildren());
                 Assert.True(appInstance1.wire.HasChildren("prop4"));
@@ -1238,7 +1271,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.True(appInstance2.wire.HasChildren());
                 Assert.True(appInstance2.wire.HasChildren("prop4"));
@@ -1247,7 +1280,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var appInstance3 = await generator(new string[] { "prop4" });
                 appInstance3.wire.Start();
-                Assert.True(await appInstance3.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance3.wire));
 
                 Assert.True(appInstance3.wire.HasChildren());
 
@@ -1286,7 +1319,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 Assert.False(appInstance1.wire.HasFirstStream);
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.True(appInstance1.wire.HasFirstStream);
 
@@ -1322,7 +1355,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(appInstance1.wire.IsLocallyAvailable("prop4"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.True(appInstance1.wire.IsLocallyAvailable());
                 Assert.True(appInstance1.wire.IsLocallyAvailable("prop1"));
@@ -1337,7 +1370,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.False(appInstance2.wire.IsLocallyAvailable("prop1"));
                 Assert.False(appInstance2.wire.IsLocallyAvailable("prop4"));
 
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.True(appInstance2.wire.IsLocallyAvailable());
                 Assert.True(appInstance2.wire.IsLocallyAvailable("prop1"));
@@ -1403,7 +1436,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.False(appInstance1.wire.IsNull("prop4", "subProp3"));
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.False(appInstance1.wire.IsNull());
                 Assert.False(appInstance1.wire.IsNull("prop1"));
@@ -1428,7 +1461,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(appInstance2.wire.IsNull("prop4", "subProp2"));
                 Assert.True(appInstance2.wire.IsNull("prop4", "subProp3"));
 
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.False(appInstance2.wire.IsNull());
                 Assert.False(appInstance2.wire.IsNull("prop1"));
@@ -1483,7 +1516,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.False(appInstance1.wire.IsSynced());
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.True(appInstance1.wire.IsSynced());
 
@@ -1494,7 +1527,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 Assert.False(appInstance2.wire.IsSynced());
 
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.True(appInstance2.wire.IsSynced());
 
@@ -1590,7 +1623,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.False(appInstance1.wire.IsSynced());
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.True(appInstance1.wire.IsSynced());
 
@@ -1601,7 +1634,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 Assert.False(appInstance2.wire.IsSynced());
 
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 Assert.True(appInstance2.wire.IsSynced());
 
@@ -1856,7 +1889,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
                 Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
@@ -1866,7 +1899,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
                 Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
                 Assert.True(appInstance1.wire.SetNull("prop1"));
@@ -1932,7 +1965,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp3", i.path[1]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase2 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase2,
@@ -2035,7 +2068,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop4", i.path[0]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase4 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase4,
@@ -2107,7 +2140,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal(0, i.path.Length);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase6 = appInstance1.wire.GetRecursiveData();
                 Assert.Empty(phase6);
@@ -2152,17 +2185,17 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test5", "prop4", "subProp2"));
                 Assert.True(origin1.wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
 
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
                 Assert.True(origin1.wire.SetNull("prop1"));
                 Assert.False(origin1.wire.SetNull("prop1"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase1 = appInstance1.wire.GetRecursiveData();
@@ -2233,7 +2266,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetNull("prop4"));
                 Assert.False(origin1.wire.SetNull("prop4"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
 
                 Assert.True(appInstance1.wire.SetValue("test4Mod", "prop4", "subProp1"));
                 Assert.False(appInstance1.wire.SetValue("test4Mod", "prop4", "subProp1"));
@@ -2290,7 +2323,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
 
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase3 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase3,
@@ -2364,7 +2397,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test2Mod", "prop2"));
                 Assert.False(origin1.wire.SetValue("test2Mod", "prop2"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
 
                 Assert.True(appInstance1.wire.SetNull("prop2"));
                 Assert.False(appInstance1.wire.SetNull("prop2"));
@@ -2391,7 +2424,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
 
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase6 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase6,
@@ -2430,7 +2463,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetNull());
                 Assert.False(origin1.wire.SetNull());
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase7 = appInstance1.wire.GetRecursiveData();
@@ -2486,7 +2519,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
                 Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
@@ -2504,7 +2537,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop1", i.path[0]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase2 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase2,
@@ -2559,7 +2592,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop2", i.path[0]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase4 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase4,
@@ -2633,7 +2666,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp1", i.path[1]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase6 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase6,
@@ -2734,7 +2767,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase8 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase8,
@@ -2841,7 +2874,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase10 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase10,
@@ -2927,7 +2960,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase12 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase12,
@@ -2985,18 +3018,18 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var origin1 = await generator(null);
                 origin1.wire.Start();
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 origin1.dataChanges.Clear();
 
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
                 Assert.True(origin1.wire.SetValue("test1", "prop1"));
                 Assert.False(origin1.wire.SetValue("test1", "prop1"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase1 = appInstance1.wire.GetRecursiveData();
@@ -3026,7 +3059,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test2", "prop2"));
                 Assert.False(origin1.wire.SetValue("test2", "prop2"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase2 = appInstance1.wire.GetRecursiveData();
@@ -3065,7 +3098,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test3", "prop3", "subProp1"));
                 Assert.False(origin1.wire.SetValue("test3", "prop3", "subProp1"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase3 = appInstance1.wire.GetRecursiveData();
@@ -3120,7 +3153,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test4", "prop3", "subProp2"));
                 Assert.False(origin1.wire.SetValue("test4", "prop3", "subProp2"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase4 = appInstance1.wire.GetRecursiveData();
@@ -3181,7 +3214,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue(null, "prop1"));
                 Assert.False(origin1.wire.SetValue(null, "prop1"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
                 await Task.Delay(5000);
 
                 var phase5 = appInstance1.wire.GetRecursiveData();
@@ -3231,8 +3264,8 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test2Mod", "prop2"));
                 Assert.False(origin1.wire.SetValue("test2Mod", "prop2"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                await Task.Delay(5000);
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                await Task.Delay(10000);
 
                 var phase6 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase6,
@@ -3279,7 +3312,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(origin1.wire.SetValue("test2Mod2", "prop2"));
                 Assert.False(origin1.wire.SetValue("test2Mod2", "prop2"));
 
-                Assert.True(await origin1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
 
                 Assert.True(appInstance1.wire.SetValue("conflict", "prop2"));
                 Assert.False(appInstance1.wire.SetValue("conflict", "prop2"));
@@ -3317,7 +3350,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
 
                 appInstance1.wire.Start();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 var phase8 = appInstance1.wire.GetRecursiveData();
                 Assert.Collection(phase8,
@@ -3546,8 +3579,8 @@ namespace DatabaseTest.RealtimeModuleTest
         [Fact]
         public async void Normal()
         {
-            var generator = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
-            var app1 = await generator();
+            var instance = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+            var app1 = await instance.generator();
             var wire1 = app1.Database
                 .Child("users")
                 .Child(app1.Auth.Session.LocalId)
@@ -3562,11 +3595,22 @@ namespace DatabaseTest.RealtimeModuleTest
             };
 
             wire1.Start();
-            Assert.True(await wire1.WaitForSynced(TimeSpan.FromMinutes(1)));
+            
+            Assert.True(await Task.Run(async delegate
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    if (await wire1.WaitForSynced(TimeSpan.FromMinutes(1)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }));
 
             app1.Dispose();
 
-            var app2 = await generator();
+            var app2 = await instance.generator();
             var wire2 = app2.Database
                 .Child("unauthorized")
                 .AsRealtimeWire();
@@ -3577,7 +3621,9 @@ namespace DatabaseTest.RealtimeModuleTest
             };
 
             wire2.Start();
-            Assert.False(await wire2.WaitForSynced(TimeSpan.FromMinutes(1)));
+            Assert.False(await wire2.WaitForSynced(TimeSpan.FromMinutes(5)));
+
+            instance.dispose();
         }
     }
 }

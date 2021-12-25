@@ -15,12 +15,13 @@ using ObservableHelpers;
 using System.Collections.Specialized;
 using RestfulFirebase.Serializers;
 using RestfulFirebase.Utilities;
+using System.Diagnostics;
 
 namespace DatabaseTest.ModelsTest
 {
     public static class Helpers
     {
-        public static Task<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> AuthenticatedTestApp(string testName, string factName)
+        public static Task<(Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)> AuthenticatedTestApp(string testName, string factName)
         {
             return RestfulFirebase.Test.Helpers.AuthenticatedTestApp(nameof(ModelsTest), testName, factName);
         }
@@ -221,7 +222,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Equal("test1", model1.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 Assert.Equal("test1", model1.Value);
 
@@ -282,13 +283,13 @@ namespace DatabaseTest.ModelsTest
                 appInstance2.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 appInstance2.wire.PutModel(model2);
 
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 await Task.Delay(5000);
 
@@ -360,7 +361,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Equal("test1", model1.Value.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 Assert.Equal("test1", model1.Value.Value);
 
@@ -409,7 +410,7 @@ namespace DatabaseTest.ModelsTest
 
                 model1.Value = "test1";
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 await Task.Delay(5000);
 
@@ -421,7 +422,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.False(model1.SetNull());
                 Assert.True(model1.IsNull());
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 Assert.Collection(propertyChanges1,
                     i =>
@@ -474,8 +475,14 @@ namespace DatabaseTest.ModelsTest
                 model1.Value = "test1";
                 model1.Value = "test1";
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                await Task.Delay(5000);
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (model2.Value != "test1")
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal("test1", model2.Value);
                 Assert.Equal(model1.Value, model2.Value);
@@ -513,7 +520,7 @@ namespace DatabaseTest.ModelsTest
                 model2.Value = "test2";
                 model2.Value = "test2";
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("test2", model1.Value);
@@ -583,7 +590,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Equal(dino1, model1.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 Assert.Equal(dino1, model1.Value);
 
@@ -635,8 +642,8 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.wire.SubModel(model1);
                 appInstance2.wire.SubModel(model2);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -653,7 +660,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("test2", model1.Value);
@@ -686,8 +693,8 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance1.wire.SetNull();
                 appInstance2.wire.SetNull();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
                 await Task.Delay(5000);
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
@@ -704,11 +711,11 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.NotEqual(model1.Value, model2.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
 
                 Assert.Equal("test3", model2.Value);
                 Assert.Equal(model1.Value, model2.Value);
@@ -785,8 +792,8 @@ namespace DatabaseTest.ModelsTest
                 model1.Value = "test1";
                 model2.Value = "test1";
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -803,7 +810,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("test2", model1.Value);
@@ -848,11 +855,11 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.NotEqual(model1.Value, model2.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
 
                 Assert.Equal("test3", model2.Value);
                 Assert.Equal(model1.Value, model2.Value);
@@ -929,8 +936,8 @@ namespace DatabaseTest.ModelsTest
                 model1.Value = "test1";
                 model2.Value = "test1";
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -950,11 +957,11 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.NotEqual(model1.Value, model2.Value);
 
-                Assert.True(await model1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
 
                 Assert.Equal("test2", model2.Value);
                 Assert.Equal(model1.Value, model2.Value);
@@ -1007,7 +1014,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await model2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Null(model1.Value);
@@ -1121,7 +1128,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal("John", person1.FirstName);
                 Assert.Equal("Doe", person1.LastName);
@@ -1165,7 +1172,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.wire.SubModel(person1);
 
                 DateTime date1 = DateTime.Now;
-                DateTime date2 = DateTime.Now;
+                DateTime date2 = DateTime.UtcNow;
 
                 person1.FirstName = "John";
                 person1.LastName = "Doe";
@@ -1175,7 +1182,7 @@ namespace DatabaseTest.ModelsTest
                 person2.LastName = "Parker";
                 person2.Birthdate = date2;
 
-                await Task.Delay(5000);
+                await Task.Delay(10000);
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
@@ -1183,15 +1190,24 @@ namespace DatabaseTest.ModelsTest
                 appInstance2.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 appInstance2.wire.PutModel(person2);
 
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
-                await Task.Delay(5000);
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        person1.FirstName != "Peter" ||
+                        person1.LastName != "Parker" ||
+                        person1.Birthdate != date2)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal("Peter", person1.FirstName);
                 Assert.Equal("Parker", person1.LastName);
@@ -1306,7 +1322,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal("John", person1.FirstName);
                 Assert.Equal("Doe", person1.LastName);
@@ -1357,7 +1373,7 @@ namespace DatabaseTest.ModelsTest
                 person1.LastName = "Doe";
                 person1.Birthdate = date;
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
 
                 await Task.Delay(5000);
 
@@ -1369,7 +1385,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.False(person1.SetNull());
                 Assert.True(person1.IsNull());
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
 
                 Assert.Collection(propertyChanges1,
                     i =>
@@ -1430,7 +1446,7 @@ namespace DatabaseTest.ModelsTest
                 person1.LastName = "Doe";
                 person1.Birthdate = date1;
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("John", person2.FirstName);
@@ -1483,7 +1499,7 @@ namespace DatabaseTest.ModelsTest
                 person2.LastName = "Parker";
                 person2.Birthdate = date2;
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("Peter", person1.FirstName);
@@ -1636,7 +1652,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal("Peter", person1.FirstName);
                 Assert.Equal("Parker", person1.LastName);
@@ -1683,8 +1699,8 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -1706,7 +1722,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Equal("John", person1.FirstName);
@@ -1750,8 +1766,8 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance1.wire.SetNull();
                 appInstance2.wire.SetNull();
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -1775,11 +1791,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.NotEqual(person1.LastName, person2.LastName);
                 Assert.NotEqual(person1.Birthdate, person2.Birthdate);
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
 
                 Assert.Equal("Peter", person1.FirstName);
                 Assert.Equal("Parker", person1.LastName);
@@ -1854,8 +1870,8 @@ namespace DatabaseTest.ModelsTest
                 person1.LastName = "Doe";
                 person1.Birthdate = date1;
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -1877,8 +1893,17 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                await Task.Delay(5000);
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        person1.FirstName != "Peter" ||
+                        person1.LastName != "Parker" ||
+                        person1.Birthdate != date2)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal("Peter", person1.FirstName);
                 Assert.Equal("Parker", person1.LastName);
@@ -1939,11 +1964,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.NotEqual(person1.LastName, person2.LastName);
                 Assert.NotEqual(person1.Birthdate, person2.Birthdate);
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
 
                 Assert.Equal("Doc", person2.FirstName);
                 Assert.Equal("Octo", person2.LastName);
@@ -2016,8 +2041,8 @@ namespace DatabaseTest.ModelsTest
                 person1.LastName = "Doe";
                 person1.Birthdate = date1;
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
@@ -2043,11 +2068,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.NotEqual(person1.LastName, person2.LastName);
                 Assert.NotEqual(person1.Birthdate, person2.Birthdate);
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person2.RealtimeInstance));
 
                 Assert.Equal("Peter", person2.FirstName);
                 Assert.Equal("Parker", person2.LastName);
@@ -2096,7 +2121,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.Start();
 
-                Assert.True(await person1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
                 await Task.Delay(5000);
 
                 Assert.Null(person2.FirstName);
@@ -2209,7 +2234,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
             });
         }
 
@@ -2238,9 +2263,6 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance1.wire.SubModel(dictionary1);
 
-                DateTime date1 = DateTime.Now;
-                DateTime date2 = DateTime.Now;
-
                 dictionary1.Add("key1", "test1");
                 dictionary1.Add("key2", "test2");
 
@@ -2255,17 +2277,17 @@ namespace DatabaseTest.ModelsTest
                 collectionChanges2.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 await Task.Delay(5000);
 
                 appInstance2.wire.PutModel(dictionary2);
 
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance2.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
-                await Task.Delay(5000);
+                await Task.Delay(10000);
 
                 Assert.Equal("test3", dictionary1["key1"]);
                 Assert.Equal("test4", dictionary1["key2"]);
@@ -2382,7 +2404,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await appInstance1.wire.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal("Lara", dictionary1["key1"].FirstName);
                 Assert.Equal("Croft", dictionary1["key1"].LastName);
@@ -2425,7 +2447,7 @@ namespace DatabaseTest.ModelsTest
                 dictionary1.Add("key1", "test1");
                 dictionary1.Add("key2", "test2");
 
-                Assert.True(await dictionary1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
 
                 await Task.Delay(5000);
 
@@ -2437,7 +2459,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.False(dictionary1.SetNull());
                 Assert.True(dictionary1.IsNull());
 
-                Assert.True(await dictionary1.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
 
                 Assert.Equal(1, collectionChanges1.Count);
                 Assert.Contains(collectionChanges1, i =>
@@ -2486,7 +2508,7 @@ namespace DatabaseTest.ModelsTest
                 dictionary2.Add("key1", person1);
                 dictionary2.Add("key2", person2);
 
-                Assert.True(await dictionary2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
 
                 await Task.Delay(5000);
 
@@ -2498,7 +2520,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.False(dictionary2.SetNull());
                 Assert.True(dictionary2.IsNull());
 
-                Assert.True(await dictionary2.RealtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
 
                 Assert.Equal(1, collectionChanges2.Count);
                 Assert.Contains(collectionChanges2, i =>
@@ -2524,6 +2546,993 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key2" && i.Path[1] == "birthdate");
                 appInstance2.dataChanges.Clear();
 
+                appInstance2.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void CrossSync()
+        {
+            await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(CrossSync), async generator =>
+            {
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+
+                var appInstance2 = await generator(null);
+                appInstance2.wire.Start();
+
+                var dictionary1 = new FirebaseDictionary<string>();
+                var dictionary2 = new FirebaseDictionary<string>();
+
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+
+                dictionary1.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges1.Add(e);
+                };
+                dictionary2.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges2.Add(e);
+                };
+
+                appInstance1.wire.SubModel(dictionary1);
+                appInstance2.wire.SubModel(dictionary2);
+
+                dictionary1.Add("key1", "test1");
+                dictionary1.Add("key2", "test2");
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+                await Task.Delay(10000);
+
+                Assert.Equal("test1", dictionary2["key1"]);
+                Assert.Equal("test2", dictionary2["key2"]);
+
+                Assert.Equal(dictionary1["key1"], dictionary2["key1"]);
+                Assert.Equal(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                collectionChanges1.Clear();
+
+                Assert.Equal(2, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldItems?.Count == null;
+                });
+                collectionChanges2.Clear();
+
+                Assert.Equal(6, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance1.dataChanges.Clear();
+
+                Assert.Equal(4, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance2.dataChanges.Clear();
+
+                dictionary2.AddOrUpdate("key1", "test3");
+                dictionary2.AddOrUpdate("key2", "test4");
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        dictionary1["key1"] != dictionary2["key1"] ||
+                        dictionary1["key2"] != dictionary2["key2"])
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
+
+                Assert.Equal("test3", dictionary2["key1"]);
+                Assert.Equal("test4", dictionary2["key2"]);
+
+                Assert.Equal(dictionary1["key1"], dictionary2["key1"]);
+                Assert.Equal(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldStartingIndex == 1 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+                collectionChanges1.Clear();
+
+                Assert.Equal(2, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldStartingIndex == 1 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+                collectionChanges2.Clear();
+
+                Assert.Equal(2, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance1.dataChanges.Clear();
+
+                Assert.Equal(4, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance2.dataChanges.Clear();
+
+                appInstance1.app.Dispose();
+                appInstance2.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void CustomSerializable()
+        {
+            await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(CustomSerializable), async generator =>
+            {
+                Serializer.Register(new DinosaurSerializer());
+
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+
+                var dictionary1 = new FirebaseDictionary<Dinosaur>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                dictionary1.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges1.Add(e);
+                };
+
+                appInstance1.wire.SubModel(dictionary1);
+
+                DateTime date1 = DateTime.Now;
+                Dinosaur dino1 = new Dinosaur()
+                {
+                    Name = "Megalosaurus",
+                    Height = 100
+                };
+                DateTime date2 = DateTime.UtcNow;
+                Dinosaur dino2 = new Dinosaur()
+                {
+                    Name = "T-Rex",
+                    Height = 120
+                };
+
+                dictionary1.Add("key1", dino1);
+                dictionary1.Add("key2", dino2);
+
+                await Task.Delay(5000);
+
+                Assert.Equal(new Dinosaur()
+                {
+                    Name = "Megalosaurus",
+                    Height = 100
+                }, dictionary1["key1"]);
+                Assert.Equal(new Dinosaur()
+                {
+                    Name = "T-Rex",
+                    Height = 120
+                }, dictionary1["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Value.Name == "Megalosaurus" &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Value.Height == 100 &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Value.Name == "T-Rex" &&
+                        ((KeyValuePair<string, Dinosaur>?)i.NewItems?[0])?.Value.Height == 120 &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                collectionChanges1.Clear();
+
+                Assert.Equal(4, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance1.dataChanges.Clear();
+
+                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+
+                Assert.Empty(collectionChanges1);
+
+                Assert.Equal(2, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                appInstance1.dataChanges.Clear();
+
+                appInstance1.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void ConflictCreateTest()
+        {
+            await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictCreateTest), async generator =>
+            {
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+
+                var appInstance2 = await generator(null);
+                appInstance2.wire.Start();
+
+                var dictionary1 = new FirebaseDictionary<string>();
+                var dictionary2 = new FirebaseDictionary<string>();
+
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+
+                dictionary1.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges1.Add(e);
+                };
+                dictionary2.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges2.Add(e);
+                };
+
+                appInstance1.wire.SubModel(dictionary1);
+                appInstance2.wire.SubModel(dictionary2);
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.Delay(5000);
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary2.Add("key1", "test1");
+                dictionary2.Add("key2", "test2");
+
+                Assert.Empty(dictionary1);
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.Delay(5000);
+
+                Assert.Equal("test1", dictionary1["key1"]);
+                Assert.Equal("test2", dictionary1["key2"]);
+
+                Assert.Equal(dictionary2["key1"], dictionary1["key1"]);
+                Assert.Equal(dictionary2["key2"], dictionary1["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldItems?.Count == null;
+                });
+
+                Assert.Equal(2, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+
+                Assert.Equal(4, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(6, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                appInstance1.wire.SetNull();
+                appInstance2.wire.SetNull();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
+                await Task.Delay(5000);
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary1.Add("key1", "test1");
+                dictionary1.Add("key2", "test2");
+
+                dictionary2.Add("key1", "test3");
+                dictionary2.Add("key2", "test4");
+
+                Assert.NotEqual(dictionary1["key1"], dictionary2["key1"]);
+                Assert.NotEqual(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+
+                Assert.Equal("test1", dictionary1["key1"]);
+                Assert.Equal("test2", dictionary1["key2"]);
+
+                Assert.Equal(dictionary2["key1"], dictionary1["key1"]);
+                Assert.Equal(dictionary2["key2"], dictionary1["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+
+                Assert.Equal(4, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test1" &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test3";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test2" &&
+                        i.OldStartingIndex == 1 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
+                });
+
+                Assert.Equal(6, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(6, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance1.app.Dispose();
+                appInstance2.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void ConflictUpdateTest()
+        {
+            await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictUpdateTest), async generator =>
+            {
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+
+                var appInstance2 = await generator(null);
+                appInstance2.wire.Start();
+
+                var dictionary1 = new FirebaseDictionary<string>();
+                var dictionary2 = new FirebaseDictionary<string>();
+
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+
+                dictionary1.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges1.Add(e);
+                };
+                dictionary2.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges2.Add(e);
+                };
+
+                appInstance1.wire.SubModel(dictionary1);
+                appInstance2.wire.SubModel(dictionary2);
+
+                dictionary1.Add("key1", "test1");
+                dictionary1.Add("key2", "test2");
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.Delay(5000);
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary2.AddOrUpdate("key1", "test3");
+                dictionary2.AddOrUpdate("key2", "test4");
+
+                Assert.NotEqual(dictionary1["key1"], dictionary2["key1"]);
+                Assert.NotEqual(dictionary1["key2"], dictionary2["key2"]);
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.Delay(5000);
+
+                Assert.Equal("test3", dictionary1["key1"]);
+                Assert.Equal("test4", dictionary1["key2"]);
+
+                Assert.Equal(dictionary1["key1"], dictionary2["key1"]);
+                Assert.Equal(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+
+                Assert.Equal(2, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+
+                Assert.Equal(2, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(4, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary1.AddOrUpdate("key1", "test5");
+                dictionary1.AddOrUpdate("key2", "test6");
+
+                dictionary2.AddOrUpdate("key1", "test7");
+                dictionary2.AddOrUpdate("key2", "test8");
+
+                Assert.NotEqual(dictionary1["key1"], dictionary2["key1"]);
+                Assert.NotEqual(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+
+                Assert.Equal("test5", dictionary1["key1"]);
+                Assert.Equal("test6", dictionary1["key2"]);
+
+                Assert.Equal(dictionary1["key1"], dictionary2["key1"]);
+                Assert.Equal(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test5" &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test3";
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test6" &&
+                        i.OldStartingIndex == 1 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
+                });
+
+                Assert.Equal(4, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test7" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test3";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test8" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test5" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test7";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test6" &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test8";
+                });
+
+                Assert.Equal(4, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(4, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance1.app.Dispose();
+                appInstance2.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void ConflictDeleteTest()
+        {
+            await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictDeleteTest), async generator =>
+            {
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+
+                var appInstance2 = await generator(null);
+                appInstance2.wire.Start();
+
+                var dictionary1 = new FirebaseDictionary<string>();
+                var dictionary2 = new FirebaseDictionary<string>();
+
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+
+                dictionary1.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges1.Add(e);
+                };
+                dictionary2.CollectionChanged += (s, e) =>
+                {
+                    collectionChanges2.Add(e);
+                };
+
+                appInstance1.wire.SubModel(dictionary1);
+                appInstance2.wire.SubModel(dictionary2);
+
+                dictionary1.Add("key1", "test1");
+                dictionary1.Add("key2", "test2");
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+                await Task.Delay(5000);
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary1.AddOrUpdate("key1", "test3");
+                dictionary1.AddOrUpdate("key2", "test4");
+
+                dictionary2.Remove("key1");
+                dictionary2.Remove("key2");
+
+                Assert.Equal(2, dictionary1.Count);
+                Assert.Empty(dictionary2);
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+
+                Assert.Equal("test3", dictionary1["key1"]);
+                Assert.Equal("test4", dictionary1["key2"]);
+
+                Assert.Equal(dictionary1["key1"], dictionary2["key1"]);
+                Assert.Equal(dictionary1["key2"], dictionary2["key2"]);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Replace &&
+                        i.NewStartingIndex == 1 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldStartingIndex == 1 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+
+                Assert.Equal(4, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewItems?.Count == null &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewItems?.Count == null &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
+                        i.OldItems?.Count == null;
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
+                        i.OldItems?.Count == null;
+                });
+
+                Assert.Equal(4, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(4, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.wire.Stop();
+
+                dictionary1.Remove("key1");
+                dictionary1.Remove("key2");
+
+                Assert.Empty(dictionary1);
+                Assert.Equal(2, dictionary2.Count);
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
+
+                appInstance2.wire.Start();
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
+
+                Assert.Empty(dictionary1);
+                Assert.Empty(dictionary2);
+
+                Assert.Equal(2, collectionChanges1.Count);
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewStartingIndex == -1 &&
+                        i.NewItems?.Count == null &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test3";
+                });
+                Assert.Contains(collectionChanges1, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewStartingIndex == -1 &&
+                        i.NewItems?.Count == null &&
+                        i.OldStartingIndex == 0 &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
+                });
+
+                Assert.Equal(2, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewItems?.Count == null &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test3";
+                });
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Remove &&
+                        i.NewItems?.Count == null &&
+                        i.OldItems?.Count == 1 &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
+                        ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
+                });
+
+                Assert.Equal(6, appInstance1.dataChanges.Count);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                Assert.Equal(3, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+
+                collectionChanges1.Clear();
+                collectionChanges2.Clear();
+                appInstance1.dataChanges.Clear();
+                appInstance2.dataChanges.Clear();
+
+                appInstance1.app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
