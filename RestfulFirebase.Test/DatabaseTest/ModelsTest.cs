@@ -2122,7 +2122,16 @@ namespace DatabaseTest.ModelsTest
                 appInstance2.wire.Start();
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
-                await Task.Delay(5000);
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        person2.FirstName != null ||
+                        person2.LastName != null ||
+                        person2.Birthdate != default)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Null(person2.FirstName);
                 Assert.Null(person2.LastName);
@@ -2583,7 +2592,17 @@ namespace DatabaseTest.ModelsTest
                 dictionary1.Add("key2", "test2");
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
-                await Task.Delay(10000);
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        !dictionary2.ContainsKey("key1") ||
+                        !dictionary2.ContainsKey("key2") ||
+                        dictionary2["key1"] != "test1" ||
+                        dictionary2["key2"] != "test2")
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal("test1", dictionary2["key1"]);
                 Assert.Equal("test2", dictionary2["key2"]);
@@ -2703,11 +2722,9 @@ namespace DatabaseTest.ModelsTest
                 {
                     return
                         i.Action == NotifyCollectionChangedAction.Replace &&
-                        i.NewStartingIndex == 0 &&
                         i.NewItems?.Count == 1 &&
                         ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key1" &&
                         ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test3" &&
-                        i.OldStartingIndex == 0 &&
                         i.OldItems?.Count == 1 &&
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key1" &&
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test1";
@@ -2716,11 +2733,9 @@ namespace DatabaseTest.ModelsTest
                 {
                     return
                         i.Action == NotifyCollectionChangedAction.Replace &&
-                        i.NewStartingIndex == 1 &&
                         i.NewItems?.Count == 1 &&
                         ((KeyValuePair<string, string>?)i.NewItems?[0])?.Key == "key2" &&
                         ((KeyValuePair<string, string>?)i.NewItems?[0])?.Value == "test4" &&
-                        i.OldStartingIndex == 1 &&
                         i.OldItems?.Count == 1 &&
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Key == "key2" &&
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";

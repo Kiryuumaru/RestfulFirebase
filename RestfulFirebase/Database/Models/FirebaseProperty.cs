@@ -269,7 +269,10 @@ namespace RestfulFirebase.Database.Models
                 }
             });
 
-            while (!isStaring) { }
+            while (!isStaring)
+            {
+                Thread.Sleep(1);
+            }
         }
 
         void IInternalRealtimeModel.DetachRealtime()
