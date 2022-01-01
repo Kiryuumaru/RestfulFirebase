@@ -142,6 +142,74 @@ namespace RestfulFirebase.Utilities
         }
 
         /// <summary>
+        /// Locks read operations while executing the <paramref name="block"/> action with the option upgrade to write mode.
+        /// </summary>
+        /// <param name="key">
+        /// The key of the locker.
+        /// </param>
+        /// <param name="block">
+        /// The action to be executed inside the lock block.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="block"/> is a null reference.
+        /// </exception>
+        public void LockReadUpgradable(TKey key, Action block)
+        {
+            LockRead(() =>
+            {
+                Lock pathLock = locks.GetOrAdd(key, _ => new Lock(this, key));
+                Interlocked.Increment(ref pathLock.Lockers);
+                pathLock.RWLock.LockReadUpgradable(block);
+                if (pathLock.Lockers <= 1)
+                {
+                    locks.TryRemove(key, out _);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref pathLock.Lockers);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Locks read operations while executing the <paramref name="block"/> function with the option upgrade to write mode.
+        /// </summary>
+        /// <typeparam name="TReturn">
+        /// The object type returned by the <paramref name="block"/> function.
+        /// </typeparam>
+        /// <param name="key">
+        /// The key of the locker.
+        /// </param>
+        /// <param name="block">
+        /// The function to be executed inside the lock block.
+        /// </param>
+        /// <returns>
+        /// The object returned by the <paramref name="block"/> function.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="block"/> is a null reference.
+        /// </exception>
+        public TReturn LockReadUpgradable<TReturn>(TKey key, Func<TReturn> block)
+        {
+            return LockRead(() =>
+            {
+                Lock pathLock = locks.GetOrAdd(key, _ => new Lock(this, key));
+                Interlocked.Increment(ref pathLock.Lockers);
+                TReturn ret = pathLock.RWLock.LockReadUpgradable(block);
+                Interlocked.Decrement(ref pathLock.Lockers);
+                if (pathLock.Lockers <= 1)
+                {
+                    locks.TryRemove(key, out _);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref pathLock.Lockers);
+                }
+                return ret;
+            });
+        }
+
+        /// <summary>
         /// Locks write operations while executing the <paramref name="block"/> action.
         /// </summary>
         /// <param name="key">

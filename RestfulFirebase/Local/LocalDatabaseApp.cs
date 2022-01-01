@@ -480,7 +480,7 @@ namespace RestfulFirebase.Local
 
         internal void InternalSubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
         {
-            databaseDictionaryLock.LockRead(() =>
+            databaseDictionaryLock.LockReadUpgradable(() =>
             {
                 if (databaseDictionary.TryGetValue(localDatabase, out var data))
                 {
@@ -495,7 +495,7 @@ namespace RestfulFirebase.Local
 
         internal void InternalUnsubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
         {
-            databaseDictionaryLock.LockRead(() =>
+            databaseDictionaryLock.LockReadUpgradable(() =>
             {
                 if (databaseDictionary.TryGetValue(localDatabase, out var data))
                 {
@@ -514,7 +514,7 @@ namespace RestfulFirebase.Local
 
             string serializedPath = StringUtilities.Serialize(path);
 
-            return LockReadHierarchy(path, () => DBContains(localDatabase, serializedPath));
+            return LockReadHierarchy1(path, () => DBContains(localDatabase, serializedPath));
         }
 
         internal void InternalDelete(ILocalDatabase localDatabase, string[] path)
@@ -523,7 +523,7 @@ namespace RestfulFirebase.Local
 
             string serializedPath = StringUtilities.Serialize(path);
 
-            LockReadHierarchy(path, () =>
+            LockReadUpgradableHierarchy(path, () =>
             {
                 LocalDatabaseEventHolder holder = GetHandler(localDatabase);
 
@@ -589,7 +589,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             return GetChildren(localDatabase, path, serializedPath, data);
         }
@@ -600,7 +600,7 @@ namespace RestfulFirebase.Local
 
             string serializedPath = StringUtilities.Serialize(path);
 
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             if (data != null && data.Length > 0 && data[0] == PathIndicator)
             {
@@ -617,7 +617,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             return GetTypedChildren(localDatabase, path, serializedPath, data);
         }
@@ -627,7 +627,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             return GetRecursiveChildren(localDatabase, path, serializedPath, data);
         }
@@ -637,7 +637,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             return GetRecursiveRelativeChildren(localDatabase, path, serializedPath, data);
         }
@@ -647,7 +647,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             return GetRelativeTypedChildren(localDatabase, path, serializedPath, data);
         }
@@ -658,7 +658,7 @@ namespace RestfulFirebase.Local
 
             string serializedPath = StringUtilities.Serialize(path);
 
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             if (data != null && data.Length > 0)
             {
@@ -675,7 +675,7 @@ namespace RestfulFirebase.Local
             Validate(localDatabase, path);
 
             string serializedPath = StringUtilities.Serialize(path);
-            LockReadHierarchy(path, () =>
+            LockReadUpgradableHierarchy(path, () =>
             {
                 LocalDatabaseEventHolder holder = GetHandler(localDatabase);
 
@@ -750,7 +750,7 @@ namespace RestfulFirebase.Local
 
             string serializedPath = StringUtilities.Serialize(path);
 
-            LockReadHierarchy(path, () =>
+            LockReadHierarchy1(path, () =>
             {
                 string[] hierPath = path;
 
@@ -875,7 +875,7 @@ namespace RestfulFirebase.Local
         {
             string serializedPath = StringUtilities.Serialize(path);
 
-            string data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+            string data = LockReadHierarchy1(path, () => DBGet(localDatabase, serializedPath));
 
             if (data != null && data.Length > 0)
             {
@@ -919,7 +919,7 @@ namespace RestfulFirebase.Local
         {
             List<(string[] path, LocalDataType type)> paths = new List<(string[] path, LocalDataType type)>();
 
-            LockReadHierarchy(path, () =>
+            LockReadHierarchy1(path, () =>
             {
                 if (data != null && data.Length > 0 && data[0] == PathIndicator)
                 {
@@ -1194,7 +1194,7 @@ namespace RestfulFirebase.Local
 
         private void DeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder holder, bool includeSelf, string[] path, string serializedPath)
         {
-            rwLock.LockRead(path, () =>
+            rwLock.LockReadUpgradable(path, () =>
             {
                 string childData = DBGet(localDatabase, serializedPath);
                 if (childData != null)
@@ -1237,7 +1237,7 @@ namespace RestfulFirebase.Local
             });
         }
 
-        private void LockReadHierarchy(string[] path, Action action)
+        private void LockReadHierarchy1(string[] path, Action action)
         {
             void read(int index)
             {
@@ -1258,7 +1258,7 @@ namespace RestfulFirebase.Local
             read(0);
         }
 
-        private TReturn LockReadHierarchy<TReturn>(string[] path, Func<TReturn> block)
+        private TReturn LockReadHierarchy1<TReturn>(string[] path, Func<TReturn> block)
         {
             TReturn read(int index)
             {
@@ -1274,6 +1274,48 @@ namespace RestfulFirebase.Local
                     Array.Copy(path, 0, pathToLock, 0, nextIndex);
 
                     return rwLock.LockRead(pathToLock, () => read(nextIndex));
+                }
+            }
+            return read(0);
+        }
+
+        private void LockReadUpgradableHierarchy(string[] path, Action action)
+        {
+            void read(int index)
+            {
+                if (index >= path.Length)
+                {
+                    action();
+                }
+                else
+                {
+                    int nextIndex = index + 1;
+
+                    string[] pathToLock = new string[nextIndex];
+                    Array.Copy(path, 0, pathToLock, 0, nextIndex);
+
+                    rwLock.LockReadUpgradable(pathToLock, () => read(nextIndex));
+                }
+            }
+            read(0);
+        }
+
+        private TReturn LockReadUpgradableHierarchy<TReturn>(string[] path, Func<TReturn> block)
+        {
+            TReturn read(int index)
+            {
+                if (index >= path.Length)
+                {
+                    return block();
+                }
+                else
+                {
+                    int nextIndex = index + 1;
+
+                    string[] pathToLock = new string[nextIndex];
+                    Array.Copy(path, 0, pathToLock, 0, nextIndex);
+
+                    return rwLock.LockReadUpgradable(pathToLock, () => read(nextIndex));
                 }
             }
             return read(0);
@@ -1365,22 +1407,22 @@ namespace RestfulFirebase.Local
 
             public void Invoke(DataChangesEventArgs args)
             {
-                Changes?.Invoke(localDatabaseApp, args);
-                //invokes.Enqueue(args);
+                //Changes?.Invoke(localDatabaseApp, args);
+                invokes.Enqueue(args);
 
-                //if (!isInvoking)
-                //{
-                //    isInvoking = true;
+                if (!isInvoking)
+                {
+                    isInvoking = true;
 
-                //    Task.Run(delegate
-                //    {
-                //        while (invokes.TryDequeue(out DataChangesEventArgs argsToInvoke))
-                //        {
-                //            Changes?.Invoke(localDatabaseApp, argsToInvoke);
-                //        }
-                //        isInvoking = false;
-                //    });
-                //}
+                    Task.Run(delegate
+                    {
+                        while (invokes.TryDequeue(out DataChangesEventArgs argsToInvoke))
+                        {
+                            Changes?.Invoke(localDatabaseApp, argsToInvoke);
+                        }
+                        isInvoking = false;
+                    });
+                }
             }
         }
 
