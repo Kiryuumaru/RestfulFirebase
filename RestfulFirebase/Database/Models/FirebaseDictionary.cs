@@ -592,7 +592,7 @@ namespace RestfulFirebase.Database.Models
         /// </param>
         protected virtual void OnRealtimeAttached(RealtimeInstanceEventArgs args)
         {
-            ContextSend(delegate
+            ContextPost(delegate
             {
                 RealtimeAttached?.Invoke(this, args);
             });
@@ -606,7 +606,7 @@ namespace RestfulFirebase.Database.Models
         /// </param>
         protected virtual void OnRealtimeDetached(RealtimeInstanceEventArgs args)
         {
-            ContextSend(delegate
+            ContextPost(delegate
             {
                 RealtimeDetached?.Invoke(this, args);
             });

@@ -165,7 +165,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var clone = appInstance1.wire.Clone();
                 var cloneDataChanges = new List<DataChangesEventArgs>();
-                clone.DataChanges += (s, e) =>
+                clone.ImmediateDataChanges += (s, e) =>
                 {
                     cloneDataChanges.Add(e);
                 };
@@ -313,7 +313,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 appInstance1.wire.Start();
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
                 var dataChanges = new List<DataChangesEventArgs>();
-                appInstance1.wire.DataChanges += (s, e) =>
+                appInstance1.wire.ImmediateDataChanges += (s, e) =>
                 {
                     dataChanges.Add(e);
                 };
@@ -1656,7 +1656,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var child1 = appInstance1.wire.Child("child1");
                 var child1DataChanges = new List<DataChangesEventArgs>();
-                child1.DataChanges += (s, e) =>
+                child1.ImmediateDataChanges += (s, e) =>
                 {
                     child1DataChanges.Add(e);
                 };
@@ -1667,7 +1667,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 var child2 = child1.Child("child2");
                 var child2DataChanges = new List<DataChangesEventArgs>();
-                child2.DataChanges += (s, e) =>
+                child2.ImmediateDataChanges += (s, e) =>
                 {
                     child2DataChanges.Add(e);
                 };

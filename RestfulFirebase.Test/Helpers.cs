@@ -207,7 +207,7 @@ namespace RestfulFirebase.Test
                     });
                 };
                 var dataChanges = new List<DataChangesEventArgs>();
-                wire.DataChanges += (s, e) =>
+                wire.ImmediateDataChanges += (s, e) =>
                 {
                     dataChanges.Add(e);
                 };

@@ -216,23 +216,23 @@ namespace RestfulFirebase
         /// </summary>
         public FirebaseConfig()
         {
-            AttachOnPropertyChanged<string>(v => CachedApiKey = v, nameof(ApiKey));
-            AttachOnPropertyChanged<string>(v => CachedDatabaseURL = v, nameof(DatabaseURL));
-            AttachOnPropertyChanged<string>(v => CachedStorageBucket = v, nameof(StorageBucket));
-            AttachOnPropertyChanged<IHttpClientFactory>(v => CachedHttpClientFactory = v, nameof(HttpClientFactory));
-            AttachOnPropertyChanged<IHttpStreamFactory>(v => CachedHttpStreamFactory = v, nameof(HttpStreamFactory));
-            AttachOnPropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));
-            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRequestTimeout = v, nameof(DatabaseRequestTimeout));
-            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseColdStreamTimeout = v, nameof(DatabaseColdStreamTimeout));
-            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRetryDelay = v, nameof(DatabaseRetryDelay));
-            AttachOnPropertyChanged<TimeSpan>(v => CachedStorageRequestTimeout = v, nameof(StorageRequestTimeout));
-            AttachOnPropertyChanged<ILocalDatabase>(v => CachedLocalDatabase = v, nameof(LocalDatabase));
-            AttachOnPropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
-            AttachOnPropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
-            AttachOnPropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
-            AttachOnPropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
-            AttachOnPropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
-            AttachOnPropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
+            AttachOnImmediatePropertyChanged<string>(v => CachedApiKey = v, nameof(ApiKey));
+            AttachOnImmediatePropertyChanged<string>(v => CachedDatabaseURL = v, nameof(DatabaseURL));
+            AttachOnImmediatePropertyChanged<string>(v => CachedStorageBucket = v, nameof(StorageBucket));
+            AttachOnImmediatePropertyChanged<IHttpClientFactory>(v => CachedHttpClientFactory = v, nameof(HttpClientFactory));
+            AttachOnImmediatePropertyChanged<IHttpStreamFactory>(v => CachedHttpStreamFactory = v, nameof(HttpStreamFactory));
+            AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));
+            AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseRequestTimeout = v, nameof(DatabaseRequestTimeout));
+            AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseColdStreamTimeout = v, nameof(DatabaseColdStreamTimeout));
+            AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseRetryDelay = v, nameof(DatabaseRetryDelay));
+            AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedStorageRequestTimeout = v, nameof(StorageRequestTimeout));
+            AttachOnImmediatePropertyChanged<ILocalDatabase>(v => CachedLocalDatabase = v, nameof(LocalDatabase));
+            AttachOnImmediatePropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
+            AttachOnImmediatePropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
+            AttachOnImmediatePropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
+            AttachOnImmediatePropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
+            AttachOnImmediatePropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
+            AttachOnImmediatePropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
         }
 
         #endregion

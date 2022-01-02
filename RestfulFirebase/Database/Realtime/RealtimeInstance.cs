@@ -64,6 +64,11 @@ namespace RestfulFirebase.Database.Realtime
         public event EventHandler<DataChangesEventArgs> DataChanges;
 
         /// <summary>
+        /// Event raised when there is data changes on the node or sub nodes.
+        /// </summary>
+        public event EventHandler<DataChangesEventArgs> ImmediateDataChanges;
+
+        /// <summary>
         /// Event raised on the current context when there is an error occured.
         /// </summary>
         /// <remarks>
@@ -512,15 +517,18 @@ namespace RestfulFirebase.Database.Realtime
                 Array.Copy(args.Path, args.Path.Length - path.Length, path, 0, path.Length);
             }
 
-            ContextSend(delegate
+            DataChangesEventArgs dataChangesArgs = new DataChangesEventArgs(path);
+
+            ImmediateDataChanges?.Invoke(this, dataChangesArgs);
+            ContextPost(delegate
             {
-                DataChanges?.Invoke(this, new DataChangesEventArgs(path));
+                DataChanges?.Invoke(this, dataChangesArgs);
             });
         }
 
         private void SelfError(WireExceptionEventArgs e)
         {
-            ContextSend(delegate
+            ContextPost(delegate
             {
                 Error?.Invoke(this, e);
             });
