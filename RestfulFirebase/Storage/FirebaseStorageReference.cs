@@ -184,12 +184,12 @@ namespace RestfulFirebase.Storage
 
         private string GetTargetUrl()
         {
-            return $"{FirebaseStorageEndpoint}{App.Config.StorageBucket}/o?name={GetEscapedPath()}";
+            return $"{FirebaseStorageEndpoint}{App.Config.CachedStorageBucket}/o?name={GetEscapedPath()}";
         }
 
         private string GetDownloadUrl()
         {
-            return $"{FirebaseStorageEndpoint}{App.Config.StorageBucket}/o/{GetEscapedPath()}";
+            return $"{FirebaseStorageEndpoint}{App.Config.CachedStorageBucket}/o/{GetEscapedPath()}";
         }
 
         private string GetFullDownloadUrl()

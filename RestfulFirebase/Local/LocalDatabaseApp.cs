@@ -55,7 +55,7 @@ namespace RestfulFirebase.Local
         /// </param>
         public void Subscribe(EventHandler<DataChangesEventArgs> changesHandler)
         {
-            InternalSubscribe(App.Config.LocalDatabase, changesHandler);
+            InternalSubscribe(App.Config.CachedLocalDatabase, changesHandler);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace RestfulFirebase.Local
         /// </param>
         public void Unsubscribe(EventHandler<DataChangesEventArgs> changesHandler)
         {
-            InternalUnsubscribe(App.Config.LocalDatabase, changesHandler);
+            InternalUnsubscribe(App.Config.CachedLocalDatabase, changesHandler);
         }
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool Contains(params string[] path)
         {
-            return InternalContains(App.Config.LocalDatabase, path);
+            return InternalContains(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public void Delete(params string[] path)
         {
-            InternalDelete(App.Config.LocalDatabase, path);
+            InternalDelete(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -123,7 +123,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public (string[] path, string key)[] GetChildren(params string[] path)
         {
-            return InternalGetChildren(App.Config.LocalDatabase, path);
+            return InternalGetChildren(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public LocalDataType GetDataType(params string[] path)
         {
-            return InternalGetDataType(App.Config.LocalDatabase, path);
+            return InternalGetDataType(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public string[][] GetRecursiveChildren(params string[] path)
         {
-            return InternalGetRecursiveChildren(App.Config.LocalDatabase, path);
+            return InternalGetRecursiveChildren(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public string[][] GetRecursiveRelativeChildren(params string[] path)
         {
-            return InternalGetRecursiveRelativeChildren(App.Config.LocalDatabase, path);
+            return InternalGetRecursiveRelativeChildren(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public (string key, LocalDataType type)[] GetRelativeTypedChildren(params string[] path)
         {
-            return InternalGetRelativeTypedChildren(App.Config.LocalDatabase, path);
+            return InternalGetRelativeTypedChildren(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public (string[] path, LocalDataType type)[] GetTypedChildren(params string[] path)
         {
-            return InternalGetTypedChildren(App.Config.LocalDatabase, path);
+            return InternalGetTypedChildren(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public string GetValue(params string[] path)
         {
-            return InternalGetValue(App.Config.LocalDatabase, path);
+            return InternalGetValue(App.Config.CachedLocalDatabase, path);
         }
 
         /// <summary>
@@ -263,7 +263,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public void SetValue(string value, params string[] path)
         {
-            InternalSetValue(App.Config.LocalDatabase, value, path);
+            InternalSetValue(App.Config.CachedLocalDatabase, value, path);
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrChildren(Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrChildren(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -315,7 +315,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrPath(Action<string> onValue, Action onPath, params string[] path)
         {
-            return InternalTryGetValueOrPath(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrPath(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -341,7 +341,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrRecursiveChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrRecursiveChildren(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrRecursiveChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -367,7 +367,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrRecursiveRelativeChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrRecursiveRelativeChildren(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrRecursiveRelativeChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -393,7 +393,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrRecursiveValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrRecursiveValues(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrRecursiveValues(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -419,7 +419,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrRecursiveRelativeValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrRecursiveRelativeValues(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrRecursiveRelativeValues(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -445,7 +445,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrRelativeTypedChildren(Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrRelativeTypedChildren(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrRelativeTypedChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         /// <summary>
@@ -471,7 +471,7 @@ namespace RestfulFirebase.Local
         /// </exception>
         public bool TryGetValueOrTypedChildren(Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
         {
-            return InternalTryGetValueOrTypedChildren(App.Config.LocalDatabase, onValue, onPath, path);
+            return InternalTryGetValueOrTypedChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
         }
 
         #endregion
@@ -1350,7 +1350,7 @@ namespace RestfulFirebase.Local
         {
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+            string encryptedKey = App.Config.CachedLocalEncryption.EncryptKey(key);
 
             return localDatabase.ContainsKey(encryptedKey);
         }
@@ -1359,7 +1359,7 @@ namespace RestfulFirebase.Local
         {
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+            string encryptedKey = App.Config.CachedLocalEncryption.EncryptKey(key);
 
             localDatabase.Delete(encryptedKey);
         }
@@ -1368,20 +1368,20 @@ namespace RestfulFirebase.Local
         {
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
+            string encryptedKey = App.Config.CachedLocalEncryption.EncryptKey(key);
             string encryptedValue = null;
 
             encryptedValue = localDatabase.Get(encryptedKey);
 
-            return App.Config.LocalEncryption.DecryptValue(encryptedValue);
+            return App.Config.CachedLocalEncryption.DecryptValue(encryptedValue);
         }
 
         private void DBSet(ILocalDatabase localDatabase, string key, string value)
         {
             if (string.IsNullOrEmpty(key)) throw new ArgumentNullException(nameof(key));
 
-            string encryptedKey = App.Config.LocalEncryption.EncryptKey(key);
-            string encryptedValue = App.Config.LocalEncryption.EncryptValue(value);
+            string encryptedKey = App.Config.CachedLocalEncryption.EncryptKey(key);
+            string encryptedValue = App.Config.CachedLocalEncryption.EncryptValue(value);
 
             localDatabase.Set(encryptedKey, encryptedValue);
         }

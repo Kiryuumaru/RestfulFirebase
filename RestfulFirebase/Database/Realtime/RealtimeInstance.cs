@@ -233,17 +233,17 @@ namespace RestfulFirebase.Database.Realtime
             }
             async Task<bool> waitTask()
             {
-                while (!IsSynced(path) && !App.Config.OfflineMode && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
+                while (!IsSynced(path) && !App.Config.CachedOfflineMode && !cancel && !(cancellationToken?.IsCancellationRequested ?? false))
                 {
                     try
                     {
                         if (cancellationToken.HasValue)
                         {
-                            await Task.Delay(App.Config.DatabaseRetryDelay, cancellationToken.Value).ConfigureAwait(false);
+                            await Task.Delay(App.Config.CachedDatabaseRetryDelay, cancellationToken.Value).ConfigureAwait(false);
                         }
                         else
                         {
-                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                            await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                         }
                     }
                     catch { }
@@ -1288,7 +1288,7 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         args.err.Retry = writeTaskErrorControl.SendAsync(async delegate
                         {
-                            await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                            await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                             return true;
                         });
                     }
@@ -1296,7 +1296,7 @@ namespace RestfulFirebase.Database.Realtime
                     OnError(args.writeTask.Uri, args.err.Exception);
                 }, delegate
                 {
-                    writeTaskErrorControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentSyncWrites;
+                    writeTaskErrorControl.ConcurrentTokenCount = App.Config.CachedDatabaseMaxConcurrentSyncWrites;
                 });
             }
         }

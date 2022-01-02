@@ -122,7 +122,7 @@ namespace RestfulFirebase.Auth
 
             App.Config.ImmediatePropertyChanged += Config_ImmediatePropertyChanged;
 
-            Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
+            Fetch(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase);
         }
 
         #endregion
@@ -227,9 +227,9 @@ namespace RestfulFirebase.Auth
             {
                 var content = $"{{ \"idToken\": \"{FirebaseToken}\" }}";
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(AuthApp.GoogleDeleteUserUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleDeleteUserUrl, App.Config.CachedApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -279,9 +279,9 @@ namespace RestfulFirebase.Auth
             try
             {
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(AuthApp.GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleGetConfirmationCodeUrl, App.Config.CachedApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -488,9 +488,9 @@ namespace RestfulFirebase.Auth
             {
                 string content = $"{{\"identifier\":\"{email}\", \"continueUri\": \"http://localhost\"}}";
                 var response = await App.Auth.GetClient().PostAsync(
-                    new Uri(string.Format(AuthApp.GoogleCreateAuthUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(AuthApp.GoogleCreateAuthUrl, App.Config.CachedApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -563,9 +563,9 @@ namespace RestfulFirebase.Auth
                 {
                     HttpResponseMessage response = null;
                     response = await App.Auth.GetClient().PostAsync(
-                        new Uri(string.Format(AuthApp.GoogleRefreshAuth, App.Config.ApiKey)),
+                        new Uri(string.Format(AuthApp.GoogleRefreshAuth, App.Config.CachedApiKey)),
                         new StringContent(content, Encoding.UTF8, "Application/json"),
-                        new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                        new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
 
                     responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
@@ -732,7 +732,7 @@ namespace RestfulFirebase.Auth
         /// </param>
         public void CopyAuthenticationFrom(RestfulFirebaseApp app)
         {
-            ILocalDatabase localDatabase = app.Config.CustomAuthLocalDatabase ?? app.Config.LocalDatabase;
+            ILocalDatabase localDatabase = app.Config.CachedCustomAuthLocalDatabase ?? app.Config.CachedLocalDatabase;
             Fetch(localDatabase);
             Store(localDatabase);
         }
@@ -766,7 +766,7 @@ namespace RestfulFirebase.Auth
             IsEmailVerified = user.IsEmailVerified;
             PhotoUrl = user.PhoneNumber;
             PhoneNumber = user.PhoneNumber;
-            Store(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
+            Store(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase);
         }
 
         internal void Purge()
@@ -785,7 +785,7 @@ namespace RestfulFirebase.Auth
             PhotoUrl = default;
             PhoneNumber = default;
 
-            App.LocalDatabase.InternalDelete(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
+            App.LocalDatabase.InternalDelete(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase, new string[] { Root });
         }
 
         internal void Fetch(ILocalDatabase localDatabase)

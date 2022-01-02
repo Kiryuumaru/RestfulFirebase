@@ -41,7 +41,7 @@ namespace RestfulFirebase.Database
 
             App.Config.ImmediatePropertyChanged += Config_ImmediatePropertyChanged;
 
-            writeTaskPutControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentSyncWrites;
+            writeTaskPutControl.ConcurrentTokenCount = App.Config.CachedDatabaseMaxConcurrentSyncWrites;
         }
 
         #endregion
@@ -66,7 +66,7 @@ namespace RestfulFirebase.Database
             {
                 throw new ArgumentNullException(nameof(resourceNameFactory));
             }
-            return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.DatabaseURL, resourceNameFactory()));
+            return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.CachedDatabaseURL, resourceNameFactory()));
         }
 
         /// <summary>

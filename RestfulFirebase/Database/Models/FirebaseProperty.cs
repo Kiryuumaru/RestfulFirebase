@@ -313,7 +313,7 @@ namespace RestfulFirebase.Database.Models
                             {
                                 break;
                             }
-                            await Task.Delay(instance.App.Config.DatabaseRetryDelay);
+                            await Task.Delay(instance.App.Config.CachedDatabaseRetryDelay);
                         }
 
                         instance?.SetValue(blob);

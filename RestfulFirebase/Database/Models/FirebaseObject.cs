@@ -93,7 +93,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.SetPropertyWithKey(value, key, propertyName, nameof(FirebaseObject), validate, postAction);
+            return base.SetProperty(value, key, propertyName, nameof(FirebaseObject), validate, postAction);
         }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace RestfulFirebase.Database.Models
                 }
             }
 
-            return base.GetPropertyWithKey(key, defaultValue, propertyName, nameof(FirebaseObject), validate, postAction);
+            return base.GetProperty(defaultValue, key, propertyName, nameof(FirebaseObject), validate, postAction);
         }
 
         /// <summary>
@@ -246,13 +246,9 @@ namespace RestfulFirebase.Database.Models
                 return null;
             }
 
-            return new NamedProperty()
-            {
-                Property = group == nameof(FirebaseObject) ? new FirebaseProperty() : new ObservableProperty(),
-                Key = key,
-                PropertyName = propertyName,
-                Group = group
-            };
+            ObservableProperty property = group == nameof(FirebaseObject) ? new FirebaseProperty() : new ObservableProperty();
+            
+            return new NamedProperty(property, key, propertyName, group);
         }
 
         #endregion

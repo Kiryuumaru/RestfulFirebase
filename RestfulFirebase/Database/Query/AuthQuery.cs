@@ -14,7 +14,7 @@ namespace RestfulFirebase.Database.Query
         #region Initializers
 
         internal AuthQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<Task<string>> tokenFactory)
-            : base(app, parent, () => app.Config.AsAccessToken ? "access_token" : "auth")
+            : base(app, parent, () => app.Config.CachedAsAccessToken ? "access_token" : "auth")
         {
             this.tokenFactory = tokenFactory;
         }

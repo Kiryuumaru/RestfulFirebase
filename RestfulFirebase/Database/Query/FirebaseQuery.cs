@@ -175,7 +175,7 @@ namespace RestfulFirebase.Database.Query
         {
             if (client == null)
             {
-                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.DatabaseRequestTimeout);
+                client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedDatabaseRequestTimeout);
             }
 
             return client.GetHttpClient();
@@ -201,11 +201,11 @@ namespace RestfulFirebase.Database.Query
                 CancellationToken invokeToken;
                 if (token == null)
                 {
-                    invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                    invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
                 }
                 else
                 {
-                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                 }
 
                 HttpResponseMessage result = null;
@@ -262,7 +262,7 @@ namespace RestfulFirebase.Database.Query
         /// <inheritdoc/>
         public RealtimeWire AsRealtimeWire(ILocalDatabase customLocalDatabase = default)
         {
-            return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.LocalDatabase);
+            return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.CachedLocalDatabase);
         }
 
         /// <inheritdoc/>
@@ -270,11 +270,11 @@ namespace RestfulFirebase.Database.Query
         {
             if (token == null)
             {
-                token = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                token = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
             }
             else
             {
-                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
             }
 
             if (App.Auth.IsAuthenticated && AuthenticateRequests)
@@ -367,7 +367,7 @@ namespace RestfulFirebase.Database.Query
                 var responseData = string.Empty;
                 var statusCode = HttpStatusCode.OK;
 
-                if (App.Config.OfflineMode)
+                if (App.Config.CachedOfflineMode)
                 {
                     throw new OfflineModeException();
                 }
@@ -380,11 +380,11 @@ namespace RestfulFirebase.Database.Query
 
                     if (token == null)
                     {
-                        invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                        invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
                     }
                     else
                     {
-                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                     }
 
                     var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
@@ -417,7 +417,7 @@ namespace RestfulFirebase.Database.Query
                 {
                     var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                     {
-                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                         return false;
                     }));
                     onException?.Invoke(retryEx);
@@ -448,7 +448,7 @@ namespace RestfulFirebase.Database.Query
                 var responseData = string.Empty;
                 var statusCode = HttpStatusCode.OK;
 
-                if (App.Config.OfflineMode)
+                if (App.Config.CachedOfflineMode)
                 {
                     throw new OfflineModeException();
                 }
@@ -465,11 +465,11 @@ namespace RestfulFirebase.Database.Query
 
                         if (token == null)
                         {
-                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                            invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
                         }
                         else
                         {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                         }
 
                         var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
@@ -505,7 +505,7 @@ namespace RestfulFirebase.Database.Query
                 {
                     var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                     {
-                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                         return false;
                     }));
                     onException?.Invoke(retryEx);
@@ -536,7 +536,7 @@ namespace RestfulFirebase.Database.Query
                 var responseData = string.Empty;
                 var statusCode = HttpStatusCode.OK;
 
-                if (App.Config.OfflineMode)
+                if (App.Config.CachedOfflineMode)
                 {
                     throw new OfflineModeException();
                 }
@@ -553,11 +553,11 @@ namespace RestfulFirebase.Database.Query
 
                         if (token == null)
                         {
-                            invokeToken = new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token;
+                            invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
                         }
                         else
                         {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.DatabaseRequestTimeout).Token).Token;
+                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                         }
 
                         var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
@@ -593,7 +593,7 @@ namespace RestfulFirebase.Database.Query
                 {
                     var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                     {
-                        await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                         return false;
                     }));
                     onException?.Invoke(retryEx);

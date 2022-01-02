@@ -284,14 +284,21 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 appInstance2.wire.PutModel(model2);
 
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
-                await Task.Delay(5000);
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        model1.Value != "test2" ||
+                        model2.Value != "test2")
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal("test2", model1.Value);
                 Assert.Equal("test2", model2.Value);
@@ -2379,7 +2386,15 @@ namespace DatabaseTest.ModelsTest
 
                 dictionary1.Add("key1", couple1);
 
-                await Task.Delay(5000);
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (
+                        collectionChanges1.Count != 1 ||
+                        appInstance1.dataChanges.Count != 14)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
 
                 Assert.Equal(1, collectionChanges1.Count);
                 Assert.Contains(collectionChanges1, i =>

@@ -47,7 +47,7 @@ namespace RestfulFirebase.Storage
 
         internal HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)
         {
-            var client = App.Config.HttpClientFactory.GetHttpClient(timeout).GetHttpClient();
+            var client = App.Config.CachedHttpClientFactory.GetHttpClient(timeout).GetHttpClient();
 
             if (App.Auth.IsAuthenticated)
             {

@@ -3,6 +3,7 @@ using RestfulFirebase.Http;
 using RestfulFirebase.Local;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace RestfulFirebase
 {
@@ -172,6 +173,40 @@ namespace RestfulFirebase
             set => SetProperty(value);
         }
 
+        internal string CachedApiKey { get; private set; }
+
+        internal string CachedDatabaseURL { get; private set; }
+
+        internal string CachedStorageBucket { get; private set; }
+
+        internal IHttpClientFactory CachedHttpClientFactory { get; private set; }
+
+        internal IHttpStreamFactory CachedHttpStreamFactory { get; private set; }
+
+        internal TimeSpan CachedAuthRequestTimeout { get; private set; }
+
+        internal TimeSpan CachedDatabaseRequestTimeout { get; private set; }
+
+        internal TimeSpan CachedDatabaseColdStreamTimeout { get; private set; }
+
+        internal TimeSpan CachedDatabaseRetryDelay { get; private set; }
+
+        internal TimeSpan CachedStorageRequestTimeout { get; private set; }
+
+        internal ILocalDatabase CachedLocalDatabase { get; private set; }
+
+        internal ILocalDatabase CachedCustomAuthLocalDatabase { get; private set; }
+
+        internal ILocalEncryption CachedLocalEncryption { get; private set; }
+
+        internal bool CachedAsAccessToken { get; private set; }
+
+        internal bool CachedOfflineMode { get; private set; }
+
+        internal bool CachedDatabaseSerializeEnumerableAsBlobs { get; private set; }
+
+        internal int CachedDatabaseMaxConcurrentSyncWrites { get; private set; }
+
         #endregion
 
         #region Initializers
@@ -181,7 +216,23 @@ namespace RestfulFirebase
         /// </summary>
         public FirebaseConfig()
         {
-
+            AttachOnPropertyChanged<string>(v => CachedApiKey = v, nameof(ApiKey));
+            AttachOnPropertyChanged<string>(v => CachedDatabaseURL = v, nameof(DatabaseURL));
+            AttachOnPropertyChanged<string>(v => CachedStorageBucket = v, nameof(StorageBucket));
+            AttachOnPropertyChanged<IHttpClientFactory>(v => CachedHttpClientFactory = v, nameof(HttpClientFactory));
+            AttachOnPropertyChanged<IHttpStreamFactory>(v => CachedHttpStreamFactory = v, nameof(HttpStreamFactory));
+            AttachOnPropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));
+            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRequestTimeout = v, nameof(DatabaseRequestTimeout));
+            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseColdStreamTimeout = v, nameof(DatabaseColdStreamTimeout));
+            AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRetryDelay = v, nameof(DatabaseRetryDelay));
+            AttachOnPropertyChanged<TimeSpan>(v => CachedStorageRequestTimeout = v, nameof(StorageRequestTimeout));
+            AttachOnPropertyChanged<ILocalDatabase>(v => CachedLocalDatabase = v, nameof(LocalDatabase));
+            AttachOnPropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
+            AttachOnPropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
+            AttachOnPropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
+            AttachOnPropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
+            AttachOnPropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
+            AttachOnPropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
         }
 
         #endregion

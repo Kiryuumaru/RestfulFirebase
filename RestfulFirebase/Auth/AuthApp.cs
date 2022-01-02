@@ -108,7 +108,7 @@ namespace RestfulFirebase.Auth
         {
             if (client == null)
             {
-                client = App.Config.HttpClientFactory.GetHttpClient(App.Config.AuthRequestTimeout);
+                client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedAuthRequestTimeout);
             }
 
             return client.GetHttpClient();
@@ -121,9 +121,9 @@ namespace RestfulFirebase.Auth
             try
             {
                 var response = await GetClient().PostAsync(
-                    new Uri(string.Format(googleUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(googleUrl, App.Config.CachedApiKey)),
                     new StringContent(postContent, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
@@ -153,9 +153,9 @@ namespace RestfulFirebase.Auth
             {
                 var content = $"{{\"idToken\":\"{auth.FirebaseToken}\"}}";
                 var response = await GetClient().PostAsync(
-                    new Uri(string.Format(GoogleGetUser, App.Config.ApiKey)),
+                    new Uri(string.Format(GoogleGetUser, App.Config.CachedApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
@@ -537,9 +537,9 @@ namespace RestfulFirebase.Auth
             {
                 var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{email}\"}}";
                 var response = await GetClient().PostAsync(
-                    new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.ApiKey)),
+                    new Uri(string.Format(GoogleGetConfirmationCodeUrl, App.Config.CachedApiKey)),
                     new StringContent(content, Encoding.UTF8, "Application/json"),
-                    new CancellationTokenSource(App.Config.AuthRequestTimeout).Token).ConfigureAwait(false);
+                    new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();

@@ -45,7 +45,7 @@ namespace RestfulFirebase.Database.Streaming
 
             cancel = new CancellationTokenSource();
 
-            var httpClient = App.Config.HttpStreamFactory.GetHttpClient();
+            var httpClient = App.Config.CachedHttpStreamFactory.GetHttpClient();
 
             httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
 
@@ -64,7 +64,7 @@ namespace RestfulFirebase.Database.Streaming
 
         private CancellationToken GetTrancientToken()
         {
-            return CancellationTokenSource.CreateLinkedTokenSource(cancel.Token, new CancellationTokenSource(App.Config.DatabaseColdStreamTimeout).Token).Token;
+            return CancellationTokenSource.CreateLinkedTokenSource(cancel.Token, new CancellationTokenSource(App.Config.CachedDatabaseColdStreamTimeout).Token).Token;
         }
 
         private async void ReceiveThread()
@@ -101,7 +101,7 @@ namespace RestfulFirebase.Database.Streaming
 
                     try
                     {
-                        HttpRequestMessage request = App.Config.HttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, requestUrl);
+                        HttpRequestMessage request = App.Config.CachedHttpStreamFactory.GetStreamHttpRequestMessage(HttpMethod.Get, requestUrl);
                         response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, GetTrancientToken()).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException)
@@ -191,7 +191,7 @@ namespace RestfulFirebase.Database.Streaming
                 }
                 finally
                 {
-                    await Task.Delay(App.Config.DatabaseRetryDelay).ConfigureAwait(false);
+                    await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                 }
             }
         }
