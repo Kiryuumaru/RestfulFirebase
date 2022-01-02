@@ -98,7 +98,7 @@ namespace RestfulFirebase.Database
         /// </param>
         public void Flush(ILocalDatabase localDatabase = default)
         {
-            App.LocalDatabase.InternalDelete(localDatabase, new string[] { OfflineDatabaseIndicator });
+            App.LocalDatabase.InternalDelete(localDatabase ?? App.Config.LocalDatabase, new string[] { OfflineDatabaseIndicator });
         }
 
         private void Config_ImmediatePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
