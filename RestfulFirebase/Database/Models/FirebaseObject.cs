@@ -7,6 +7,7 @@ using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -286,71 +287,60 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            Subscribe(realtimeInstance, invokeSetFirst);
-
-            bool isStaring = false;
-
-            Task.Run(() =>
+            try
             {
-                try
+                RWLock.LockWriteAndForget(() =>
                 {
-                    RWLock.LockWrite(() =>
+                    Subscribe(realtimeInstance, invokeSetFirst);
+
+                    List<string> children = RealtimeInstance
+                        .GetChildren()
+                        .Select(i => i.key)
+                        .ToList();
+
+                    IEnumerable<NamedProperty> properties = GetRawProperties(nameof(FirebaseObject));
+
+                    foreach (var property in properties)
                     {
-                        isStaring = true;
-                        List<string> children = RealtimeInstance
-                            .GetChildren()
-                            .Select(i => i.key)
-                            .ToList();
-
-                        IEnumerable<NamedProperty> properties = GetRawProperties(nameof(FirebaseObject));
-
-                        foreach (var property in properties)
+                        if (property.Property is IInternalRealtimeModel model)
                         {
-                            if (property.Property is IInternalRealtimeModel model)
+                            if (invokeSetFirst)
                             {
-                                if (invokeSetFirst)
-                                {
-                                    RealtimeInstance.Child(property.Key).PutModel(model);
-                                }
-                                else
-                                {
-                                    RealtimeInstance.Child(property.Key).SubModel(model);
-                                }
+                                RealtimeInstance.Child(property.Key).PutModel(model);
                             }
-                            children.Remove(property.Key);
+                            else
+                            {
+                                RealtimeInstance.Child(property.Key).SubModel(model);
+                            }
                         }
+                        children.Remove(property.Key);
+                    }
 
-                        foreach (var child in children)
-                        {
-                            GetOrCreateNamedProperty(default(string), child, null, nameof(FirebaseObject),
-                                newNamedProperty => true,
-                                postAction =>
+                    foreach (var child in children)
+                    {
+                        GetOrCreateNamedProperty(default(string), child, null, nameof(FirebaseObject),
+                            newNamedProperty => true,
+                            postAction =>
+                            {
+                                if (postAction.namedProperty.Property is IInternalRealtimeModel model)
                                 {
-                                    if (postAction.namedProperty.Property is IInternalRealtimeModel model)
+                                    if (!model.HasAttachedRealtime)
                                     {
-                                        if (!model.HasAttachedRealtime)
-                                        {
-                                            RealtimeInstance.Child(child).SubModel(model);
-                                        }
+                                        RealtimeInstance.Child(child).SubModel(model);
                                     }
-                                });
-                        }
+                                }
+                            });
+                    }
 
-                        hasPostAttachedRealtime = true;
+                    hasPostAttachedRealtime = true;
 
-                        OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                    });
-                }
-                catch
-                {
-                    Unsubscribe();
-                    throw;
-                }
-            });
-
-            while (!isStaring)
+                    OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                });
+            }
+            catch
             {
-                Thread.Sleep(1);
+                Unsubscribe();
+                throw;
             }
         }
 

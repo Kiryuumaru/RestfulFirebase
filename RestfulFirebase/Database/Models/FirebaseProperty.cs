@@ -200,78 +200,66 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            Subscribe(realtimeInstance, invokeSetFirst);
-
-            bool isStaring = false;
-
-            Task.Run(() =>
+            try
             {
-                try
+                RWLock.LockWriteAndForget(() =>
                 {
-                    RWLock.LockWrite(() =>
+                    Subscribe(realtimeInstance, invokeSetFirst);
+
+                    object obj = base.InternalGetObject(null);
+
+                    if (obj is IInternalRealtimeModel model)
                     {
-                        isStaring = true;
+                        model.AttachRealtime(realtimeInstance, invokeSetFirst);
+                    }
+                    else
+                    {
+                        string blob = obj as string;
 
-                        object obj = base.InternalGetObject(null);
-
-                        if (obj is IInternalRealtimeModel model)
+                        if (invokeSetFirst)
                         {
-                            model.AttachRealtime(realtimeInstance, invokeSetFirst);
+                            RealtimeInstanceSetBlob(blob);
                         }
                         else
                         {
-                            string blob = obj as string;
+                            blob = RealtimeInstance.GetValue();
 
-                            if (invokeSetFirst)
+                            object oldValue = Value;
+
+                            if (base.InternalSetObject(null, blob))
                             {
-                                RealtimeInstanceSetBlob(blob);
-                            }
-                            else
-                            {
-                                blob = RealtimeInstance.GetValue();
+                                bool hasObjChanges = false;
 
-                                object oldValue = Value;
-
-                                if (base.InternalSetObject(null, blob))
+                                if (currentType != null)
                                 {
-                                    bool hasObjChanges = false;
+                                    object value = Serializer.Deserialize(blob, currentType, default);
+                                    hasObjChanges = !(currentValue?.Equals(value) ?? value == null);
+                                    currentValue = value;
+                                    isValueCached = true;
+                                }
+                                else
+                                {
+                                    hasObjChanges = true;
+                                    isValueCached = false;
+                                }
 
-                                    if (currentType != null)
-                                    {
-                                        object value = Serializer.Deserialize(blob, currentType, default);
-                                        hasObjChanges = !(currentValue?.Equals(value) ?? value == null);
-                                        currentValue = value;
-                                        isValueCached = true;
-                                    }
-                                    else
-                                    {
-                                        hasObjChanges = true;
-                                        isValueCached = false;
-                                    }
-
-                                    if (hasObjChanges)
-                                    {
-                                        OnPropertyChanged(nameof(Value));
-                                    }
+                                if (hasObjChanges)
+                                {
+                                    OnPropertyChanged(nameof(Value));
                                 }
                             }
                         }
+                    }
 
-                        hasPostAttachedRealtime = true;
+                    hasPostAttachedRealtime = true;
 
-                        OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                    });
-                }
-                catch
-                {
-                    Unsubscribe();
-                    throw;
-                }
-            });
-
-            while (!isStaring)
+                    OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                });
+            }
+            catch
             {
-                Thread.Sleep(1);
+                Unsubscribe();
+                throw;
             }
         }
 

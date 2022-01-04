@@ -360,60 +360,49 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            Subscribe(realtimeInstance, invokeSetFirst);
-
-            bool isStaring = false;
-
-            Task.Run(() =>
+            try
             {
-                try
+                RWLock.LockWriteAndForget(() =>
                 {
-                    RWLock.LockWrite(() =>
+                    Subscribe(realtimeInstance, invokeSetFirst);
+
+                    List<string> children = RealtimeInstance
+                        .GetChildren()
+                        .Select(i => i.key)
+                        .ToList();
+
+                    foreach (var obj in this)
                     {
-                        isStaring = true;
-                        List<string> children = RealtimeInstance
-                            .GetChildren()
-                            .Select(i => i.key)
-                            .ToList();
+                        WireValue(obj.Key, obj.Value, invokeSetFirst);
+                        children.Remove(obj.Key);
+                    }
 
-                        foreach (var obj in this)
+                    foreach (var path in children)
+                    {
+                        if (isCascadeRealtimeItems)
                         {
-                            WireValue(obj.Key, obj.Value, invokeSetFirst);
-                            children.Remove(obj.Key);
+                            TryAdd(path, _ =>
+                            {
+                                T item = ObjectFactory(path);
+                                WireValue(path, item, false);
+                                return item;
+                            });
                         }
-
-                        foreach (var path in children)
+                        else
                         {
-                            if (isCascadeRealtimeItems)
-                            {
-                                TryAdd(path, _ =>
-                                {
-                                    T item = ObjectFactory(path);
-                                    WireValue(path, item, false);
-                                    return item;
-                                });
-                            }
-                            else
-                            {
-                                AddOrUpdate(path, _ => Serializer.Deserialize<T>(RealtimeInstance.GetValue(path)));
-                            }
+                            AddOrUpdate(path, _ => Serializer.Deserialize<T>(RealtimeInstance.GetValue(path)));
                         }
+                    }
 
-                        hasPostAttachedRealtime = true;
+                    hasPostAttachedRealtime = true;
 
-                        OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                    });
-                }
-                catch
-                {
-                    Unsubscribe();
-                    throw;
-                }
-            });
-
-            while (!isStaring)
+                    OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                });
+            }
+            catch
             {
-                Thread.Sleep(1);
+                Unsubscribe();
+                throw;
             }
         }
 
