@@ -58,6 +58,7 @@ namespace RestfulFirebase.Test
         public static RestfulFirebaseApp GenerateApp()
         {
             FirebaseConfig config = Config.YourConfig();
+            config.DatabaseColdStreamTimeout = TimeSpan.FromMinutes(10);
             config.LocalDatabase = new SampleLocalDatabase();
             return new RestfulFirebaseApp(config);
         }
