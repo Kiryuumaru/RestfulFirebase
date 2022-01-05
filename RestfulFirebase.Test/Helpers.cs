@@ -49,6 +49,8 @@ namespace RestfulFirebase.Test
     public class Helpers
     {
         private const int MaxAppInstances = 10;
+        private const int WaitErrorNumTries = 5;
+        private const int TestErrorNumTries = 5;
 
         private static RestfulFirebaseApp? app;
         private static bool appInitializing = false;
@@ -58,7 +60,6 @@ namespace RestfulFirebase.Test
         public static RestfulFirebaseApp GenerateApp()
         {
             FirebaseConfig config = Config.YourConfig();
-            config.DatabaseColdStreamTimeout = TimeSpan.FromMinutes(10);
             config.LocalDatabase = new SampleLocalDatabase();
             return new RestfulFirebaseApp(config);
         }
@@ -224,27 +225,45 @@ namespace RestfulFirebase.Test
             string factName,
             Func<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>, Task> test)
         {
-            var instance = await AuthenticatedTestApp(unitName, testName, factName);
+            (Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)? instance;
 
-            try
+            for (int i = 0; i < TestErrorNumTries; i++)
             {
-                var app1 = await instance.generator(null);
-                app1.wire.Start();
-                app1.wire.SetNull();
-                Assert.True(await WaitForSynced(app1.wire));
-                app1.app.Dispose();
+                instance = null;
 
-                await test(instance.generator);
+                try
+                {
+                    instance = await AuthenticatedTestApp(unitName, testName, factName);
 
-                var app2 = await instance.generator(null);
-                app2.wire.Start();
-                app2.wire.SetNull();
-                Assert.True(await WaitForSynced(app2.wire));
-                app2.app.Dispose();
-            }
-            finally
-            {
-                instance.dispose();
+                    var app1 = await instance.Value.generator(null);
+                    app1.wire.Start();
+                    app1.wire.SetNull();
+                    Assert.True(await WaitForSynced(app1.wire));
+                    app1.app.Dispose();
+
+                    await test(instance.Value.generator);
+
+                    var app2 = await instance.Value.generator(null);
+                    app2.wire.Start();
+                    app2.wire.SetNull();
+                    Assert.True(await WaitForSynced(app2.wire));
+                    app2.app.Dispose();
+
+                    break;
+                }
+                catch
+                {
+                    if (i >= TestErrorNumTries - 1)
+                    {
+                        throw;
+                    }
+
+                    await Task.Delay(5000);
+                }
+                finally
+                {
+                    instance?.dispose();
+                }
             }
         }
 
@@ -259,7 +278,7 @@ namespace RestfulFirebase.Test
 
         public static async Task<bool> WaitForSynced(RealtimeInstance realtimeInstance)
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < WaitErrorNumTries; i++)
             {
                 if (await realtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)))
                 {

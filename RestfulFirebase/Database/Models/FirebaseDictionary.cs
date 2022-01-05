@@ -488,35 +488,20 @@ namespace RestfulFirebase.Database.Models
 
             RWLock.LockWrite(() =>
             {
-                if (this.TryGetValue(e.Path[0], out T value))
+                if (isCascadeRealtimeItems)
                 {
-                    RealtimeInstance.InternalGetDataOrChildren(
-                        () =>
+                    var data = RealtimeInstance.InternalGetRecursiveData(e.Path[0]);
+                    if (data.Length == 0)
+                    {
+                        Remove(e.Path[0]);
+                    }
+                    else
+                    {
+                        if (data.All(i => i.changesType == LocalDataChangesType.Delete))
                         {
                             Remove(e.Path[0]);
-                        },
-                        onData =>
-                        {
-                            if (!isCascadeRealtimeItems)
-                            {
-                                T newValue = Serializer.Deserialize<T>(onData.value);
-                                if (!EqualityComparer<T>.Default.Equals(value, newValue))
-                                {
-                                    AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(onData.value));
-                                }
-                            }
-                        },
-                        onPath =>
-                        {
-                        },
-                        e.Path[0]);
-                }
-                else
-                {
-                    var data = RealtimeInstance.InternalGetData(e.Path[0]);
-                    if (data.HasValue && data.Value.changesType != LocalDataChangesType.Delete)
-                    {
-                        if (isCascadeRealtimeItems)
+                        }
+                        else
                         {
                             TryAdd(e.Path[0], _ =>
                             {
@@ -525,11 +510,42 @@ namespace RestfulFirebase.Database.Models
                                 return item;
                             });
                         }
-                        else
-                        {
-                            AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(data.Value.value));
-                        }
                     }
+                }
+                else
+                {
+                    RealtimeInstance.InternalGetDataOrChildren(
+                        () =>
+                        {
+                            Remove(e.Path[0]);
+                        },
+                        data =>
+                        {
+                            if (data.changesType == LocalDataChangesType.Delete)
+                            {
+                                Remove(e.Path[0]);
+                            }
+                            else if (this.TryGetValue(e.Path[0], out T value))
+                            {
+                                T newValue = Serializer.Deserialize<T>(data.value);
+                                if (!EqualityComparer<T>.Default.Equals(value, newValue))
+                                {
+                                    AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(data.value));
+                                }
+                            }
+                            else
+                            {
+                                AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(data.value));
+                            }
+                        },
+                        onPath =>
+                        {
+                            if (this.ContainsKey(e.Path[0]))
+                            {
+                                Remove(e.Path[0]);
+                            }
+                        },
+                        e.Path[0]);
                 }
             });
         }

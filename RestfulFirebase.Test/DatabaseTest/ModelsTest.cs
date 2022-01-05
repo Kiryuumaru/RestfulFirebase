@@ -2359,16 +2359,27 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
                 appInstance1.wire.Start();
 
+                var appInstance2 = await generator(null);
+                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                appInstance2.wire.Start();
+
                 var dictionary1 = new FirebaseDictionary<Couple>();
+                var dictionary2 = new FirebaseDictionary<Couple>();
 
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
+                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                {
+                    collectionChanges2.Add(e);
+                };
 
                 appInstance1.wire.SubModel(dictionary1);
+                appInstance2.wire.SubModel(dictionary2);
 
                 var couple1 = new Couple();
                 var person1 = new Person();
@@ -2449,6 +2460,54 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Dispose();
+
+                await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
+                {
+                    while (!dictionary2.ContainsKey("key1"))
+                    {
+                        await Task.Delay(1000);
+                    }
+                }));
+
+                Assert.Equal("Lara", dictionary2["key1"].FirstName);
+                Assert.Equal("Croft", dictionary2["key1"].LastName);
+                Assert.Equal(date, dictionary2["key1"].Birthdate);
+                Assert.Equal("John", dictionary2["key1"].Partner.FirstName);
+                Assert.Equal("Doe", dictionary2["key1"].Partner.LastName);
+                Assert.Equal(date, dictionary2["key1"].Partner.Birthdate);
+
+                Assert.Equal(14, appInstance2.dataChanges.Count);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "first_name");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "last_name");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "birthdate");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "partner");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "first_name");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "last_name");
+                Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
+                appInstance2.dataChanges.Clear();
+
+                Assert.Equal(1, collectionChanges2.Count);
+                Assert.Contains(collectionChanges2, i =>
+                {
+                    return
+                        i.Action == NotifyCollectionChangedAction.Add &&
+                        i.NewStartingIndex == 0 &&
+                        i.NewItems?.Count == 1 &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Key == "key1" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.FirstName == "Lara" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.LastName == "Croft" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Birthdate == date &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.FirstName == "John" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.LastName == "Doe" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.Birthdate == date &&
+                        i.OldStartingIndex == -1 &&
+                        i.OldItems?.Count == null;
+                });
+                collectionChanges2.Clear();
+
+                appInstance2.app.Dispose();
             });
         }
 
@@ -2534,7 +2593,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
 
-                await Task.Delay(5000);
+                await Task.Delay(10000);
 
                 appInstance2.dataChanges.Clear();
                 collectionChanges2.Clear();
