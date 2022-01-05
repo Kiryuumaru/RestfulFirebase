@@ -381,12 +381,15 @@ namespace RestfulFirebase.Database.Models
                     {
                         if (isCascadeRealtimeItems)
                         {
-                            TryAdd(path, _ =>
+                            if (!ContainsKey(path))
                             {
                                 T item = ObjectFactory(path);
-                                WireValue(path, item, false);
-                                return item;
-                            });
+                                if (item != null)
+                                {
+                                    WireValue(path, item, false);
+                                    AddOrUpdate(path, item);
+                                }
+                            }
                         }
                         else
                         {
@@ -503,12 +506,15 @@ namespace RestfulFirebase.Database.Models
                         }
                         else
                         {
-                            TryAdd(e.Path[0], _ =>
+                            if (!ContainsKey(e.Path[0]))
                             {
                                 T item = ObjectFactory(e.Path[0]);
-                                WireValue(e.Path[0], item, false);
-                                return item;
-                            });
+                                if (item != null)
+                                {
+                                    WireValue(e.Path[0], item, false);
+                                    AddOrUpdate(e.Path[0], item);
+                                }
+                            }
                         }
                     }
                 }
