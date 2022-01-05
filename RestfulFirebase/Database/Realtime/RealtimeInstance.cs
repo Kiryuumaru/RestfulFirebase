@@ -1171,7 +1171,7 @@ namespace RestfulFirebase.Database.Realtime
                     {
                         string[] childPath = new string[path.Length + pair.Key.Length];
                         Array.Copy(path, 0, childPath, 0, path.Length);
-                        Array.Copy(pair.Key, 0, childPath, path.Length - 1, pair.Key.Length);
+                        Array.Copy(pair.Key, 0, childPath, path.Length, pair.Key.Length);
                         MakeSync(pair.Value, childPath);
                     }
                 }

@@ -105,22 +105,9 @@ namespace RestfulFirebase.Database.Realtime
                 {
                     IDictionary<string[], object> pairs = streamObject.JToken.GetFlatHierarchy();
                     Dictionary<string[], string> values = new Dictionary<string[], string>(pairs.Count, PathEqualityComparer.Instance);
-                    if (path.Length == 0)
+                    foreach (KeyValuePair<string[], object> pair in pairs)
                     {
-                        foreach (KeyValuePair<string[], object> pair in pairs)
-                        {
-                            values.Add(pair.Key, pair.Value.ToString());
-                        }
-                    }
-                    else
-                    {
-                        foreach (KeyValuePair<string[], object> pair in pairs)
-                        {
-                            string[] subPath = new string[pair.Key.Length + path.Length];
-                            Array.Copy(path, 0, subPath, 0, path.Length);
-                            Array.Copy(pair.Key, 0, subPath, path.Length - 1, pair.Key.Length);
-                            values.Add(subPath, pair.Value.ToString());
-                        }
+                        values.Add(pair.Key, pair.Value.ToString());
                     }
                     MakeSync(values, path);
                 }
