@@ -118,7 +118,35 @@ namespace RestfulFirebase.Database.Models
                     currentType = type;
                     isValueCached = true;
 
-                    RealtimeInstanceSetBlob(blob);
+                    RealtimeInstance instance = RealtimeInstance;
+                    if (instance != null && !instance.IsDisposed)
+                    {
+                        if (hasPostAttachedRealtime)
+                        {
+                            Task.Run(async () =>
+                            {
+                                while (true)
+                                {
+                                    if (!hasPostAttachedRealtime)
+                                    {
+                                        instance = RealtimeInstance;
+                                        if (instance?.IsDisposed ?? true)
+                                        {
+                                            return;
+                                        }
+                                        break;
+                                    }
+                                    await Task.Delay(instance.App.Config.CachedDatabaseRetryDelay);
+                                }
+
+                                instance?.SetValue(blob);
+                            });
+                        }
+                        else
+                        {
+                            instance.SetValue(blob);
+                        }
+                    }
                 }
             }
 
@@ -195,16 +223,21 @@ namespace RestfulFirebase.Database.Models
 
         void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed && !realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            try
+            hasPostAttachedRealtime = true;
+
+            RWLock.LockWriteAndForget(() =>
             {
-                RWLock.LockWriteAndForget(() =>
+                try
                 {
-                    Subscribe(realtimeInstance, invokeSetFirst);
+                    if (IsDisposed && !realtimeInstance.IsDisposed)
+                    {
+                        return;
+                    }
 
                     object obj = base.InternalGetObject(null);
 
@@ -218,11 +251,11 @@ namespace RestfulFirebase.Database.Models
 
                         if (invokeSetFirst)
                         {
-                            RealtimeInstanceSetBlob(blob);
+                            realtimeInstance.SetValue(blob);
                         }
                         else
                         {
-                            blob = RealtimeInstance.GetValue();
+                            blob = realtimeInstance.GetValue();
 
                             object oldValue = Value;
 
@@ -251,16 +284,21 @@ namespace RestfulFirebase.Database.Models
                         }
                     }
 
-                    hasPostAttachedRealtime = true;
+                    Subscribe(realtimeInstance, invokeSetFirst);
 
                     OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                });
-            }
-            catch
-            {
-                Unsubscribe();
-                throw;
-            }
+                }
+                catch
+                {
+                    Unsubscribe();
+
+                    throw;
+                }
+                finally
+                {
+                    hasPostAttachedRealtime = false;
+                }
+            });
         }
 
         void IInternalRealtimeModel.DetachRealtime()
@@ -285,57 +323,32 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-        private void RealtimeInstanceSetBlob(string blob)
-        {
-            RealtimeInstance instance = RealtimeInstance;
-            if (instance != null)
-            {
-                if (!hasPostAttachedRealtime)
-                {
-                    Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            instance = RealtimeInstance;
-                            if (instance == null || hasPostAttachedRealtime)
-                            {
-                                break;
-                            }
-                            await Task.Delay(instance.App.Config.CachedDatabaseRetryDelay);
-                        }
-
-                        instance?.SetValue(blob);
-                    });
-                }
-                else
-                {
-                    instance.SetValue(blob);
-                }
-            }
-        }
-
         private void Subscribe(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed || realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            if (HasAttachedRealtime)
+            RWLock.LockWrite(() =>
             {
-                Unsubscribe();
-            }
+                if (IsDisposed || realtimeInstance.IsDisposed)
+                {
+                    return;
+                }
 
-            RealtimeInstance = realtimeInstance;
-            isInvokeToSetFirst = invokeSetFirst;
-            hasPostAttachedRealtime = false;
+                if (HasAttachedRealtime)
+                {
+                    Unsubscribe();
+                }
 
-            if (HasAttachedRealtime)
-            {
-                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
+                RealtimeInstance = realtimeInstance;
+                isInvokeToSetFirst = invokeSetFirst;
+
+                RealtimeInstance.ImmediateDataChanges += RealtimeInstance_ImmediateDataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
                 RealtimeInstance.Disposing += RealtimeInstance_Disposing;
-            }
+            });
         }
 
         private void Unsubscribe()
@@ -345,19 +358,33 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (HasAttachedRealtime)
+            if (!HasAttachedRealtime)
             {
-                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
-                RealtimeInstance.Error -= RealtimeInstance_Error;
-                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+                return;
             }
 
-            RealtimeInstance = null;
-            isInvokeToSetFirst = null;
-            hasPostAttachedRealtime = false;
+            RWLock.LockWrite(() =>
+            {
+                if (IsDisposed)
+                {
+                    return;
+                }
+
+                if (!HasAttachedRealtime)
+                {
+                    return;
+                }
+
+                RealtimeInstance.ImmediateDataChanges -= RealtimeInstance_ImmediateDataChanges;
+                RealtimeInstance.Error -= RealtimeInstance_Error;
+                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+
+                RealtimeInstance = null;
+                isInvokeToSetFirst = null;
+            });
         }
 
-        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {

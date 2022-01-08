@@ -1072,8 +1072,11 @@ namespace RestfulFirebase.Database.Realtime
                         },
                         hierPath =>
                         {
-                            DBDeleteData(hierPath);
-                            hasChanges = true;
+                            if (DBGetRelativeTypedChildren(hierPath).Length == 0)
+                            {
+                                DBDeleteData(hierPath);
+                                hasChanges = true;
+                            }
                         },
                         absoluteDataPath);
                 }

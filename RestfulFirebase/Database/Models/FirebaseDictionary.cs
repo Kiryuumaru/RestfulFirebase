@@ -202,6 +202,9 @@ namespace RestfulFirebase.Database.Models
         /// <summary>
         /// Wires the provided <paramref name="value"/> to the realtime instance of the model.
         /// </summary>
+        /// <param name="instance">
+        /// The instance used to wire the value.
+        /// </param>
         /// <param name="key">
         /// The key of the <typeparamref name="T"/> item object to wire.
         /// </param>
@@ -211,24 +214,29 @@ namespace RestfulFirebase.Database.Models
         /// <param name="invokeSetFirst">
         /// Specify <c>true</c> whether the value should be put and subscribe to the realtime instance; otherwise <c>false</c> to only subscribe to the realtime instance.
         /// </param>
-        protected void WireValue(string key, T value, bool invokeSetFirst)
+        protected void WireValue(RealtimeInstance instance, string key, T value, bool invokeSetFirst)
         {
             if (value is IInternalRealtimeModel model)
             {
+                if (model.RealtimeInstance == instance || model.HasPostAttachedRealtime)
+                {
+                    return;
+                }
+
                 model.SyncOperation.SetContext(this);
 
                 if (invokeSetFirst)
                 {
-                    RealtimeInstance.Child(key).PutModel(model);
+                    instance.Child(key).PutModel(model);
                 }
                 else
                 {
-                    RealtimeInstance.Child(key).SubModel(model);
+                    instance.Child(key).SubModel(model);
                 }
             }
             else
             {
-                RealtimeInstance.Child(key).SetValue(Serializer.Serialize(value));
+                instance.Child(key).SetValue(Serializer.Serialize(value));
             }
         }
 
@@ -295,11 +303,11 @@ namespace RestfulFirebase.Database.Models
         private void AddToWire(IEnumerable<KeyValuePair<string, T>> items)
         {
             RealtimeInstance instance = RealtimeInstance;
-            if (instance != null)
+            if (instance != null && !instance.IsDisposed)
             {
                 foreach (var item in items)
                 {
-                    WireValue(item.Key, item.Value, true);
+                    WireValue(instance, item.Key, item.Value, true);
                 }
             }
         }
@@ -355,25 +363,30 @@ namespace RestfulFirebase.Database.Models
 
         void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed && !realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            try
-            {
-                RWLock.LockWriteAndForget(() =>
-                {
-                    Subscribe(realtimeInstance, invokeSetFirst);
+            hasPostAttachedRealtime = true;
 
-                    List<string> children = RealtimeInstance
+            RWLock.LockWriteAndForget(() =>
+            {
+                try
+                {
+                    if (IsDisposed && !realtimeInstance.IsDisposed)
+                    {
+                        return;
+                    }
+
+                    List<string> children = realtimeInstance
                         .GetChildren()
                         .Select(i => i.key)
                         .ToList();
 
                     foreach (var obj in this)
                     {
-                        WireValue(obj.Key, obj.Value, invokeSetFirst);
+                        WireValue(realtimeInstance, obj.Key, obj.Value, invokeSetFirst);
                         children.Remove(obj.Key);
                     }
 
@@ -386,27 +399,32 @@ namespace RestfulFirebase.Database.Models
                                 T item = ObjectFactory(path);
                                 if (item != null)
                                 {
-                                    WireValue(path, item, false);
+                                    WireValue(realtimeInstance, path, item, false);
                                     AddOrUpdate(path, item);
                                 }
                             }
                         }
                         else
                         {
-                            AddOrUpdate(path, _ => Serializer.Deserialize<T>(RealtimeInstance.GetValue(path)));
+                            AddOrUpdate(path, _ => Serializer.Deserialize<T>(realtimeInstance.GetValue(path)));
                         }
                     }
 
-                    hasPostAttachedRealtime = true;
+                    Subscribe(realtimeInstance, invokeSetFirst);
 
                     OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                });
-            }
-            catch
-            {
-                Unsubscribe();
-                throw;
-            }
+                }
+                catch
+                {
+                    Unsubscribe();
+
+                    throw;
+                }
+                finally
+                {
+                    hasPostAttachedRealtime = false;
+                }
+            });
         }
 
         void IInternalRealtimeModel.DetachRealtime()
@@ -436,26 +454,30 @@ namespace RestfulFirebase.Database.Models
 
         private void Subscribe(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed || realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            if (HasAttachedRealtime)
+            RWLock.LockWrite(() =>
             {
-                Unsubscribe();
-            }
+                if (IsDisposed || realtimeInstance.IsDisposed)
+                {
+                    return;
+                }
 
-            RealtimeInstance = realtimeInstance;
-            isInvokeToSetFirst = invokeSetFirst;
-            hasPostAttachedRealtime = false;
+                if (HasAttachedRealtime)
+                {
+                    Unsubscribe();
+                }
 
-            if (HasAttachedRealtime)
-            {
-                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
+                RealtimeInstance = realtimeInstance;
+                isInvokeToSetFirst = invokeSetFirst;
+
+                RealtimeInstance.ImmediateDataChanges += RealtimeInstance_ImmediateDataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
                 RealtimeInstance.Disposing += RealtimeInstance_Disposing;
-            }
+            });
         }
 
         private void Unsubscribe()
@@ -465,19 +487,33 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (HasAttachedRealtime)
+            if (!HasAttachedRealtime)
             {
-                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
-                RealtimeInstance.Error -= RealtimeInstance_Error;
-                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+                return;
             }
 
-            RealtimeInstance = null;
-            isInvokeToSetFirst = null;
-            hasPostAttachedRealtime = false;
+            RWLock.LockWrite(() =>
+            {
+                if (IsDisposed)
+                {
+                    return;
+                }
+
+                if (!HasAttachedRealtime)
+                {
+                    return;
+                }
+
+                RealtimeInstance.ImmediateDataChanges -= RealtimeInstance_ImmediateDataChanges;
+                RealtimeInstance.Error -= RealtimeInstance_Error;
+                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+
+                RealtimeInstance = null;
+                isInvokeToSetFirst = null;
+            });
         }
 
-        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {
@@ -489,11 +525,18 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
+            RealtimeInstance instance = RealtimeInstance;
+            if (instance == null || instance.IsDisposed)
+            {
+                return;
+            }
+
             RWLock.LockWrite(() =>
             {
                 if (isCascadeRealtimeItems)
                 {
-                    var data = RealtimeInstance.InternalGetRecursiveData(e.Path[0]);
+                    var data1 = instance.InternalGetRecursiveData(e.Path);
+                    var data = instance.InternalGetRecursiveData(e.Path[0]);
                     if (data.Length == 0)
                     {
                         Remove(e.Path[0]);
@@ -511,7 +554,7 @@ namespace RestfulFirebase.Database.Models
                                 T item = ObjectFactory(e.Path[0]);
                                 if (item != null)
                                 {
-                                    WireValue(e.Path[0], item, false);
+                                    WireValue(instance, e.Path[0], item, false);
                                     AddOrUpdate(e.Path[0], item);
                                 }
                             }
@@ -520,7 +563,7 @@ namespace RestfulFirebase.Database.Models
                 }
                 else
                 {
-                    RealtimeInstance.InternalGetDataOrChildren(
+                    instance.InternalGetDataOrChildren(
                         () =>
                         {
                             Remove(e.Path[0]);

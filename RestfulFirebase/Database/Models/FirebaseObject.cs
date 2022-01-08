@@ -282,18 +282,23 @@ namespace RestfulFirebase.Database.Models
 
         void IInternalRealtimeModel.AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed && !realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            try
-            {
-                RWLock.LockWriteAndForget(() =>
-                {
-                    Subscribe(realtimeInstance, invokeSetFirst);
+            hasPostAttachedRealtime = true;
 
-                    List<string> children = RealtimeInstance
+            RWLock.LockWriteAndForget(() =>
+            {
+                try
+                {
+                    if (IsDisposed && !realtimeInstance.IsDisposed)
+                    {
+                        return;
+                    }
+
+                    List<string> children = realtimeInstance
                         .GetChildren()
                         .Select(i => i.key)
                         .ToList();
@@ -306,11 +311,11 @@ namespace RestfulFirebase.Database.Models
                         {
                             if (invokeSetFirst)
                             {
-                                RealtimeInstance.Child(property.Key).PutModel(model);
+                                realtimeInstance.Child(property.Key).PutModel(model);
                             }
                             else
                             {
-                                RealtimeInstance.Child(property.Key).SubModel(model);
+                                realtimeInstance.Child(property.Key).SubModel(model);
                             }
                         }
                         children.Remove(property.Key);
@@ -326,22 +331,27 @@ namespace RestfulFirebase.Database.Models
                                 {
                                     if (!model.HasAttachedRealtime)
                                     {
-                                        RealtimeInstance.Child(child).SubModel(model);
+                                        realtimeInstance.Child(child).SubModel(model);
                                     }
                                 }
                             });
                     }
 
-                    hasPostAttachedRealtime = true;
+                    Subscribe(realtimeInstance, invokeSetFirst);
 
                     OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
-                });
-            }
-            catch
-            {
-                Unsubscribe();
-                throw;
-            }
+                }
+                catch
+                {
+                    Unsubscribe();
+
+                    throw;
+                }
+                finally
+                {
+                    hasPostAttachedRealtime = false;
+                }
+            });
         }
 
         void IInternalRealtimeModel.DetachRealtime()
@@ -369,29 +379,32 @@ namespace RestfulFirebase.Database.Models
             });
         }
 
-
         private void Subscribe(RealtimeInstance realtimeInstance, bool invokeSetFirst)
         {
-            if (IsDisposed)
+            if (IsDisposed || realtimeInstance.IsDisposed)
             {
                 return;
             }
 
-            if (HasAttachedRealtime)
+            RWLock.LockWrite(() =>
             {
-                Unsubscribe();
-            }
+                if (IsDisposed || realtimeInstance.IsDisposed)
+                {
+                    return;
+                }
 
-            RealtimeInstance = realtimeInstance;
-            isInvokeToSetFirst = invokeSetFirst;
-            hasPostAttachedRealtime = false;
+                if (HasAttachedRealtime)
+                {
+                    Unsubscribe();
+                }
 
-            if (HasAttachedRealtime)
-            {
-                RealtimeInstance.DataChanges += RealtimeInstance_DataChanges;
+                RealtimeInstance = realtimeInstance;
+                isInvokeToSetFirst = invokeSetFirst;
+
+                RealtimeInstance.ImmediateDataChanges += RealtimeInstance_ImmediateDataChanges;
                 RealtimeInstance.Error += RealtimeInstance_Error;
                 RealtimeInstance.Disposing += RealtimeInstance_Disposing;
-            }
+            });
         }
 
         private void Unsubscribe()
@@ -401,19 +414,33 @@ namespace RestfulFirebase.Database.Models
                 return;
             }
 
-            if (HasAttachedRealtime)
+            if (!HasAttachedRealtime)
             {
-                RealtimeInstance.DataChanges -= RealtimeInstance_DataChanges;
-                RealtimeInstance.Error -= RealtimeInstance_Error;
-                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+                return;
             }
 
-            RealtimeInstance = null;
-            isInvokeToSetFirst = null;
-            hasPostAttachedRealtime = false;
+            RWLock.LockWrite(() =>
+            {
+                if (IsDisposed)
+                {
+                    return;
+                }
+
+                if (!HasAttachedRealtime)
+                {
+                    return;
+                }
+
+                RealtimeInstance.ImmediateDataChanges -= RealtimeInstance_ImmediateDataChanges;
+                RealtimeInstance.Error -= RealtimeInstance_Error;
+                RealtimeInstance.Disposing -= RealtimeInstance_Disposing;
+
+                RealtimeInstance = null;
+                isInvokeToSetFirst = null;
+            });
         }
 
-        private void RealtimeInstance_DataChanges(object sender, DataChangesEventArgs e)
+        private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
         {
             if (IsDisposed)
             {
