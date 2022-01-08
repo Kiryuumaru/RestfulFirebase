@@ -366,7 +366,7 @@ namespace RestfulFirebase.Serializers
                     },
                     (conv, data, defaultValue) =>
                     {
-                        return conv.DeserializeObject(data, defaultValue);
+                        return data == null ? null : conv.DeserializeObject(data, defaultValue);
                     });
             }
 

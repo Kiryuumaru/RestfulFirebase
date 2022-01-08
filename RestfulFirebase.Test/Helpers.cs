@@ -223,6 +223,54 @@ namespace RestfulFirebase.Test
             string unitName,
             string testName,
             string factName,
+            Action<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> test)
+        {
+            (Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)? instance;
+
+            for (int i = 0; i < TestErrorNumTries; i++)
+            {
+                instance = null;
+
+                try
+                {
+                    instance = await AuthenticatedTestApp(unitName, testName, factName);
+
+                    var app1 = await instance.Value.generator(null);
+                    app1.wire.Start();
+                    app1.wire.SetNull();
+                    Assert.True(await WaitForSynced(app1.wire));
+                    app1.app.Dispose();
+
+                    test(instance.Value.generator);
+
+                    var app2 = await instance.Value.generator(null);
+                    app2.wire.Start();
+                    app2.wire.SetNull();
+                    Assert.True(await WaitForSynced(app2.wire));
+                    app2.app.Dispose();
+
+                    break;
+                }
+                catch
+                {
+                    if (i >= TestErrorNumTries - 1)
+                    {
+                        throw;
+                    }
+
+                    await Task.Delay(5000);
+                }
+                finally
+                {
+                    instance?.dispose();
+                }
+            }
+        }
+
+        public static async Task CleanTest(
+            string unitName,
+            string testName,
+            string factName,
             Func<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>, Task> test)
         {
             (Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)? instance;
@@ -265,15 +313,6 @@ namespace RestfulFirebase.Test
                     instance?.dispose();
                 }
             }
-        }
-
-        public static Task CleanTest(
-            string unitName,
-            string testName,
-            string factName,
-            Action<Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>> test)
-        {
-            return CleanTest(unitName, testName, factName, t => Task.Run(delegate { test(t); }));
         }
 
         public static async Task<bool> WaitForSynced(RealtimeInstance realtimeInstance)

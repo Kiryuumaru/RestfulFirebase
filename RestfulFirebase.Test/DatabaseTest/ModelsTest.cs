@@ -403,7 +403,7 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(Nullable), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var appInstance1 = await generator(new string[] { "phase1" });
                 appInstance1.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
@@ -449,6 +449,64 @@ namespace DatabaseTest.ModelsTest
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.app.Dispose();
+
+                var appInstance2 = await generator(new string[] { "phase2" });
+                appInstance2.wire.Start();
+
+                var model2 = new FirebaseProperty<DateTime?>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                model2.ImmediatePropertyChanged += (s, e) =>
+                {
+                    propertyChanges2.Add(e);
+                };
+
+                Assert.Null(model2.Value);
+                Assert.Null(model2.GetValue());
+
+                appInstance2.wire.SubModel(model2);
+
+                DateTime date1 = DateTime.UtcNow;
+
+                model2.Value = date1;
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
+
+                await Task.Delay(5000);
+
+                appInstance2.dataChanges.Clear();
+                propertyChanges2.Clear();
+
+                Assert.NotNull(model2.Value);
+                Assert.NotNull(model2.GetValue());
+
+                Assert.Equal(date1, model2.Value);
+                Assert.Equal(date1, model2.GetValue());
+
+                Assert.False(model2.IsNull());
+                Assert.True(model2.SetNull());
+                Assert.False(model2.SetNull());
+                Assert.True(model2.IsNull());
+
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
+
+                Assert.Collection(propertyChanges2,
+                    i =>
+                    {
+                        Assert.Equal(nameof(model2.Value), i.PropertyName);
+                    });
+
+                Assert.Collection(appInstance2.dataChanges,
+                    i =>
+                    {
+                        Assert.Empty(i.Path);
+                    },
+                    i =>
+                    {
+                        Assert.Empty(i.Path);
+                    });
+                appInstance2.dataChanges.Clear();
+
+                appInstance2.app.Dispose();
             });
         }
 

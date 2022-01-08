@@ -32,7 +32,7 @@ namespace RestfulFirebase.Database.Models
         #region Initializers
 
         /// <summary>
-        /// Creates new instance of <see cref="FirebaseProperty{T}"/> class.
+        /// Creates new instance of <see cref="FirebaseProperty"/> class.
         /// </summary>
         public FirebaseProperty()
         {

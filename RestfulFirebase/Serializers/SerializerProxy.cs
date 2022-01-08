@@ -82,11 +82,5 @@ namespace RestfulFirebase.Serializers
         /// The deserialized value.
         /// </returns>
         public T Deserialize(string data, T defaultValue = default) => (T)base.Deserialize(data, defaultValue);
-    
-        internal void Set(Func<T, string> serialize, Func<string, T, T> deserialize)
-        {
-            Set(new Func<object, string>(obj => serialize((T)obj)),
-                new Func<string, object, object>((data, defaultValue) => deserialize(data, (T)defaultValue)));
-        }
     }
 }
