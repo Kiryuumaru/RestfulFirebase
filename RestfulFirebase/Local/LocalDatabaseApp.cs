@@ -480,7 +480,7 @@ namespace RestfulFirebase.Local
 
         internal void InternalSubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
         {
-            databaseDictionaryLock.LockReadUpgradable(() =>
+            databaseDictionaryLock.LockUpgradeableRead(() =>
             {
                 if (databaseDictionary.TryGetValue(localDatabase, out var data))
                 {
@@ -495,7 +495,7 @@ namespace RestfulFirebase.Local
 
         internal void InternalUnsubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
         {
-            databaseDictionaryLock.LockReadUpgradable(() =>
+            databaseDictionaryLock.LockUpgradeableRead(() =>
             {
                 if (databaseDictionary.TryGetValue(localDatabase, out var data))
                 {
@@ -1223,7 +1223,7 @@ namespace RestfulFirebase.Local
                             nextChild[nextChild.Length - 1] = deserializedChildPath;
                             Array.Copy(path, 0, nextChild, 0, path.Length);
                             string serializedChildPath = StringUtilities.Serialize(nextChild);
-                            rwLock.LockReadUpgradable(path, () => DeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
+                            rwLock.LockUpgradeableRead(path, () => DeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
                         }
                     }
                 }
@@ -1315,7 +1315,7 @@ namespace RestfulFirebase.Local
                     string[] pathToLock = new string[nextIndex];
                     Array.Copy(path, 0, pathToLock, 0, nextIndex);
 
-                    return rwLock.LockReadUpgradable(pathToLock, () => read(nextIndex));
+                    return rwLock.LockUpgradeableRead(pathToLock, () => read(nextIndex));
                 }
             }
             return read(0);

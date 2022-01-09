@@ -153,13 +153,13 @@ namespace RestfulFirebase.Utilities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="block"/> is a null reference.
         /// </exception>
-        public void LockReadUpgradable(TKey key, Action block)
+        public void LockUpgradeableRead(TKey key, Action block)
         {
             LockRead(() =>
             {
                 Lock pathLock = locks.GetOrAdd(key, _ => new Lock(this, key));
                 Interlocked.Increment(ref pathLock.Lockers);
-                pathLock.RWLock.LockReadUpgradable(block);
+                pathLock.RWLock.LockUpgradeableRead(block);
                 if (pathLock.Lockers <= 1)
                 {
                     locks.TryRemove(key, out _);
@@ -189,13 +189,13 @@ namespace RestfulFirebase.Utilities
         /// <exception cref="ArgumentNullException">
         /// <paramref name="block"/> is a null reference.
         /// </exception>
-        public TReturn LockReadUpgradable<TReturn>(TKey key, Func<TReturn> block)
+        public TReturn LockUpgradeableRead<TReturn>(TKey key, Func<TReturn> block)
         {
             return LockRead(() =>
             {
                 Lock pathLock = locks.GetOrAdd(key, _ => new Lock(this, key));
                 Interlocked.Increment(ref pathLock.Lockers);
-                TReturn ret = pathLock.RWLock.LockReadUpgradable(block);
+                TReturn ret = pathLock.RWLock.LockUpgradeableRead(block);
                 Interlocked.Decrement(ref pathLock.Lockers);
                 if (pathLock.Lockers <= 1)
                 {

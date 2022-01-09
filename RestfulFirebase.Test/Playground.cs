@@ -1,4 +1,5 @@
 ﻿using ObservableHelpers;
+using ObservableHelpers.Utilities;
 using RestfulFirebase;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Realtime;
@@ -59,6 +60,8 @@ namespace Playground
             await Helpers.CleanTest(nameof(Mock), nameof(Mockk), generator =>
             {
                 MockObj obj = new MockObj();
+
+                RWLock rwLock = new RWLock(System.Threading.LockRecursionPolicy.SupportsRecursion);
 
                 ObservableProperty<DateTime?> ssss = new ObservableProperty<DateTime?>();
                 FirebaseProperty<DateTime?> sss = new FirebaseProperty<DateTime?>();

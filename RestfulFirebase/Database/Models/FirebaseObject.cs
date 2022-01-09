@@ -339,7 +339,7 @@ namespace RestfulFirebase.Database.Models
 
                     Subscribe(realtimeInstance, invokeSetFirst);
 
-                    OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance));
+                    RWLock.InvokeOnLockExit(() => OnRealtimeAttached(new RealtimeInstanceEventArgs(realtimeInstance)));
                 }
                 catch
                 {
@@ -375,7 +375,7 @@ namespace RestfulFirebase.Database.Models
 
                 Unsubscribe();
 
-                OnRealtimeDetached(args);
+                RWLock.InvokeOnLockExit(() => OnRealtimeDetached(args));
             });
         }
 
