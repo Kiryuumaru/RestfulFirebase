@@ -1495,6 +1495,48 @@ namespace DatabaseTest.RealtimeModuleTest
         }
     }
 
+    public class IsSubPath
+    {
+        [Fact]
+        public async void Normal()
+        {
+            await Helpers.CleanTest(nameof(IsSubPath), nameof(Normal), async generator =>
+            {
+                var appInstance1 = await generator(new string[] { "path1" });
+                appInstance1.wire.Start();
+
+                var appInstance2 = await generator(new string[] { "path1", "path2" });
+                appInstance2.wire.Start();
+
+                var appInstance3 = await generator(new string[] { "path1", "path2" });
+                appInstance3.wire.Start();
+
+                Assert.True(appInstance1.wire.IsSubPath(appInstance2.wire));
+                Assert.False(appInstance2.wire.IsSubPath(appInstance1.wire));
+                Assert.True(appInstance1.wire.IsSubPath(appInstance3.wire));
+                Assert.False(appInstance2.wire.IsSubPath(appInstance3.wire));
+
+                appInstance1.app.Dispose();
+                appInstance2.app.Dispose();
+                appInstance3.app.Dispose();
+            });
+        }
+
+        [Fact]
+        public async void Throws()
+        {
+            await Helpers.CleanTest(nameof(IsSubPath), nameof(Throws), async generator =>
+            {
+                var appInstance1 = await generator(null);
+                appInstance1.wire.Start();
+
+                Assert.Throws(typeof(ArgumentNullException), () => appInstance1.wire.IsSubPath(null));
+
+                appInstance1.app.Dispose();
+            });
+        }
+    }
+
     public class IsSyncedTest
     {
         [Fact]

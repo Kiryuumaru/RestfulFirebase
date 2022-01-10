@@ -99,7 +99,7 @@ namespace RestfulFirebase.Database.Realtime
 
         internal string AbsoluteUrl { get; private set; }
 
-        private string[] absolutePath;
+        internal string[] DBPath { get; private set; }
 
         #endregion
 
@@ -181,7 +181,7 @@ namespace RestfulFirebase.Database.Realtime
         /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
         /// </summary>
         /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise, <c>false</c>.
         /// </param>
         /// <param name="timeout">
         /// The <see cref="TimeSpan"/> timeout of the created task.
@@ -204,7 +204,7 @@ namespace RestfulFirebase.Database.Realtime
         /// Creates a <see cref="Task"/> that will complete when the instance is fully synced.
         /// </summary>
         /// <param name="cancelOnError">
-        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise <c>false</c>.
+        /// Specify <c>true</c> whether the task will be cancelled on error; otherwise, <c>false</c>.
         /// </param>
         /// <param name="cancellationToken">
         /// The <see cref="CancellationToken"/> for the wait synced status.
@@ -299,13 +299,13 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         /// <summary>
-        /// Gets <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// Gets <c>true</c> whether the node is fully synced; otherwise, <c>false</c>.
         /// </summary>
         /// <param name="path">
         /// The path of the data to check.
         /// </param>
         /// <returns>
-        /// <c>true</c> whether the node is fully synced; otherwise <c>false</c>.
+        /// <c>true</c> whether the node is fully synced; otherwise, <c>false</c>.
         /// </returns>
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when any node has forbidden node name character.
@@ -329,13 +329,13 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         /// <summary>
-        /// Gets <c>true</c> whether the node is locally available; otherwise <c>false</c>.
+        /// Gets <c>true</c> whether the node is locally available; otherwise, <c>false</c>.
         /// </summary>
         /// <param name="path">
         /// The path of the data to check.
         /// </param>
         /// <returns>
-        /// <c>true</c> whether the node is locally available; otherwise <c>false</c>.
+        /// <c>true</c> whether the node is locally available; otherwise, <c>false</c>.
         /// </returns>
         /// <exception cref="DatabaseForbiddenNodeNameCharacter">
         /// Throws when any node has forbidden node name character.
@@ -448,6 +448,40 @@ namespace RestfulFirebase.Database.Realtime
         }
 
         /// <summary>
+        /// Check whether the specified <paramref name="instance"/> is a sub path from this instance.
+        /// </summary>
+        /// <param name="instance">
+        /// </param>
+        /// <returns>
+        /// <c>true</c> whether the specified <paramref name="instance"/> is a sub path from this instance; otherwise, <c>false</c>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// Throws when <paramref name="instance"/> is a null reference.
+        /// </exception>
+        public bool IsSubPath(RealtimeInstance instance)
+        {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            if (instance.DBPath.Length <= DBPath.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < DBPath.Length; i++)
+            {
+                if (DBPath[i] != instance.DBPath[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Invokes <see cref="Error"/> event to instance and parent instance.
         /// </summary>
         /// <param name="uri">
@@ -499,19 +533,19 @@ namespace RestfulFirebase.Database.Realtime
 
         private void OnDataChanges(object sender, DataChangesEventArgs args)
         {
-            if (absolutePath.Length > args.Path.Length - 1)
+            if (DBPath.Length > args.Path.Length - 1)
             {
                 return;
             }
-            for (int i = 0; i < absolutePath.Length; i++)
+            for (int i = 0; i < DBPath.Length; i++)
             {
-                if (absolutePath[i] != args.Path[i + 1])
+                if (DBPath[i] != args.Path[i + 1])
                 {
                     return;
                 }
             }
 
-            string[] path = new string[args.Path.Length - 1 - absolutePath.Length];
+            string[] path = new string[args.Path.Length - 1 - DBPath.Length];
             if (path.Length != 0)
             {
                 Array.Copy(args.Path, args.Path.Length - path.Length, path, 0, path.Length);
@@ -537,7 +571,7 @@ namespace RestfulFirebase.Database.Realtime
         private void ReloadQueryUrlValues()
         {
             AbsoluteUrl = Query.GetAbsoluteUrl();
-            absolutePath = UrlUtilities.Separate(AbsoluteUrl.Substring(8)); // Removes 'https://'
+            DBPath = UrlUtilities.Separate(AbsoluteUrl.Substring(8)); // Removes 'https://'
         }
 
         private void App_Disposing(object sender, EventArgs e)
@@ -1263,6 +1297,10 @@ namespace RestfulFirebase.Database.Realtime
 
         private void DBPut(string blob, string[] absolutePath)
         {
+            if (blob == null)
+            {
+
+            }
             if (Started)
             {
                 App.Database.DBPut(blob, absolutePath, args =>
@@ -1324,12 +1362,12 @@ namespace RestfulFirebase.Database.Realtime
         private string[] DBGetAbsoluteDataPath(string[] path)
         {
             int pathLength = path?.Length ?? 0;
-            string[] absoluteDataPath = new string[absolutePath.Length + pathLength + 1];
+            string[] absoluteDataPath = new string[DBPath.Length + pathLength + 1];
             absoluteDataPath[0] = DatabaseApp.OfflineDatabaseIndicator;
-            Array.Copy(absolutePath, 0, absoluteDataPath, 1, absolutePath.Length);
+            Array.Copy(DBPath, 0, absoluteDataPath, 1, DBPath.Length);
             if (pathLength > 0)
             {
-                Array.Copy(path, 0, absoluteDataPath, absolutePath.Length + 1, pathLength);
+                Array.Copy(path, 0, absoluteDataPath, DBPath.Length + 1, pathLength);
             }
 
             return absoluteDataPath;

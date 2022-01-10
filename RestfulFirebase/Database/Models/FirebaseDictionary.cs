@@ -218,20 +218,43 @@ namespace RestfulFirebase.Database.Models
         {
             if (value is IInternalRealtimeModel model)
             {
-                if (model.RealtimeInstance == instance || model.HasPostAttachedRealtime)
+                void wireModel()
                 {
-                    return;
+                    RealtimeInstance modelRealtimeInstance = model.RealtimeInstance;
+                    if (modelRealtimeInstance != null)
+                    {
+                        if (!modelRealtimeInstance.IsDisposed && instance.IsSubPath(modelRealtimeInstance))
+                        {
+                            return;
+                        }
+                    }
+
+                    model.SyncOperation.SetContext(this);
+
+                    if (invokeSetFirst)
+                    {
+                        instance.Child(key).PutModel(model);
+                    }
+                    else
+                    {
+                        instance.Child(key).SubModel(model);
+                    }
                 }
-
-                model.SyncOperation.SetContext(this);
-
-                if (invokeSetFirst)
+                if (model.HasPostAttachedRealtime)
                 {
-                    instance.Child(key).PutModel(model);
+                    Task.Run(async () =>
+                    {
+                        while (model.HasPostAttachedRealtime)
+                        {
+                            await Task.Delay(1000);
+                        }
+
+                        wireModel();
+                    });
                 }
                 else
                 {
-                    instance.Child(key).SubModel(model);
+                    wireModel();
                 }
             }
             else
