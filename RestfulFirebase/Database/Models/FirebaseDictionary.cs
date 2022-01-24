@@ -214,7 +214,7 @@ namespace RestfulFirebase.Database.Models
         /// <param name="invokeSetFirst">
         /// Specify <c>true</c> whether the value should be put and subscribe to the realtime instance; otherwise <c>false</c> to only subscribe to the realtime instance.
         /// </param>
-        protected void WireValue(RealtimeInstance instance, string key, T value, bool invokeSetFirst)
+        protected void WireValue(RealtimeInstance instance, string key, object value, bool invokeSetFirst)
         {
             if (value is IInternalRealtimeModel model)
             {
@@ -257,9 +257,13 @@ namespace RestfulFirebase.Database.Models
                     wireModel();
                 }
             }
-            else
+            else if (value == null)
             {
-                instance.Child(key).SetValue(Serializer.Serialize(value));
+                instance.Child(key).SetValue(null);
+            }
+            else if (value is T obj)
+            {
+                instance.Child(key).SetValue(Serializer.Serialize<T>(obj));
             }
         }
 
@@ -415,7 +419,11 @@ namespace RestfulFirebase.Database.Models
 
                     foreach (var path in children)
                     {
-                        if (isCascadeRealtimeItems)
+                        if (invokeSetFirst)
+                        {
+                            realtimeInstance.SetValue(null, path);
+                        }
+                        else if (isCascadeRealtimeItems)
                         {
                             if (!ContainsKey(path))
                             {
@@ -558,7 +566,6 @@ namespace RestfulFirebase.Database.Models
             {
                 if (isCascadeRealtimeItems)
                 {
-                    var data1 = instance.InternalGetRecursiveData(e.Path);
                     var data = instance.InternalGetRecursiveData(e.Path[0]);
                     if (data.Length == 0)
                     {
