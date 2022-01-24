@@ -145,11 +145,14 @@ namespace RestfulFirebase.Database.Streaming
                                 {
                                     line = (await reader.ReadLineAsync(inStreamToken).ConfigureAwait(false))?.Trim();
                                 }
-                                catch (OperationCanceledException)
+                                //catch (OperationCanceledException)
+                                //{
+                                //    break;
+                                //}
+                                catch
                                 {
                                     break;
                                 }
-                                catch { }
 
                                 if (inStreamToken.IsCancellationRequested) break;
 
