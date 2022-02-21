@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when app is not authenticated.
+/// </summary>
+public class AuthNotAuthenticatedException : AuthException
 {
-    /// <summary>
-    /// Occurs when app is not authenticated.
-    /// </summary>
-    public class AuthNotAuthenticatedException : AuthException
+    private const string ExceptionMessage =
+        "App is not authenticated.";
+
+    internal AuthNotAuthenticatedException()
+        : base(ExceptionMessage)
     {
-        internal AuthNotAuthenticatedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthNotAuthenticatedException(Exception innerException)
-            : base("App is not authenticated.", innerException)
-        {
+    internal AuthNotAuthenticatedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

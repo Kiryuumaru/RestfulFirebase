@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when there`s an unidentified exception.
+/// </summary>
+public class StorageUndefinedException : StorageException
 {
-    /// <summary>
-    /// Occurs when there`s an unidentified exception.
-    /// </summary>
-    public class StorageUndefinedException : StorageException
+    private const string ExceptionMessage =
+        "An unidentified error occured.";
+
+    internal StorageUndefinedException()
+        : base(ExceptionMessage)
     {
-        internal StorageUndefinedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal StorageUndefinedException(Exception innerException)
-            : base("An unidentified error occured.", innerException)
-        {
+    internal StorageUndefinedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

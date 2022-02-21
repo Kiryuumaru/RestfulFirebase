@@ -49,10 +49,10 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(AppTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                Assert.Equal(appInstance1.app, appInstance1.wire.App);
+                var (app, wire, dataChanges) = await generator(null);
+                Assert.Equal(app, wire.App);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -64,18 +64,18 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(ChildTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                var child = appInstance1.wire.Child("0", "1");
+                var child = wire.Child("0", "1");
 
-                Assert.True(appInstance1.wire.SetValue("test1", "0", "1", "11"));
-                Assert.True(appInstance1.wire.SetValue("test2", "0", "1", "12"));
+                Assert.True(wire.SetValue("test1", "0", "1", "11"));
+                Assert.True(wire.SetValue("test2", "0", "1", "12"));
 
                 await Task.Delay(1000);
 
-                var data = appInstance1.wire.GetRecursiveData();
+                var data = wire.GetRecursiveData();
                 Assert.Collection(data,
                     i =>
                     {
@@ -107,7 +107,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test1", i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("11", i.path[0]);
                     },
                     i =>
@@ -116,11 +116,11 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test2", i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("12", i.path[0]);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -129,25 +129,31 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(ChildTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child());
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child(null));
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child(new string[0]));
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
 
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child("path", null));
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child("path", ""));
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child(new string?[] { "path", null }));
-                Assert.Throws(typeof(StringNullOrEmptyException), () => appInstance1.wire.Child(new string[] { "path", "" }));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child());
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child(null));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child(Array.Empty<string>()));
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.Child(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.Child(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.Child(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.Child(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.Child(new string[] { "path", "1]1" }));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child("path", null));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child("path", ""));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child(new string?[] { "path", null }));
+                Assert.Throws<StringNullOrEmptyException>(() => wire.Child(new string[] { "path", "" }));
 
-                appInstance1.app.Dispose();
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.Child(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.Child(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.Child(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.Child(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.Child(new string[] { "path", "1]1" }));
+
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
+
+                app.Dispose();
             });
         }
     }
@@ -159,30 +165,30 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(CloneTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                var clone = appInstance1.wire.Clone();
+                var clone = wire.Clone();
                 var cloneDataChanges = new List<DataChangesEventArgs>();
                 clone.ImmediateDataChanges += (s, e) =>
                 {
                     cloneDataChanges.Add(e);
                 };
 
-                Assert.True(appInstance1.wire.SetValue("test1", "0", "1", "11"));
-                Assert.True(appInstance1.wire.SetValue("test2", "0", "1", "12"));
+                Assert.True(wire.SetValue("test1", "0", "1", "11"));
+                Assert.True(wire.SetValue("test2", "0", "1", "12"));
 
                 await Task.Delay(1000);
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("0", i.Path[0]);
                     },
                     i =>
@@ -218,7 +224,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("0", i.Path[0]);
                     },
                     i =>
@@ -248,7 +254,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("12", i.Path[2]);
                     });
 
-                var data = appInstance1.wire.GetRecursiveData();
+                var data = wire.GetRecursiveData();
                 Assert.Collection(data,
                     i =>
                     {
@@ -297,7 +303,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("12", i.path[2]);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -330,7 +336,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("0", i.Path[0]);
                     },
                     i =>
@@ -378,22 +384,22 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(DisposeTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                appInstance1.wire.Dispose();
+                wire.Dispose();
 
-                Assert.False(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.False(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.False(appInstance1.wire.SetValue("test3", "prop3"));
+                Assert.Throws<ObjectDisposedException>(() => wire.SetValue("test1", "prop1"));
+                Assert.Throws<ObjectDisposedException>(() => wire.SetValue("test2", "prop2"));
+                Assert.Throws<ObjectDisposedException>(() => wire.SetValue("test3", "prop3"));
 
                 await Task.Delay(1000);
 
-                Assert.False(appInstance1.wire.Started);
-                Assert.Empty(appInstance1.dataChanges);
+                Assert.False(wire.Started);
+                Assert.Empty(dataChanges);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -403,8 +409,8 @@ namespace DatabaseTest.RealtimeModuleTest
         [Fact]
         public async void Normal()
         {
-            var instance = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
-            var app1 = await instance.generator();
+            var (generator, dispose) = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+            var app1 = await generator();
             var wire1 = app1.Database
                 .Child("unauthorized")
                 .AsRealtimeWire();
@@ -433,7 +439,11 @@ namespace DatabaseTest.RealtimeModuleTest
             Assert.True(wire1Errors.Count > 0);
             Assert.Contains(wire1Errors, i => i.Exception.GetType() == typeof(DatabaseUnauthorizedException));
 
-            var app2 = await instance.generator();
+            var app2 = await generator();
+            if (app2.Auth.Session?.LocalId == null)
+            {
+                throw new Exception("Not authenticated.");
+            }
             var wire2 = app2.Database
                 .Child("users")
                 .Child(app2.Auth.Session.LocalId)
@@ -468,7 +478,7 @@ namespace DatabaseTest.RealtimeModuleTest
             Assert.True(wire2Errors.Count > 0);
             Assert.Contains(wire2Errors, i => i.Exception.GetType() == typeof(OfflineModeException));
 
-            instance.dispose();
+            dispose();
         }
     }
 
@@ -479,20 +489,20 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetChildrenTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                var children1 = appInstance1.wire.GetChildren();
+                var children1 = wire.GetChildren();
                 Assert.Collection(children1,
                     i =>
                     {
@@ -514,7 +524,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop4", i.key);
                         Assert.Equal(LocalDataType.Path, i.type);
                     });
-                var children2 = appInstance1.wire.GetChildren("prop4");
+                var children2 = wire.GetChildren("prop4");
                 Assert.Collection(children2,
                     i =>
                     {
@@ -532,7 +542,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal(LocalDataType.Value, i.type);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -541,16 +551,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetChildrenTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetChildren(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetChildren(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetChildren(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetChildren(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetChildren(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetChildren(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetChildren(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetChildren(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetChildren(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetChildren(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -562,32 +572,32 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetDataCountTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.Equal((0, 0), appInstance1.wire.GetDataCount());
-                Assert.Equal((0, 0), appInstance1.wire.GetDataCount("prop4"));
+                Assert.Equal((0, 0), wire.GetDataCount());
+                Assert.Equal((0, 0), wire.GetDataCount("prop4"));
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                Assert.Equal((6, 0), appInstance1.wire.GetDataCount());
-                Assert.Equal((3, 0), appInstance1.wire.GetDataCount("prop4"));
+                Assert.Equal((6, 0), wire.GetDataCount());
+                Assert.Equal((3, 0), wire.GetDataCount("prop4"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.Equal((6, 6), appInstance1.wire.GetDataCount());
-                Assert.Equal((3, 3), appInstance1.wire.GetDataCount("prop4"));
+                Assert.Equal((6, 6), wire.GetDataCount());
+                Assert.Equal((3, 3), wire.GetDataCount("prop4"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -621,16 +631,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetDataCountTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetDataCount(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetDataCount(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetDataCount(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetDataCount(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetDataCount(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetDataCount(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetDataCount(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetDataCount(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetDataCount(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetDataCount(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -642,37 +652,37 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetDataTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                Assert.Equal((null, "test1", "test1", LocalDataChangesType.Create), appInstance1.wire.GetData("prop1"));
-                Assert.Equal((null, "test2", "test2", LocalDataChangesType.Create), appInstance1.wire.GetData("prop2"));
-                Assert.Equal((null, "test3", "test3", LocalDataChangesType.Create), appInstance1.wire.GetData("prop3"));
-                Assert.Equal((null, "test4", "test4", LocalDataChangesType.Create), appInstance1.wire.GetData("prop4", "subProp1"));
-                Assert.Equal((null, "test5", "test5", LocalDataChangesType.Create), appInstance1.wire.GetData("prop4", "subProp2"));
-                Assert.Equal((null, "test6", "test6", LocalDataChangesType.Create), appInstance1.wire.GetData("prop4", "subProp3"));
+                Assert.Equal((null, "test1", "test1", LocalDataChangesType.Create), wire.GetData("prop1"));
+                Assert.Equal((null, "test2", "test2", LocalDataChangesType.Create), wire.GetData("prop2"));
+                Assert.Equal((null, "test3", "test3", LocalDataChangesType.Create), wire.GetData("prop3"));
+                Assert.Equal((null, "test4", "test4", LocalDataChangesType.Create), wire.GetData("prop4", "subProp1"));
+                Assert.Equal((null, "test5", "test5", LocalDataChangesType.Create), wire.GetData("prop4", "subProp2"));
+                Assert.Equal((null, "test6", "test6", LocalDataChangesType.Create), wire.GetData("prop4", "subProp3"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop1"));
-                Assert.Equal(("test2", null, "test2", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop2"));
-                Assert.Equal(("test3", null, "test3", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop3"));
-                Assert.Equal(("test4", null, "test4", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop4", "subProp1"));
-                Assert.Equal(("test5", null, "test5", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop4", "subProp2"));
-                Assert.Equal(("test6", null, "test6", LocalDataChangesType.Synced), appInstance1.wire.GetData("prop4", "subProp3"));
+                Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), wire.GetData("prop1"));
+                Assert.Equal(("test2", null, "test2", LocalDataChangesType.Synced), wire.GetData("prop2"));
+                Assert.Equal(("test3", null, "test3", LocalDataChangesType.Synced), wire.GetData("prop3"));
+                Assert.Equal(("test4", null, "test4", LocalDataChangesType.Synced), wire.GetData("prop4", "subProp1"));
+                Assert.Equal(("test5", null, "test5", LocalDataChangesType.Synced), wire.GetData("prop4", "subProp2"));
+                Assert.Equal(("test6", null, "test6", LocalDataChangesType.Synced), wire.GetData("prop4", "subProp3"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -702,16 +712,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetDataTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetData(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetData(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetData(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetData(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetData(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetData(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetData(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetData(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetData(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetData(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -723,34 +733,34 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetRecursiveChildrenTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                var children1 = appInstance1.wire.GetRecursiveChildren();
+                var children1 = wire.GetRecursiveChildren();
                 Assert.Collection(children1,
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("prop1", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("prop2", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("prop3", i[0]);
                     },
                     i =>
@@ -771,25 +781,25 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop4", i[0]);
                         Assert.Equal("subProp3", i[1]);
                     });
-                var children2 = appInstance1.wire.GetRecursiveChildren("prop4");
+                var children2 = wire.GetRecursiveChildren("prop4");
                 Assert.Collection(children2,
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("subProp1", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("subProp2", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("subProp3", i[0]);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -798,16 +808,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetRecursiveChildrenTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveChildren(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveChildren(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveChildren(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveChildren(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveChildren(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveChildren(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveChildren(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveChildren(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveChildren(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveChildren(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -819,20 +829,20 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetRecursiveDataTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                var children1a = appInstance1.wire.GetRecursiveData();
+                var children1a = wire.GetRecursiveData();
                 Assert.Collection(children1a,
                     i =>
                     {
@@ -840,7 +850,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test1", i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
@@ -849,7 +859,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test2", i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
@@ -858,7 +868,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test3", i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
@@ -891,7 +901,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop4", i.path[0]);
                         Assert.Equal("subProp3", i.path[1]);
                     });
-                var children1b = appInstance1.wire.GetRecursiveData("prop4");
+                var children1b = wire.GetRecursiveData("prop4");
                 Assert.Collection(children1b,
                     i =>
                     {
@@ -899,7 +909,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test4", i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp1", i.path[0]);
                     },
                     i =>
@@ -908,7 +918,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test5", i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp2", i.path[0]);
                     },
                     i =>
@@ -917,16 +927,16 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test6", i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp3", i.path[0]);
                     });
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 await Task.Delay(5000);
 
-                var children1c = appInstance1.wire.GetRecursiveData();
+                var children1c = wire.GetRecursiveData();
                 Assert.Collection(children1c,
                     i =>
                     {
@@ -934,7 +944,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
@@ -943,7 +953,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
@@ -952,7 +962,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
@@ -985,7 +995,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop4", i.path[0]);
                         Assert.Equal("subProp3", i.path[1]);
                     });
-                var children1d = appInstance1.wire.GetRecursiveData("prop4");
+                var children1d = wire.GetRecursiveData("prop4");
                 Assert.Collection(children1d,
                     i =>
                     {
@@ -993,7 +1003,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp1", i.path[0]);
                     },
                     i =>
@@ -1002,7 +1012,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp2", i.path[0]);
                     },
                     i =>
@@ -1011,11 +1021,11 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp3", i.path[0]);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1031,7 +1041,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
@@ -1040,7 +1050,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
@@ -1049,7 +1059,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
@@ -1090,7 +1100,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp1", i.path[0]);
                     },
                     i =>
@@ -1099,7 +1109,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp2", i.path[0]);
                     },
                     i =>
@@ -1108,7 +1118,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("subProp3", i.path[0]);
                     });
 
@@ -1140,16 +1150,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetRecursiveDataTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveData(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveData(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveData(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveData(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetRecursiveData(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveData(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveData(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveData(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveData(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetRecursiveData(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1161,37 +1171,37 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetValueTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                Assert.Equal("test1", appInstance1.wire.GetValue("prop1"));
-                Assert.Equal("test2", appInstance1.wire.GetValue("prop2"));
-                Assert.Equal("test3", appInstance1.wire.GetValue("prop3"));
-                Assert.Equal("test4", appInstance1.wire.GetValue("prop4", "subProp1"));
-                Assert.Equal("test5", appInstance1.wire.GetValue("prop4", "subProp2"));
-                Assert.Equal("test6", appInstance1.wire.GetValue("prop4", "subProp3"));
+                Assert.Equal("test1", wire.GetValue("prop1"));
+                Assert.Equal("test2", wire.GetValue("prop2"));
+                Assert.Equal("test3", wire.GetValue("prop3"));
+                Assert.Equal("test4", wire.GetValue("prop4", "subProp1"));
+                Assert.Equal("test5", wire.GetValue("prop4", "subProp2"));
+                Assert.Equal("test6", wire.GetValue("prop4", "subProp3"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.Equal("test1", appInstance1.wire.GetValue("prop1"));
-                Assert.Equal("test2", appInstance1.wire.GetValue("prop2"));
-                Assert.Equal("test3", appInstance1.wire.GetValue("prop3"));
-                Assert.Equal("test4", appInstance1.wire.GetValue("prop4", "subProp1"));
-                Assert.Equal("test5", appInstance1.wire.GetValue("prop4", "subProp2"));
-                Assert.Equal("test6", appInstance1.wire.GetValue("prop4", "subProp3"));
+                Assert.Equal("test1", wire.GetValue("prop1"));
+                Assert.Equal("test2", wire.GetValue("prop2"));
+                Assert.Equal("test3", wire.GetValue("prop3"));
+                Assert.Equal("test4", wire.GetValue("prop4", "subProp1"));
+                Assert.Equal("test5", wire.GetValue("prop4", "subProp2"));
+                Assert.Equal("test6", wire.GetValue("prop4", "subProp3"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1221,16 +1231,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(GetValueTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetValue(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetValue(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetValue(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetValue(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.GetValue(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetValue(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetValue(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetValue(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetValue(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.GetValue(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1242,32 +1252,32 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(HasChildrenTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.False(appInstance1.wire.HasChildren());
-                Assert.False(appInstance1.wire.HasChildren("prop4"));
+                Assert.False(wire.HasChildren());
+                Assert.False(wire.HasChildren("prop4"));
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
                 await Task.Delay(1000);
 
-                Assert.True(appInstance1.wire.HasChildren());
-                Assert.True(appInstance1.wire.HasChildren("prop4"));
+                Assert.True(wire.HasChildren());
+                Assert.True(wire.HasChildren("prop4"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.True(appInstance1.wire.HasChildren());
-                Assert.True(appInstance1.wire.HasChildren("prop4"));
+                Assert.True(wire.HasChildren());
+                Assert.True(wire.HasChildren("prop4"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1293,16 +1303,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(HasChildrenTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.HasChildren(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.HasChildren(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.HasChildren(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.HasChildren(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.HasChildren(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.HasChildren(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.HasChildren(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.HasChildren(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.HasChildren(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.HasChildren(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1314,16 +1324,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(HasFirstStreamTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.False(appInstance1.wire.HasFirstStream);
+                Assert.False(wire.HasFirstStream);
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.True(appInstance1.wire.HasFirstStream);
+                Assert.True(wire.HasFirstStream);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1335,33 +1345,33 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsLocallyAvailableTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.False(appInstance1.wire.IsLocallyAvailable());
-                Assert.False(appInstance1.wire.IsLocallyAvailable("prop1"));
-                Assert.False(appInstance1.wire.IsLocallyAvailable("prop4"));
+                Assert.False(wire.IsLocallyAvailable());
+                Assert.False(wire.IsLocallyAvailable("prop1"));
+                Assert.False(wire.IsLocallyAvailable("prop4"));
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.True(appInstance1.wire.IsLocallyAvailable());
-                Assert.True(appInstance1.wire.IsLocallyAvailable("prop1"));
-                Assert.True(appInstance1.wire.IsLocallyAvailable("prop4"));
+                Assert.True(wire.IsLocallyAvailable());
+                Assert.True(wire.IsLocallyAvailable("prop1"));
+                Assert.True(wire.IsLocallyAvailable("prop4"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.True(appInstance1.wire.IsLocallyAvailable());
-                Assert.True(appInstance1.wire.IsLocallyAvailable("prop1"));
-                Assert.True(appInstance1.wire.IsLocallyAvailable("prop4"));
+                Assert.True(wire.IsLocallyAvailable());
+                Assert.True(wire.IsLocallyAvailable("prop1"));
+                Assert.True(wire.IsLocallyAvailable("prop4"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1385,16 +1395,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsLocallyAvailableTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsLocallyAvailable(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsLocallyAvailable(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsLocallyAvailable(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsLocallyAvailable(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsLocallyAvailable(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsLocallyAvailable(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsLocallyAvailable(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsLocallyAvailable(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsLocallyAvailable(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsLocallyAvailable(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1406,48 +1416,48 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsNullTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.IsNull());
-                Assert.True(appInstance1.wire.IsNull("prop1"));
-                Assert.True(appInstance1.wire.IsNull("prop2"));
-                Assert.True(appInstance1.wire.IsNull("prop3"));
-                Assert.True(appInstance1.wire.IsNull("prop4"));
-                Assert.True(appInstance1.wire.IsNull("prop4", "subProp1"));
-                Assert.True(appInstance1.wire.IsNull("prop4", "subProp2"));
-                Assert.True(appInstance1.wire.IsNull("prop4", "subProp3"));
+                Assert.True(wire.IsNull());
+                Assert.True(wire.IsNull("prop1"));
+                Assert.True(wire.IsNull("prop2"));
+                Assert.True(wire.IsNull("prop3"));
+                Assert.True(wire.IsNull("prop4"));
+                Assert.True(wire.IsNull("prop4", "subProp1"));
+                Assert.True(wire.IsNull("prop4", "subProp2"));
+                Assert.True(wire.IsNull("prop4", "subProp3"));
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.False(appInstance1.wire.IsNull());
-                Assert.False(appInstance1.wire.IsNull("prop1"));
-                Assert.False(appInstance1.wire.IsNull("prop2"));
-                Assert.False(appInstance1.wire.IsNull("prop3"));
-                Assert.False(appInstance1.wire.IsNull("prop4"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp1"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp2"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp3"));
+                Assert.False(wire.IsNull());
+                Assert.False(wire.IsNull("prop1"));
+                Assert.False(wire.IsNull("prop2"));
+                Assert.False(wire.IsNull("prop3"));
+                Assert.False(wire.IsNull("prop4"));
+                Assert.False(wire.IsNull("prop4", "subProp1"));
+                Assert.False(wire.IsNull("prop4", "subProp2"));
+                Assert.False(wire.IsNull("prop4", "subProp3"));
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.False(appInstance1.wire.IsNull());
-                Assert.False(appInstance1.wire.IsNull("prop1"));
-                Assert.False(appInstance1.wire.IsNull("prop2"));
-                Assert.False(appInstance1.wire.IsNull("prop3"));
-                Assert.False(appInstance1.wire.IsNull("prop4"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp1"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp2"));
-                Assert.False(appInstance1.wire.IsNull("prop4", "subProp3"));
+                Assert.False(wire.IsNull());
+                Assert.False(wire.IsNull("prop1"));
+                Assert.False(wire.IsNull("prop2"));
+                Assert.False(wire.IsNull("prop3"));
+                Assert.False(wire.IsNull("prop4"));
+                Assert.False(wire.IsNull("prop4", "subProp1"));
+                Assert.False(wire.IsNull("prop4", "subProp2"));
+                Assert.False(wire.IsNull("prop4", "subProp3"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1481,16 +1491,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsNullTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsNull(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsNull(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsNull(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsNull(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsNull(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsNull(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsNull(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsNull(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsNull(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsNull(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1502,8 +1512,8 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsSubPath), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(new string[] { "path1" });
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(new string[] { "path1" });
+                wire.Start();
 
                 var appInstance2 = await generator(new string[] { "path1", "path2" });
                 appInstance2.wire.Start();
@@ -1511,12 +1521,12 @@ namespace DatabaseTest.RealtimeModuleTest
                 var appInstance3 = await generator(new string[] { "path1", "path2" });
                 appInstance3.wire.Start();
 
-                Assert.True(appInstance1.wire.IsSubPath(appInstance2.wire));
-                Assert.False(appInstance2.wire.IsSubPath(appInstance1.wire));
-                Assert.True(appInstance1.wire.IsSubPath(appInstance3.wire));
+                Assert.True(wire.IsSubPath(appInstance2.wire));
+                Assert.False(appInstance2.wire.IsSubPath(wire));
+                Assert.True(wire.IsSubPath(appInstance3.wire));
                 Assert.False(appInstance2.wire.IsSubPath(appInstance3.wire));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
                 appInstance3.app.Dispose();
             });
@@ -1527,12 +1537,14 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsSubPath), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(ArgumentNullException), () => appInstance1.wire.IsSubPath(null));
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+                Assert.Throws<ArgumentNullException>(() => wire.IsSubPath(null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1544,25 +1556,25 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsSyncedTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.False(appInstance1.wire.IsSynced());
+                Assert.False(wire.IsSynced());
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.True(appInstance1.wire.IsSynced());
+                Assert.True(wire.IsSynced());
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1582,16 +1594,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(IsSyncedTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsSynced(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsSynced(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsSynced(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsSynced(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.IsSynced(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsSynced(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsSynced(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsSynced(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsSynced(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.IsSynced(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1603,17 +1615,22 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(LocalDatabaseTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.Equal(appInstance1.app.Config.LocalDatabase, appInstance1.wire.LocalDatabase);
+                Assert.Equal(app.Config.LocalDatabase, wire.LocalDatabase);
 
                 var localDatabase = new SampleLocalDatabase();
 
-                var wire2 = appInstance1.app.Database
+                if (app.Auth.Session?.LocalId == null)
+                {
+                    throw new Exception("Not authenticated.");
+                }
+
+                var wire2 = app.Database
                     .Child("users")
-                    .Child(appInstance1.app.Auth.Session.LocalId)
+                    .Child(app.Auth.Session.LocalId)
                     .Child(nameof(RealtimeModuleTest))
                     .Child(nameof(LocalDatabaseTest))
                     .Child(nameof(Normal))
@@ -1626,20 +1643,20 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 await Task.Delay(1000);
 
-                var wire3 = appInstance1.app.Database
+                var wire3 = app.Database
                     .Child("users")
-                    .Child(appInstance1.app.Auth.Session.LocalId)
+                    .Child(app.Auth.Session.LocalId)
                     .Child(nameof(RealtimeModuleTest))
                     .Child(nameof(LocalDatabaseTest))
                     .Child(nameof(Normal))
                     .AsRealtimeWire(localDatabase);
                 wire3.Start();
 
-                Assert.Null(appInstance1.wire.GetValue("prop1"));
+                Assert.Null(wire.GetValue("prop1"));
                 Assert.Equal("test1", wire2.GetValue("prop1"));
                 Assert.Equal("test1", wire3.GetValue("prop1"));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1651,25 +1668,25 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(MaxConcurrentWriteTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.False(appInstance1.wire.IsSynced());
+                Assert.False(wire.IsSynced());
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.True(appInstance1.wire.IsSynced());
+                Assert.True(wire.IsSynced());
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -1692,11 +1709,11 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(ParentTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                var child1 = appInstance1.wire.Child("child1");
+                var child1 = wire.Child("child1");
                 var child1DataChanges = new List<DataChangesEventArgs>();
                 child1.ImmediateDataChanges += (s, e) =>
                 {
@@ -1718,11 +1735,11 @@ namespace DatabaseTest.RealtimeModuleTest
                     Assert.True(false, e.Exception.Message);
                 };
 
-                Assert.Null(appInstance1.wire.Parent);
-                Assert.Equal(appInstance1.wire, child1.Parent);
+                Assert.Null(wire.Parent);
+                Assert.Equal(wire, child1.Parent);
                 Assert.Equal(child1, child2.Parent);
 
-                Assert.Empty(appInstance1.dataChanges);
+                Assert.Empty(dataChanges);
                 Assert.Empty(child1DataChanges);
                 Assert.Empty(child2DataChanges);
 
@@ -1730,14 +1747,14 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 await Task.Delay(1000);
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("child1", i.Path[0]);
                     },
                     i =>
@@ -1753,7 +1770,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("child2", i.Path[0]);
                     });
                 Assert.Collection(child2DataChanges,
@@ -1762,9 +1779,9 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Empty(i.Path);
                     });
 
-                appInstance1.wire.SetNull();
+                wire.SetNull();
                 await Task.Delay(1000);
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 child1DataChanges.Clear();
                 child2DataChanges.Clear();
 
@@ -1772,14 +1789,14 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 await Task.Delay(1000);
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("child1", i.Path[0]);
                     });
                 Assert.Collection(child1DataChanges,
@@ -1789,7 +1806,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
                 Assert.Empty(child2DataChanges);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1802,7 +1819,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
             public bool HasAttachedRealtime { get; }
 
-            event EventHandler<RealtimeInstanceEventArgs> IRealtimeModel.RealtimeAttached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeAttached
             {
                 add
                 {
@@ -1815,7 +1832,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<RealtimeInstanceEventArgs> IRealtimeModel.RealtimeDetached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeDetached
             {
                 add
                 {
@@ -1828,7 +1845,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<WireExceptionEventArgs> IRealtimeModel.WireError
+            event EventHandler<WireExceptionEventArgs>? IRealtimeModel.WireError
             {
                 add
                 {
@@ -1847,11 +1864,11 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(PutModelTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -1860,18 +1877,18 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(PutModelTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseInvalidModel), () => appInstance1.wire.PutModel(new PutModelErrorTest(), new string[] { "path" }));
+                Assert.Throws<DatabaseInvalidModel>(() => wire.PutModel(new PutModelErrorTest(), new string[] { "path" }));
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.PutModel(new FirebaseProperty<string>(), new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1883,17 +1900,17 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(QueryTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
-                var test1WireClone = appInstance1.wire.Clone();
+                var test1WireClone = wire.Clone();
                 var test2WireClone = appInstance2.wire.Clone();
 
-                Assert.Equal(appInstance1.wire.Query.GetAbsoluteUrl(), appInstance2.wire.Query.GetAbsoluteUrl());
+                Assert.Equal(wire.Query.GetAbsoluteUrl(), appInstance2.wire.Query.GetAbsoluteUrl());
                 Assert.Equal(test1WireClone.Query.GetAbsoluteUrl(), test2WireClone.Query.GetAbsoluteUrl());
-                Assert.Equal(appInstance1.wire.Query.GetAbsoluteUrl(), test2WireClone.Query.GetAbsoluteUrl());
+                Assert.Equal(wire.Query.GetAbsoluteUrl(), test2WireClone.Query.GetAbsoluteUrl());
                 Assert.Equal(test1WireClone.Query.GetAbsoluteUrl(), appInstance2.wire.Query.GetAbsoluteUrl());
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -1906,18 +1923,18 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(RootTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                var test1WireClone = appInstance1.wire.Clone();
+                var (app, wire, dataChanges) = await generator(null);
+                var test1WireClone = wire.Clone();
                 var test1WireChild1 = test1WireClone.Child("child");
                 var test1WireChild2 = test1WireChild1.Child("child");
 
-                Assert.Equal(null, appInstance1.wire.Root);
-                Assert.Equal(null, test1WireClone.Root);
+                Assert.Null(wire.Root);
+                Assert.Null(test1WireClone.Root);
                 Assert.Equal(test1WireChild1.Root, test1WireClone);
                 Assert.Equal(test1WireChild2.Root, test1WireClone);
                 Assert.Equal(test1WireChild2.Root, test1WireChild1.Root);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -1929,57 +1946,57 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetNullTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
-                appInstance1.dataChanges.Clear();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3"));
-                Assert.True(appInstance1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(appInstance1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(appInstance1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
-                appInstance1.dataChanges.Clear();
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetNull("prop1"));
-                Assert.False(appInstance1.wire.SetNull("prop1"));
+                Assert.True(wire.SetNull("prop1"));
+                Assert.False(wire.SetNull("prop1"));
 
-                var phase1 = appInstance1.wire.GetRecursiveData();
+                var phase1 = wire.GetRecursiveData();
                 Assert.Collection(phase1,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
-                        Assert.Equal(null, i.value);
+                        Assert.Null(i.local);
+                        Assert.Null(i.value);
                         Assert.Equal(LocalDataChangesType.Delete, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -1989,7 +2006,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test5", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -1999,7 +2016,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test6", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2007,32 +2024,32 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp3", i.path[1]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase2 = appInstance1.wire.GetRecursiveData();
+                var phase2 = wire.GetRecursiveData();
                 Assert.Collection(phase2,
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2042,7 +2059,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test5", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2052,7 +2069,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test6", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2060,80 +2077,80 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp3", i.path[1]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetNull("prop4"));
-                Assert.False(appInstance1.wire.SetNull("prop4"));
+                Assert.True(wire.SetNull("prop4"));
+                Assert.False(wire.SetNull("prop4"));
 
-                var phase3 = appInstance1.wire.GetRecursiveData();
+                var phase3 = wire.GetRecursiveData();
                 Assert.Collection(phase3,
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
-                        Assert.Equal(null, i.local);
-                        Assert.Equal(null, i.value);
+                        Assert.Null(i.sync);
+                        Assert.Null(i.local);
+                        Assert.Null(i.value);
                         Assert.Equal(LocalDataChangesType.Delete, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop4", i.path[0]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase4 = appInstance1.wire.GetRecursiveData();
+                var phase4 = wire.GetRecursiveData();
                 Assert.Collection(phase4,
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Equal(2, i.Path.Length);
@@ -2154,48 +2171,48 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop4", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop4", i.Path[0]);
                     },
                     i =>
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetNull());
-                Assert.False(appInstance1.wire.SetNull());
+                Assert.True(wire.SetNull());
+                Assert.False(wire.SetNull());
 
-                var phase5 = appInstance1.wire.GetRecursiveData();
+                var phase5 = wire.GetRecursiveData();
                 Assert.Collection(phase5,
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
-                        Assert.Equal(null, i.local);
-                        Assert.Equal(null, i.value);
+                        Assert.Null(i.sync);
+                        Assert.Null(i.local);
+                        Assert.Null(i.value);
                         Assert.Equal(LocalDataChangesType.Delete, i.changesType);
-                        Assert.Equal(0, i.path.Length);
+                        Assert.Empty(i.path);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase6 = appInstance1.wire.GetRecursiveData();
+                var phase6 = wire.GetRecursiveData();
                 Assert.Empty(phase6);
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -2206,9 +2223,9 @@ namespace DatabaseTest.RealtimeModuleTest
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -2217,27 +2234,27 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetNullTest), nameof(CrossSync), async generator =>
             {
-                var origin1 = await generator(null);
-                origin1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.True(origin1.wire.SetValue("test1", "prop1"));
-                Assert.True(origin1.wire.SetValue("test2", "prop2"));
-                Assert.True(origin1.wire.SetValue("test3", "prop3"));
-                Assert.True(origin1.wire.SetValue("test4", "prop4", "subProp1"));
-                Assert.True(origin1.wire.SetValue("test5", "prop4", "subProp2"));
-                Assert.True(origin1.wire.SetValue("test6", "prop4", "subProp3"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test3", "prop3"));
+                Assert.True(wire.SetValue("test4", "prop4", "subProp1"));
+                Assert.True(wire.SetValue("test5", "prop4", "subProp2"));
+                Assert.True(wire.SetValue("test6", "prop4", "subProp3"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetNull("prop1"));
-                Assert.False(origin1.wire.SetNull("prop1"));
+                Assert.True(wire.SetNull("prop1"));
+                Assert.False(wire.SetNull("prop1"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase1 = appInstance1.wire.GetRecursiveData();
@@ -2245,25 +2262,25 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2273,7 +2290,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test5", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2283,7 +2300,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test6", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2294,7 +2311,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
@@ -2305,10 +2322,10 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 appInstance1.wire.Stop();
 
-                Assert.True(origin1.wire.SetNull("prop4"));
-                Assert.False(origin1.wire.SetNull("prop4"));
+                Assert.True(wire.SetNull("prop4"));
+                Assert.False(wire.SetNull("prop4"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(appInstance1.wire.SetValue("test4Mod", "prop4", "subProp1"));
                 Assert.False(appInstance1.wire.SetValue("test4Mod", "prop4", "subProp1"));
@@ -2318,19 +2335,19 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     },
                     i =>
@@ -2346,7 +2363,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test5", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test5", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2356,7 +2373,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test6", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test6", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2372,19 +2389,19 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     });
 
@@ -2403,7 +2420,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop4", i.Path[0]);
                     },
                     i =>
@@ -2414,7 +2431,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop4", i.Path[0]);
                     },
                     i =>
@@ -2425,7 +2442,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop4", i.Path[0]);
                     },
                     i =>
@@ -2436,10 +2453,10 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 appInstance1.wire.Stop();
 
-                Assert.True(origin1.wire.SetValue("test2Mod", "prop2"));
-                Assert.False(origin1.wire.SetValue("test2Mod", "prop2"));
+                Assert.True(wire.SetValue("test2Mod", "prop2"));
+                Assert.False(wire.SetValue("test2Mod", "prop2"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(appInstance1.wire.SetNull("prop2"));
                 Assert.False(appInstance1.wire.SetNull("prop2"));
@@ -2449,19 +2466,19 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
-                        Assert.Equal(null, i.value);
+                        Assert.Null(i.local);
+                        Assert.Null(i.value);
                         Assert.Equal(LocalDataChangesType.Delete, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     });
 
@@ -2473,39 +2490,39 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2Mod", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2Mod", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop3", i.path[0]);
                     });
 
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetNull());
-                Assert.False(origin1.wire.SetNull());
+                Assert.True(wire.SetNull());
+                Assert.False(wire.SetNull());
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase7 = appInstance1.wire.GetRecursiveData();
@@ -2514,12 +2531,12 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -2528,7 +2545,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
                 appInstance1.dataChanges.Clear();
 
-                origin1.app.Dispose();
+                app.Dispose();
                 appInstance1.app.Dispose();
             });
         }
@@ -2538,16 +2555,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetNullTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetNull(new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetNull(new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetNull(new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetNull(new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetNull(new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetNull(new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetNull(new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetNull(new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetNull(new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetNull(new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -2559,147 +2576,147 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetValueTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
-                appInstance1.dataChanges.Clear();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test1", "prop1"));
-                Assert.False(appInstance1.wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.False(wire.SetValue("test1", "prop1"));
 
-                var phase1 = appInstance1.wire.GetRecursiveData();
+                var phase1 = wire.GetRecursiveData();
                 Assert.Collection(phase1,
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
+                        Assert.Null(i.sync);
                         Assert.Equal("test1", i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase2 = appInstance1.wire.GetRecursiveData();
+                var phase2 = wire.GetRecursiveData();
                 Assert.Collection(phase2,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test2", "prop2"));
-                Assert.False(appInstance1.wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.False(wire.SetValue("test2", "prop2"));
 
-                var phase3 = appInstance1.wire.GetRecursiveData();
+                var phase3 = wire.GetRecursiveData();
                 Assert.Collection(phase3,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
+                        Assert.Null(i.sync);
                         Assert.Equal("test2", i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase4 = appInstance1.wire.GetRecursiveData();
+                var phase4 = wire.GetRecursiveData();
                 Assert.Collection(phase4,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test3", "prop3", "subProp1"));
-                Assert.False(appInstance1.wire.SetValue("test3", "prop3", "subProp1"));
+                Assert.True(wire.SetValue("test3", "prop3", "subProp1"));
+                Assert.False(wire.SetValue("test3", "prop3", "subProp1"));
 
-                var phase5 = appInstance1.wire.GetRecursiveData();
+                var phase5 = wire.GetRecursiveData();
                 Assert.Collection(phase5,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
+                        Assert.Null(i.sync);
                         Assert.Equal("test3", i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
@@ -2708,32 +2725,32 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp1", i.path[1]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase6 = appInstance1.wire.GetRecursiveData();
+                var phase6 = wire.GetRecursiveData();
                 Assert.Collection(phase6,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2741,14 +2758,14 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp1", i.path[1]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -2763,35 +2780,35 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop3", i.Path[0]);
                         Assert.Equal("subProp1", i.Path[1]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test4", "prop3", "subProp2"));
-                Assert.False(appInstance1.wire.SetValue("test4", "prop3", "subProp2"));
+                Assert.True(wire.SetValue("test4", "prop3", "subProp2"));
+                Assert.False(wire.SetValue("test4", "prop3", "subProp2"));
 
-                var phase7 = appInstance1.wire.GetRecursiveData();
+                var phase7 = wire.GetRecursiveData();
                 Assert.Collection(phase7,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2800,7 +2817,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(null, i.sync);
+                        Assert.Null(i.sync);
                         Assert.Equal("test4", i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Create, i.changesType);
@@ -2809,32 +2826,32 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase8 = appInstance1.wire.GetRecursiveData();
+                var phase8 = wire.GetRecursiveData();
                 Assert.Collection(phase8,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2844,7 +2861,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2852,10 +2869,10 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -2870,35 +2887,35 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("prop3", i.Path[0]);
                         Assert.Equal("subProp2", i.Path[1]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue(null, "prop1"));
-                Assert.False(appInstance1.wire.SetValue(null, "prop1"));
+                Assert.True(wire.SetValue(null, "prop1"));
+                Assert.False(wire.SetValue(null, "prop1"));
 
-                var phase9 = appInstance1.wire.GetRecursiveData();
+                var phase9 = wire.GetRecursiveData();
                 Assert.Collection(phase9,
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
-                        Assert.Equal(null, i.value);
+                        Assert.Null(i.local);
+                        Assert.Null(i.value);
                         Assert.Equal(LocalDataChangesType.Delete, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2908,7 +2925,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2916,23 +2933,23 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase10 = appInstance1.wire.GetRecursiveData();
+                var phase10 = wire.GetRecursiveData();
                 Assert.Collection(phase10,
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2942,7 +2959,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2950,27 +2967,27 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                Assert.True(appInstance1.wire.SetValue("test2Mod", "prop2"));
-                Assert.False(appInstance1.wire.SetValue("test2Mod", "prop2"));
+                Assert.True(wire.SetValue("test2Mod", "prop2"));
+                Assert.False(wire.SetValue("test2Mod", "prop2"));
 
-                var phase11 = appInstance1.wire.GetRecursiveData();
+                var phase11 = wire.GetRecursiveData();
                 Assert.Collection(phase11,
                     i =>
                     {
@@ -2978,13 +2995,13 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("test2Mod", i.local);
                         Assert.Equal("test2Mod", i.value);
                         Assert.Equal(LocalDataChangesType.Update, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -2994,7 +3011,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3002,23 +3019,23 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                var phase12 = appInstance1.wire.GetRecursiveData();
+                var phase12 = wire.GetRecursiveData();
                 Assert.Collection(phase12,
                     i =>
                     {
                         Assert.Equal("test2Mod", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2Mod", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3028,7 +3045,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3036,20 +3053,20 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp2", i.path[1]);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -3058,20 +3075,20 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetValueTest), nameof(CrossSync), async generator =>
             {
-                var origin1 = await generator(null);
-                origin1.wire.Start();
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
-                origin1.dataChanges.Clear();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
+                dataChanges.Clear();
 
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue("test1", "prop1"));
-                Assert.False(origin1.wire.SetValue("test1", "prop1"));
+                Assert.True(wire.SetValue("test1", "prop1"));
+                Assert.False(wire.SetValue("test1", "prop1"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase1 = appInstance1.wire.GetRecursiveData();
@@ -3079,10 +3096,10 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     });
 
@@ -3093,15 +3110,15 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue("test2", "prop2"));
-                Assert.False(origin1.wire.SetValue("test2", "prop2"));
+                Assert.True(wire.SetValue("test2", "prop2"));
+                Assert.False(wire.SetValue("test2", "prop2"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase2 = appInstance1.wire.GetRecursiveData();
@@ -3109,19 +3126,19 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     });
 
@@ -3132,15 +3149,15 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue("test3", "prop3", "subProp1"));
-                Assert.False(origin1.wire.SetValue("test3", "prop3", "subProp1"));
+                Assert.True(wire.SetValue("test3", "prop3", "subProp1"));
+                Assert.False(wire.SetValue("test3", "prop3", "subProp1"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase3 = appInstance1.wire.GetRecursiveData();
@@ -3148,25 +3165,25 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3181,7 +3198,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -3192,10 +3209,10 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue("test4", "prop3", "subProp2"));
-                Assert.False(origin1.wire.SetValue("test4", "prop3", "subProp2"));
+                Assert.True(wire.SetValue("test4", "prop3", "subProp2"));
+                Assert.False(wire.SetValue("test4", "prop3", "subProp2"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase4 = appInstance1.wire.GetRecursiveData();
@@ -3203,25 +3220,25 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test1", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test1", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3231,7 +3248,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3242,7 +3259,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop3", i.Path[0]);
                     },
                     i =>
@@ -3253,10 +3270,10 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue(null, "prop1"));
-                Assert.False(origin1.wire.SetValue(null, "prop1"));
+                Assert.True(wire.SetValue(null, "prop1"));
+                Assert.False(wire.SetValue(null, "prop1"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(5000);
 
                 var phase5 = appInstance1.wire.GetRecursiveData();
@@ -3264,16 +3281,16 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3283,7 +3300,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3294,7 +3311,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop1", i.Path[0]);
                     },
                     i =>
@@ -3303,10 +3320,10 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
                 appInstance1.dataChanges.Clear();
 
-                Assert.True(origin1.wire.SetValue("test2Mod", "prop2"));
-                Assert.False(origin1.wire.SetValue("test2Mod", "prop2"));
+                Assert.True(wire.SetValue("test2Mod", "prop2"));
+                Assert.False(wire.SetValue("test2Mod", "prop2"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 await Task.Delay(10000);
 
                 var phase6 = appInstance1.wire.GetRecursiveData();
@@ -3314,16 +3331,16 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2Mod", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2Mod", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3333,7 +3350,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3344,17 +3361,17 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
                 appInstance1.dataChanges.Clear();
 
                 appInstance1.wire.Stop();
 
-                Assert.True(origin1.wire.SetValue("test2Mod2", "prop2"));
-                Assert.False(origin1.wire.SetValue("test2Mod2", "prop2"));
+                Assert.True(wire.SetValue("test2Mod2", "prop2"));
+                Assert.False(wire.SetValue("test2Mod2", "prop2"));
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(origin1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(appInstance1.wire.SetValue("conflict", "prop2"));
                 Assert.False(appInstance1.wire.SetValue("conflict", "prop2"));
@@ -3367,13 +3384,13 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("conflict", i.local);
                         Assert.Equal("conflict", i.value);
                         Assert.Equal(LocalDataChangesType.Update, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3383,7 +3400,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3399,16 +3416,16 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test2Mod2", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test2Mod2", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("prop2", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test3", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test3", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3418,7 +3435,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     i =>
                     {
                         Assert.Equal("test4", i.sync);
-                        Assert.Equal(null, i.local);
+                        Assert.Null(i.local);
                         Assert.Equal("test4", i.value);
                         Assert.Equal(LocalDataChangesType.Synced, i.changesType);
                         Assert.Equal(2, i.path.Length);
@@ -3429,17 +3446,17 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Collection(appInstance1.dataChanges,
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("prop2", i.Path[0]);
                     });
                 appInstance1.dataChanges.Clear();
 
-                origin1.app.Dispose();
+                app.Dispose();
                 appInstance1.app.Dispose();
             });
         }
@@ -3449,16 +3466,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SetValueTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetValue("test", new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetValue("test", new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetValue("test", new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetValue("test", new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SetValue("test", new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetValue("test", new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetValue("test", new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetValue("test", new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetValue("test", new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SetValue("test", new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -3470,15 +3487,15 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(StartTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
 
-                Assert.False(appInstance1.wire.Started);
+                Assert.False(wire.Started);
 
-                appInstance1.wire.Start();
+                wire.Start();
 
-                Assert.True(appInstance1.wire.Started);
+                Assert.True(wire.Started);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -3490,25 +3507,25 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(StartedTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
 
-                Assert.False(appInstance1.wire.Started);
+                Assert.False(wire.Started);
 
-                appInstance1.wire.Start();
+                wire.Start();
 
-                Assert.True(appInstance1.wire.Started);
+                Assert.True(wire.Started);
 
-                appInstance1.wire.Stop();
+                wire.Stop();
 
-                Assert.False(appInstance1.wire.Started);
+                Assert.False(wire.Started);
 
-                appInstance1.wire.Start();
+                wire.Start();
 
-                Assert.True(appInstance1.wire.Started);
+                Assert.True(wire.Started);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
-                Assert.False(appInstance1.wire.Started);
+                Assert.False(wire.Started);
             });
         }
     }
@@ -3520,16 +3537,16 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(StopTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.True(appInstance1.wire.Started);
+                Assert.True(wire.Started);
 
-                appInstance1.wire.Stop();
+                wire.Stop();
 
-                Assert.False(appInstance1.wire.Started);
+                Assert.False(wire.Started);
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -3542,7 +3559,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
             public bool HasAttachedRealtime { get; }
 
-            event EventHandler<RealtimeInstanceEventArgs> IRealtimeModel.RealtimeAttached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeAttached
             {
                 add
                 {
@@ -3555,7 +3572,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<RealtimeInstanceEventArgs> IRealtimeModel.RealtimeDetached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeDetached
             {
                 add
                 {
@@ -3568,7 +3585,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<WireExceptionEventArgs> IRealtimeModel.WireError
+            event EventHandler<WireExceptionEventArgs>? IRealtimeModel.WireError
             {
                 add
                 {
@@ -3587,11 +3604,11 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SubModelTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -3600,18 +3617,18 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             await Helpers.CleanTest(nameof(SubModelTest), nameof(Throws), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
-                Assert.Throws(typeof(DatabaseInvalidModel), () => appInstance1.wire.SubModel(new SubModelErrorTest(), new string[] { "path" }));
+                Assert.Throws<DatabaseInvalidModel>(() => wire.SubModel(new SubModelErrorTest(), new string[] { "path" }));
 
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1.1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1#1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1$1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1[1" }));
-                Assert.Throws(typeof(DatabaseForbiddenNodeNameCharacter), () => appInstance1.wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1]1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1.1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1#1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1$1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1[1" }));
+                Assert.Throws<DatabaseForbiddenNodeNameCharacter>(() => wire.SubModel(new FirebaseProperty<string>(), new string[] { "path", "1]1" }));
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
     }
@@ -3621,8 +3638,12 @@ namespace DatabaseTest.RealtimeModuleTest
         [Fact]
         public async void Normal()
         {
-            var instance = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
-            var app1 = await instance.generator();
+            var (generator, dispose) = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+            var app1 = await generator();
+            if (app1.Auth.Session?.LocalId == null)
+            {
+                throw new Exception("Not authenticated.");
+            }
             var wire1 = app1.Database
                 .Child("users")
                 .Child(app1.Auth.Session.LocalId)
@@ -3652,7 +3673,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
             app1.Dispose();
 
-            var app2 = await instance.generator();
+            var app2 = await generator();
             var wire2 = app2.Database
                 .Child("unauthorized")
                 .AsRealtimeWire();
@@ -3665,7 +3686,7 @@ namespace DatabaseTest.RealtimeModuleTest
             wire2.Start();
             Assert.False(await wire2.WaitForSynced(TimeSpan.FromMinutes(5)));
 
-            instance.dispose();
+            dispose();
         }
     }
 }

@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase", "RestfulFirebase\RestfulFirebase.csproj", "{E4FEBF06-51B5-4ADA-A4B6-87B48013CBE1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA4E9CD5-D164-4E0E-8BBE-F92EA3DB5D61}"
-	ProjectSection(SolutionItems) = preProject
-		.editorconfig = .editorconfig
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase.Test", "RestfulFirebase.Test\RestfulFirebase.Test.csproj", "{DC529842-6B4B-47B4-808C-17DBF20F91E6}"
 EndProject

@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the reset password request exceeds its limit.
+/// </summary>
+public class AuthResetPasswordExceedLimitException : AuthException
 {
-    /// <summary>
-    /// Occurs when the reset password request exceeds its limit.
-    /// </summary>
-    public class AuthResetPasswordExceedLimitException : AuthException
+    private const string ExceptionMessage =
+        "The reset password request exceeds its limit.";
+
+    internal AuthResetPasswordExceedLimitException()
+        : base(ExceptionMessage)
     {
-        internal AuthResetPasswordExceedLimitException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthResetPasswordExceedLimitException(Exception innerException)
-            : base("The reset password request exceeds its limit.", innerException)
-        {
+    internal AuthResetPasswordExceedLimitException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

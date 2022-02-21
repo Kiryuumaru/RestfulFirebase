@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when there`s an unidentified exception.
+/// </summary>
+public class AuthUndefinedException : AuthException
 {
-    /// <summary>
-    /// Occurs when there`s an unidentified exception.
-    /// </summary>
-    public class AuthUndefinedException : AuthException
+    private const string ExceptionMessage =
+        "An unidentified exception occurs.";
+
+    internal AuthUndefinedException()
+        : base(ExceptionMessage)
     {
-        internal AuthUndefinedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthUndefinedException(Exception innerException)
-            : base("An unidentified exception occurs.", innerException)
-        {
+    internal AuthUndefinedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

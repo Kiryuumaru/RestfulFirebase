@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when an email address was expected but one was not provided.
+/// </summary>
+public class AuthMissingEmailException : AuthException
 {
-    /// <summary>
-    /// Occurs when an email address was expected but one was not provided.
-    /// </summary>
-    public class AuthMissingEmailException : AuthException
+    private const string ExceptionMessage =
+        "Email address was expected but one was not provided.";
+
+    internal AuthMissingEmailException()
+        : base(ExceptionMessage)
     {
-        internal AuthMissingEmailException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthMissingEmailException(Exception innerException)
-            : base("Email address was expected but one was not provided.", innerException)
-        {
+    internal AuthMissingEmailException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

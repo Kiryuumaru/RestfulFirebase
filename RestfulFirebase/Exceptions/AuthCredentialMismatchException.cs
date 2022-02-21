@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the custom token corresponds to a different Firebase project.
+/// </summary>
+public class AuthCredentialMismatchException : AuthException
 {
-    /// <summary>
-    /// Occurs when the custom token corresponds to a different Firebase project.
-    /// </summary>
-    public class AuthCredentialMismatchException : AuthException
+    private const string ExceptionMessage =
+        "The custom token corresponds to a different Firebase project.";
+
+    internal AuthCredentialMismatchException()
+        : base(ExceptionMessage)
     {
-        internal AuthCredentialMismatchException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthCredentialMismatchException(Exception innerException)
-            : base("The custom token corresponds to a different Firebase project.", innerException)
-        {
+    internal AuthCredentialMismatchException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

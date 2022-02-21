@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when token was expected but one was not provided.
+/// </summary>
+public class AuthMissingRefreshTokenException : AuthException
 {
-    /// <summary>
-    /// Occurs when token was expected but one was not provided.
-    /// </summary>
-    public class AuthMissingRefreshTokenException : AuthException
+    private const string ExceptionMessage =
+        "Token was expected but one was not provided.";
+
+    internal AuthMissingRefreshTokenException()
+        : base(ExceptionMessage)
     {
-        internal AuthMissingRefreshTokenException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthMissingRefreshTokenException(Exception innerException)
-            : base("Token was expected but one was not provided.", innerException)
-        {
+    internal AuthMissingRefreshTokenException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

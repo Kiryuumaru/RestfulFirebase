@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when request type was expected but one was not provided.
+/// </summary>
+public class AuthMissingRequestTypeException : AuthException
 {
-    /// <summary>
-    /// Occurs when request type was expected but one was not provided.
-    /// </summary>
-    public class AuthMissingRequestTypeException : AuthException
+    private const string ExceptionMessage =
+        "Request type was expected but one was not provided.";
+
+    internal AuthMissingRequestTypeException()
+        : base(ExceptionMessage)
     {
-        internal AuthMissingRequestTypeException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthMissingRequestTypeException(Exception innerException)
-            : base("Request type was expected but one was not provided.", innerException)
-        {
+    internal AuthMissingRequestTypeException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

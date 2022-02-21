@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the action code has expired.
+/// </summary>
+public class AuthExpiredOOBCodeException : AuthException
 {
-    /// <summary>
-    /// Occurs when the action code has expired.
-    /// </summary>
-    public class AuthExpiredOOBCodeException : AuthException
+    private const string ExceptionMessage =
+        "The action code has expired.";
+
+    internal AuthExpiredOOBCodeException()
+        : base(ExceptionMessage)
     {
-        internal AuthExpiredOOBCodeException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthExpiredOOBCodeException(Exception innerException)
-            : base("The action code has expired.", innerException)
-        {
+    internal AuthExpiredOOBCodeException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the user account has been disabled by an administrator.
+/// </summary>
+public class AuthUserDisabledException : AuthException
 {
-    /// <summary>
-    /// Occurs when the user account has been disabled by an administrator.
-    /// </summary>
-    public class AuthUserDisabledException : AuthException
+    private const string ExceptionMessage =
+        "The user account has been disabled by an administrator.";
+
+    internal AuthUserDisabledException()
+        : base(ExceptionMessage)
     {
-        internal AuthUserDisabledException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthUserDisabledException(Exception innerException)
-            : base("The user account has been disabled by an administrator.", innerException)
-        {
+    internal AuthUserDisabledException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

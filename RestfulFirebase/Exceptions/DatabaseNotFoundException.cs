@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the specified Realtime Database was not found.
+/// </summary>
+public class DatabaseNotFoundException : DatabaseException
 {
-    /// <summary>
-    /// Occurs when the specified Realtime Database was not found.
-    /// </summary>
-    public class DatabaseNotFoundException : DatabaseException
+    private const string ExceptionMessage =
+        "The specified Realtime Database was not found.";
+
+    internal DatabaseNotFoundException()
+        : base(ExceptionMessage)
     {
-        internal DatabaseNotFoundException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal DatabaseNotFoundException(Exception innerException)
-            : base("The specified Realtime Database was not found.", innerException)
-        {
+    internal DatabaseNotFoundException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

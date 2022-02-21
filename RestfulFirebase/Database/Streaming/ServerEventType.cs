@@ -1,15 +1,14 @@
-namespace RestfulFirebase.Database.Streaming
+namespace RestfulFirebase.Database.Streaming;
+
+internal enum ServerEventType
 {
-    internal enum ServerEventType
-    {
-        Put,
+    Put,
 
-        Patch,
+    Patch,
 
-        KeepAlive,
+    KeepAlive,
 
-        Cancel,
+    Cancel,
 
-        AuthRevoked
-    }
+    AuthRevoked
 }

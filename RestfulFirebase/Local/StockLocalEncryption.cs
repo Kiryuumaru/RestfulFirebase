@@ -1,44 +1,31 @@
 ﻿using RestfulFirebase.Utilities;
 
-namespace RestfulFirebase.Local
+namespace RestfulFirebase.Local;
+
+/// <summary>
+/// The provided stock <see cref="ILocalEncryption"/> implementation to be used.
+/// </summary>
+public sealed class StockLocalEncryption : ILocalEncryption
 {
+    private static readonly int[] EncryptionPattern = new int[] { 1, 4, 2, 3 };
+
     /// <summary>
-    /// The provided stock <see cref="ILocalEncryption"/> implementation to be used.
+    /// Creates new instance of <see cref="StockLocalEncryption"/> class.
     /// </summary>
-    public sealed class StockLocalEncryption : ILocalEncryption
+    public StockLocalEncryption()
     {
-        private static readonly int[] EncryptionPattern = new int[] { 1, 4, 2, 3 };
 
-        /// <summary>
-        /// Creates new instance of <see cref="StockLocalEncryption"/> class.
-        /// </summary>
-        public StockLocalEncryption()
-        {
+    }
 
-        }
+    /// <inheritdoc/>
+    public string? Decrypt(string? value)
+    {
+        return Cryptography.VigenereCipherDecrypt(value, EncryptionPattern);
+    }
 
-        /// <inheritdoc/>
-        public string DecryptKey(string encrypted)
-        {
-            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
-        }
-
-        /// <inheritdoc/>
-        public string DecryptValue(string encrypted)
-        {
-            return Cryptography.VigenereCipherDecrypt(encrypted, EncryptionPattern);
-        }
-
-        /// <inheritdoc/>
-        public string EncryptKey(string key)
-        {
-            return Cryptography.VigenereCipherEncrypt(key, EncryptionPattern);
-        }
-
-        /// <inheritdoc/>
-        public string EncryptValue(string value)
-        {
-            return Cryptography.VigenereCipherEncrypt(value, EncryptionPattern);
-        }
+    /// <inheritdoc/>
+    public string? Encrypt(string? value)
+    {
+        return Cryptography.VigenereCipherEncrypt(value, EncryptionPattern);
     }
 }

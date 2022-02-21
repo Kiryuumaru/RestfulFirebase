@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the provided identifier is invalid.
+/// </summary>
+public class AuthInvalidIdentifierException : AuthException
 {
-    /// <summary>
-    /// Occurs when the provided identifier is invalid.
-    /// </summary>
-    public class AuthInvalidIdentifierException : AuthException
+    private const string ExceptionMessage =
+        "The provided identifier is invalid.";
+
+    internal AuthInvalidIdentifierException()
+        : base(ExceptionMessage)
     {
-        internal AuthInvalidIdentifierException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthInvalidIdentifierException(Exception innerException)
-            : base("The provided identifier is invalid.", innerException)
-        {
+    internal AuthInvalidIdentifierException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

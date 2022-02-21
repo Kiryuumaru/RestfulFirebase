@@ -14,35 +14,35 @@ namespace RestfulFirebase.Test
 {
     public class SampleLocalDatabase : ILocalDatabase
     {
-        public ConcurrentDictionary<string, string> db { get; } = new ConcurrentDictionary<string, string>();
+        public ConcurrentDictionary<string, string?> Db { get; } = new();
 
         public bool ContainsKey(string key)
         {
-            return db.ContainsKey(key);
+            return Db.ContainsKey(key);
         }
 
         public string? Get(string key)
         {
-            if (!db.TryGetValue(key, out string? value))
+            if (!Db.TryGetValue(key, out string? value))
             {
                 return null;
             }
             return value;
         }
 
-        public void Set(string key, string value)
+        public void Set(string key, string? value)
         {
-            db.AddOrUpdate(key, value, delegate { return value; });
+            Db.AddOrUpdate(key, value, delegate { return value; });
         }
 
         public void Delete(string key)
         {
-            db.TryRemove(key, out _);
+            Db.TryRemove(key, out _);
         }
 
         public void Clear()
         {
-            db.Clear();
+            Db.Clear();
         }
     }
 
@@ -55,7 +55,7 @@ namespace RestfulFirebase.Test
         private static RestfulFirebaseApp? app;
         private static bool appInitializing = false;
         private static int appInstanceCount = 0;
-        private static object appInstancesLocker = new object();
+        private static readonly object appInstancesLocker = new();
 
         public static RestfulFirebaseApp GenerateApp()
         {
@@ -66,8 +66,8 @@ namespace RestfulFirebase.Test
 
         public static (Func<Task<RestfulFirebaseApp>> generator, Action dispose) AppGenerator()
         {
-            List<RestfulFirebaseApp> apps = new List<RestfulFirebaseApp>();
-            Func<Task<RestfulFirebaseApp>> generator = async delegate
+            List<RestfulFirebaseApp> apps = new();
+            async Task<RestfulFirebaseApp> generator()
             {
                 while (true)
                 {
@@ -102,8 +102,8 @@ namespace RestfulFirebase.Test
                 }
                 app.Disposing += App_Disposing;
                 return app;
-            };
-            Action dispose = () =>
+            }
+            void dispose()
             {
                 List<RestfulFirebaseApp> currentApps;
                 lock (appInstancesLocker)
@@ -114,7 +114,7 @@ namespace RestfulFirebase.Test
                 {
                     app.Dispose();
                 }
-            };
+            }
             return (generator, dispose);
         }
 
@@ -139,15 +139,18 @@ namespace RestfulFirebase.Test
                 }
             }
 
-            var instance = AppGenerator();
+            var (generator, dispose) = AppGenerator();
 
             return (new Func<Task<RestfulFirebaseApp>>(
                 async delegate
                 {
-                    var appCopy = await instance.generator();
-                    appCopy.Auth.CopyAuthenticationFrom(app);
+                    var appCopy = await generator();
+                    if (app != null)
+                    {
+                        appCopy.Auth.CopyAuthenticationFrom(app);
+                    }
                     return appCopy;
-                }), instance.dispose);
+                }), dispose);
         }
 
         public static async Task<(Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>> generator, Action dispose)> AuthenticatedTestApp(
@@ -155,13 +158,18 @@ namespace RestfulFirebase.Test
             string testName,
             string factName)
         {
-            var instance = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
+            var instance = await AuthenticatedAppGenerator();
             var generator = new Func<string[]?, Task<(RestfulFirebaseApp app, RealtimeWire wire, List<DataChangesEventArgs> dataChanges)>>(async subNode =>
             {
                 RestfulFirebaseApp app = await instance.generator();
 
+                if (app.Auth.Session?.LocalId == null)
+                {
+                    throw new Exception("Not authenticated.");
+                }
+
                 RealtimeWire wire;
-                subNode = subNode == null ? new string[0] : subNode;
+                subNode ??= Array.Empty<string>();
                 if (subNode.Length == 0)
                 {
                     wire = app.Database
@@ -174,24 +182,24 @@ namespace RestfulFirebase.Test
                 }
                 else
                 {
-                    StringBuilder builder = new StringBuilder();
+                    StringBuilder builder = new();
                     foreach (var subPath in subNode)
                     {
                         if (string.IsNullOrEmpty(subPath))
                         {
-                            builder.Append("/");
+                            builder.Append('/');
                         }
                         else
                         {
                             builder.Append(subPath);
                             if (!subPath.EndsWith("/"))
                             {
-                                builder.Append("/");
+                                builder.Append('/');
                             }
                         }
                     }
                     string additionalPath = builder.ToString();
-                    additionalPath = additionalPath.Substring(0, additionalPath.Length - 1);
+                    additionalPath = additionalPath[0..^1];
                     wire = app.Database
                         .Child("users")
                         .Child(app.Auth.Session.LocalId)
@@ -315,8 +323,12 @@ namespace RestfulFirebase.Test
             }
         }
 
-        public static async Task<bool> WaitForSynced(RealtimeInstance realtimeInstance)
+        public static async Task<bool> WaitForSynced(RealtimeInstance? realtimeInstance)
         {
+            if (realtimeInstance == null)
+            {
+                return false;
+            }
             for (int i = 0; i < WaitErrorNumTries; i++)
             {
                 if (await realtimeInstance.WaitForSynced(TimeSpan.FromMinutes(1)))

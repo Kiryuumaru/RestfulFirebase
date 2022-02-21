@@ -12,193 +12,372 @@ using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using ObservableHelpers.Utilities;
 using System.Linq;
+using DisposableHelpers;
 
-namespace RestfulFirebase.Database.Query
+namespace RestfulFirebase.Database.Query;
+
+/// <summary>
+/// The base implementation for firebase query operations.
+/// </summary>
+public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 {
+    #region Properties
+
     /// <summary>
-    /// The base implementation for firebase query operations.
+    /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
     /// </summary>
-    public abstract class FirebaseQuery : Disposable, IFirebaseQuery
+    public bool AuthenticateRequests { get; set; }
+
+    /// <summary>
+    /// The parent of the query.
+    /// </summary>
+    protected FirebaseQuery? Parent { get; }
+
+    private IHttpClientProxy? client;
+
+    #endregion
+
+    #region Initializers
+
+    private protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery? parent)
     {
-        #region Properties
+        App = app;
+        Parent = parent;
+        AuthenticateRequests = true;
+    }
 
-        /// <summary>
-        /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
-        /// </summary>
-        public bool AuthenticateRequests { get; set; }
+    #endregion
 
-        /// <summary>
-        /// The parent of the query.
-        /// </summary>
-        protected FirebaseQuery Parent { get; }
+    #region Methods
 
-        private IHttpClientProxy client;
+    /// <summary>
+    /// Builds the url segement of the query.
+    /// </summary>
+    /// <param name="child">
+    /// The <see cref="FirebaseQuery"/> child of the created url.
+    /// </param>
+    /// <returns>
+    /// The built url segement.
+    /// </returns>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthTokenExpiredException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserDisabledException">
+    /// The user account has been disabled by an administrator.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthInvalidRefreshTokenException">
+    /// An invalid refresh token is provided.
+    /// </exception>
+    /// <exception cref="AuthInvalidJSONReceivedException">
+    /// Invalid JSON payload received.
+    /// </exception>
+    /// <exception cref="AuthMissingRefreshTokenException">
+    /// No refresh token provided.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+    /// Throws when any node has forbidden node name character.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    protected abstract string BuildUrlSegment(IFirebaseQuery child);
 
-        #endregion
+    /// <summary>
+    /// Builds the url segement of the query.
+    /// </summary>
+    /// <param name="child">
+    /// The <see cref="FirebaseQuery"/> child of the created url.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="Task"/> represents the built url segement.
+    /// </returns>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthTokenExpiredException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserDisabledException">
+    /// The user account has been disabled by an administrator.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthInvalidRefreshTokenException">
+    /// An invalid refresh token is provided.
+    /// </exception>
+    /// <exception cref="AuthInvalidJSONReceivedException">
+    /// Invalid JSON payload received.
+    /// </exception>
+    /// <exception cref="AuthMissingRefreshTokenException">
+    /// No refresh token provided.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+    /// Throws when any node has forbidden node name character.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    protected abstract Task<string> BuildUrlSegmentAsync(IFirebaseQuery? child);
 
-        #region Initializers
+    internal AuthQuery WithAuth(Func<Task<string>> tokenFactory)
+    {
+        return new AuthQuery(App, this, tokenFactory);
+    }
 
-        private protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery parent)
+    internal SilentQuery Silent()
+    {
+        return new SilentQuery(App, this);
+    }
+
+    internal string BuildUrl(IFirebaseQuery child)
+    {
+        var url = BuildUrlSegment(child);
+
+        if (Parent != null)
         {
-            App = app;
-            Parent = parent;
-            AuthenticateRequests = true;
+            url = Parent.BuildUrl(this) + url;
         }
 
-        #endregion
+        return url;
+    }
 
-        #region Methods
+    private async Task<string> BuildUrlAsync(FirebaseQuery? child)
+    {
+        var url = await BuildUrlSegmentAsync(child);
 
-        /// <summary>
-        /// Builds the url segement of the query.
-        /// </summary>
-        /// <param name="child">
-        /// The <see cref="FirebaseQuery"/> child of the created url.
-        /// </param>
-        /// <returns>
-        /// The built url segement.
-        /// </returns>
-        /// <exception cref="AuthAPIKeyNotValidException">
-        /// API key not valid. Please pass a valid API key.
-        /// </exception>
-        /// <exception cref="AuthTokenExpiredException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthUserDisabledException">
-        /// The user account has been disabled by an administrator.
-        /// </exception>
-        /// <exception cref="AuthUserNotFoundException">
-        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
-        /// </exception>
-        /// <exception cref="AuthInvalidIDTokenException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthInvalidRefreshTokenException">
-        /// An invalid refresh token is provided.
-        /// </exception>
-        /// <exception cref="AuthInvalidJSONReceivedException">
-        /// Invalid JSON payload received.
-        /// </exception>
-        /// <exception cref="AuthMissingRefreshTokenException">
-        /// No refresh token provided.
-        /// </exception>
-        /// <exception cref="AuthUndefinedException">
-        /// The error occured is undefined.
-        /// </exception>
-        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
-        /// Throws when any node has forbidden node name character.
-        /// </exception>
-        /// <exception cref="OperationCanceledException">
-        /// The operation was cancelled.
-        /// </exception>
-        protected abstract string BuildUrlSegment(IFirebaseQuery child);
-
-        /// <summary>
-        /// Builds the url segement of the query.
-        /// </summary>
-        /// <param name="child">
-        /// The <see cref="FirebaseQuery"/> child of the created url.
-        /// </param>
-        /// <returns>
-        /// The created <see cref="Task"/> represents the built url segement.
-        /// </returns>
-        /// <exception cref="AuthAPIKeyNotValidException">
-        /// API key not valid. Please pass a valid API key.
-        /// </exception>
-        /// <exception cref="AuthTokenExpiredException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthUserDisabledException">
-        /// The user account has been disabled by an administrator.
-        /// </exception>
-        /// <exception cref="AuthUserNotFoundException">
-        /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
-        /// </exception>
-        /// <exception cref="AuthInvalidIDTokenException">
-        /// The user's credential is no longer valid. The user must sign in again.
-        /// </exception>
-        /// <exception cref="AuthInvalidRefreshTokenException">
-        /// An invalid refresh token is provided.
-        /// </exception>
-        /// <exception cref="AuthInvalidJSONReceivedException">
-        /// Invalid JSON payload received.
-        /// </exception>
-        /// <exception cref="AuthMissingRefreshTokenException">
-        /// No refresh token provided.
-        /// </exception>
-        /// <exception cref="AuthUndefinedException">
-        /// The error occured is undefined.
-        /// </exception>
-        /// <exception cref="DatabaseForbiddenNodeNameCharacter">
-        /// Throws when any node has forbidden node name character.
-        /// </exception>
-        /// <exception cref="OperationCanceledException">
-        /// The operation was cancelled.
-        /// </exception>
-        protected abstract Task<string> BuildUrlSegmentAsync(IFirebaseQuery child);
-
-        internal AuthQuery WithAuth(Func<Task<string>> tokenFactory)
+        if (Parent != null)
         {
-            return new AuthQuery(App, this, tokenFactory);
+            url = (await Parent.BuildUrlAsync(this)) + url;
         }
 
-        internal SilentQuery Silent()
+        return url;
+    }
+
+    private HttpClient GetClient()
+    {
+        if (client == null)
         {
-            return new SilentQuery(App, this);
+            client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedDatabaseRequestTimeout);
         }
 
-        internal string BuildUrl(IFirebaseQuery child)
-        {
-            var url = BuildUrlSegment(child);
+        return client.GetHttpClient();
+    }
 
-            if (Parent != null)
+    private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
+    {
+        string responseData;
+        var statusCode = HttpStatusCode.OK;
+        var requestData = data;
+
+        string url;
+
+        url = await BuildUrl(token).ConfigureAwait(false);
+
+        try
+        {
+            var message = new HttpRequestMessage(method, url)
             {
-                url = Parent.BuildUrl(this) + url;
+                Content = new StringContent(requestData)
+            };
+
+            CancellationToken invokeToken;
+            if (token == null)
+            {
+                invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+            }
+            else
+            {
+                invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
             }
 
-            return url;
+            HttpResponseMessage result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
+            invokeToken.ThrowIfCancellationRequested();
+            statusCode = result.StatusCode;
+            responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            result.EnsureSuccessStatusCode();
+
+            return responseData;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw ExceptionHelpers.GetException(statusCode, ex);
+        }
+    }
+
+    #endregion
+
+    #region Disposable Members
+
+    /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            client?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
+    #endregion
+
+    #region Object Members
+
+    /// <inheritdoc/>
+    public override string ToString()
+    {
+        return GetAbsoluteUrl();
+    }
+
+    #endregion
+
+    #region IFirebaseQuery Members
+
+    /// <inheritdoc/>
+    public RestfulFirebaseApp App { get; }
+
+    /// <inheritdoc/>
+    public RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default)
+    {
+        return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.CachedLocalDatabase);
+    }
+
+    /// <inheritdoc/>
+    public async Task<string> BuildUrl(CancellationToken? token = null)
+    {
+        if (token == null)
+        {
+            token = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+        }
+        else
+        {
+            token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
         }
 
-        private async Task<string> BuildUrlAsync(FirebaseQuery child)
+        if (App.Auth.Session != null && AuthenticateRequests)
         {
-            var url = await BuildUrlSegmentAsync(child);
+            return await WithAuth(() => App.Auth.Session.GetFreshToken()).BuildUrlAsync((FirebaseQuery?)null);
+        }
 
-            if (Parent != null)
+        return await BuildUrlAsync((FirebaseQuery?)null);
+    }
+
+    /// <inheritdoc/>
+    public ChildQuery Child(Func<string> pathFactory)
+    {
+        if (pathFactory == null)
+        {
+            throw new ArgumentNullException(nameof(pathFactory));
+        }
+        return new ChildQuery(App, this, pathFactory);
+    }
+
+    /// <inheritdoc/>
+    public ChildQuery Child(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            throw new ArgumentNullException(nameof(path));
+        }
+        return Child(() => path);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> FanOut(Func<string?> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        if (relativePaths == null)
+        {
+            throw new ArgumentNullException(nameof(relativePaths));
+        }
+        foreach (var path in relativePaths)
+        {
+            if (path.Any(
+                c =>
+                {
+                    switch (c)
+                    {
+                        case '$': return true;
+                        case '[': return true;
+                        case ']': return true;
+                        case '#': return true;
+                        case '.': return true;
+                        default:
+                            if ((c >= 0 && c <= 31) || c == 127)
+                            {
+                                return true;
+                            }
+                            return false;
+                    }
+                }))
             {
-                url = (await Parent.BuildUrlAsync(this)) + url;
+                throw new DatabaseForbiddenNodeNameCharacter();
+            }
+        }
+
+        return await Patch(() =>
+        {
+            var fanoutObject = new Dictionary<string, object?>(relativePaths.Length);
+
+            var json = jsonData();
+
+            foreach (var path in relativePaths)
+            {
+                fanoutObject.Add(path, json == null ? null : JsonConvert.DeserializeObject(json));
             }
 
-            return url;
-        }
+            return JsonConvert.SerializeObject(fanoutObject);
+        }, token, onException);
+    }
 
-        private HttpClient GetClient()
+    /// <inheritdoc/>
+    public Task<bool> FanOut(string? jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        return FanOut(() => jsonData, relativePaths, token, onException);
+    }
+
+    /// <inheritdoc/>
+    public async Task<string?> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        async Task<string> invoke()
         {
-            if (client == null)
-            {
-                client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedDatabaseRequestTimeout);
-            }
-
-            return client.GetHttpClient();
-        }
-
-        private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
-        {
+            var url = string.Empty;
             var responseData = string.Empty;
             var statusCode = HttpStatusCode.OK;
-            var requestData = data;
 
-            string url;
+            if (App.Config.CachedOfflineMode)
+            {
+                throw new OfflineModeException();
+            }
 
             url = await BuildUrl(token).ConfigureAwait(false);
 
             try
             {
-                var message = new HttpRequestMessage(method, url)
-                {
-                    Content = new StringContent(requestData)
-                };
-
                 CancellationToken invokeToken;
+
                 if (token == null)
                 {
                     invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
@@ -208,13 +387,13 @@ namespace RestfulFirebase.Database.Query
                     invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                 }
 
-                HttpResponseMessage result = null;
-                result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
+                var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
                 invokeToken.ThrowIfCancellationRequested();
-                statusCode = result.StatusCode;
-                responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+                statusCode = response.StatusCode;
+                responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                result.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode();
+                response.Dispose();
 
                 return responseData;
             }
@@ -228,150 +407,56 @@ namespace RestfulFirebase.Database.Query
             }
         }
 
-        #endregion
-
-        #region Disposable Members
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
+        while (true)
         {
-            if (disposing)
+            try
             {
-                client?.Dispose();
+                return await invoke().ConfigureAwait(false);
             }
-            base.Dispose(disposing);
-        }
-
-        #endregion
-
-        #region Object Members
-
-        /// <inheritdoc/>
-        public override string ToString()
-        {
-            return GetAbsoluteUrl();
-        }
-
-        #endregion
-
-        #region IFirebaseQuery Members
-
-        /// <inheritdoc/>
-        public RestfulFirebaseApp App { get; }
-
-        /// <inheritdoc/>
-        public RealtimeWire AsRealtimeWire(ILocalDatabase customLocalDatabase = default)
-        {
-            return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.CachedLocalDatabase);
-        }
-
-        /// <inheritdoc/>
-        public async Task<string> BuildUrl(CancellationToken? token = null)
-        {
-            if (token == null)
+            catch (Exception ex)
             {
-                token = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-            }
-            else
-            {
-                token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-            }
-
-            if (App.Auth.IsAuthenticated && AuthenticateRequests)
-            {
-                return await WithAuth(() => App.Auth.Session.GetFreshToken()).BuildUrlAsync((FirebaseQuery)null);
-            }
-
-            return await BuildUrlAsync((FirebaseQuery)null);
-        }
-
-        /// <inheritdoc/>
-        public ChildQuery Child(Func<string> pathFactory)
-        {
-            if (pathFactory == null)
-            {
-                throw new ArgumentNullException(nameof(pathFactory));
-            }
-            return new ChildQuery(App, this, pathFactory);
-        }
-
-        /// <inheritdoc/>
-        public ChildQuery Child(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
-            return Child(() => path);
-        }
-
-        /// <inheritdoc/>
-        public async Task<bool> FanOut(Func<string> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            if (relativePaths == null)
-            {
-                throw new ArgumentNullException(nameof(relativePaths));
-            }
-            foreach (var path in relativePaths)
-            {
-                if (path.Any(
-                    c =>
+                var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
+                {
+                    await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
+                    return false;
+                }));
+                onException?.Invoke(retryEx);
+                if (retryEx.Retry != null)
+                {
+                    if (await retryEx.Retry.ConfigureAwait(false))
                     {
-                        switch (c)
-                        {
-                            case '$': return true;
-                            case '[': return true;
-                            case ']': return true;
-                            case '#': return true;
-                            case '.': return true;
-                            default:
-                                if ((c >= 0 && c <= 31) || c == 127)
-                                {
-                                    return true;
-                                }
-                                return false;
-                        }
-                    }))
-                {
-                    throw new DatabaseForbiddenNodeNameCharacter();
+                        continue;
+                    }
                 }
+                return null;
+            }
+        }
+    }
+
+    /// <inheritdoc/>
+    public virtual string GetAbsoluteUrl()
+    {
+        return BuildUrl(this);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> Patch(Func<string?> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        async Task invoke(string? jsonToInvoke)
+        {
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
+            if (App.Config.CachedOfflineMode)
+            {
+                throw new OfflineModeException();
             }
 
-            return await Patch(() =>
+            var c = GetClient();
+
+            if (jsonToInvoke == null)
             {
-                var fanoutObject = new Dictionary<string, object>(relativePaths.Length);
-
-                var json = jsonData();
-
-                foreach (var path in relativePaths)
-                {
-                    fanoutObject.Add(path, JsonConvert.DeserializeObject(json));
-                }
-
-                return JsonConvert.SerializeObject(fanoutObject);
-            }, token, onException);
-        }
-
-        /// <inheritdoc/>
-        public Task<bool> FanOut(string jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            return FanOut(() => jsonData, relativePaths, token, onException);
-        }
-
-        /// <inheritdoc/>
-        public async Task<string> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            async Task<string> invoke()
-            {
-                var url = string.Empty;
-                var responseData = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
-                if (App.Config.CachedOfflineMode)
-                {
-                    throw new OfflineModeException();
-                }
-
                 url = await BuildUrl(token).ConfigureAwait(false);
 
                 try
@@ -387,15 +472,12 @@ namespace RestfulFirebase.Database.Query
                         invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
                     }
 
-                    var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
+                    var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
                     invokeToken.ThrowIfCancellationRequested();
-                    statusCode = response.StatusCode;
-                    responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    statusCode = result.StatusCode;
+                    responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    response.EnsureSuccessStatusCode();
-                    response.Dispose();
-
-                    return responseData;
+                    result.EnsureSuccessStatusCode();
                 }
                 catch (OperationCanceledException)
                 {
@@ -406,215 +488,132 @@ namespace RestfulFirebase.Database.Query
                     throw ExceptionHelpers.GetException(statusCode, ex);
                 }
             }
-
-            while (true)
+            else
             {
-                try
-                {
-                    return await invoke().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
-                    {
-                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
-                        return false;
-                    }));
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry != null)
-                    {
-                        if (await retryEx.Retry.ConfigureAwait(false))
-                        {
-                            continue;
-                        }
-                    }
-                    return null;
-                }
+                await Silent().SendAsync(c, jsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
             }
-        }
+        };
 
-        /// <inheritdoc/>
-        public virtual string GetAbsoluteUrl()
+        while (true)
         {
-            return BuildUrl(this);
-        }
-
-        /// <inheritdoc/>
-        public async Task<bool> Patch(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            async Task invoke(string jsonToInvoke)
+            try
             {
-                string url;
-                var responseData = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
-                if (App.Config.CachedOfflineMode)
-                {
-                    throw new OfflineModeException();
-                }
-
-                var c = GetClient();
-
-                if (jsonToInvoke == null)
-                {
-                    url = await BuildUrl(token).ConfigureAwait(false);
-
-                    try
-                    {
-                        CancellationToken invokeToken;
-
-                        if (token == null)
-                        {
-                            invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-                        }
-                        else
-                        {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-                        }
-
-                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                        invokeToken.ThrowIfCancellationRequested();
-                        statusCode = result.StatusCode;
-                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                        result.EnsureSuccessStatusCode();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ExceptionHelpers.GetException(statusCode, ex);
-                    }
-                }
-                else
-                {
-                    await Silent().SendAsync(c, jsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
-                }
-            };
-
-            while (true)
+                await invoke(jsonData()).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex)
             {
-                try
+                var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
                 {
-                    await invoke(jsonData()).ConfigureAwait(false);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
-                    {
-                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
-                        return false;
-                    }));
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry != null)
-                    {
-                        if (await retryEx.Retry.ConfigureAwait(false))
-                        {
-                            continue;
-                        }
-                    }
+                    await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
                     return false;
+                }));
+                onException?.Invoke(retryEx);
+                if (retryEx.Retry != null)
+                {
+                    if (await retryEx.Retry.ConfigureAwait(false))
+                    {
+                        continue;
+                    }
                 }
+                return false;
             }
         }
-
-        /// <inheritdoc/>
-        public Task<bool> Patch(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            return Patch(() => jsonData, token, onException);
-        }
-
-        /// <inheritdoc/>
-        public async Task<bool> Put(Func<string> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            async Task invoke(string jsonToInvoke)
-            {
-                string url;
-                var responseData = string.Empty;
-                var statusCode = HttpStatusCode.OK;
-
-                if (App.Config.CachedOfflineMode)
-                {
-                    throw new OfflineModeException();
-                }
-
-                var c = GetClient();
-
-                if (jsonToInvoke == null)
-                {
-                    url = await BuildUrl(token).ConfigureAwait(false);
-
-                    try
-                    {
-                        CancellationToken invokeToken;
-
-                        if (token == null)
-                        {
-                            invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-                        }
-                        else
-                        {
-                            invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-                        }
-
-                        var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                        invokeToken.ThrowIfCancellationRequested();
-                        statusCode = result.StatusCode;
-                        responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                        result.EnsureSuccessStatusCode();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ExceptionHelpers.GetException(statusCode, ex);
-                    }
-                }
-                else
-                {
-                    await Silent().SendAsync(c, jsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
-                }
-            };
-
-            while (true)
-            {
-                try
-                {
-                    await invoke(jsonData()).ConfigureAwait(false);
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
-                    {
-                        await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
-                        return false;
-                    }));
-                    onException?.Invoke(retryEx);
-                    if (retryEx.Retry != null)
-                    {
-                        if (await retryEx.Retry.ConfigureAwait(false))
-                        {
-                            continue;
-                        }
-                    }
-                    return false;
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public Task<bool> Put(string jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs> onException = null)
-        {
-            return Put(() => jsonData, token, onException);
-        }
-
-        #endregion
     }
+
+    /// <inheritdoc/>
+    public Task<bool> Patch(string? jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        return Patch(() => jsonData, token, onException);
+    }
+
+    /// <inheritdoc/>
+    public async Task<bool> Put(Func<string?> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        async Task invoke(string? jsonToInvoke)
+        {
+            string url;
+            var responseData = string.Empty;
+            var statusCode = HttpStatusCode.OK;
+
+            if (App.Config.CachedOfflineMode)
+            {
+                throw new OfflineModeException();
+            }
+
+            var c = GetClient();
+
+            if (jsonToInvoke == null)
+            {
+                url = await BuildUrl(token).ConfigureAwait(false);
+
+                try
+                {
+                    CancellationToken invokeToken;
+
+                    if (token == null)
+                    {
+                        invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+                    }
+                    else
+                    {
+                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
+                    }
+
+                    var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
+                    invokeToken.ThrowIfCancellationRequested();
+                    statusCode = result.StatusCode;
+                    responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    result.EnsureSuccessStatusCode();
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    throw ExceptionHelpers.GetException(statusCode, ex);
+                }
+            }
+            else
+            {
+                await Silent().SendAsync(c, jsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
+            }
+        };
+
+        while (true)
+        {
+            try
+            {
+                await invoke(jsonData()).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                var retryEx = new RetryExceptionEventArgs(ex, Task.Run(async delegate
+                {
+                    await Task.Delay(App.Config.CachedDatabaseRetryDelay).ConfigureAwait(false);
+                    return false;
+                }));
+                onException?.Invoke(retryEx);
+                if (retryEx.Retry != null)
+                {
+                    if (await retryEx.Retry.ConfigureAwait(false))
+                    {
+                        continue;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+
+    /// <inheritdoc/>
+    public Task<bool> Put(string? jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        return Put(() => jsonData, token, onException);
+    }
+
+    #endregion
 }

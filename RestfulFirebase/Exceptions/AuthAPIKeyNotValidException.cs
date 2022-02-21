@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the provided API key is not valid.
+/// </summary>
+public class AuthAPIKeyNotValidException : AuthException
 {
-    /// <summary>
-    /// Occurs when the provided API key is not valid.
-    /// </summary>
-    public class AuthAPIKeyNotValidException : AuthException
+    private const string ExceptionMessage =
+        "API key is not valid. Please pass a valid API key.";
+
+    internal AuthAPIKeyNotValidException()
+        : base(ExceptionMessage)
     {
-        internal AuthAPIKeyNotValidException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthAPIKeyNotValidException(Exception innerException)
-            : base("API key is not valid. Please pass a valid API key.", innerException)
-        {
+    internal AuthAPIKeyNotValidException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

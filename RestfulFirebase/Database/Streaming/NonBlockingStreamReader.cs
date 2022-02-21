@@ -3,71 +3,70 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Database.Streaming
+namespace RestfulFirebase.Database.Streaming;
+
+internal class NonBlockingStreamReader : TextReader
 {
-    internal class NonBlockingStreamReader : TextReader
+    private const int DefaultBufferSize = 16000;
+
+    private readonly Stream stream;
+    private readonly byte[] buffer;
+    private readonly int bufferSize;
+
+    private string cachedData;
+
+    public NonBlockingStreamReader(Stream stream, int bufferSize = DefaultBufferSize)
     {
-        private const int DefaultBufferSize = 16000;
+        this.stream = stream;
+        this.bufferSize = bufferSize;
+        buffer = new byte[bufferSize];
 
-        private readonly Stream stream;
-        private readonly byte[] buffer;
-        private readonly int bufferSize;
+        cachedData = string.Empty;
+    }
 
-        private string cachedData;
+    public override async Task<string> ReadLineAsync()
+    {
+        var currentString = TryGetNewLine();
 
-        public NonBlockingStreamReader(Stream stream, int bufferSize = DefaultBufferSize)
+        while (currentString == null)
         {
-            this.stream = stream;
-            this.bufferSize = bufferSize;
-            buffer = new byte[bufferSize];
+            var read = await stream.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false);
+            var str = Encoding.UTF8.GetString(buffer, 0, read);
 
-            cachedData = string.Empty;
+            cachedData += str;
+            currentString = TryGetNewLine();
         }
 
-        public override async Task<string> ReadLineAsync()
+        return currentString;
+    }
+
+    public async Task<string> ReadLineAsync(CancellationToken token)
+    {
+        var currentString = TryGetNewLine();
+
+        while (currentString == null)
         {
-            var currentString = TryGetNewLine();
+            var read = await stream.ReadAsync(buffer, 0, bufferSize, token).ConfigureAwait(false);
+            var str = Encoding.UTF8.GetString(buffer, 0, read);
 
-            while (currentString == null)
-            {
-                var read = await stream.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false);
-                var str = Encoding.UTF8.GetString(buffer, 0, read);
-
-                cachedData += str;
-                currentString = TryGetNewLine();
-            }
-
-            return currentString;
+            cachedData += str;
+            currentString = TryGetNewLine();
         }
 
-        public async Task<string> ReadLineAsync(CancellationToken token)
+        return currentString;
+    }
+
+    private string? TryGetNewLine()
+    {
+        var newLine = cachedData.IndexOf('\n');
+
+        if (newLine >= 0)
         {
-            var currentString = TryGetNewLine();
-
-            while (currentString == null)
-            {
-                var read = await stream.ReadAsync(buffer, 0, bufferSize, token).ConfigureAwait(false);
-                var str = Encoding.UTF8.GetString(buffer, 0, read);
-
-                cachedData += str;
-                currentString = TryGetNewLine();
-            }
-
-            return currentString;
+            var r = cachedData.Substring(0, newLine + 1);
+            cachedData = cachedData.Remove(0, r.Length);
+            return r.Trim();
         }
 
-        private string TryGetNewLine()
-        {
-            var newLine = cachedData.IndexOf('\n');
-
-            if (newLine >= 0)
-            {
-                var r = cachedData.Substring(0, newLine + 1);
-                cachedData = cachedData.Remove(0, r.Length);
-                return r.Trim();
-            }
-
-            return null;
-        }
+        return null;
     }
 }

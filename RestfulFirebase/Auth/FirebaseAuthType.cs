@@ -1,46 +1,45 @@
 ﻿using System.Runtime.Serialization;
 
-namespace RestfulFirebase.Auth
+namespace RestfulFirebase.Auth;
+
+/// <summary>
+/// The type of authentication. 
+/// </summary>
+public enum FirebaseAuthType
 {
     /// <summary>
-    /// The type of authentication. 
+    /// The facebook auth.
     /// </summary>
-    public enum FirebaseAuthType
-    {
-        /// <summary>
-        /// The facebook auth.
-        /// </summary>
-        [EnumMember(Value = "facebook.com")]
-        Facebook,
+    [EnumMember(Value = "facebook.com")]
+    Facebook,
 
-        /// <summary>
-        /// The google auth.
-        /// </summary>
-        [EnumMember(Value = "google.com")]
-        Google,
+    /// <summary>
+    /// The google auth.
+    /// </summary>
+    [EnumMember(Value = "google.com")]
+    Google,
 
-        /// <summary>
-        /// The apple auth.
-        /// </summary>
-        [EnumMember(Value = "apple.com")]
-        Apple,
+    /// <summary>
+    /// The apple auth.
+    /// </summary>
+    [EnumMember(Value = "apple.com")]
+    Apple,
 
-        /// <summary>
-        /// The github auth.
-        /// </summary>
-        [EnumMember(Value = "github.com")]
-        Github,
+    /// <summary>
+    /// The github auth.
+    /// </summary>
+    [EnumMember(Value = "github.com")]
+    Github,
 
-        /// <summary>
-        /// The twitter auth. 
-        /// </summary> 
-        [EnumMember(Value = "twitter.com")]
-        Twitter,
+    /// <summary>
+    /// The twitter auth. 
+    /// </summary> 
+    [EnumMember(Value = "twitter.com")]
+    Twitter,
 
-        /// <summary>
-        /// Auth using email and password.
-        /// </summary>
-        [EnumMember(Value = "password")]
-        EmailAndPassword
-    } 
-}
+    /// <summary>
+    /// Auth using email and password.
+    /// </summary>
+    [EnumMember(Value = "password")]
+    EmailAndPassword
+} 

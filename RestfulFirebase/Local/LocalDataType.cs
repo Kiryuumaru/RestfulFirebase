@@ -1,20 +1,19 @@
 ﻿using RestfulFirebase.Utilities;
 
-namespace RestfulFirebase.Local
+namespace RestfulFirebase.Local;
+
+/// <summary>
+/// Enumeration of types of local data.
+/// </summary>
+public enum LocalDataType
 {
     /// <summary>
-    /// Enumeration of types of local data.
+    /// The data is a value type.
     /// </summary>
-    public enum LocalDataType
-    {
-        /// <summary>
-        /// The data is a value type.
-        /// </summary>
-        Value,
+    Value,
 
-        /// <summary>
-        /// The data is a path type.
-        /// </summary>
-        Path
-    }
+    /// <summary>
+    /// The data is a path type.
+    /// </summary>
+    Path
 }

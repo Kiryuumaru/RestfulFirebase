@@ -11,9 +11,8 @@ namespace RestfulFirebase.Test.Utilities
     {
         public static FirebaseConfig YourConfig()
         {
-            return new FirebaseConfig()
+            return new FirebaseConfig("AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o")
             {
-                ApiKey = "AIzaSyBZfLYmm5SyxmBk0lzBh0_AcDILjOLUD9o",
                 DatabaseURL = "https://restfulplayground-default-rtdb.firebaseio.com/",
                 StorageBucket = "restfulplayground.appspot.com",
                 //CustomAuthLocalDatabase = new DatastoreBlob(true),

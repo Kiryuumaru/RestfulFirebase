@@ -13,9 +13,9 @@ using RestfulFirebase.Local;
 using System.ComponentModel;
 using ObservableHelpers;
 using System.Collections.Specialized;
-using RestfulFirebase.Serializers;
 using RestfulFirebase.Utilities;
 using System.Diagnostics;
+using SerializerHelpers;
 
 namespace DatabaseTest.ModelsTest
 {
@@ -70,18 +70,16 @@ namespace DatabaseTest.ModelsTest
 
     public class DinosaurSerializer : ISerializer<Dinosaur>
     {
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
-        public Dinosaur Deserialize(string data, Dinosaur defaultValue = default)
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+        public Dinosaur? Deserialize(string? data, Dinosaur? defaultValue = default)
         {
             if (data == null)
             {
                 return defaultValue;
             }
 
-            string[] deserialized = StringUtilities.Deserialize(data);
+            string?[]? deserialized = StringSerializer.Deserialize(data);
 
-            if (deserialized.Length == 2)
+            if (deserialized != null && deserialized.Length == 2)
             {
                 if (int.TryParse(deserialized[1], out int height))
                 {
@@ -96,14 +94,14 @@ namespace DatabaseTest.ModelsTest
             return defaultValue;
         }
 
-        public string? Serialize(Dinosaur value)
+        public string? Serialize(Dinosaur? value, string? defaultValue = default)
         {
             if (value == null)
             {
                 return null;
             }
 
-            return StringUtilities.Serialize(value.Name, value.Height.ToString());
+            return StringSerializer.Serialize(value.Name, value.Height.ToString());
         }
     }
 
@@ -111,13 +109,13 @@ namespace DatabaseTest.ModelsTest
     {
         #region Properties
 
-        public string FirstName
+        public string? FirstName
         {
             get => GetFirebasePropertyWithKey<string>("first_name");
             set => SetFirebasePropertyWithKey(value, "first_name");
         }
 
-        public string LastName
+        public string? LastName
         {
             get => GetFirebasePropertyWithKey<string>("last_name");
             set => SetFirebasePropertyWithKey(value, "last_name");
@@ -149,7 +147,7 @@ namespace DatabaseTest.ModelsTest
     {
         #region Properties
 
-        public Person Partner
+        public Person? Partner
         {
             get => GetFirebasePropertyWithKey<Person>("partner");
             set => SetFirebasePropertyWithKey(value, "partner");
@@ -162,7 +160,7 @@ namespace DatabaseTest.ModelsTest
     {
         #region Properties
 
-        public Dinosaur Pet
+        public Dinosaur? Pet
         {
             get => GetFirebasePropertyWithKey<Dinosaur>("pet");
             set => SetFirebasePropertyWithKey(value, "pet");
@@ -185,13 +183,13 @@ namespace DatabaseTest.ModelsTest
 
     public class Group : FirebaseObject
     {
-        public string GroupName
+        public string? GroupName
         {
             get => GetFirebaseProperty<string>();
             set => SetFirebaseProperty(value);
         }
 
-        public FirebaseDictionary<Person> Members
+        public FirebaseDictionary<Person>? Members
         {
             get => GetFirebaseProperty<FirebaseDictionary<Person>>();
             set => SetFirebaseProperty(value);
@@ -205,17 +203,17 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
 
                 model1.Value = "test1";
                 model1.Value = "test1";
@@ -232,7 +230,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(nameof(model1.Value), i.PropertyName);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -241,9 +239,9 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -252,25 +250,25 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(PutOverwrite), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                appInstance1.wire.Start();
+                wire.Start();
                 appInstance2.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
                 var model2 = new FirebaseProperty<string>();
 
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
 
                 model1.ImmediatePropertyChanged += (s, e) => propertyChanges1.Add(e);
                 model2.ImmediatePropertyChanged += (s, e) => propertyChanges2.Add(e);
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
 
                 model1.Value = "test1";
                 model2.Value = "test2";
@@ -279,11 +277,11 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 appInstance2.wire.PutModel(model2);
 
@@ -310,7 +308,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 Assert.Empty(propertyChanges2);
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -333,7 +331,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Empty(i.Path);
                     });
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -343,23 +341,23 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(Cascade), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var model1 = new FirebaseProperty<FirebaseProperty<string>>();
                 var subModel1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
-                List<PropertyChangedEventArgs> subPropertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> subPropertyChanges1 = new();
                 subModel1.ImmediatePropertyChanged += (s, e) =>
                 {
                     subPropertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
 
                 subModel1.Value = "test1";
                 subModel1.Value = "test1";
@@ -383,7 +381,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(nameof(subModel1.Value), i.PropertyName);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -392,9 +390,9 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -403,17 +401,17 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(Nullable), async generator =>
             {
-                var appInstance1 = await generator(new string[] { "phase1" });
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(new string[] { "phase1" });
+                wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
 
                 model1.Value = "test1";
 
@@ -421,7 +419,7 @@ namespace DatabaseTest.ModelsTest
 
                 await Task.Delay(5000);
 
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 propertyChanges1.Clear();
 
                 Assert.False(model1.IsNull());
@@ -437,7 +435,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(nameof(model1.Value), i.PropertyName);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -446,15 +444,15 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(new string[] { "phase2" });
                 appInstance2.wire.Start();
 
                 var model2 = new FirebaseProperty<DateTime?>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 model2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
@@ -515,26 +513,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(CrossSync), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 model2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
                 appInstance2.wire.SubModel(model2);
 
                 model1.Value = "test1";
@@ -562,7 +560,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -579,7 +577,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 model2.Value = "test2";
@@ -601,7 +599,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -617,10 +615,10 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -632,19 +630,19 @@ namespace DatabaseTest.ModelsTest
             {
                 Serializer.Register(new DinosaurSerializer());
 
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var model1 = new FirebaseProperty<Dinosaur>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
 
-                Dinosaur dino1 = new Dinosaur()
+                Dinosaur dino1 = new()
                 {
                     Name = "Megalosaurus",
                     Height = 100
@@ -665,7 +663,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(nameof(model1.Value), i.PropertyName);
                     });
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -674,9 +672,9 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Empty(i.Path);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -685,26 +683,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(ConflictCreateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 model2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
                 appInstance2.wire.SubModel(model2);
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(model1.RealtimeInstance));
@@ -713,7 +711,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -741,7 +739,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -756,14 +754,14 @@ namespace DatabaseTest.ModelsTest
                         Assert.Empty(i.Path);
                     });
 
-                appInstance1.wire.SetNull();
+                wire.SetNull();
                 appInstance2.wire.SetNull();
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
                 await Task.Delay(5000);
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -799,7 +797,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -819,10 +817,10 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -832,26 +830,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(ConflictUpdateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 model2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
                 appInstance2.wire.SubModel(model2);
 
                 model1.Value = "test1";
@@ -863,7 +861,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -891,7 +889,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -907,7 +905,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -943,7 +941,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -963,10 +961,10 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -976,26 +974,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebasePropertyTest), nameof(ConflictDeleteTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var model1 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 model1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 model2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(model1);
+                wire.SubModel(model1);
                 appInstance2.wire.SubModel(model2);
 
                 model1.Value = "test1";
@@ -1007,7 +1005,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -1015,10 +1013,8 @@ namespace DatabaseTest.ModelsTest
                 model1.Value = "test2";
                 model1.Value = "test2";
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 model2.Value = null;
                 model2.Value = null;
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
                 Assert.NotEqual(model1.Value, model2.Value);
 
@@ -1045,7 +1041,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -1065,15 +1061,13 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 model2.Value = null;
                 model2.Value = null;
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
                 Assert.NotEqual(model1.Value, model2.Value);
 
@@ -1095,7 +1089,7 @@ namespace DatabaseTest.ModelsTest
                     {
                         Assert.Equal(nameof(model2.Value), i.PropertyName);
                     });
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
@@ -1111,10 +1105,10 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -1127,18 +1121,18 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
 
                 DateTime date = DateTime.Now;
                 person1.FirstName = "John";
@@ -1162,14 +1156,14 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("first_name", i.Path[0]);
                     },
                     i =>
@@ -1178,7 +1172,7 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("last_name", i.Path[0]);
                     },
                     i =>
@@ -1187,13 +1181,13 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("birthdate", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("John", person1.FirstName);
                 Assert.Equal("Doe", person1.LastName);
@@ -1201,13 +1195,13 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Empty(propertyChanges1);
 
-                Assert.Equal(3, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(3, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -1216,25 +1210,25 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(PutOverwrite), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                appInstance1.wire.Start();
+                wire.Start();
                 appInstance2.wire.Start();
 
                 var person1 = new Person();
                 var person2 = new Person();
 
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
 
                 person1.ImmediatePropertyChanged += (s, e) => propertyChanges1.Add(e);
                 person2.ImmediatePropertyChanged += (s, e) => propertyChanges2.Add(e);
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
 
                 DateTime date1 = DateTime.Now;
                 DateTime date2 = DateTime.UtcNow;
@@ -1251,11 +1245,11 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 appInstance2.wire.PutModel(person2);
@@ -1289,10 +1283,10 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Empty(propertyChanges2);
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(12, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -1300,7 +1294,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -1310,24 +1304,24 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(Cascade), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                wire.Start();
 
                 var couple1 = new Couple();
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> couplePropertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> couplePropertyChanges1 = new();
                 couple1.ImmediatePropertyChanged += (s, e) =>
                 {
                     couplePropertyChanges1.Add(e);
                 };
-                List<PropertyChangedEventArgs> personPropertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> personPropertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     personPropertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(couple1);
+                wire.SubModel(couple1);
 
                 DateTime date = DateTime.Now;
                 person1.FirstName = "John";
@@ -1375,19 +1369,19 @@ namespace DatabaseTest.ModelsTest
                     });
                 personPropertyChanges1.Clear();
 
-                Assert.Equal(13, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "partner");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(13, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "partner");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("John", person1.FirstName);
                 Assert.Equal("Doe", person1.LastName);
@@ -1403,16 +1397,16 @@ namespace DatabaseTest.ModelsTest
                 Assert.Empty(couplePropertyChanges1);
                 Assert.Empty(personPropertyChanges1);
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -1421,17 +1415,17 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(Nullable), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
 
                 DateTime date = DateTime.Now;
                 person1.FirstName = "John";
@@ -1442,7 +1436,7 @@ namespace DatabaseTest.ModelsTest
 
                 await Task.Delay(5000);
 
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 propertyChanges1.Clear();
 
                 Assert.False(person1.IsNull());
@@ -1467,14 +1461,14 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
 
-                Assert.Equal(9, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(9, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -1483,26 +1477,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(CrossSync), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 person2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
                 DateTime date1 = DateTime.Now;
@@ -1541,11 +1535,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(9, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(9, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -1555,7 +1549,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 DateTime date2 = DateTime.Now;
@@ -1594,10 +1588,10 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(3, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(3, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
@@ -1606,10 +1600,10 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -1621,21 +1615,21 @@ namespace DatabaseTest.ModelsTest
             {
                 Serializer.Register(new DinosaurSerializer());
 
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
                 var person1 = new PersonWithPet();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
 
                 DateTime date1 = DateTime.Now;
-                Dinosaur dino1 = new Dinosaur()
+                Dinosaur dino1 = new()
                 {
                     Name = "Megalosaurus",
                     Height = 100
@@ -1677,14 +1671,14 @@ namespace DatabaseTest.ModelsTest
                     });
                 propertyChanges1.Clear();
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("first_name", i.Path[0]);
                     },
                     i =>
@@ -1693,7 +1687,7 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("last_name", i.Path[0]);
                     },
                     i =>
@@ -1702,7 +1696,7 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("birthdate", i.Path[0]);
                     },
                     i =>
@@ -1711,13 +1705,13 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("pet", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("Peter", person1.FirstName);
                 Assert.Equal("Parker", person1.LastName);
@@ -1726,14 +1720,14 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Empty(propertyChanges1);
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "pet");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "pet");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -1742,26 +1736,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(ConflictCreateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 person2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(person1.RealtimeInstance));
@@ -1770,7 +1764,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -1817,11 +1811,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person1.LastName));
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person1.Birthdate));
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(9, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -1829,15 +1823,15 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
-                appInstance1.wire.SetNull();
+                wire.SetNull();
                 appInstance2.wire.SetNull();
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
                 await Task.Delay(5000);
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -1880,11 +1874,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(9, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(9, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(9, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -1894,10 +1888,10 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -1907,26 +1901,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(ConflictUpdateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 person2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
                 DateTime date1 = DateTime.Now;
@@ -1941,7 +1935,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -1997,10 +1991,10 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person1.LastName));
                 Assert.Contains(propertyChanges1, i => i.PropertyName == nameof(person1.Birthdate));
 
-                Assert.Equal(3, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(3, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
@@ -2009,7 +2003,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -2053,10 +2047,10 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
@@ -2065,10 +2059,10 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -2078,26 +2072,26 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(ConflictDeleteTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
 
                 var person1 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges1 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges1 = new();
                 person1.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
-                List<PropertyChangedEventArgs> propertyChanges2 = new List<PropertyChangedEventArgs>();
+                List<PropertyChangedEventArgs> propertyChanges2 = new();
                 person2.ImmediatePropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(person1);
+                wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
                 DateTime date1 = DateTime.Now;
@@ -2112,7 +2106,7 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -2123,11 +2117,9 @@ namespace DatabaseTest.ModelsTest
                 person1.LastName = "Parker";
                 person1.Birthdate = date2;
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 person2.FirstName = default;
                 person2.LastName = default;
                 person2.Birthdate = default;
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
                 Assert.NotEqual(person1.FirstName, person2.FirstName);
                 Assert.NotEqual(person1.LastName, person2.LastName);
@@ -2157,10 +2149,10 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
@@ -2169,16 +2161,14 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
 
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
                 person1.FirstName = default;
                 person1.LastName = default;
                 person1.Birthdate = default;
-#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
 
                 Assert.NotEqual(person1.FirstName, person2.FirstName);
                 Assert.NotEqual(person1.LastName, person2.LastName);
@@ -2216,11 +2206,11 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.LastName));
                 Assert.Contains(propertyChanges2, i => i.PropertyName == nameof(person2.Birthdate));
 
-                Assert.Equal(8, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
+                Assert.Equal(8, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "birthdate");
 
                 Assert.Equal(5, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -2230,10 +2220,10 @@ namespace DatabaseTest.ModelsTest
 
                 propertyChanges1.Clear();
                 propertyChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -2246,15 +2236,15 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(Normal), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                wire.Start();
 
-                FirebaseDictionary<string> dictionary = new FirebaseDictionary<string>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                FirebaseDictionary<string> dictionary = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 dictionary.ImmediateCollectionChanged += (s, e) => collectionChanges1.Add(e);
 
-                appInstance1.wire.SubModel(dictionary);
+                wire.SubModel(dictionary);
 
                 dictionary.Add("key1", "test1");
                 dictionary.Add("key2", "test2");
@@ -2273,7 +2263,7 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(1, i.NewItems?.Count);
                         Assert.Equal(KeyValuePair.Create("key1", "test1"), i.NewItems?[0]);
                         Assert.Equal(-1, i.OldStartingIndex);
-                        Assert.Equal(null, i.OldItems?.Count);
+                        Assert.Null(i.OldItems?.Count);
                     },
                     i =>
                     {
@@ -2282,18 +2272,18 @@ namespace DatabaseTest.ModelsTest
                         Assert.Equal(1, i.NewItems?.Count);
                         Assert.Equal(KeyValuePair.Create("key2", "test2"), i.NewItems?[0]);
                         Assert.Equal(-1, i.OldStartingIndex);
-                        Assert.Equal(null, i.OldItems?.Count);
+                        Assert.Null(i.OldItems?.Count);
                     });
                 collectionChanges1.Clear();
 
-                Assert.Collection(appInstance1.dataChanges,
+                Assert.Collection(dataChanges,
                     i =>
                     {
                         Assert.Empty(i.Path);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("key1", i.Path[0]);
                     },
                     i =>
@@ -2302,13 +2292,13 @@ namespace DatabaseTest.ModelsTest
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Path.Length);
+                        Assert.Single(i.Path);
                         Assert.Equal("key2", i.Path[0]);
                     });
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
             });
         }
 
@@ -2317,25 +2307,25 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(PutOverwrite), async generator =>
             {
-                var appInstance1 = await generator(null);
+                var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
-                appInstance1.wire.Start();
+                wire.Start();
                 appInstance2.wire.Start();
 
                 var dictionary1 = new FirebaseDictionary<string>();
                 var dictionary2 = new FirebaseDictionary<string>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) => collectionChanges1.Add(e);
                 dictionary2.ImmediateCollectionChanged += (s, e) => collectionChanges2.Add(e);
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
 
                 dictionary1.Add("key1", "test1");
                 dictionary1.Add("key2", "test2");
@@ -2345,13 +2335,13 @@ namespace DatabaseTest.ModelsTest
 
                 await Task.Delay(5000);
 
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 await Task.Delay(5000);
@@ -2395,15 +2385,15 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.Empty(collectionChanges2);
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(8, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -2413,9 +2403,9 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(Cascade), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
@@ -2424,8 +2414,8 @@ namespace DatabaseTest.ModelsTest
                 var dictionary1 = new FirebaseDictionary<Couple>();
                 var dictionary2 = new FirebaseDictionary<Couple>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
@@ -2436,7 +2426,7 @@ namespace DatabaseTest.ModelsTest
                     collectionChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
                 appInstance2.wire.SubModel(dictionary2);
 
                 var couple1 = new Couple();
@@ -2459,13 +2449,13 @@ namespace DatabaseTest.ModelsTest
                 {
                     while (
                         collectionChanges1.Count != 1 ||
-                        appInstance1.dataChanges.Count != 14)
+                        dataChanges.Count != 14)
                     {
                         await Task.Delay(1000);
                     }
                 }));
 
-                Assert.Equal(1, collectionChanges1.Count);
+                Assert.Single(collectionChanges1);
                 Assert.Contains(collectionChanges1, i =>
                 {
                     return
@@ -2476,48 +2466,48 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.FirstName == "Lara" &&
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.LastName == "Croft" &&
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Birthdate == date &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.FirstName == "John" &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.LastName == "Doe" &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.Birthdate == date &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.FirstName == "John" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.LastName == "Doe" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.Birthdate == date &&
                         i.OldStartingIndex == -1 &&
                         i.OldItems?.Count == null;
                 });
                 collectionChanges1.Clear();
 
-                Assert.Equal(14, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "birthdate");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "partner");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(14, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "birthdate");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "partner");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
-                Assert.Equal("Lara", dictionary1["key1"].FirstName);
-                Assert.Equal("Croft", dictionary1["key1"].LastName);
-                Assert.Equal(date, dictionary1["key1"].Birthdate);
-                Assert.Equal("John", dictionary1["key1"].Partner.FirstName);
-                Assert.Equal("Doe", dictionary1["key1"].Partner.LastName);
-                Assert.Equal(date, dictionary1["key1"].Partner.Birthdate);
+                Assert.Equal("Lara", dictionary1["key1"]?.FirstName);
+                Assert.Equal("Croft", dictionary1["key1"]?.LastName);
+                Assert.Equal(date, dictionary1["key1"]?.Birthdate);
+                Assert.Equal("John", dictionary1["key1"]?.Partner?.FirstName);
+                Assert.Equal("Doe", dictionary1["key1"]?.Partner?.LastName);
+                Assert.Equal(date, dictionary1["key1"]?.Partner?.Birthdate);
 
                 Assert.Empty(collectionChanges1);
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "birthdate");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "first_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "last_name");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "key1" && i.Path[1] == "birthdate");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "first_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "last_name");
+                Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
                 {
@@ -2527,12 +2517,12 @@ namespace DatabaseTest.ModelsTest
                     }
                 }));
 
-                Assert.Equal("Lara", dictionary2["key1"].FirstName);
-                Assert.Equal("Croft", dictionary2["key1"].LastName);
-                Assert.Equal(date, dictionary2["key1"].Birthdate);
-                Assert.Equal("John", dictionary2["key1"].Partner.FirstName);
-                Assert.Equal("Doe", dictionary2["key1"].Partner.LastName);
-                Assert.Equal(date, dictionary2["key1"].Partner.Birthdate);
+                Assert.Equal("Lara", dictionary2["key1"]?.FirstName);
+                Assert.Equal("Croft", dictionary2["key1"]?.LastName);
+                Assert.Equal(date, dictionary2["key1"]?.Birthdate);
+                Assert.Equal("John", dictionary2["key1"]?.Partner?.FirstName);
+                Assert.Equal("Doe", dictionary2["key1"]?.Partner?.LastName);
+                Assert.Equal(date, dictionary2["key1"]?.Partner?.Birthdate);
 
                 Assert.Equal(14, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -2546,7 +2536,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
                 appInstance2.dataChanges.Clear();
 
-                Assert.Equal(1, collectionChanges2.Count);
+                Assert.Single(collectionChanges2);
                 Assert.Contains(collectionChanges2, i =>
                 {
                     return
@@ -2557,9 +2547,9 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.FirstName == "Lara" &&
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.LastName == "Croft" &&
                         ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Birthdate == date &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.FirstName == "John" &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.LastName == "Doe" &&
-                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner.Birthdate == date &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.FirstName == "John" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.LastName == "Doe" &&
+                        ((KeyValuePair<string, Couple>?)i.NewItems?[0])?.Value.Partner?.Birthdate == date &&
                         i.OldStartingIndex == -1 &&
                         i.OldItems?.Count == null;
                 });
@@ -2574,16 +2564,16 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(Nullable), async generator =>
             {
-                var appInstance1 = await generator(new string[] { "part1" });
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(new string[] { "part1" });
+                wire.Start();
                 var dictionary1 = new FirebaseDictionary<string>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
 
                 dictionary1.Add("key1", "test1");
                 dictionary1.Add("key2", "test2");
@@ -2592,7 +2582,7 @@ namespace DatabaseTest.ModelsTest
 
                 await Task.Delay(5000);
 
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 collectionChanges1.Clear();
 
                 Assert.False(dictionary1.IsNull());
@@ -2602,7 +2592,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
 
-                Assert.Equal(1, collectionChanges1.Count);
+                Assert.Single(collectionChanges1);
                 Assert.Contains(collectionChanges1, i =>
                 {
                     return
@@ -2614,18 +2604,18 @@ namespace DatabaseTest.ModelsTest
                 });
                 collectionChanges1.Clear();
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
 
                 var appInstance2 = await generator(new string[] { "part2" });
                 appInstance2.wire.Start();
                 var dictionary2 = new FirebaseDictionary<Person>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
                 dictionary2.ImmediateCollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
@@ -2663,7 +2653,7 @@ namespace DatabaseTest.ModelsTest
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary2.RealtimeInstance));
 
-                Assert.Equal(1, collectionChanges2.Count);
+                Assert.Single(collectionChanges2);
                 Assert.Contains(collectionChanges2, i =>
                 {
                     return
@@ -2696,8 +2686,8 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(CrossSync), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -2705,8 +2695,8 @@ namespace DatabaseTest.ModelsTest
                 var dictionary1 = new FirebaseDictionary<string>();
                 var dictionary2 = new FirebaseDictionary<string>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
@@ -2717,7 +2707,7 @@ namespace DatabaseTest.ModelsTest
                     collectionChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
                 appInstance2.wire.SubModel(dictionary2);
 
                 dictionary1.Add("key1", "test1");
@@ -2788,11 +2778,11 @@ namespace DatabaseTest.ModelsTest
                 });
                 collectionChanges2.Clear();
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                dataChanges.Clear();
 
                 Assert.Equal(4, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -2874,17 +2864,17 @@ namespace DatabaseTest.ModelsTest
                 });
                 collectionChanges2.Clear();
 
-                Assert.Equal(2, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(2, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                dataChanges.Clear();
 
                 Assert.Equal(4, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -2896,27 +2886,27 @@ namespace DatabaseTest.ModelsTest
             {
                 Serializer.Register(new DinosaurSerializer());
 
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
+                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
 
                 var dictionary1 = new FirebaseDictionary<Dinosaur>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
 
                 DateTime date1 = DateTime.Now;
-                Dinosaur dino1 = new Dinosaur()
+                Dinosaur dino1 = new()
                 {
                     Name = "Megalosaurus",
                     Height = 100
                 };
                 DateTime date2 = DateTime.UtcNow;
-                Dinosaur dino2 = new Dinosaur()
+                Dinosaur dino2 = new()
                 {
                     Name = "T-Rex",
                     Height = 120
@@ -2965,23 +2955,23 @@ namespace DatabaseTest.ModelsTest
                 });
                 collectionChanges1.Clear();
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                dataChanges.Clear();
 
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Empty(collectionChanges1);
 
-                Assert.Equal(2, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
-                appInstance1.dataChanges.Clear();
+                Assert.Equal(2, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
             });
         }
 
@@ -2990,8 +2980,8 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictCreateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -2999,8 +2989,8 @@ namespace DatabaseTest.ModelsTest
                 var dictionary1 = new FirebaseDictionary<string>();
                 var dictionary2 = new FirebaseDictionary<string>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
@@ -3011,7 +3001,7 @@ namespace DatabaseTest.ModelsTest
                     collectionChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
                 appInstance2.wire.SubModel(dictionary2);
 
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(dictionary1.RealtimeInstance));
@@ -3020,7 +3010,7 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3085,26 +3075,26 @@ namespace DatabaseTest.ModelsTest
                         i.OldItems?.Count == null;
                 });
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
-                appInstance1.wire.SetNull();
+                wire.SetNull();
                 appInstance2.wire.SetNull();
 
-                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
+                Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
                 await Task.Delay(5000);
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3204,10 +3194,10 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
                 });
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(6, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -3216,10 +3206,10 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -3229,8 +3219,8 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictUpdateTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -3238,8 +3228,8 @@ namespace DatabaseTest.ModelsTest
                 var dictionary1 = new FirebaseDictionary<string>();
                 var dictionary2 = new FirebaseDictionary<string>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
@@ -3250,7 +3240,7 @@ namespace DatabaseTest.ModelsTest
                     collectionChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
                 appInstance2.wire.SubModel(dictionary2);
 
                 dictionary1.Add("key1", "test1");
@@ -3262,7 +3252,7 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3332,9 +3322,9 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test2";
                 });
 
-                Assert.Equal(2, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(2, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(4, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
@@ -3342,7 +3332,7 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3442,9 +3432,9 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test8";
                 });
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(4, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
@@ -3452,10 +3442,10 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }
@@ -3465,8 +3455,8 @@ namespace DatabaseTest.ModelsTest
         {
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(ConflictDeleteTest), async generator =>
             {
-                var appInstance1 = await generator(null);
-                appInstance1.wire.Start();
+                var (app, wire, dataChanges) = await generator(null);
+                wire.Start();
 
                 var appInstance2 = await generator(null);
                 appInstance2.wire.Start();
@@ -3474,8 +3464,8 @@ namespace DatabaseTest.ModelsTest
                 var dictionary1 = new FirebaseDictionary<string>();
                 var dictionary2 = new FirebaseDictionary<string>();
 
-                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new List<NotifyCollectionChangedEventArgs>();
-                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new List<NotifyCollectionChangedEventArgs>();
+                List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
+                List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
                 dictionary1.ImmediateCollectionChanged += (s, e) =>
                 {
@@ -3486,7 +3476,7 @@ namespace DatabaseTest.ModelsTest
                     collectionChanges2.Add(e);
                 };
 
-                appInstance1.wire.SubModel(dictionary1);
+                wire.SubModel(dictionary1);
                 appInstance2.wire.SubModel(dictionary2);
 
                 dictionary1.Add("key1", "test1");
@@ -3498,7 +3488,7 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3590,9 +3580,9 @@ namespace DatabaseTest.ModelsTest
                         i.OldItems?.Count == null;
                 });
 
-                Assert.Equal(4, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(4, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(4, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
@@ -3600,7 +3590,7 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
                 appInstance2.wire.Stop();
@@ -3664,10 +3654,10 @@ namespace DatabaseTest.ModelsTest
                         ((KeyValuePair<string, string>?)i.OldItems?[0])?.Value == "test4";
                 });
 
-                Assert.Equal(6, appInstance1.dataChanges.Count);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 0);
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
-                Assert.Contains(appInstance1.dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
+                Assert.Equal(6, dataChanges.Count);
+                Assert.Contains(dataChanges, i => i.Path.Length == 0);
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key1");
+                Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
 
                 Assert.Equal(3, appInstance2.dataChanges.Count);
                 Assert.Contains(appInstance2.dataChanges, i => i.Path.Length == 0);
@@ -3676,10 +3666,10 @@ namespace DatabaseTest.ModelsTest
 
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
-                appInstance1.dataChanges.Clear();
+                dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                appInstance1.app.Dispose();
+                app.Dispose();
                 appInstance2.app.Dispose();
             });
         }

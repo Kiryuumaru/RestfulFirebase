@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the request exceeds the database plan limits.
+/// </summary>
+public class DatabasePaymentRequiredException : DatabaseException
 {
-    /// <summary>
-    /// Occurs when the request exceeds the database plan limits.
-    /// </summary>
-    public class DatabasePaymentRequiredException : DatabaseException
+    private const string ExceptionMessage =
+        "The request exceeds the database plan limits.";
+
+    internal DatabasePaymentRequiredException()
+        : base(ExceptionMessage)
     {
-        internal DatabasePaymentRequiredException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal DatabasePaymentRequiredException(Exception innerException)
-            : base("The request exceeds the database plan limits.", innerException)
-        {
+    internal DatabasePaymentRequiredException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

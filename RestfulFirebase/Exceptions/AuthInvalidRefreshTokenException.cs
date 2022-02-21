@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when an invalid refresh token is provided.
+/// </summary>
+public class AuthInvalidRefreshTokenException : AuthException
 {
-    /// <summary>
-    /// Occurs when an invalid refresh token is provided.
-    /// </summary>
-    public class AuthInvalidRefreshTokenException : AuthException
+    private const string ExceptionMessage =
+        "An invalid refresh token is provided.";
+
+    internal AuthInvalidRefreshTokenException()
+        : base(ExceptionMessage)
     {
-        internal AuthInvalidRefreshTokenException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthInvalidRefreshTokenException(Exception innerException)
-            : base("An invalid refresh token is provided.", innerException)
-        {
+    internal AuthInvalidRefreshTokenException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

@@ -13,16 +13,14 @@ namespace RestfulFirebase.Test.Utilities
 {
     public class DatastoreBlob : ILocalDatabase
     {
-        private ConcurrentDictionary<string, string> db;
-        private bool isWriting;
-        private bool write;
+        private readonly ConcurrentDictionary<string, string?> db = new();
 
         public DatastoreBlob()
         {
-            db = new ConcurrentDictionary<string, string>();
+
         }
 
-        public ConcurrentDictionary<string, string> GetDB()
+        public ConcurrentDictionary<string, string?> GetDB()
         {
             return db;
         }
@@ -44,7 +42,7 @@ namespace RestfulFirebase.Test.Utilities
         }
 
         /// <inheritdoc/>
-        public void Set(string key, string value)
+        public void Set(string key, string? value)
         {
             db.AddOrUpdate(key, value, delegate { return value; });
         }

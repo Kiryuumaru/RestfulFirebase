@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the request's specified ETag value in the if-match header did not match the server's value.
+/// </summary>
+public class DatabasePreconditionFailedException : DatabaseException
 {
-    /// <summary>
-    /// Occurs when the request's specified ETag value in the if-match header did not match the server's value.
-    /// </summary>
-    public class DatabasePreconditionFailedException : DatabaseException
+    private const string ExceptionMessage =
+        "The request's specified ETag value in the if-match header did not match the server's value.";
+
+    internal DatabasePreconditionFailedException()
+        : base(ExceptionMessage)
     {
-        internal DatabasePreconditionFailedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal DatabasePreconditionFailedException(Exception innerException)
-            : base("The request's specified ETag value in the if-match header did not match the server's value.", innerException)
-        {
+    internal DatabasePreconditionFailedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

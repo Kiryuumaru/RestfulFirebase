@@ -1,4 +1,5 @@
-﻿using ObservableHelpers;
+﻿using LockerHelpers;
+using ObservableHelpers;
 using ObservableHelpers.Utilities;
 using RestfulFirebase;
 using RestfulFirebase.Database.Models;
@@ -59,12 +60,12 @@ namespace Playground
         {
             await Helpers.CleanTest(nameof(Mock), nameof(Mockk), generator =>
             {
-                MockObj obj = new MockObj();
+                MockObj obj = new();
 
-                RWLock rwLock = new RWLock(System.Threading.LockRecursionPolicy.SupportsRecursion);
+                RWLock rwLock = new(System.Threading.LockRecursionPolicy.SupportsRecursion);
 
-                ObservableProperty<DateTime?> ssss = new ObservableProperty<DateTime?>();
-                FirebaseProperty<DateTime?> sss = new FirebaseProperty<DateTime?>();
+                ObservableProperty<DateTime?> ssss = new();
+                FirebaseProperty<DateTime?> sss = new();
 
                 if (sss.Value == null)
                 {

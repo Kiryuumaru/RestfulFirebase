@@ -14,6 +14,9 @@ using RestfulFirebase.Exceptions;
 
 namespace DatabaseTest.LocalDatabaseTest
 {
+
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
     public static class Helpers
     {
         public static Task<RestfulFirebaseApp> Empty()
@@ -23,8 +26,8 @@ namespace DatabaseTest.LocalDatabaseTest
 
         public static async Task<RestfulFirebaseApp> Hier()
         {
-            var instance = RestfulFirebase.Test.Helpers.AppGenerator();
-            var app = await instance.generator();
+            var (generator, dispose) = RestfulFirebase.Test.Helpers.AppGenerator();
+            var app = await generator();
 
             app.LocalDatabase.SetValue("test", "0", "1", "1.1");
             app.LocalDatabase.SetValue("test", "0", "1", "1.2");
@@ -45,7 +48,6 @@ namespace DatabaseTest.LocalDatabaseTest
         public async void Normal()
         {
             var app = await Helpers.Hier();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             Assert.True(db.Contains("0", "1", "1.1"));
@@ -72,14 +74,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains());
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Contains(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Contains(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -192,14 +194,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete());
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.Delete(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.Delete(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -345,14 +347,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetChildren(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetChildren(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -364,7 +366,6 @@ namespace DatabaseTest.LocalDatabaseTest
         public async void Normal()
         {
             var app = await Helpers.Hier();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             Assert.Equal(LocalDataType.Value, db.GetDataType("0", "1", "1.1"));
@@ -407,14 +408,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetDataType(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetDataType(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -490,14 +491,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveChildren(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveChildren(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -567,14 +568,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRecursiveRelativeChildren(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRecursiveRelativeChildren(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -680,14 +681,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetRelativeTypedChildren(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetRelativeTypedChildren(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -833,14 +834,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetTypedChildren(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetTypedChildren(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -852,7 +853,6 @@ namespace DatabaseTest.LocalDatabaseTest
         public async void Normal()
         {
             var app = await Helpers.Hier();
-            var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
             Assert.Equal("test", db.GetValue("0", "1", "1.1"));
@@ -885,14 +885,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue());
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue());
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue(null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue(Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue("path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue("path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.GetValue(new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue("path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue("path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue(new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.GetValue(new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -1323,14 +1323,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test"));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test"));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.SetValue("test", new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.SetValue("test", new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -1543,14 +1543,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrChildren(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -1684,14 +1684,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrPath(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrPath(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -1925,14 +1925,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveChildren(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -1969,12 +1969,12 @@ namespace DatabaseTest.LocalDatabaseTest
                 Assert.Collection(children,
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("1.1", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("1.2", i[0]);
                     });
             }, "0", "1"));
@@ -2020,12 +2020,12 @@ namespace DatabaseTest.LocalDatabaseTest
                 Assert.Collection(children,
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("2.1.1", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("2.1.2", i[0]);
                     });
             }, "0", "2", "2.1"));
@@ -2092,12 +2092,12 @@ namespace DatabaseTest.LocalDatabaseTest
                 Assert.Collection(children,
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("3.1.1.1", i[0]);
                     },
                     i =>
                     {
-                        Assert.Equal(1, i.Length);
+                        Assert.Single(i);
                         Assert.Equal("3.1.1.2", i[0]);
                     });
             }, "0", "3", "3.1", "3.1.1"));
@@ -2134,14 +2134,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeChildren(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -2387,14 +2387,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveValues(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -2432,13 +2432,13 @@ namespace DatabaseTest.LocalDatabaseTest
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("1.1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("1.2", i.path[0]);
                     });
             }, "0", "1"));
@@ -2487,13 +2487,13 @@ namespace DatabaseTest.LocalDatabaseTest
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("2.1.1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("2.1.2", i.path[0]);
                     });
             }, "0", "2", "2.1"));
@@ -2565,13 +2565,13 @@ namespace DatabaseTest.LocalDatabaseTest
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("3.1.1.1", i.path[0]);
                     },
                     i =>
                     {
                         Assert.Equal("test", i.value);
-                        Assert.Equal(1, i.path.Length);
+                        Assert.Single(i.path);
                         Assert.Equal("3.1.1.2", i.path[0]);
                     });
             }, "0", "3", "3.1", "3.1.1"));
@@ -2608,14 +2608,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRecursiveRelativeValues(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -2794,14 +2794,14 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrRelativeTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
@@ -3014,16 +3014,19 @@ namespace DatabaseTest.LocalDatabaseTest
             var dbConfig = app.Config.LocalDatabase as SampleLocalDatabase;
             var db = app.LocalDatabase;
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[0]));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, Array.Empty<string>()));
 
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", null));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", ""));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string?[] { "path", null }));
-            Assert.Throws(typeof(StringNullOrEmptyException), () => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", null));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, "path", ""));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[] { "path", null }));
+            Assert.Throws<StringNullOrEmptyException>(() => db.TryGetValueOrTypedChildren(delegate { }, delegate { }, new string[] { "path", "" }));
 
             app.Dispose();
         }
     }
+
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+
 }

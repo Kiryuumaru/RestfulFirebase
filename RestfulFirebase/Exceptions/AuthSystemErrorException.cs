@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the system has error.
+/// </summary>
+public class AuthSystemErrorException : AuthException
 {
-    /// <summary>
-    /// Occurs when the system has error.
-    /// </summary>
-    public class AuthSystemErrorException : AuthException
+    private const string ExceptionMessage =
+        "A system error has occurred.";
+
+    internal AuthSystemErrorException()
+        : base(ExceptionMessage)
     {
-        internal AuthSystemErrorException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthSystemErrorException(Exception innerException)
-            : base("A system error has occurred.", innerException)
-        {
+    internal AuthSystemErrorException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

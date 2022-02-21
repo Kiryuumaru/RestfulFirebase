@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the operation is not executed because the offline mode is enabled.
+/// </summary>
+public class OfflineModeException : Exception
 {
-    /// <summary>
-    /// Occurs when the operation is not executed because the offline mode is enabled.
-    /// </summary>
-    public class OfflineModeException : Exception
+    private const string ExceptionMessage =
+        "The operation is not executed because the offline mode is enabled.";
+
+    internal OfflineModeException()
+        : base(ExceptionMessage)
     {
-        internal OfflineModeException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal OfflineModeException(Exception innerException)
-            : base("The operation is not executed because the offline mode is enabled.", innerException)
-        {
+    internal OfflineModeException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

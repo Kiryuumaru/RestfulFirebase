@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the specified credential is already associated with a different user account.
+/// </summary>
+public class AuthAlreadyLinkedException : AuthException
 {
-    /// <summary>
-    /// Occurs when the specified credential is already associated with a different user account.
-    /// </summary>
-    public class AuthAlreadyLinkedException : AuthException
+    private const string ExceptionMessage =
+        "This credential is already associated with a different user account.";
+
+    internal AuthAlreadyLinkedException()
+        : base(ExceptionMessage)
     {
-        internal AuthAlreadyLinkedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthAlreadyLinkedException(Exception innerException)
-            : base("This credential is already associated with a different user account.", innerException)
-        {
+    internal AuthAlreadyLinkedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

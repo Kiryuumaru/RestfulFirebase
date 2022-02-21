@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the supplied auth credential is malformed or has expired.
+/// </summary>
+public class AuthInvalidIDPResponseException : AuthException
 {
-    /// <summary>
-    /// Occurs when the supplied auth credential is malformed or has expired.
-    /// </summary>
-    public class AuthInvalidIDPResponseException : AuthException
+    private const string ExceptionMessage =
+        "The supplied auth credential is malformed or has expired.";
+
+    internal AuthInvalidIDPResponseException()
+        : base(ExceptionMessage)
     {
-        internal AuthInvalidIDPResponseException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthInvalidIDPResponseException(Exception innerException)
-            : base("The supplied auth credential is malformed or has expired.", innerException)
-        {
+    internal AuthInvalidIDPResponseException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

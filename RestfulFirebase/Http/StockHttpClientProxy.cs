@@ -1,41 +1,41 @@
-﻿using ObservableHelpers;
+﻿using DisposableHelpers;
+using ObservableHelpers;
 using ObservableHelpers.Utilities;
 using System.Net.Http;
 
-namespace RestfulFirebase.Http
+namespace RestfulFirebase.Http;
+
+/// <summary>
+/// The provided stock <see cref="IHttpClientProxy"/> implementation to be used.
+/// </summary>
+public sealed class StockHttpClientProxy : Disposable, IHttpClientProxy
 {
+    private readonly HttpClient _httpClient;
+
     /// <summary>
-    /// The provided stock <see cref="IHttpClientProxy"/> implementation to be used.
+    /// Creates new instance of <see cref="StockHttpClientProxy"/> class.
     /// </summary>
-    public sealed class StockHttpClientProxy : Disposable, IHttpClientProxy
+    /// <param name="httpClient">
+    /// The http client to proxy.
+    /// </param>
+    public StockHttpClientProxy(HttpClient httpClient)
     {
-        private readonly HttpClient _httpClient;
+        _httpClient = httpClient;
+    }
 
-        /// <summary>
-        /// Creates new instance of <see cref="StockHttpClientProxy"/> class.
-        /// </summary>
-        /// <param name="httpClient">
-        /// The http client to proxy.
-        /// </param>
-        public StockHttpClientProxy(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
+    /// <inheritdoc/>
+    public HttpClient GetHttpClient()
+    {
+        return _httpClient;
+    }
 
-        /// <inheritdoc/>
-        public HttpClient GetHttpClient()
+    /// <inheritdoc/>
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
         {
-            return _httpClient;
+            _httpClient?.Dispose();
         }
-
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _httpClient?.Dispose();
-            }
-            base.Dispose(disposing);
-        }
+        base.Dispose(disposing);
     }
 }

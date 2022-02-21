@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when password was expected but one was not provided.
+/// </summary>
+public class AuthMissingPasswordException : AuthException
 {
-    /// <summary>
-    /// Occurs when password was expected but one was not provided.
-    /// </summary>
-    public class AuthMissingPasswordException : AuthException
+    private const string ExceptionMessage =
+        "Password was expected but one was not provided.";
+
+    internal AuthMissingPasswordException()
+        : base(ExceptionMessage)
     {
-        internal AuthMissingPasswordException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthMissingPasswordException(Exception innerException)
-            : base("Password was expected but one was not provided.", innerException)
-        {
+    internal AuthMissingPasswordException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

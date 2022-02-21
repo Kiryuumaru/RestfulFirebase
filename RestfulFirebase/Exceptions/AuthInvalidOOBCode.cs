@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when the action code is invalid. This can happen if the code is malformed, expired, or has already been used.
+/// </summary>
+public class AuthInvalidOOBCodeException : AuthException
 {
-    /// <summary>
-    /// Occurs when the action code is invalid. This can happen if the code is malformed, expired, or has already been used.
-    /// </summary>
-    public class AuthInvalidOOBCodeException : AuthException
+    private const string ExceptionMessage =
+        "The action code is invalid. This can happen if the code is malformed, expired, or has already been used.";
+
+    internal AuthInvalidOOBCodeException()
+        : base(ExceptionMessage)
     {
-        internal AuthInvalidOOBCodeException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthInvalidOOBCodeException(Exception innerException)
-            : base("The action code is invalid. This can happen if the code is malformed, expired, or has already been used.", innerException)
-        {
+    internal AuthInvalidOOBCodeException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

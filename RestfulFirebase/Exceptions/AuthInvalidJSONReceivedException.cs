@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when there`s an invalid JSON payload received.
+/// </summary>
+public class AuthInvalidJSONReceivedException : AuthException
 {
-    /// <summary>
-    /// Occurs when there`s an invalid JSON payload received.
-    /// </summary>
-    public class AuthInvalidJSONReceivedException : AuthException
+    private const string ExceptionMessage =
+        "Invalid JSON payload received.";
+
+    internal AuthInvalidJSONReceivedException()
+        : base(ExceptionMessage)
     {
-        internal AuthInvalidJSONReceivedException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal AuthInvalidJSONReceivedException(Exception innerException)
-            : base("Invalid JSON payload received.", innerException)
-        {
+    internal AuthInvalidJSONReceivedException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

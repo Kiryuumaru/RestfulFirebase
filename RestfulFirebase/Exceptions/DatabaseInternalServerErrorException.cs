@@ -1,22 +1,24 @@
 ﻿using System;
 
-namespace RestfulFirebase.Exceptions
+namespace RestfulFirebase.Exceptions;
+
+/// <summary>
+/// Occurs when there`s an internal server error.
+/// </summary>
+public class DatabaseInternalServerErrorException : DatabaseException
 {
-    /// <summary>
-    /// Occurs when there`s an internal server error.
-    /// </summary>
-    public class DatabaseInternalServerErrorException : DatabaseException
+    private const string ExceptionMessage =
+        "An internal server error occured.";
+
+    internal DatabaseInternalServerErrorException()
+        : base(ExceptionMessage)
     {
-        internal DatabaseInternalServerErrorException()
-            : this(null)
-        {
 
-        }
+    }
 
-        internal DatabaseInternalServerErrorException(Exception innerException)
-            : base("An internal server error occured.", innerException)
-        {
+    internal DatabaseInternalServerErrorException(Exception innerException)
+        : base(ExceptionMessage, innerException)
+    {
 
-        }
     }
 }

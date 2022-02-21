@@ -3,19 +3,21 @@ using ObservableHelpers.Abstraction;
 using RestfulFirebase.Database.Models;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
+using SynchronizationContextHelpers;
 using System;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Database.Models
+namespace RestfulFirebase.Database.Models;
+
+internal interface IInternalRealtimeModel : IRealtimeModel
 {
-    internal interface IInternalRealtimeModel : IRealtimeModel
-    {
-        bool? IsInvokeToSetFirst { get; }
+    SyncOperation SyncOperation { get; }
 
-        bool HasPostAttachedRealtime { get; }
+    bool? IsInvokeToSetFirst { get; }
 
-        void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst);
+    bool HasPostAttachedRealtime { get; }
 
-        void DetachRealtime();
-    }
+    void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst);
+
+    void DetachRealtime();
 }
