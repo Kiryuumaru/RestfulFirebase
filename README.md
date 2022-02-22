@@ -86,10 +86,16 @@ namespace YourNamespace
     {
         public string Name
         {
-            get => GetFirebasePropertyWithKey<string>("name");
+            get => GetFirebasePropertyWithKey("name", () => "Default name");
             set => SetFirebasePropertyWithKey(value, "name");
         }
         
+        public string? Family
+        {
+            get => GetFirebasePropertyWithKey<string>("family");
+            set => SetFirebasePropertyWithKey(value, "family");
+        }
+
         // Uses its property name for firebase key.
         public int Height
         {
