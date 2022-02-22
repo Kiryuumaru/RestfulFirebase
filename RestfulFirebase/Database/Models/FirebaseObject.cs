@@ -68,9 +68,6 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// <exception cref="PropertyKeyAndNameNullException">
     /// Throws when both <paramref name="key"/> and <paramref name="propertyName"/> are not provided.
     /// </exception>
-    /// <exception cref="DatabaseNullCascadeRealtimeModelException">
-    /// Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.
-    /// </exception>
     /// <exception cref="SerializerNotSupportedException">
     /// Occurs when the object has no supported serializer.
     /// </exception>
@@ -88,9 +85,37 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
 
         if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
         {
-            if (value is not IRealtimeModel)
+            if (value == null)
             {
-                throw new DatabaseNullCascadeRealtimeModelException();
+                if (setValidate?.Invoke() ?? true)
+                {
+                    T? prop = GetProperty(() =>
+                    {
+                        if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+                        {
+                            return default;
+                        }
+                        return Activator.CreateInstance<T>();
+                    }, key, propertyName, nameof(FirebaseObject), args =>
+                    {
+                        postAction?.Invoke((
+                            args.key,
+                            args.propertyName,
+                            args.group,
+                            args.oldValue,
+                            args.newValue,
+                            args.hasChanges));
+                    });
+                    if (prop is IRealtimeModel model)
+                    {
+                        return model.SetNull();
+                    }
+                    return false;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
@@ -140,7 +165,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
             {
                 throw new DatabaseInvalidCascadeRealtimeModelException();
             }
-            return GetProperty(() => (T)Activator.CreateInstance(typeof(T)), key, propertyName, nameof(FirebaseObject), args =>
+            T? prop = GetProperty(() => (T)Activator.CreateInstance(typeof(T)), key, propertyName, nameof(FirebaseObject), args =>
             {
                 postAction?.Invoke((
                     args.key,
@@ -150,13 +175,16 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                     args.newValue,
                     args.hasChanges));
             });
+            if (prop is IRealtimeModel model && model.IsNull())
+            {
+                return default;
+            }
+            return prop;
         }
         else
         {
             return GetProperty(key, propertyName, nameof(FirebaseObject), postAction);
         }
-
-
     }
 
     /// <summary>
@@ -238,9 +266,6 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// </returns>
     /// <exception cref="PropertyKeyAndNameNullException">
     /// Throws when <paramref name="propertyName"/> is not provided.
-    /// </exception>
-    /// <exception cref="DatabaseNullCascadeRealtimeModelException">
-    /// Cascade IRealtimeModel cannot be null. Use IRealtimeModel.SetNull() instead.
     /// </exception>
     /// <exception cref="SerializerNotSupportedException">
     /// Occurs when the object has no supported serializer.
