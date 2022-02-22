@@ -69,7 +69,7 @@ public class FirebaseStorageTask
 
     private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string? mimeType = null)
     {
-        var responseData = "N/A";
+        string responseData;
 
         using var client = App.Storage.CreateHttpClientAsync();
         var request = new HttpRequestMessage(HttpMethod.Post, url)

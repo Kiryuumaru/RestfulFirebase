@@ -46,9 +46,9 @@ public class FirebaseConfig : ObservableObject
     /// <summary>
     /// Gets or sets the <see cref="ILocalDatabase"/> used for auth persistency and offline database.
     /// </summary>
-    public ILocalDatabase? LocalDatabase
+    public ILocalDatabase LocalDatabase
     {
-        get => GetProperty<ILocalDatabase?>(new StockLocalDatabase());
+        get => GetProperty<ILocalDatabase>(() => new StockLocalDatabase());
         set => SetProperty(value);
     }
 
@@ -66,25 +66,25 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public ILocalEncryption? LocalEncryption
     {
-        get => GetProperty<ILocalEncryption?>(new StockLocalNonEncryption());
+        get => GetProperty<ILocalEncryption?>();
         set => SetProperty(value);
     }
 
     /// <summary>
     /// Gets or sets the <see cref="IHttpClientFactory"/> used by the app.
     /// </summary>
-    public IHttpClientFactory? HttpClientFactory
+    public IHttpClientFactory HttpClientFactory
     {
-        get => GetProperty<IHttpClientFactory?>(new StockHttpClientFactory());
+        get => GetProperty<IHttpClientFactory>(() => new StockHttpClientFactory());
         set => SetProperty(value);
     }
 
     /// <summary>
     /// Gets or sets the <see cref="IHttpStreamFactory"/> used by the firebase realtime database streamers.
     /// </summary>
-    public IHttpStreamFactory? HttpStreamFactory
+    public IHttpStreamFactory HttpStreamFactory
     {
-        get => GetProperty<IHttpStreamFactory?>(new StockHttpStreamFactory());
+        get => GetProperty<IHttpStreamFactory>(() => new StockHttpStreamFactory());
         set => SetProperty(value);
     }
 
@@ -93,7 +93,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public TimeSpan AuthRequestTimeout
     {
-        get => GetProperty(TimeSpan.FromSeconds(30));
+        get => GetProperty(() => TimeSpan.FromSeconds(30));
         set => SetProperty(value);
     }
 
@@ -102,7 +102,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public TimeSpan DatabaseRequestTimeout
     {
-        get => GetProperty(TimeSpan.FromSeconds(15));
+        get => GetProperty(() => TimeSpan.FromSeconds(15));
         set => SetProperty(value);
     }
 
@@ -111,7 +111,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public TimeSpan DatabaseColdStreamTimeout
     {
-        get => GetProperty(TimeSpan.FromMinutes(1));
+        get => GetProperty(() => TimeSpan.FromMinutes(1));
         set => SetProperty(value);
     }
 
@@ -120,7 +120,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public TimeSpan DatabaseRetryDelay
     {
-        get => GetProperty(TimeSpan.FromSeconds(2));
+        get => GetProperty(() => TimeSpan.FromSeconds(2));
         set => SetProperty(value);
     }
 
@@ -129,7 +129,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public TimeSpan StorageRequestTimeout
     {
-        get => GetProperty(TimeSpan.FromMinutes(2));
+        get => GetProperty(() => TimeSpan.FromMinutes(2));
         set => SetProperty(value);
     }
 
@@ -165,7 +165,7 @@ public class FirebaseConfig : ObservableObject
     /// </summary>
     public int DatabaseMaxConcurrentSyncWrites
     {
-        get => GetProperty(100);
+        get => GetProperty(() => 100);
         set => SetProperty(value);
     }
 
@@ -179,35 +179,15 @@ public class FirebaseConfig : ObservableObject
         {
             if (cachedLocalDatabase == null)
             {
-                cachedLocalDatabase = new StockLocalDatabase();
+                cachedLocalDatabase = LocalDatabase;
             }
             return cachedLocalDatabase;
         }
     }
 
-    internal ILocalDatabase CachedCustomAuthLocalDatabase
-    {
-        get
-        {
-            if (cachedCustomAuthLocalDatabase == null)
-            {
-                cachedCustomAuthLocalDatabase = new StockLocalDatabase();
-            }
-            return cachedCustomAuthLocalDatabase;
-        }
-    }
+    internal ILocalDatabase? CachedCustomAuthLocalDatabase { get; private set; }
 
-    internal ILocalEncryption CachedLocalEncryption
-    {
-        get
-        {
-            if (cachedLocalEncryption == null)
-            {
-                cachedLocalEncryption = new StockLocalEncryption();
-            }
-            return cachedLocalEncryption;
-        }
-    }
+    internal ILocalEncryption? CachedLocalEncryption { get; private set; }
 
     internal IHttpClientFactory CachedHttpClientFactory
     {
@@ -215,7 +195,7 @@ public class FirebaseConfig : ObservableObject
         {
             if (cachedHttpClientFactory == null)
             {
-                cachedHttpClientFactory = new StockHttpClientFactory();
+                cachedHttpClientFactory = HttpClientFactory;
             }
             return cachedHttpClientFactory;
         }
@@ -227,7 +207,7 @@ public class FirebaseConfig : ObservableObject
         {
             if (cachedHttpStreamFactory == null)
             {
-                cachedHttpStreamFactory = new StockHttpStreamFactory();
+                cachedHttpStreamFactory = HttpStreamFactory;
             }
             return cachedHttpStreamFactory;
         }
@@ -253,10 +233,6 @@ public class FirebaseConfig : ObservableObject
 
     private ILocalDatabase? cachedLocalDatabase;
 
-    private ILocalDatabase? cachedCustomAuthLocalDatabase;
-
-    private ILocalEncryption? cachedLocalEncryption;
-
     private IHttpClientFactory? cachedHttpClientFactory;
 
     private IHttpStreamFactory? cachedHttpStreamFactory;
@@ -278,8 +254,8 @@ public class FirebaseConfig : ObservableObject
         AttachOnImmediatePropertyChanged<string>(v => CachedDatabaseURL = v, nameof(DatabaseURL));
         AttachOnImmediatePropertyChanged<string>(v => CachedStorageBucket = v, nameof(StorageBucket));
         AttachOnImmediatePropertyChanged<ILocalDatabase>(v => cachedLocalDatabase = v, nameof(LocalDatabase));
-        AttachOnImmediatePropertyChanged<ILocalDatabase>(v => cachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
-        AttachOnImmediatePropertyChanged<ILocalEncryption>(v => cachedLocalEncryption = v, nameof(LocalEncryption));
+        AttachOnImmediatePropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
+        AttachOnImmediatePropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
         AttachOnImmediatePropertyChanged<IHttpClientFactory>(v => cachedHttpClientFactory = v, nameof(HttpClientFactory));
         AttachOnImmediatePropertyChanged<IHttpStreamFactory>(v => cachedHttpStreamFactory = v, nameof(HttpStreamFactory));
         AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));

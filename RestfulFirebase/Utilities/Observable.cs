@@ -41,7 +41,7 @@ public class Observable
 /// </typeparam>
 public class Observable<T> : Observable
 {
-    private Func<IObserver<T>, IDisposable> subscribe;
+    private readonly Func<IObserver<T>, IDisposable> subscribe;
 
     /// <summary>
     /// Creates new instance of the <see cref="Observable{T}"/> class.

@@ -154,7 +154,7 @@ public class FirebaseProperty : ObservableProperty, IInternalRealtimeModel
     }
 
     /// <summary>
-    /// Internal implementation for <see cref="ObservableProperty.GetObject(Type, object)"/>.
+    /// Internal implementation for <see cref="ObservableProperty.GetObject(Type?, Func{object?}?)"/>.
     /// </summary>
     /// <param name="type">
     /// Underlying type of the object to get.
@@ -526,8 +526,8 @@ public class FirebaseProperty<T> : FirebaseProperty
     /// <inheritdoc/>
     public new T? Value
     {
-        get => GetValue<T>();
-        set => SetValue<T>(value);
+        get => GetValue();
+        set => base.SetValue(value);
     }
 
     #endregion
@@ -569,13 +569,21 @@ public class FirebaseProperty<T> : FirebaseProperty
     /// <summary>
     /// Gets the value of the property.
     /// </summary>
-    /// <param name="defaultValue">
-    /// The default value return if the property is disposed or null.
+    /// <returns>
+    /// The value of the property.
+    /// </returns>
+    public T? GetValue() => GetValue<T>();
+
+    /// <summary>
+    /// Gets the value of the property.
+    /// </summary>
+    /// <param name="defaultValueFactory">
+    /// The default value factory if the property is disposed or null.
     /// </param>
     /// <returns>
     /// The value of the property.
     /// </returns>
-    public T? GetValue(T? defaultValue = default) => GetValue<T>(defaultValue);
+    public T GetValue(Func<T> defaultValueFactory) => GetValue<T>(defaultValueFactory);
 
     #endregion
 }

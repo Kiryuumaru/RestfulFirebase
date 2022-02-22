@@ -11,9 +11,9 @@ public static class TimeSpanExtensions
     private const int Minute = 60 * Second;
     private const int Hour = 60 * Minute;
     private const int Day = 24 * Hour;
-    private const int Week = 7 * Day;
+    //private const int Week = 7 * Day;
     private const int Month = 30 * Day;
-    private const int Year = 12 * Month;
+    //private const int Year = 12 * Month;
     
     /// <summary>
     /// Gets nicely formatted time span such as "just now", "a minute" etc.
@@ -53,10 +53,8 @@ public static class TimeSpanExtensions
             int months = Convert.ToInt32(Math.Floor((double)timeSpan.Days / 30));
             return months <= 1 ? "a month" : months + " months";
         }
-        else
-        {
-            int years = Convert.ToInt32(Math.Floor((double)timeSpan.Days / 365));
-            return years <= 1 ? "a year" : years + " years";
-        }
+
+        int years = Convert.ToInt32(Math.Floor((double)timeSpan.Days / 365));
+        return years <= 1 ? "a year" : years + " years";
     }
 }

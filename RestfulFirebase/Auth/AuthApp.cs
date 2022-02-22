@@ -321,17 +321,11 @@ public class AuthApp : SyncContext
     {
         var providerId = GetProviderId(authType);
 
-        string content;
-
-        switch (authType)
+        string content = authType switch
         {
-            case FirebaseAuthType.Apple:
-                content = $"{{\"postBody\":\"id_token={oauthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-                break;
-            default:
-                content = $"{{\"postBody\":\"access_token={oauthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-                break;
-        }
+            FirebaseAuthType.Apple => $"{{\"postBody\":\"id_token={oauthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+            _ => $"{{\"postBody\":\"access_token={oauthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+        };
 
         var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 

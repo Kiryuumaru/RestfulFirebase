@@ -212,7 +212,7 @@ public class DatabaseApp : SyncContext
 
         public IFirebaseQuery Query { get; }
 
-        private CancellationTokenSource tokenSource = new();
+        private readonly CancellationTokenSource tokenSource = new();
 
         private readonly Action finish;
         private readonly Action onSuccess;

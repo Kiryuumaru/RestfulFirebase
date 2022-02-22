@@ -56,7 +56,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// <param name="propertyName">
     /// The name of the property to set.
     /// </param>
-    /// <param name="validate">
+    /// <param name="setValidate">
     /// The value set validator function.
     /// </param>
     /// <param name="postAction">
@@ -78,7 +78,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         T value,
         string? key,
         [CallerMemberName] string? propertyName = null,
-        Func<(T? oldValue, T? newValue), bool>? validate = null,
+        Func<bool>? setValidate = null,
         Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         if (IsDisposed)
@@ -94,7 +94,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
             }
         }
 
-        return base.SetProperty(value, key, propertyName, nameof(FirebaseObject), validate, postAction);
+        return SetProperty(value, key, propertyName, nameof(FirebaseObject), setValidate, postAction);
     }
 
     /// <summary>
@@ -106,14 +106,8 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// <param name="key">
     /// The key of the property to get.
     /// </param>
-    /// <param name="defaultValue">
-    /// The default value of the property to set and return if the property is empty.
-    /// </param>
     /// <param name="propertyName">
     /// The name of the property to get.
-    /// </param>
-    /// <param name="validate">
-    /// The value set validator function.
     /// </param>
     /// <param name="postAction">
     /// The callback after set operation.
@@ -132,29 +126,93 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// </exception>
     protected T? GetFirebasePropertyWithKey<T>(
         string? key,
-        T? defaultValue = default,
         [CallerMemberName] string? propertyName = null,
-        Func<(T? oldValue, T? newValue), bool>? validate = null,
         Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         if (IsDisposed)
         {
-            return defaultValue;
+            return default;
         }
 
         if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
         {
-            if (defaultValue is not IRealtimeModel)
+            if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
+            {
+                throw new DatabaseInvalidCascadeRealtimeModelException();
+            }
+            return GetProperty(() => (T)Activator.CreateInstance(typeof(T)), key, propertyName, nameof(FirebaseObject), args =>
+            {
+                postAction?.Invoke((
+                    args.key,
+                    args.propertyName,
+                    args.group,
+                    args.oldValue,
+                    args.newValue,
+                    args.hasChanges));
+            });
+        }
+        else
+        {
+            return GetProperty(key, propertyName, nameof(FirebaseObject), postAction);
+        }
+
+
+    }
+
+    /// <summary>
+    /// Gets the firebase property value of the provided firebase <paramref name="key"/>.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The underlying type of the property to get.
+    /// </typeparam>
+    /// <param name="key">
+    /// The key of the property to get.
+    /// </param>
+    /// <param name="defaultValueFactory">
+    /// The default value factory that sets and returned if the property is null.
+    /// </param>
+    /// <param name="propertyName">
+    /// The name of the property to get.
+    /// </param>
+    /// <param name="postAction">
+    /// The callback after set operation.
+    /// </param>
+    /// <returns>
+    /// The value of the property.
+    /// </returns>
+    /// <exception cref="PropertyKeyAndNameNullException">
+    /// Throws when both <paramref name="key"/> and <paramref name="propertyName"/> are not provided.
+    /// </exception>
+    /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
+    /// Cascade IRealtimeModel with no parameterless constructor should have a default value.
+    /// </exception>
+    /// <exception cref="SerializerNotSupportedException">
+    /// Occurs when the object has no supported serializer.
+    /// </exception>
+    protected T GetFirebasePropertyWithKey<T>(
+        string? key,
+        Func<T> defaultValueFactory,
+        [CallerMemberName] string? propertyName = null,
+        Action<(string? key, string? propertyName, string? group, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
+    {
+        if (IsDisposed)
+        {
+            return defaultValueFactory();
+        }
+
+        if (typeof(IRealtimeModel).IsAssignableFrom(typeof(T)))
+        {
+            if (defaultValueFactory == null)
             {
                 if (typeof(T).GetConstructor(Type.EmptyTypes) == null)
                 {
                     throw new DatabaseInvalidCascadeRealtimeModelException();
                 }
-                defaultValue = (T)Activator.CreateInstance(typeof(T));
+                defaultValueFactory = () => (T)Activator.CreateInstance(typeof(T));
             }
         }
 
-        return base.GetProperty(defaultValue, key, propertyName, nameof(FirebaseObject), validate, postAction);
+        return GetProperty(defaultValueFactory, key, propertyName, nameof(FirebaseObject), postAction);
     }
 
     /// <summary>
@@ -169,7 +227,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// <param name="propertyName">
     /// The name of the property to set.
     /// </param>
-    /// <param name="validate">
+    /// <param name="setValidate">
     /// The value set validator function.
     /// </param>
     /// <param name="postAction">
@@ -190,10 +248,10 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     protected bool SetFirebaseProperty<T>(
         T value,
         [CallerMemberName] string? propertyName = null,
-        Func<(T? oldValue, T? newValue), bool>? validate = null,
+        Func<bool>? setValidate = null,
         Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
-        return SetFirebasePropertyWithKey(value, propertyName, propertyName, validate, postAction);
+        return SetFirebasePropertyWithKey(value, propertyName, propertyName, setValidate, postAction);
     }
 
     /// <summary>
@@ -202,14 +260,8 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// <typeparam name="T">
     /// The underlying type of the property to get.
     /// </typeparam>
-    /// <param name="defaultValue">
-    /// The default value of the property to set and return if the property is empty.
-    /// </param>
     /// <param name="propertyName">
     /// The name of the property to get.
-    /// </param>
-    /// <param name="validate">
-    /// The value set validator function.
     /// </param>
     /// <param name="postAction">
     /// The callback after set operation.
@@ -227,12 +279,45 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// Occurs when the object has no supported serializer.
     /// </exception>
     protected T? GetFirebaseProperty<T>(
-        T? defaultValue = default,
         [CallerMemberName] string? propertyName = null,
-        Func<(T? oldValue, T? newValue), bool>? validate = null,
         Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
-        return GetFirebasePropertyWithKey(propertyName, defaultValue, propertyName, validate, postAction);
+        return GetFirebasePropertyWithKey(propertyName, propertyName, postAction);
+    }
+
+    /// <summary>
+    /// Gets the firebase property value using <paramref name="propertyName"/> or the caller`s member name as its firebase key.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The underlying type of the property to get.
+    /// </typeparam>
+    /// <param name="defaultValueFactory">
+    /// The default value factory that sets and returned if the property is null.
+    /// </param>
+    /// <param name="propertyName">
+    /// The name of the property to get.
+    /// </param>
+    /// <param name="postAction">
+    /// The callback after set operation.
+    /// </param>
+    /// <returns>
+    /// The value of the property.
+    /// </returns>
+    /// <exception cref="PropertyKeyAndNameNullException">
+    /// Throws when <paramref name="propertyName"/> is not provided.
+    /// </exception>
+    /// <exception cref="DatabaseInvalidCascadeRealtimeModelException">
+    /// Cascade IRealtimeModel with no parameterless constructor should have a default value.
+    /// </exception>
+    /// <exception cref="SerializerNotSupportedException">
+    /// Occurs when the object has no supported serializer.
+    /// </exception>
+    protected T GetFirebaseProperty<T>(
+        Func<T> defaultValueFactory,
+        [CallerMemberName] string? propertyName = null,
+        Action<(string? key, string? propertyName, string? group, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
+    {
+        return GetFirebasePropertyWithKey(propertyName, defaultValueFactory, propertyName, postAction);
     }
 
     #endregion
@@ -328,11 +413,11 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
 
                 foreach (var child in children)
                 {
-                    GetOrCreateNamedProperty(default(string), child, null, nameof(FirebaseObject),
-                        newNamedProperty => true,
-                        postAction =>
+                    GetOrAddNamedProperty<string?>(child, null, nameof(FirebaseObject),
+                        () => null,
+                        args =>
                         {
-                            if (postAction.namedProperty.Property is IInternalRealtimeModel model)
+                            if (args.namedProperty.Property is IInternalRealtimeModel model)
                             {
                                 if (!model.HasAttachedRealtime)
                                 {
@@ -474,11 +559,13 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                 return;
             }
 
-            GetOrCreateNamedProperty(default(string), e.Path[0], null, nameof(FirebaseObject),
-                newNamedProperty => RealtimeInstance.InternalGetData(e.Path[0]).HasValue,
-                postAction =>
+            CreateOrUpdateNamedProperty<string?>(e.Path[0], null, nameof(FirebaseObject),
+                () => null,
+                args => RealtimeInstance.InternalGetData(e.Path[0]).HasValue,
+                args => false,
+                args =>
                 {
-                    if (postAction.namedProperty.Property is IInternalRealtimeModel model)
+                    if (args.namedProperty.Property is IInternalRealtimeModel model)
                     {
                         if (!model.HasAttachedRealtime)
                         {

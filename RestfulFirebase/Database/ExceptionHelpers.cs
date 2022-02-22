@@ -8,24 +8,24 @@ internal class ExceptionHelpers
 {
     internal static Exception GetException(HttpStatusCode statusCode, Exception originalException)
     {
-        switch (statusCode)
+        return statusCode switch
         {
-            case HttpStatusCode.BadRequest:                 //400
-                return new DatabaseBadRequestException(originalException);
-            case HttpStatusCode.Unauthorized:               //401
-                return new DatabaseUnauthorizedException(originalException);
-            case HttpStatusCode.PaymentRequired:            //402
-                return new DatabasePaymentRequiredException(originalException);
-            case HttpStatusCode.NotFound:                   //404
-                return new DatabaseNotFoundException(originalException);
-            case HttpStatusCode.PreconditionFailed:         //412
-                return new DatabasePreconditionFailedException(originalException);
-            case HttpStatusCode.InternalServerError:        //500
-                return new DatabaseInternalServerErrorException(originalException);
-            case HttpStatusCode.ServiceUnavailable:         //503
-                return new DatabaseServiceUnavailableException(originalException);
-            default:
-                return new DatabaseUndefinedException(originalException, statusCode);
-        }
+            //400
+            HttpStatusCode.BadRequest => new DatabaseBadRequestException(originalException),
+            //401
+            HttpStatusCode.Unauthorized => new DatabaseUnauthorizedException(originalException),
+            //402
+            HttpStatusCode.PaymentRequired => new DatabasePaymentRequiredException(originalException),
+            //404
+            HttpStatusCode.NotFound => new DatabaseNotFoundException(originalException),
+            //412
+            HttpStatusCode.PreconditionFailed => new DatabasePreconditionFailedException(originalException),
+            //500
+            HttpStatusCode.InternalServerError => new DatabaseInternalServerErrorException(originalException),
+            //503
+            HttpStatusCode.ServiceUnavailable => new DatabaseServiceUnavailableException(originalException),
+            //Unknown
+            _ => new DatabaseUndefinedException(originalException, statusCode),
+        };
     }
 }

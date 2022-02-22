@@ -26,8 +26,8 @@ internal class NodeStreamer : Disposable
     private readonly IFirebaseQuery query;
     private readonly HttpClient http;
 
-    private EventHandler<StreamObject> onNext;
-    private EventHandler<ErrorEventArgs> onError;
+    private readonly EventHandler<StreamObject> onNext;
+    private readonly EventHandler<ErrorEventArgs> onError;
 
     #endregion
 

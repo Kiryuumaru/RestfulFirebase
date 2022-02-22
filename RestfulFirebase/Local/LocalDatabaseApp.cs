@@ -30,10 +30,9 @@ public class LocalDatabaseApp : SyncContext
     private const char ValueIndicator = 'v';
     private const char PathIndicator = 'p';
 
-    private RWLockDictionary<string[]> rwLock = new(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
-
-    private static RWLock databaseDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
-    private static Dictionary<ILocalDatabase, LocalDatabaseEventHolder> databaseDictionary = new();
+    private readonly RWLockDictionary<string[]> rwLock = new(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
+    private static readonly RWLock databaseDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
+    private static readonly Dictionary<ILocalDatabase, LocalDatabaseEventHolder> databaseDictionary = new();
 
     #endregion
 
@@ -530,7 +529,7 @@ public class LocalDatabaseApp : SyncContext
         {
             LocalDatabaseEventHolder holder = GetHandler(localDatabase);
 
-            DeleteChildren(localDatabase, holder, true, path, serializedPath);
+            HelperDeleteChildren(localDatabase, holder, true, path, serializedPath);
 
             string[] hierPath = path;
             string? lastNode = null;
@@ -594,7 +593,7 @@ public class LocalDatabaseApp : SyncContext
         string serializedPath = StringSerializer.Serialize(path);
         string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
 
-        return GetChildren(localDatabase, path, serializedPath, data);
+        return HelperGetChildren(path, data);
     }
 
     internal LocalDataType InternalGetDataType(ILocalDatabase localDatabase, string[] path)
@@ -623,7 +622,7 @@ public class LocalDatabaseApp : SyncContext
         {
             string? data = DBGet(localDatabase, serializedPath);
 
-            return GetTypedChildren(localDatabase, path, serializedPath, data);
+            return HelperGetTypedChildren(localDatabase, path, data);
         });
 
     }
@@ -637,7 +636,7 @@ public class LocalDatabaseApp : SyncContext
         {
             string? data = DBGet(localDatabase, serializedPath);
 
-            return GetRecursiveChildren(localDatabase, path, serializedPath, data);
+            return HelperGetRecursiveChildren(localDatabase, path, data);
         });
     }
 
@@ -650,7 +649,7 @@ public class LocalDatabaseApp : SyncContext
         {
             string? data = DBGet(localDatabase, serializedPath);
 
-            return GetRecursiveRelativeChildren(localDatabase, path, serializedPath, data);
+            return HelperGetRecursiveRelativeChildren(localDatabase, path, data);
         });
     }
 
@@ -663,7 +662,7 @@ public class LocalDatabaseApp : SyncContext
         {
             string? data = DBGet(localDatabase, serializedPath);
 
-            return GetRelativeTypedChildren(localDatabase, path, serializedPath, data);
+            return HelperGetRelativeTypedChildren(localDatabase, path, data);
         });
     }
 
@@ -694,7 +693,7 @@ public class LocalDatabaseApp : SyncContext
         {
             LocalDatabaseEventHolder holder = GetHandler(localDatabase);
 
-            DeleteChildren(localDatabase, holder, false, path, serializedPath);
+            HelperDeleteChildren(localDatabase, holder, false, path, serializedPath);
 
             if (path.Length > 1)
             {
@@ -809,9 +808,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetChildren(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetChildren(path, p.data));
         }, path);
     }
 
@@ -819,7 +818,7 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
             onPath?.Invoke();
         }, path);
@@ -829,9 +828,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetRecursiveChildren(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetRecursiveChildren(localDatabase, path, p.data));
         }, path);
     }
 
@@ -839,9 +838,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetRecursiveRelativeChildren(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetRecursiveRelativeChildren(localDatabase, path, p.data));
         }, path);
     }
 
@@ -849,9 +848,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetRecursiveValues(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetRecursiveValues(localDatabase, path, p.data));
         }, path);
     }
 
@@ -859,9 +858,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetRecursiveRelativeValues(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetRecursiveRelativeValues(localDatabase, path, p.data));
         }, path);
     }
 
@@ -869,9 +868,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetRelativeTypedChildren(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetRelativeTypedChildren(localDatabase, path, p.data));
         }, path);
     }
 
@@ -879,9 +878,9 @@ public class LocalDatabaseApp : SyncContext
     {
         Validate(localDatabase, path);
 
-        return TryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(GetTypedChildren(localDatabase, path, p.serializedPath, p.data));
+            onPath?.Invoke(HelperGetTypedChildren(localDatabase, path, p.data));
         }, path);
     }
 
@@ -889,7 +888,7 @@ public class LocalDatabaseApp : SyncContext
 
     #region Helper Methods
 
-    private bool TryGetValueOrPath(ILocalDatabase localDatabase, Action<(string value, string serializedPath)> onValue, Action<(string data, string serializedPath)> onPath, string[] path)
+    private bool HelperTryGetValueOrPath(ILocalDatabase localDatabase, Action<(string value, string serializedPath)> onValue, Action<(string data, string serializedPath)> onPath, string[] path)
     {
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -915,7 +914,7 @@ public class LocalDatabaseApp : SyncContext
         });
     }
     
-    private (string[] path, string key)[] GetChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string? data)
+    private (string[] path, string key)[] HelperGetChildren(string[] path, string? data)
     {
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
@@ -941,7 +940,7 @@ public class LocalDatabaseApp : SyncContext
         return new (string[] path, string key)[0];
     }
 
-    private (string[] path, LocalDataType type)[] GetTypedChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string? data)
+    private (string[] path, LocalDataType type)[] HelperGetTypedChildren(ILocalDatabase localDatabase, string[] path, string? data)
     {
         List<(string[] path, LocalDataType type)> paths = new();
 
@@ -981,7 +980,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private (string key, LocalDataType type)[] GetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string? data)
+    private (string key, LocalDataType type)[] HelperGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path, string? data)
     {
         List<(string key, LocalDataType type)> paths = new();
 
@@ -1021,7 +1020,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private string[][] GetRecursiveChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string? data)
+    private string[][] HelperGetRecursiveChildren(ILocalDatabase localDatabase, string[] path, string? data)
     {
         List<string[]> paths = new();
 
@@ -1081,7 +1080,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private string[][] GetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path, string serializedPath, string? data)
+    private string[][] HelperGetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path, string? data)
     {
         List<string[]> paths = new();
 
@@ -1143,7 +1142,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private (string[] path, string value)[] GetRecursiveValues(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+    private (string[] path, string value)[] HelperGetRecursiveValues(ILocalDatabase localDatabase, string[] path, string data)
     {
         List<(string[] path, string value)> paths = new();
 
@@ -1203,7 +1202,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private (string[] path, string value)[] GetRecursiveRelativeValues(ILocalDatabase localDatabase, string[] path, string serializedPath, string data)
+    private (string[] path, string value)[] HelperGetRecursiveRelativeValues(ILocalDatabase localDatabase, string[] path, string data)
     {
         List<(string[] path, string value)> paths = new();
 
@@ -1265,7 +1264,7 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private void DeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder holder, bool includeSelf, string[] path, string serializedPath)
+    private void HelperDeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder holder, bool includeSelf, string[] path, string serializedPath)
     {
         string? childData = DBGet(localDatabase, serializedPath);
         if (childData != null)
@@ -1285,7 +1284,7 @@ public class LocalDatabaseApp : SyncContext
                         nextChild[nextChild.Length - 1] = deserializedChildPath;
                         Array.Copy(path, 0, nextChild, 0, path.Length);
                         string serializedChildPath = StringSerializer.Serialize(nextChild);
-                        rwLock.LockUpgradeableRead(path, () => DeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
+                        rwLock.LockUpgradeableRead(path, () => HelperDeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
                     }
                 }
             }
@@ -1403,61 +1402,84 @@ public class LocalDatabaseApp : SyncContext
 
     #region DB Methods
 
-    private void DBClear(ILocalDatabase localDatabase)
-    {
-        localDatabase.Clear();
-    }
-
     private bool DBContains(ILocalDatabase localDatabase, string key)
     {
-        string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
-
-        if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+        if (App.Config.CachedLocalEncryption == null)
         {
-            throw new ArgumentNullException(nameof(encryptedKey));
+            return localDatabase.ContainsKey(key);
         }
+        else
+        {
+            string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
 
-        return localDatabase.ContainsKey(encryptedKey);
+            if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+            {
+                throw new ArgumentNullException(nameof(encryptedKey));
+            }
+
+            return localDatabase.ContainsKey(encryptedKey);
+        }
     }
 
     private void DBDelete(ILocalDatabase localDatabase, string key)
     {
-        string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
-
-        if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+        if (App.Config.CachedLocalEncryption == null)
         {
-            throw new ArgumentNullException(nameof(encryptedKey));
+            localDatabase.Delete(key);
         }
+        else
+        {
+            string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
 
-        localDatabase.Delete(encryptedKey);
+            if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+            {
+                throw new ArgumentNullException(nameof(encryptedKey));
+            }
+
+            localDatabase.Delete(encryptedKey);
+        }
     }
 
     private string? DBGet(ILocalDatabase localDatabase, string key)
     {
-        string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
-        string? encryptedValue = null;
-
-        if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+        if (App.Config.CachedLocalEncryption == null)
         {
-            throw new ArgumentNullException(nameof(encryptedKey));
+            return localDatabase.Get(key);
         }
+        else
+        {
+            string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
+            string? encryptedValue;
 
-        encryptedValue = localDatabase.Get(encryptedKey);
+            if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+            {
+                throw new ArgumentNullException(nameof(encryptedKey));
+            }
 
-        return App.Config.CachedLocalEncryption.Decrypt(encryptedValue);
+            encryptedValue = localDatabase.Get(encryptedKey);
+
+            return App.Config.CachedLocalEncryption.Decrypt(encryptedValue);
+        }
     }
 
     private void DBSet(ILocalDatabase localDatabase, string key, string value)
     {
-        string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
-        string? encryptedValue = App.Config.CachedLocalEncryption.Encrypt(value);
-
-        if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+        if (App.Config.CachedLocalEncryption == null)
         {
-            throw new ArgumentNullException(nameof(encryptedKey));
+            localDatabase.Set(key, value);
         }
+        else
+        {
+            string? encryptedKey = App.Config.CachedLocalEncryption.Encrypt(key);
+            string? encryptedValue = App.Config.CachedLocalEncryption.Encrypt(value);
 
-        localDatabase.Set(encryptedKey, encryptedValue);
+            if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
+            {
+                throw new ArgumentNullException(nameof(encryptedKey));
+            }
+
+            localDatabase.Set(encryptedKey, encryptedValue);
+        }
     }
 
     #endregion
@@ -1468,9 +1490,8 @@ public class LocalDatabaseApp : SyncContext
     {
         public event EventHandler<DataChangesEventArgs> Changes;
 
-        private RWLock rwLock = new(LockRecursionPolicy.SupportsRecursion);
-        private LocalDatabaseApp localDatabaseApp;
-        private ConcurrentQueue<DataChangesEventArgs> invokes = new();
+        private readonly LocalDatabaseApp localDatabaseApp;
+        private readonly ConcurrentQueue<DataChangesEventArgs> invokes = new();
         private bool isInvoking = false;
 
         public LocalDatabaseEventHolder(LocalDatabaseApp localDatabaseApp, EventHandler<DataChangesEventArgs> initialChangesHandler)
