@@ -17,8 +17,8 @@
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>* Updated cascade realtime model to make applicable of nullable property in FirebaseObject</PackageReleaseNotes>
-    <Version>1.4.1</Version>
+    <PackageReleaseNotes>* Updated FirebaseDictionary with proper generic nullability</PackageReleaseNotes>
+    <Version>1.4.2</Version>
   </PropertyGroup>
 
   <ItemGroup>

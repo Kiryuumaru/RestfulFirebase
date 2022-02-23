@@ -18,7 +18,7 @@ namespace RestfulFirebase.Database.Models;
 /// <typeparam name="T">
 /// The undelying type of the dictionary item value.
 /// </typeparam>
-public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternalRealtimeModel
+public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalRealtimeModel
 {
     #region Properties
 
@@ -105,7 +105,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     /// <exception cref="SerializerNotSupportedException">
     /// Throws when <typeparamref name="T"/> has no supported serializer.
     /// </exception>
-    public FirebaseDictionary(IEnumerable<KeyValuePair<string, T?>> items)
+    public FirebaseDictionary(IEnumerable<KeyValuePair<string, T>> items)
         : base(items)
     {
         if (typeof(IInternalRealtimeModel).IsAssignableFrom(typeof(T)))
@@ -144,7 +144,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     /// <exception cref="SerializerNotSupportedException">
     /// Throws when <typeparamref name="T"/> has no supported serializer.
     /// </exception>
-    public FirebaseDictionary(Func<string, T> itemInitializer, IEnumerable<KeyValuePair<string, T?>> items)
+    public FirebaseDictionary(Func<string, T> itemInitializer, IEnumerable<KeyValuePair<string, T>> items)
         : base(items)
     {
         this.itemInitializer = itemInitializer ?? throw new ArgumentNullException(nameof(itemInitializer));
@@ -261,7 +261,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     #region ObservableCollection<T> Members
 
     /// <inheritdoc/>
-    protected override bool InternalClearItems(out IEnumerable<KeyValuePair<string, T?>>? oldItems)
+    protected override bool InternalClearItems(out IEnumerable<KeyValuePair<string, T>>? oldItems)
     {
         if (base.InternalClearItems(out oldItems))
         {
@@ -275,7 +275,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     }
 
     /// <inheritdoc/>
-    protected override bool InternalInsertItems(int index, IEnumerable<KeyValuePair<string, T?>> items, out int lastCount)
+    protected override bool InternalInsertItems(int index, IEnumerable<KeyValuePair<string, T>> items, out int lastCount)
     {
         if (base.InternalInsertItems(index, items, out lastCount))
         {
@@ -289,7 +289,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     }
 
     /// <inheritdoc/>
-    protected override bool InternalRemoveItems(int index, int count, out IEnumerable<KeyValuePair<string, T?>> oldItems)
+    protected override bool InternalRemoveItems(int index, int count, out IEnumerable<KeyValuePair<string, T>> oldItems)
     {
         if (base.InternalRemoveItems(index, count, out oldItems))
         {
@@ -303,11 +303,11 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
     }
 
     /// <inheritdoc/>
-    protected override bool InternalSetItem(int index, KeyValuePair<string, T?> item, out KeyValuePair<string, T?> originalItem)
+    protected override bool InternalSetItem(int index, KeyValuePair<string, T> item, out KeyValuePair<string, T> originalItem)
     {
         if (base.InternalSetItem(index, item, out originalItem))
         {
-            AddToWire(new KeyValuePair<string, T?>[] { item });
+            AddToWire(new KeyValuePair<string, T>[] { item });
             return true;
         }
         else
@@ -316,8 +316,12 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
         }
     }
 
-    private void AddToWire(IEnumerable<KeyValuePair<string, T?>> items)
+    private void AddToWire(IEnumerable<KeyValuePair<string, T>>? items)
     {
+        if (items == null)
+        {
+            return;
+        }
         RealtimeInstance? instance = RealtimeInstance;
         if (instance != null && !instance.IsDisposed)
         {
@@ -328,7 +332,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
         }
     }
 
-    private void RemoveFromWire(IEnumerable<KeyValuePair<string, T?>>? items)
+    private void RemoveFromWire(IEnumerable<KeyValuePair<string, T>>? items)
     {
         if (items == null)
         {
@@ -430,7 +434,13 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
                     }
                     else
                     {
-                        AddOrUpdate(path, _ => Serializer.Deserialize<T>(realtimeInstance.GetValue(path)));
+                        // Improper null assessment -----------------------------
+                        T? value = Serializer.Deserialize<T>(realtimeInstance.GetValue(path));
+                        if (value != null)
+                        {
+                            AddOrUpdate(path, _ => value);
+                        }
+                        // Improper null assessment -----------------------------
                     }
                 }
 
@@ -604,15 +614,26 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T?>, IInternal
                         }
                         else if (TryGetValue(e.Path[0], out T? value))
                         {
+                            // Improper null assessment -----------------------------
                             T? newValue = Serializer.Deserialize<T>(data.value);
-                            if (!EqualityComparer<T?>.Default.Equals(value, newValue))
+                            if (newValue != null)
                             {
-                                AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(data.value));
+                                if (!EqualityComparer<T?>.Default.Equals(value, newValue))
+                                {
+                                    AddOrUpdate(e.Path[0], _ => newValue);
+                                }
                             }
+                            // Improper null assessment -----------------------------
                         }
                         else
                         {
-                            AddOrUpdate(e.Path[0], _ => Serializer.Deserialize<T>(data.value));
+                            // Improper null assessment -----------------------------
+                            T? newValue = Serializer.Deserialize<T>(data.value);
+                            if (newValue != null)
+                            {
+                                AddOrUpdate(e.Path[0], _ => newValue);
+                            }
+                            // Improper null assessment -----------------------------
                         }
                     },
                     onPath =>
