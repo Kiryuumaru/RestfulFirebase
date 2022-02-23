@@ -17,8 +17,8 @@
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>* Updated FirebaseDictionary with proper generic nullability</PackageReleaseNotes>
-    <Version>1.4.2</Version>
+    <PackageReleaseNotes>* Updated dependency fixes</PackageReleaseNotes>
+    <Version>1.4.3</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,7 +28,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ObservableHelpers" Version="1.5.0" />
+    <PackageReference Include="ObservableHelpers" Version="1.5.1" />
     <PackageReference Include="SerializerHelpers" Version="1.0.2" />
   </ItemGroup>
 
