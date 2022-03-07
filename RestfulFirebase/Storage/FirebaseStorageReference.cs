@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using System.Linq;
 using RestfulFirebase.Exceptions;
+using System.Text.Json;
 
 namespace RestfulFirebase.Storage;
 
@@ -72,7 +72,7 @@ public class FirebaseStorageReference
     {
         if (App.Config.CachedStorageBucket == null)
         {
-            throw new ArgumentNullException(nameof(App.Config.StorageBucket));
+            throw new StorageBucketMissingException();
         }
 
         return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
@@ -115,9 +115,9 @@ public class FirebaseStorageReference
     {
         var data = await PerformFetch<Dictionary<string, object>>(timeout).ConfigureAwait(false);
 
-        if (data == null || !data.TryGetValue("downloadTokens", out object downloadTokens))
+        if (data == null || !data.TryGetValue("downloadTokens", out object? downloadTokens))
         {
-            throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonConvert.SerializeObject(data)}");
+            throw new ArgumentOutOfRangeException($"Could not extract 'downloadTokens' property from response. Response: {JsonSerializer.Serialize(data)}");
         }
 
         return GetFullDownloadUrl() + downloadTokens;
@@ -178,7 +178,7 @@ public class FirebaseStorageReference
             using var http = App.Storage.CreateHttpClientAsync(timeout);
             var result = await http.GetAsync(url).ConfigureAwait(false);
             resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var data = JsonConvert.DeserializeObject<T>(resultContent);
+            var data = JsonSerializer.Deserialize<T>(resultContent);
 
             result.EnsureSuccessStatusCode();
 

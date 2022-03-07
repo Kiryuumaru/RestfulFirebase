@@ -1134,6 +1134,8 @@ namespace DatabaseTest.ModelsTest
 
                 wire.SubModel(person1);
 
+                propertyChanges1.Clear(); // Clears changes made by subbing model.
+
                 DateTime date = DateTime.Now;
                 person1.FirstName = "John";
                 person1.LastName = "Doe";
@@ -1323,6 +1325,8 @@ namespace DatabaseTest.ModelsTest
 
                 wire.SubModel(couple1);
 
+                couplePropertyChanges1.Clear(); // Clears changes made by subbing model.
+
                 DateTime date = DateTime.Now;
                 person1.FirstName = "John";
                 person1.LastName = "Doe";
@@ -1499,6 +1503,9 @@ namespace DatabaseTest.ModelsTest
                 wire.SubModel(person1);
                 appInstance2.wire.SubModel(person2);
 
+                propertyChanges1.Clear(); // Clears changes made by subbing model.
+                propertyChanges2.Clear(); // Clears changes made by subbing model.
+
                 DateTime date1 = DateTime.Now;
 
                 person1.FirstName = "John";
@@ -1627,6 +1634,8 @@ namespace DatabaseTest.ModelsTest
                 };
 
                 wire.SubModel(person1);
+
+                propertyChanges1.Clear(); // Clears changes made by subbing model.
 
                 DateTime date1 = DateTime.Now;
                 Dinosaur dino1 = new()

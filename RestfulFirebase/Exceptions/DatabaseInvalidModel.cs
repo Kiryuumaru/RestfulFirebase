@@ -10,13 +10,22 @@ public class DatabaseInvalidModel : DatabaseException
     private const string ExceptionMessage =
         "The provided model is not valid.";
 
-    internal DatabaseInvalidModel()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInvalidModel"/>.
+    /// </summary>
+    public DatabaseInvalidModel()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseInvalidModel(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInvalidModel"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseInvalidModel(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

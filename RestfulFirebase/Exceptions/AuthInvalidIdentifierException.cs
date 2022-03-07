@@ -10,13 +10,22 @@ public class AuthInvalidIdentifierException : AuthException
     private const string ExceptionMessage =
         "The provided identifier is invalid.";
 
-    internal AuthInvalidIdentifierException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidIdentifierException"/>.
+    /// </summary>
+    public AuthInvalidIdentifierException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthInvalidIdentifierException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidIdentifierException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthInvalidIdentifierException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

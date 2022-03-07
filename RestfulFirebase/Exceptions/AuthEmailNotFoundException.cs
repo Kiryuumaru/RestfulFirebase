@@ -10,13 +10,22 @@ public class AuthEmailNotFoundException : AuthException
     private const string ExceptionMessage =
         "There is no user record corresponding to this identifier. The user may have been deleted.";
 
-    internal AuthEmailNotFoundException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthEmailNotFoundException"/>.
+    /// </summary>
+    public AuthEmailNotFoundException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthEmailNotFoundException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthEmailNotFoundException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthEmailNotFoundException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

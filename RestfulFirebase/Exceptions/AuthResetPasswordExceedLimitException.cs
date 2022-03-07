@@ -10,13 +10,22 @@ public class AuthResetPasswordExceedLimitException : AuthException
     private const string ExceptionMessage =
         "The reset password request exceeds its limit.";
 
-    internal AuthResetPasswordExceedLimitException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthResetPasswordExceedLimitException"/>.
+    /// </summary>
+    public AuthResetPasswordExceedLimitException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthResetPasswordExceedLimitException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthResetPasswordExceedLimitException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthResetPasswordExceedLimitException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

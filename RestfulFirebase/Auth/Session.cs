@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using ObservableHelpers;
+﻿using ObservableHelpers;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using System;
@@ -11,6 +10,7 @@ using ObservableHelpers.Utilities;
 using RestfulFirebase.Local;
 using SynchronizationContextHelpers;
 using SerializerHelpers;
+using System.Text.Json;
 
 namespace RestfulFirebase.Auth;
 
@@ -121,7 +121,7 @@ public class Session : SyncContext
 
         App = app;
 
-        App.Config.ImmediatePropertyChanged += Config_ImmediatePropertyChanged;
+        App.Config.ImmediatePropertyChanged +=  Config_ImmediatePropertyChanged;
 
         Fetch(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase);
     }
@@ -161,7 +161,7 @@ public class Session : SyncContext
     {
         var content = $"{{\"idToken\":\"{FirebaseToken}\",\"email\":\"{newEmail}\",\"returnSecureToken\":true}}";
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
         await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -197,7 +197,7 @@ public class Session : SyncContext
     {
         var content = $"{{\"idToken\":\"{FirebaseToken}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleUpdateUserPassword, content).ConfigureAwait(false);
 
         await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -343,7 +343,7 @@ public class Session : SyncContext
 
         var content = $"{{\"idToken\":\"{token}\",\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
 
         await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -395,10 +395,10 @@ public class Session : SyncContext
             throw new AuthNotAuthenticatedException();
         }
 
-        var providerId = App.Auth.GetProviderId(authType);
+        var providerId = AuthApp.GetProviderId(authType);
         var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={oauthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleIdentityUrl, content).ConfigureAwait(false);
 
         await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -435,19 +435,24 @@ public class Session : SyncContext
             throw new AuthNotAuthenticatedException();
         }
 
-        string providerId;
+        string? providerId;
         if (authType == FirebaseAuthType.EmailAndPassword)
         {
             providerId = authType.ToEnumString();
         }
         else
         {
-            providerId = App.Auth.GetProviderId(authType);
+            providerId = AuthApp.GetProviderId(authType);
+        }
+
+        if (string.IsNullOrEmpty(providerId))
+        {
+            throw new AuthUndefinedException();
         }
 
         var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleSetAccountUrl, content).ConfigureAwait(false);
 
         await App.Auth.RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -496,7 +501,7 @@ public class Session : SyncContext
 
             response.EnsureSuccessStatusCode();
 
-            ProviderQueryResult? data = JsonConvert.DeserializeObject<ProviderQueryResult>(responseData);
+            ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData);
             
             if (data == null)
             {
@@ -574,7 +579,7 @@ public class Session : SyncContext
                     new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
 
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var refreshAuth = JsonConvert.DeserializeObject<RefreshAuth>(responseData);
+                var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData);
 
                 if (refreshAuth == null)
                 {
@@ -711,7 +716,7 @@ public class Session : SyncContext
 
         sb.Append($",\"returnSecureToken\":true}}");
 
-        var auth = await App.Auth.ExecuteWithPostContent(AuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
+        var auth = await App.Auth.ExecuteAuthWithPostContent(AuthApp.GoogleSetAccountUrl, sb.ToString()).ConfigureAwait(false);
 
         UpdateAuth(auth);
     }
@@ -853,7 +858,7 @@ public class Session : SyncContext
         App.LocalDatabase.InternalSetValue(localDatabase, auth, new string[] { Root });
     }
 
-    private void Config_ImmediatePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void Config_ImmediatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
             e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))

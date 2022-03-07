@@ -7,13 +7,13 @@ using ObservableHelpers.Utilities;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Linq;
-using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
 using RestfulFirebase.Database.Realtime;
 using SynchronizationContextHelpers;
 using DisposableHelpers;
 using LockerHelpers;
+using System.Text.Json;
 
 namespace RestfulFirebase.Database;
 
@@ -27,7 +27,7 @@ public class DatabaseApp : SyncContext
     /// <inheritdoc/>
     public RestfulFirebaseApp App { get; private set; }
 
-    internal const string OfflineDatabaseIndicator = "db";
+    internal const string OfflineDatabaseIndicator = "rtdb";
 
     private readonly OperationInvoker writeTaskPutControl = new(0);
     private readonly ConcurrentDictionary<string[], WriteTask> writeTasks = new(PathEqualityComparer.Instance);
@@ -63,6 +63,9 @@ public class DatabaseApp : SyncContext
     /// <exception cref="ArgumentNullException">
     /// Throws when <paramref name="resourceNameFactory"/> or <see cref="FirebaseConfig.DatabaseURL"/> is null.
     /// </exception>
+    /// <exception cref="DatabaseUrlMissingException">
+    /// Throws when <see cref="FirebaseConfig.DatabaseURL"/> is null.
+    /// </exception>
     public ChildQuery Child(Func<string> resourceNameFactory)
     {
         if (resourceNameFactory == null)
@@ -72,7 +75,7 @@ public class DatabaseApp : SyncContext
 
         if (App.Config.CachedDatabaseURL == null)
         {
-            throw new ArgumentNullException(nameof(App.Config.DatabaseURL));
+            throw new DatabaseUrlMissingException();
         }
 
         return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.CachedDatabaseURL, resourceNameFactory()));
@@ -89,6 +92,9 @@ public class DatabaseApp : SyncContext
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// Throws when <paramref name="resourceName"/> is null or empty.
+    /// </exception>
+    /// <exception cref="DatabaseUrlMissingException">
+    /// Throws when <see cref="FirebaseConfig.DatabaseURL"/> is null.
     /// </exception>
     public ChildQuery Child(string resourceName)
     {
@@ -110,7 +116,7 @@ public class DatabaseApp : SyncContext
         App.LocalDatabase.InternalDelete(localDatabase ?? App.Config.CachedLocalDatabase, new string[] { OfflineDatabaseIndicator });
     }
 
-    private void Config_ImmediatePropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void Config_ImmediatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(App.Config.DatabaseMaxConcurrentSyncWrites))
         {
@@ -124,9 +130,9 @@ public class DatabaseApp : SyncContext
 
     internal void DBCancelPut(string[] path)
     {
-        if (writeTasks.TryRemove(path, out WriteTask writeTask))
+        if (writeTasks.TryRemove(path, out WriteTask? writeTask))
         {
-            writeTask.Dispose();
+            writeTask?.Dispose();
         }
     }
 
@@ -262,7 +268,7 @@ public class DatabaseApp : SyncContext
 
                     try
                     {
-                        if (await Query.Put(() => Blob == null ? null : JsonConvert.SerializeObject(Blob), tokenSource.Token,
+                        if (await Query.Put(() => Blob == null ? null : JsonSerializer.Serialize(Blob), tokenSource.Token,
                             err =>
                             {
                                 if (tokenSource.Token.IsCancellationRequested)

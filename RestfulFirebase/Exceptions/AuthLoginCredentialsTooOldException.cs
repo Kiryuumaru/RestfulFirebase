@@ -10,13 +10,22 @@ public class AuthLoginCredentialsTooOldException : AuthException
     private const string ExceptionMessage =
         "The user's credential is no longer valid. The user must sign in again.";
 
-    internal AuthLoginCredentialsTooOldException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthLoginCredentialsTooOldException"/>.
+    /// </summary>
+    public AuthLoginCredentialsTooOldException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthLoginCredentialsTooOldException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthLoginCredentialsTooOldException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthLoginCredentialsTooOldException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

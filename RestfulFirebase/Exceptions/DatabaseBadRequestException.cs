@@ -10,13 +10,22 @@ public class DatabaseBadRequestException : DatabaseException
     private const string ExceptionMessage =
         "Bad request.";
 
-    internal DatabaseBadRequestException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseBadRequestException"/>.
+    /// </summary>
+    public DatabaseBadRequestException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseBadRequestException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseBadRequestException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseBadRequestException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

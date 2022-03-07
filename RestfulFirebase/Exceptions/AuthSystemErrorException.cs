@@ -10,13 +10,22 @@ public class AuthSystemErrorException : AuthException
     private const string ExceptionMessage =
         "A system error has occurred.";
 
-    internal AuthSystemErrorException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthSystemErrorException"/>.
+    /// </summary>
+    public AuthSystemErrorException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthSystemErrorException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthSystemErrorException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthSystemErrorException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

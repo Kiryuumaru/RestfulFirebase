@@ -1,11 +1,12 @@
-﻿using Newtonsoft.Json.Linq;
-using RestfulFirebase.Utilities;
+﻿namespace RestfulFirebase.Database.Streaming;
 
-namespace RestfulFirebase.Database.Streaming;
+using RestfulFirebase.Utilities;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 internal class StreamObject
 {
-    public JToken JToken { get; }
+    public JsonElement JsonElement { get; }
 
     public string AbsoluteUrl { get; }
 
@@ -13,9 +14,9 @@ internal class StreamObject
 
     public string Url { get; }
 
-    public StreamObject(JToken jToken, string absoluteUrl, string path)
+    public StreamObject(JsonElement jsonElement, string absoluteUrl, string path)
     {
-        JToken = jToken;
+        JsonElement = jsonElement;
         AbsoluteUrl = absoluteUrl;
         Path = path;
         Url = string.IsNullOrEmpty(path) ? absoluteUrl : UrlUtilities.Combine(absoluteUrl, path);

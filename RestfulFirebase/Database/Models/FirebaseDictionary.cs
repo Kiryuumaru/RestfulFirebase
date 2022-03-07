@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using SerializerHelpers;
+using SerializerHelpers.Exceptions;
 
 namespace RestfulFirebase.Database.Models;
 
@@ -23,7 +25,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
     #region Properties
 
     private readonly bool isCascadeRealtimeItems;
-    private readonly Func<string, T>? itemInitializer;
+    private readonly Func<string, T?>? itemInitializer;
     private bool? isInvokeToSetFirst;
     private bool hasPostAttachedRealtime;
 
@@ -72,7 +74,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
     /// <exception cref="SerializerNotSupportedException">
     /// Throws when <typeparamref name="T"/> has no supported serializer.
     /// </exception>
-    public FirebaseDictionary(Func<string, T> itemInitializer)
+    public FirebaseDictionary(Func<string, T?> itemInitializer)
     {
         this.itemInitializer = itemInitializer ?? throw new ArgumentNullException(nameof(itemInitializer));
         
@@ -176,7 +178,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
     /// <returns>
     /// The created <typeparamref name="T"/> item object.
     /// </returns>
-    protected T ObjectFactory(string key)
+    protected T? ObjectFactory(string key)
     {
         if (itemInitializer == null)
         {
@@ -261,7 +263,11 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
     #region ObservableCollection<T> Members
 
     /// <inheritdoc/>
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    protected override bool InternalClearItems([MaybeNullWhen(false)] out IEnumerable<KeyValuePair<string, T>> oldItems)
+#else
     protected override bool InternalClearItems(out IEnumerable<KeyValuePair<string, T>>? oldItems)
+#endif
     {
         if (base.InternalClearItems(out oldItems))
         {
@@ -289,7 +295,8 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
     }
 
     /// <inheritdoc/>
-    protected override bool InternalRemoveItems(int index, int count, out IEnumerable<KeyValuePair<string, T>> oldItems)
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+    protected override bool InternalRemoveItems(int index, int count, [MaybeNullWhen(false)] out IEnumerable<KeyValuePair<string, T>> oldItems)
     {
         if (base.InternalRemoveItems(index, count, out oldItems))
         {
@@ -301,6 +308,20 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
             return false;
         }
     }
+#else
+    protected override bool InternalRemoveItems(int index, int count, out IEnumerable<KeyValuePair<string, T>>? oldItems)
+    {
+        if (base.InternalRemoveItems(index, count, out oldItems))
+        {
+            RemoveFromWire(oldItems);
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+#endif
 
     /// <inheritdoc/>
     protected override bool InternalSetItem(int index, KeyValuePair<string, T> item, out KeyValuePair<string, T> originalItem)
@@ -424,7 +445,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
                     {
                         if (!ContainsKey(path))
                         {
-                            T item = ObjectFactory(path);
+                            T? item = ObjectFactory(path);
                             if (item != null)
                             {
                                 WireValue(realtimeInstance, path, item, false);
@@ -552,7 +573,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
         });
     }
 
-    private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
+    private void RealtimeInstance_ImmediateDataChanges(object? sender, DataChangesEventArgs e)
     {
         if (IsDisposed)
         {
@@ -589,7 +610,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
                     {
                         if (!ContainsKey(e.Path[0]))
                         {
-                            T item = ObjectFactory(e.Path[0]);
+                            T? item = ObjectFactory(e.Path[0]);
                             if (item != null)
                             {
                                 WireValue(instance, e.Path[0], item, false);
@@ -648,7 +669,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
         });
     }
 
-    private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+    private void RealtimeInstance_Error(object? sender, WireExceptionEventArgs e)
     {
         if (IsDisposed)
         {
@@ -658,7 +679,7 @@ public class FirebaseDictionary<T> : ObservableDictionary<string, T>, IInternalR
         OnWireError(e);
     }
 
-    private void RealtimeInstance_Disposing(object sender, EventArgs e)
+    private void RealtimeInstance_Disposing(object? sender, EventArgs e)
     {
         if (IsDisposed)
         {

@@ -1,6 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Storage;
 
@@ -12,90 +12,90 @@ public class FirebaseMetaData
     /// <summary>
     /// Gets or sets the bucket of the file metadata.
     /// </summary>
-    [JsonProperty("bucket")]
+    [JsonPropertyName("bucket")]
     public string? Bucket { get; set; }
 
     /// <summary>
     /// Gets or sets the generation of the file metadata.
     /// </summary>
-    [JsonProperty("generation")]
+    [JsonPropertyName("generation")]
     public string? Generation { get; set; }
 
     /// <summary>
     /// Gets or sets the meta generation of the file metadata.
     /// </summary>
-    [JsonProperty("metageneration")]
+    [JsonPropertyName("metageneration")]
     public string? MetaGeneration { get; set; }
 
     /// <summary>
     /// Gets or sets the fullPath of the file metadata.
     /// </summary>
-    [JsonProperty("fullPath")]
+    [JsonPropertyName("fullPath")]
     public string? FullPath { get; set; }
 
     /// <summary>
     /// Gets or sets the name of the file metadata.
     /// </summary>
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the size of the file metadata.
     /// </summary>
-    [JsonProperty("size")]
+    [JsonPropertyName("size")]
     public long Size { get; set; }
 
     /// <summary>
     /// Gets or sets the time created of the file metadata.
     /// </summary>
-    [JsonProperty("timeCreated")]
+    [JsonPropertyName("timeCreated")]
     public DateTime TimeCreated { get; set; }
 
     /// <summary>
     /// Gets or sets the time updated of the file metadata.
     /// </summary>
-    [JsonProperty("updated")]
+    [JsonPropertyName("updated")]
     public DateTime Updated { get; set; }
 
     /// <summary>
     /// Gets or sets the md5Hash of the file metadata.
     /// </summary>
-    [JsonProperty("md5Hash")]
+    [JsonPropertyName("md5Hash")]
     public string? Md5Hash { get; set; }
 
     /// <summary>
     /// Gets or sets the cache control of the file metadata.
     /// </summary>
-    [JsonProperty("cacheControl")]
+    [JsonPropertyName("cacheControl")]
     public string? CacheControl { get; set; }
     
     /// <summary>
     /// Gets or sets the content disposition of the file metadata.
     /// </summary>
-    [JsonProperty("contentDisposition")]
+    [JsonPropertyName("contentDisposition")]
     public string? ContentDisposition { get; set; }
 
     /// <summary>
     /// Gets or sets the content encoding of the file metadata.
     /// </summary>
-    [JsonProperty("contentEncoding")]
+    [JsonPropertyName("contentEncoding")]
     public string? ContentEncoding { get; set; }
 
     /// <summary>
     /// Gets or sets the content language of the file metadata.
     /// </summary>
-    [JsonProperty("contentLanguage")]
+    [JsonPropertyName("contentLanguage")]
     public string? ContentLanguage { get; set; }
 
     /// <summary>
     /// Gets or sets the content type of the file metadata.
     /// </summary>
-    [JsonProperty("contentType")]
+    [JsonPropertyName("contentType")]
     public string? ContentType { get; set; }
 
     /// <summary>
     /// Gets or sets the custom metadata of the file metadata.
     /// </summary>
-    [JsonProperty("customMetadata")]
+    [JsonPropertyName("customMetadata")]
     public Dictionary<string, object>? CustomMetadata { get; set; }
 }

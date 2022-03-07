@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Auth;
 
@@ -11,63 +10,54 @@ public class User
     /// <summary>
     /// Gets or sets the local id of the user.
     /// </summary>
-    [JsonProperty("localId", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? LocalId { get; set; }
+    [JsonPropertyName("localId")]
+    public string? LocalId { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the federated id of the user.
     /// </summary>
-    [JsonProperty("federatedId", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? FederatedId { get; set; }
+    [JsonPropertyName("federatedId")]
+    public string? FederatedId { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the first name of the user.
     /// </summary>
-    [JsonProperty("firstName", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? FirstName { get; set; }
+    [JsonPropertyName("firstName")]
+    public string? FirstName { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the last name of the user.
     /// </summary>
-    [JsonProperty("lastName", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? LastName { get; set; }
+    [JsonPropertyName("lastName")]
+    public string? LastName { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the display name of the user.
     /// </summary>
-    [JsonProperty("displayName", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? DisplayName { get; set; }
+    [JsonPropertyName("displayName")]
+    public string? DisplayName { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the email of the user.
     /// </summary>
-    [JsonProperty("email", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? Email { get; set; }
+    [JsonPropertyName("email")]
+    public string? Email { get; set; } = "";
 
     /// <summary>
     /// Gets or sets the email verfication status of the user.
     /// </summary>
-    [JsonProperty("emailVerified", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue(false)]
-    public bool IsEmailVerified { get; set; }
+    [JsonPropertyName("emailVerified")]
+    public bool IsEmailVerified { get; set; } = false;
 
     /// <summary>
     /// Gets or sets the photo url of the user.
     /// </summary>
-    [JsonProperty("photoUrl", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
+    [JsonPropertyName("photoUrl")]
     public string? PhotoUrl { get; set; }
 
     /// <summary>
     /// Gets or sets the phone number of the user.
     /// </summary>
-    [JsonProperty("phoneNumber", DefaultValueHandling = DefaultValueHandling.Populate)]
-    [DefaultValue("")]
-    public string? PhoneNumber { get; set; }
+    [JsonPropertyName("phoneNumber")]
+    public string? PhoneNumber { get; set; } = "";
 }

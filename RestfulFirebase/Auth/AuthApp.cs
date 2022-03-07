@@ -6,12 +6,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Http;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using ObservableHelpers;
 using RestfulFirebase.Exceptions;
 using ObservableHelpers.Utilities;
 using SynchronizationContextHelpers;
+using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Auth;
 
@@ -55,6 +56,9 @@ public class AuthApp : SyncContext
     /// </summary>
     public event EventHandler<AuthenticationChangesEventArgs>? AuthenticationChanges;
 
+    internal const string GoogleSignInWithPhoneNumber = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={0}";
+    internal const string GoogleRecaptchaParams = "https://identitytoolkit.googleapis.com/v1/recaptchaParams?key={0}";
+    internal const string GoogleSendVerificationCode = "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={0}";
     internal const string GoogleRefreshAuth = "https://securetoken.googleapis.com/v1/token?key={0}";
     internal const string GoogleCustomAuthUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyCustomToken?key={0}";
     internal const string GoogleGetUser = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getAccountInfo?key={0}";
@@ -72,7 +76,14 @@ public class AuthApp : SyncContext
     private IHttpClientProxy? client;
     private readonly Session session;
 
-    #endregion
+    private static readonly JsonSerializerOptions firebaseAuthOption = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        IgnoreReadOnlyFields = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString
+    };
+
+#endregion
 
     #region Initializers
 
@@ -88,7 +99,7 @@ public class AuthApp : SyncContext
 
     #region Helpers
 
-    internal string GetProviderId(FirebaseAuthType authType)
+    internal static string? GetProviderId(FirebaseAuthType authType)
     {
         return authType switch
         {
@@ -112,7 +123,32 @@ public class AuthApp : SyncContext
         return client.GetHttpClient();
     }
 
-    internal async Task<FirebaseAuth> ExecuteWithPostContent(string googleUrl, string postContent)
+    internal async Task<string> ExecuteWithGet(string googleUrl)
+    {
+        string responseData = "N/A";
+
+        try
+        {
+            var response = await GetClient().GetAsync(
+                new Uri(string.Format(googleUrl, App.Config.ApiKey)),
+                new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
+            responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            response.EnsureSuccessStatusCode();
+
+            return responseData;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw ExceptionHelpers.GetException(responseData, ex);
+        }
+    }
+
+    internal async Task<string> ExecuteWithPostContent(string googleUrl, string postContent)
     {
         string responseData = "N/A";
 
@@ -126,18 +162,7 @@ public class AuthApp : SyncContext
 
             response.EnsureSuccessStatusCode();
 
-            var user = JsonConvert.DeserializeObject<User>(responseData);
-            var auth = JsonConvert.DeserializeObject<FirebaseAuth>(responseData);
-
-            if (user == null || auth == null)
-            {
-                throw new AuthUndefinedException();
-            }
-
-            auth.User = user;
-
-            session.UpdateAuth(auth);
-            return auth;
+            return responseData;
         }
         catch (OperationCanceledException)
         {
@@ -147,6 +172,24 @@ public class AuthApp : SyncContext
         {
             throw ExceptionHelpers.GetException(responseData, ex);
         }
+    }
+
+    internal async Task<FirebaseAuth> ExecuteAuthWithPostContent(string googleUrl, string postContent)
+    {
+        string responseData = await ExecuteWithPostContent(googleUrl, postContent);
+        var user = JsonSerializer.Deserialize<User>(responseData);
+        var auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, firebaseAuthOption);
+
+        if (user == null || auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
+
+        auth.User = user;
+
+        session.UpdateAuth(auth);
+
+        return auth;
     }
 
     internal async Task RefreshUserInfo(FirebaseAuth auth)
@@ -163,8 +206,12 @@ public class AuthApp : SyncContext
             responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            var resultJson = JObject.Parse(responseData);
-            var user = JsonConvert.DeserializeObject<User>(resultJson["users"].First().ToString());
+            var resultJson = JsonDocument.Parse(responseData);
+            if (!(resultJson?.RootElement.TryGetProperty("users", out JsonElement userJson) ?? false))
+            {
+                throw new AuthUndefinedException();
+            }
+            var user = JsonSerializer.Deserialize<User>(userJson.EnumerateArray().First());
 
             if (user == null)
             {
@@ -190,6 +237,58 @@ public class AuthApp : SyncContext
     #endregion
 
     #region Methods
+
+    /// <summary>
+    /// Gets the reCaptcha site key to be used for sending verification code to a phone number.
+    /// </summary>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the sessioninfo of the verification sent.
+    /// </returns>
+    public async Task<string> GetRecaptchaSiteKey()
+    {
+        var responseData = await ExecuteWithGet(GoogleRecaptchaParams).ConfigureAwait(false);
+
+        var definition = new { recaptchaSiteKey = "" };
+
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition);
+        
+        if (response == null)
+        {
+            throw new Exception();
+        }
+
+        return response.recaptchaSiteKey;
+    }
+
+    /// <summary>
+    /// Send a verification code to a phone number.
+    /// </summary>
+    /// <param name="phoneNumber">
+    /// The phone number to send verification code.
+    /// </param>
+    /// <param name="recaptchaToken">
+    /// The recaptcha token from Google reCaptcha.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    public async Task<string> SendVerificationCode(string phoneNumber, string recaptchaToken)
+    {
+        string content = $"{{\"phoneNumber\":\"{phoneNumber}\",\"recaptchaToken\":\"{recaptchaToken}\"}}";
+        
+        var responseData = await ExecuteWithPostContent(GoogleSendVerificationCode, content).ConfigureAwait(false);
+
+        var definition = new { sessionInfo = "" };
+
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition);
+
+        if (response == null)
+        {
+            throw new Exception();
+        }
+
+        return response.sessionInfo;
+    }
 
     /// <summary>
     /// Creates user with the provided <paramref name="email"/> and <paramref name="password"/>.
@@ -237,7 +336,7 @@ public class AuthApp : SyncContext
     {
         var content = $"{{\"email\":\"{email}\",\"password\":\"{password}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 
@@ -277,7 +376,7 @@ public class AuthApp : SyncContext
     {
         string content = $"{{\"token\":\"{customToken}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteWithPostContent(GoogleCustomAuthUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleCustomAuthUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 
@@ -327,7 +426,7 @@ public class AuthApp : SyncContext
             _ => $"{{\"postBody\":\"access_token={oauthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
         };
 
-        var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 
@@ -372,7 +471,7 @@ public class AuthApp : SyncContext
         var providerId = GetProviderId(FirebaseAuthType.Twitter);
         var content = $"{{\"postBody\":\"access_token={oauthAccessToken}&oauth_token_secret={oauthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 
@@ -414,7 +513,7 @@ public class AuthApp : SyncContext
         var providerId = GetProviderId(FirebaseAuthType.Google);
         var content = $"{{\"postBody\":\"id_token={idToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleIdentityUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
     }
@@ -469,7 +568,45 @@ public class AuthApp : SyncContext
 
         sb.Append("\"returnSecureToken\":true}");
 
-        var auth = await ExecuteWithPostContent(GooglePasswordUrl, sb.ToString()).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GooglePasswordUrl, sb.ToString()).ConfigureAwait(false);
+
+        await RefreshUserInfo(auth).ConfigureAwait(false);
+
+        InvokeAuthenticationEvents();
+    }
+
+    /// <summary>
+    /// Sign in a phone number with the provided <paramref name="sessionInfo"/> and <paramref name="code"/> from reCaptcha validation and sms OTP message.
+    /// </summary>
+    /// <param name="sessionInfo">
+    /// The session info token returned from <see cref="SendVerificationCode(string, string)"/>.
+    /// </param>
+    /// <param name="code">
+    /// The phone sms OTP code.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="AuthInvalidCustomTokenException">
+    /// The custom token format is incorrect or the token is invalid for some reason (e.g. expired, invalid signature etc.)
+    /// </exception>
+    /// <exception cref="AuthCredentialMismatchException">
+    /// The custom token corresponds to a different Firebase project.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    public async Task SignInWithPhoneNumber(string sessionInfo, string code)
+    {
+        string content = $"{{\"sessionInfo\":\"{sessionInfo}\",\"code\":\"{code}\",\"returnSecureToken\":true}}";
+
+        var auth = await ExecuteAuthWithPostContent(GoogleSignInWithPhoneNumber, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 
@@ -504,7 +641,7 @@ public class AuthApp : SyncContext
     {
         var content = $"{{\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(GoogleSignUpUrl, content).ConfigureAwait(false);
 
         await RefreshUserInfo(auth).ConfigureAwait(false);
 

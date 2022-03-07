@@ -10,13 +10,22 @@ public class AuthAPIKeyNotValidException : AuthException
     private const string ExceptionMessage =
         "API key is not valid. Please pass a valid API key.";
 
-    internal AuthAPIKeyNotValidException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthAPIKeyNotValidException"/>.
+    /// </summary>
+    public AuthAPIKeyNotValidException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthAPIKeyNotValidException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthAPIKeyNotValidException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthAPIKeyNotValidException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

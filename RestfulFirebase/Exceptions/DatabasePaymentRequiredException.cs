@@ -10,13 +10,22 @@ public class DatabasePaymentRequiredException : DatabaseException
     private const string ExceptionMessage =
         "The request exceeds the database plan limits.";
 
-    internal DatabasePaymentRequiredException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabasePaymentRequiredException"/>.
+    /// </summary>
+    public DatabasePaymentRequiredException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabasePaymentRequiredException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabasePaymentRequiredException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabasePaymentRequiredException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

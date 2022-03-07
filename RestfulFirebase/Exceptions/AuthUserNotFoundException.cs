@@ -10,13 +10,22 @@ public class AuthUserNotFoundException : AuthException
     private const string ExceptionMessage =
         "There is no user record corresponding to this identifier. The user may have been deleted.";
 
-    internal AuthUserNotFoundException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUserNotFoundException"/>.
+    /// </summary>
+    public AuthUserNotFoundException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthUserNotFoundException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUserNotFoundException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthUserNotFoundException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

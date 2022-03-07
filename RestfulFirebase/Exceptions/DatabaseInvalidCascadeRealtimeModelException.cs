@@ -10,13 +10,22 @@ public class DatabaseInvalidCascadeRealtimeModelException : DatabaseException
     private const string ExceptionMessage =
         "Cascade IRealtimeModel with no parameterless constructor should have a default value.";
 
-    internal DatabaseInvalidCascadeRealtimeModelException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInvalidCascadeRealtimeModelException"/>.
+    /// </summary>
+    public DatabaseInvalidCascadeRealtimeModelException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseInvalidCascadeRealtimeModelException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInvalidCascadeRealtimeModelException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseInvalidCascadeRealtimeModelException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

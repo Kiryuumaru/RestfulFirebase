@@ -10,13 +10,22 @@ public class AuthExpiredOOBCodeException : AuthException
     private const string ExceptionMessage =
         "The action code has expired.";
 
-    internal AuthExpiredOOBCodeException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthExpiredOOBCodeException"/>.
+    /// </summary>
+    public AuthExpiredOOBCodeException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthExpiredOOBCodeException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthExpiredOOBCodeException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthExpiredOOBCodeException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

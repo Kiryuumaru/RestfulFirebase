@@ -13,12 +13,24 @@ public class StringNullOrEmptyException : ArgumentException
 
     }
 
-    internal static StringNullOrEmptyException FromSingleArgument(string argumentName)
+    /// <summary>
+    /// Creates an instance of <see cref="StringNullOrEmptyException"/> with provided <paramref name="argumentName"/>.
+    /// </summary>
+    /// <param name="argumentName">
+    /// The name of the <see cref="string"/> typed argument that is null or empty.
+    /// </param>
+    public static StringNullOrEmptyException FromSingleArgument(string argumentName)
     {
         return new StringNullOrEmptyException("Argument string '" + argumentName + "' is null or empty.");
     }
 
-    internal static StringNullOrEmptyException FromEnumerableArgument(string argumentName)
+    /// <summary>
+    /// Creates an instance of <see cref="StringNullOrEmptyException"/> with provided <paramref name="argumentName"/>.
+    /// </summary>
+    /// <param name="argumentName">
+    /// The name of the <see cref="T:string[]"/>typed  argument that is null or empty.
+    /// </param>
+    public static StringNullOrEmptyException FromEnumerableArgument(string argumentName)
     {
         return new StringNullOrEmptyException("Argument enumerable string '" + argumentName + "' has null or empty element.");
     }

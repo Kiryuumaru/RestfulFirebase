@@ -181,7 +181,7 @@ public class ChildQuery : FirebaseQuery
         {
             if (s != string.Empty && s.EndsWith("/"))
             {
-                s = s.Substring(0, s.Length - 1);
+                s = s[0..^1];
             }
             s += ".json";
         }

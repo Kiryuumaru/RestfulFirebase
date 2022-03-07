@@ -5,26 +5,54 @@ namespace RestfulFirebase.Exceptions;
 /// <summary>
 /// Occurs when there`s an error in realtime database.
 /// </summary>
-public abstract class DatabaseException : Exception
+public class DatabaseException : Exception
 {
-    private protected DatabaseException()
+    private const string ExceptionMessage =
+        "An realtime database error occured.";
+
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseException"/>.
+    /// </summary>
+    public DatabaseException()
+        : base(ExceptionMessage)
     {
 
     }
 
-    private protected DatabaseException(Exception innerException)
-        : base("A realtime database error occured.", innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseException(Exception innerException)
+        : base(ExceptionMessage, innerException)
     {
 
     }
 
-    private protected DatabaseException(string message)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseException"/> with provided <paramref name="message"/>.
+    /// </summary>
+    /// <param name="message">
+    /// The message of the exception.
+    /// </param>
+    public DatabaseException(string message)
         : base(message)
     {
 
     }
 
-    private protected DatabaseException(string message, Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseException"/> with provided <paramref name="message"/> and <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="message">
+    /// The message of the exception.
+    /// </param>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseException(string message, Exception innerException)
         : base(message, innerException)
     {
 

@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using RestfulFirebase.Utilities;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Auth;
 
@@ -18,19 +20,20 @@ public class FirebaseAuth
     /// <summary>
     /// Gets or sets the firebase token which can be used for authenticated queries. 
     /// </summary>
-    [JsonProperty("idToken")]
+    [JsonPropertyName("idToken")]
     public string? FirebaseToken { get; set; }
 
     /// <summary>
     /// Gets or sets the refresh token of the underlying service which can be used to get a new access token. 
     /// </summary>
-    [JsonProperty("refreshToken")]
+    [JsonPropertyName("refreshToken")]
     public string? RefreshToken { get; set; }
 
     /// <summary>
     /// Gets or sets the numbers of seconds since the token is created.
     /// </summary>
-    [JsonProperty("expiresIn")]
+    [JsonPropertyName("expiresIn")]
+    //[JsonConverter(typeof(JsonConverterNullableInt))]
     public int? ExpiresIn { get; set; }
 
     /// <summary>

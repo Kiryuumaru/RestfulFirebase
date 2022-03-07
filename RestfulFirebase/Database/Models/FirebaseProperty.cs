@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using RestfulFirebase.Local;
 using ObservableHelpers.Utilities;
 using SerializerHelpers;
+using SerializerHelpers.Exceptions;
 
 namespace RestfulFirebase.Database.Models;
 
@@ -386,7 +387,7 @@ public class FirebaseProperty : ObservableProperty, IInternalRealtimeModel
         });
     }
 
-    private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
+    private void RealtimeInstance_ImmediateDataChanges(object? sender, DataChangesEventArgs e)
     {
         if (IsDisposed)
         {
@@ -433,7 +434,7 @@ public class FirebaseProperty : ObservableProperty, IInternalRealtimeModel
         });
     }
 
-    private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+    private void RealtimeInstance_Error(object? sender, WireExceptionEventArgs e)
     {
         if (IsDisposed)
         {
@@ -443,7 +444,7 @@ public class FirebaseProperty : ObservableProperty, IInternalRealtimeModel
         OnWireError(e);
     }
 
-    private void RealtimeInstance_Disposing(object sender, EventArgs e)
+    private void RealtimeInstance_Disposing(object? sender, EventArgs e)
     {
         if (IsDisposed)
         {

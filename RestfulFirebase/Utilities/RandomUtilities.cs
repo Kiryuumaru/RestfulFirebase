@@ -18,7 +18,7 @@ public static class RandomUtilities
     /// <returns>
     /// The thread-safe <see cref="Random"/> instance.
     /// </returns>
-    public static Random GetThreadRandom()
+    public static Random? GetThreadRandom()
     {
         return randomWrapper.Value;
     }

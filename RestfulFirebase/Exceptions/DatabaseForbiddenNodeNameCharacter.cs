@@ -10,13 +10,22 @@ public class DatabaseForbiddenNodeNameCharacter : DatabaseException
     private const string ExceptionMessage =
         "The provided node has forbidden character.";
 
-    internal DatabaseForbiddenNodeNameCharacter()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseForbiddenNodeNameCharacter"/>.
+    /// </summary>
+    public DatabaseForbiddenNodeNameCharacter()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseForbiddenNodeNameCharacter(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseForbiddenNodeNameCharacter"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseForbiddenNodeNameCharacter(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

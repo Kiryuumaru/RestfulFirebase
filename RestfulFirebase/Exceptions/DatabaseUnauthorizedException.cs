@@ -10,13 +10,22 @@ public class DatabaseUnauthorizedException : DatabaseException
     private const string ExceptionMessage =
         "The request is not authorized by database rules.";
 
-    internal DatabaseUnauthorizedException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseUnauthorizedException"/>.
+    /// </summary>
+    public DatabaseUnauthorizedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseUnauthorizedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseUnauthorizedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseUnauthorizedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

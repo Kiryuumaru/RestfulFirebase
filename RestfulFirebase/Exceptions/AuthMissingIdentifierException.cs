@@ -10,13 +10,22 @@ public class AuthMissingIdentifierException : AuthException
     private const string ExceptionMessage =
         "Identifier was expected but one was not provided.";
 
-    internal AuthMissingIdentifierException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthMissingIdentifierException"/>.
+    /// </summary>
+    public AuthMissingIdentifierException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthMissingIdentifierException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthMissingIdentifierException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthMissingIdentifierException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

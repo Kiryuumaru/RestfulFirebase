@@ -15,7 +15,7 @@ internal class PathEqualityComparer : EqualityComparer<string[]>
 
     }
 
-    public override bool Equals(string[] x, string[] y)
+    public override bool Equals(string[]? x, string[]? y)
     {
         if (x != null && y != null)
         {

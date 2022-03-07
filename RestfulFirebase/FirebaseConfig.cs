@@ -267,6 +267,8 @@ public class FirebaseConfig : ObservableObject
         AttachOnImmediatePropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
         AttachOnImmediatePropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
         AttachOnImmediatePropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
+
+        InitializeProperties();
     }
 
     #endregion

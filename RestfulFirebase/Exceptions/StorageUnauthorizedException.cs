@@ -10,13 +10,22 @@ public class StorageUnauthorizedException : StorageException
     private const string ExceptionMessage =
         "The request is not authorized by storage rules.";
 
-    internal StorageUnauthorizedException()
+    /// <summary>
+    /// Creates an instance of <see cref="StorageUnauthorizedException"/>.
+    /// </summary>
+    public StorageUnauthorizedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal StorageUnauthorizedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="StorageUnauthorizedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public StorageUnauthorizedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

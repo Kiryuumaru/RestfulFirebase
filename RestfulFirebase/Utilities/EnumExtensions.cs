@@ -22,8 +22,12 @@ public static class EnumExtensions
     /// <returns>
     /// The converted string of <paramref name="value"/>.
     /// </returns>
-    public static string ToEnumString<T>(this T value)
+    public static string? ToEnumString<T>(this T value)
     {
+        if (value == null)
+        {
+            throw new ArgumentNullException(nameof(value));
+        }
         var enumType = typeof(T);
         var name = Enum.GetName(enumType, value);
         var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetTypeInfo().DeclaredFields.First(f => f.Name == name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).Single();

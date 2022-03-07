@@ -10,13 +10,22 @@ public class OfflineModeException : Exception
     private const string ExceptionMessage =
         "The operation is not executed because the offline mode is enabled.";
 
-    internal OfflineModeException()
+    /// <summary>
+    /// Creates an instance of <see cref="OfflineModeException"/>.
+    /// </summary>
+    public OfflineModeException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal OfflineModeException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="OfflineModeException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public OfflineModeException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

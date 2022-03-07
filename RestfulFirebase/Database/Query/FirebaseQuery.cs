@@ -7,12 +7,12 @@ using RestfulFirebase.Http;
 using System.Threading;
 using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Utilities;
-using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using ObservableHelpers.Utilities;
 using System.Linq;
 using DisposableHelpers;
+using System.Text.Json;
 
 namespace RestfulFirebase.Database.Query;
 
@@ -345,10 +345,10 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
             foreach (var path in relativePaths)
             {
-                fanoutObject.Add(path, json == null ? null : JsonConvert.DeserializeObject(json));
+                fanoutObject.Add(path, json == null ? null : JsonSerializer.Deserialize<string>(json));
             }
 
-            return JsonConvert.SerializeObject(fanoutObject);
+            return JsonSerializer.Serialize(fanoutObject);
         }, token, onException);
     }
 

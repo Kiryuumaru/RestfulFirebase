@@ -10,13 +10,22 @@ public class AuthOperationNotAllowedException : AuthException
     private const string ExceptionMessage =
         "Specified operation is disabled for this project.";
 
-    internal AuthOperationNotAllowedException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthOperationNotAllowedException"/>.
+    /// </summary>
+    public AuthOperationNotAllowedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthOperationNotAllowedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthOperationNotAllowedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthOperationNotAllowedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

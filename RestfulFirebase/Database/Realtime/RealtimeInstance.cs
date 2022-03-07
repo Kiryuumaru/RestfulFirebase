@@ -1,5 +1,4 @@
 ﻿using LockerHelpers;
-using Newtonsoft.Json;
 using ObservableHelpers;
 using ObservableHelpers.Abstraction;
 using ObservableHelpers.Utilities;
@@ -116,7 +115,11 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         App.Disposing += App_Disposing;
 
         AbsoluteUrl = Query.GetAbsoluteUrl();
-        DBPath = UrlUtilities.Separate(AbsoluteUrl.Substring(8)); // Removes 'https://'
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+        DBPath = UrlUtilities.Separate(AbsoluteUrl[8..]); // Removes 'https://'
+#else
+    DBPath = UrlUtilities.Separate(AbsoluteUrl[8..]); // Removes 'https://'
+#endif
 
         App.LocalDatabase.InternalSubscribe(LocalDatabase, OnDataChanges);
     }
@@ -238,13 +241,13 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         EnsureValidPath(path);
 
         bool cancel = false;
-        void RealtimeInstance2_Error(object sender, WireExceptionEventArgs e)
+        void RealtimeInstance_Error(object? sender, WireExceptionEventArgs e)
         {
             cancel = true;
         }
         if (cancelOnError)
         {
-            Error += RealtimeInstance2_Error;
+            Error += RealtimeInstance_Error;
         }
         async Task<bool> waitTask()
         {
@@ -268,7 +271,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         bool result = await Task.Run(waitTask).ConfigureAwait(false);
         if (cancelOnError)
         {
-            Error -= RealtimeInstance2_Error;
+            Error -= RealtimeInstance_Error;
         }
         return result;
     }
@@ -532,7 +535,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         }
     }
 
-    private void Parent_Error(object sender, WireExceptionEventArgs e)
+    private void Parent_Error(object? sender, WireExceptionEventArgs e)
     {
         if (IsDisposed)
         {
@@ -546,7 +549,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         }
     }
 
-    private void Parent_Disposing(object sender, EventArgs e)
+    private void Parent_Disposing(object? sender, EventArgs e)
     {
         if (IsDisposed)
         {
@@ -556,7 +559,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         Dispose();
     }
 
-    private void OnDataChanges(object sender, DataChangesEventArgs args)
+    private void OnDataChanges(object? sender, DataChangesEventArgs args)
     {
         if (IsDisposed)
         {
@@ -598,7 +601,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         });
     }
 
-    private void App_Disposing(object sender, EventArgs e)
+    private void App_Disposing(object? sender, EventArgs e)
     {
         App.Disposing -= App_Disposing;
         Dispose();
@@ -909,7 +912,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         return MakeChanges(value, path);
     }
 
-    private void EnsureValidPath(string[] path)
+    private static void EnsureValidPath(string[] path)
     {
         if (path == null || path.Length == 0)
         {
@@ -945,7 +948,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         }
     }
 
-    private void EnsureValidAndNonEmptyPath(string[] path)
+    private static void EnsureValidAndNonEmptyPath(string[] path)
     {
         if (path == null || path.Length == 0)
         {
@@ -1228,7 +1231,11 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
                 {
                     string[] childPath = new string[path.Length + 1];
                     Array.Copy(path, 0, childPath, 0, path.Length);
-                    childPath[childPath.Length - 1] = pair.Key[0];
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+                    childPath[^1] = pair.Key[0];
+#else
+                    childPath[^1] = pair.Key[0];
+#endif
                     MakeSync(pair.Value, childPath);
                 }
                 else if (pair.Key.Length > 1)
@@ -1376,13 +1383,13 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         App.LocalDatabase.InternalDelete(LocalDatabase, absolutePath);
     }
 
-    private string[] DBGetAbsoluteDataPath(string[] path)
+    private string[] DBGetAbsoluteDataPath(string[]? path)
     {
         int pathLength = path?.Length ?? 0;
         string[] absoluteDataPath = new string[DBPath.Length + pathLength + 1];
         absoluteDataPath[0] = DatabaseApp.OfflineDatabaseIndicator;
         Array.Copy(DBPath, 0, absoluteDataPath, 1, DBPath.Length);
-        if (pathLength > 0)
+        if (path != null && pathLength > 0)
         {
             Array.Copy(path, 0, absoluteDataPath, DBPath.Length + 1, pathLength);
         }
@@ -1407,7 +1414,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
             {
                 return new (string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)[]
                 {
-                    (new string[0], deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType)
+                    (Array.Empty<string>(), deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType)
                 };
             }
         }
@@ -1427,7 +1434,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
             return values;
         }
 
-        return new (string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)[0];
+        return Array.Empty<(string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)>();
     }
 
     private (string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)[] DBGetRecursiveRelativeData(string[] absolutePath)
@@ -1447,7 +1454,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
             {
                 return new (string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)[]
                 {
-                    (new string[0], deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType)
+                    (Array.Empty<string>(), deserialized.Value.sync, deserialized.Value.local, deserialized.Value.value, deserialized.Value.changesType)
                 };
             }
         }
@@ -1467,7 +1474,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
             return values;
         }
 
-        return new (string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)[0];
+        return Array.Empty<(string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)>();
     }
 
     private (string? sync, string? local, string? value, LocalDataChangesType changesType)? DBGetData(string[] absolutePath)
@@ -1638,7 +1645,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         App.LocalDatabase.InternalSetValue(LocalDatabase, serialized, absolutePath);
     }
 
-    private (string? sync, string? local, string? value, LocalDataChangesType changesType)? DeserializeData(string data)
+    private static (string? sync, string? local, string? value, LocalDataChangesType changesType)? DeserializeData(string data)
     {
         string?[]? deserialized = StringSerializer.Deserialize(data);
         if (deserialized != null && deserialized.Length == 3)
@@ -1657,7 +1664,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         return default;
     }
 
-    private string SerializeData(string? sync, string? local, LocalDataChangesType changesType)
+    private static string SerializeData(string? sync, string? local, LocalDataChangesType changesType)
     {
         string?[] data = new string[3];
 
@@ -1676,7 +1683,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
 
     #endregion
 
-    #region D Members
+    #region Object Members
 
     /// <inheritdoc/>
     public override string ToString()

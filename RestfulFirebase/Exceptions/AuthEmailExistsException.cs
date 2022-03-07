@@ -10,13 +10,22 @@ public class AuthEmailExistsException : AuthException
     private const string ExceptionMessage =
         "The email address is already in use by another account.";
 
-    internal AuthEmailExistsException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthEmailExistsException"/>.
+    /// </summary>
+    public AuthEmailExistsException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthEmailExistsException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthEmailExistsException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthEmailExistsException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

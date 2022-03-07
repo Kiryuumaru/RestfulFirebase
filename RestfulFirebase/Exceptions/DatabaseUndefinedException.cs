@@ -13,7 +13,16 @@ public class DatabaseUndefinedException : DatabaseException
     /// </summary>
     public HttpStatusCode StatusCode { get; }
 
-    internal DatabaseUndefinedException(Exception innerException, HttpStatusCode statusCode)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseUndefinedException"/> with provided <paramref name="innerException"/> and <paramref name="statusCode"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    /// <param name="statusCode">
+    /// The <see cref="HttpStatusCode"/> of the exception.
+    /// </param>
+    public DatabaseUndefinedException(Exception innerException, HttpStatusCode statusCode)
         : base("An unidentified error occured.", innerException)
     {
         StatusCode = statusCode;

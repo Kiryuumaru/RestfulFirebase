@@ -10,13 +10,22 @@ public class AuthInvalidGrantTypeException : AuthException
     private const string ExceptionMessage =
         "The grant type specified is invalid.";
 
-    internal AuthInvalidGrantTypeException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidGrantTypeException"/>.
+    /// </summary>
+    public AuthInvalidGrantTypeException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthInvalidGrantTypeException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidGrantTypeException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthInvalidGrantTypeException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

@@ -10,13 +10,22 @@ public class AuthNotAuthenticatedException : AuthException
     private const string ExceptionMessage =
         "App is not authenticated.";
 
-    internal AuthNotAuthenticatedException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthNotAuthenticatedException"/>.
+    /// </summary>
+    public AuthNotAuthenticatedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthNotAuthenticatedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthNotAuthenticatedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthNotAuthenticatedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

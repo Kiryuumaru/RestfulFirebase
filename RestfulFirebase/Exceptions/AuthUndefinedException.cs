@@ -10,13 +10,22 @@ public class AuthUndefinedException : AuthException
     private const string ExceptionMessage =
         "An unidentified exception occurs.";
 
-    internal AuthUndefinedException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUndefinedException"/>.
+    /// </summary>
+    public AuthUndefinedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthUndefinedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUndefinedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthUndefinedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

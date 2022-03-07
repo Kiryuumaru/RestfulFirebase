@@ -10,13 +10,22 @@ public class AuthInvalidJSONReceivedException : AuthException
     private const string ExceptionMessage =
         "Invalid JSON payload received.";
 
-    internal AuthInvalidJSONReceivedException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidJSONReceivedException"/>.
+    /// </summary>
+    public AuthInvalidJSONReceivedException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthInvalidJSONReceivedException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidJSONReceivedException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthInvalidJSONReceivedException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

@@ -5,6 +5,7 @@ using RestfulFirebase.Database.Realtime;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
+using SerializerHelpers.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -76,7 +77,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         string? key,
         [CallerMemberName] string? propertyName = null,
         Func<bool>? setValidate = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         if (IsDisposed)
         {
@@ -96,12 +97,12 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                             return default;
                         }
                         return Activator.CreateInstance<T>();
-                    }, key, propertyName, nameof(FirebaseObject), args =>
+                    }, key, propertyName, new string[] { nameof(FirebaseObject) }, args =>
                     {
                         postAction?.Invoke((
                             args.key,
                             args.propertyName,
-                            args.group,
+                            args.groups,
                             args.oldValue,
                             args.newValue,
                             args.hasChanges));
@@ -119,7 +120,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
             }
         }
 
-        return SetProperty(value, key, propertyName, nameof(FirebaseObject), setValidate, postAction);
+        return SetProperty(value, key, propertyName, new string[] { nameof(FirebaseObject) }, setValidate, postAction);
     }
 
     /// <summary>
@@ -152,7 +153,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     protected T? GetFirebasePropertyWithKey<T>(
         string? key,
         [CallerMemberName] string? propertyName = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         if (IsDisposed)
         {
@@ -165,12 +166,12 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
             {
                 throw new DatabaseInvalidCascadeRealtimeModelException();
             }
-            T? prop = GetProperty(() => (T)Activator.CreateInstance(typeof(T)), key, propertyName, nameof(FirebaseObject), args =>
+            T? prop = GetProperty(() => Activator.CreateInstance<T>(), key, propertyName, new string[] { nameof(FirebaseObject) }, args =>
             {
                 postAction?.Invoke((
                     args.key,
                     args.propertyName,
-                    args.group,
+                    args.groups,
                     args.oldValue,
                     args.newValue,
                     args.hasChanges));
@@ -183,7 +184,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         }
         else
         {
-            return GetProperty(key, propertyName, nameof(FirebaseObject), postAction);
+            return GetProperty(key, propertyName, new string[] { nameof(FirebaseObject) }, postAction);
         }
     }
 
@@ -221,7 +222,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         string? key,
         Func<T> defaultValueFactory,
         [CallerMemberName] string? propertyName = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
     {
         if (IsDisposed)
         {
@@ -236,11 +237,11 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                 {
                     throw new DatabaseInvalidCascadeRealtimeModelException();
                 }
-                defaultValueFactory = () => (T)Activator.CreateInstance(typeof(T));
+                defaultValueFactory = () => Activator.CreateInstance<T>();
             }
         }
 
-        return GetProperty(defaultValueFactory, key, propertyName, nameof(FirebaseObject), postAction);
+        return GetProperty(defaultValueFactory, key, propertyName, new string[] { nameof(FirebaseObject) }, postAction);
     }
 
     /// <summary>
@@ -274,7 +275,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         T value,
         [CallerMemberName] string? propertyName = null,
         Func<bool>? setValidate = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         return SetFirebasePropertyWithKey(value, propertyName, propertyName, setValidate, postAction);
     }
@@ -305,7 +306,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     /// </exception>
     protected T? GetFirebaseProperty<T>(
         [CallerMemberName] string? propertyName = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T? newValue, bool hasChanges)>? postAction = null)
     {
         return GetFirebasePropertyWithKey(propertyName, propertyName, postAction);
     }
@@ -340,7 +341,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     protected T GetFirebaseProperty<T>(
         Func<T> defaultValueFactory,
         [CallerMemberName] string? propertyName = null,
-        Action<(string? key, string? propertyName, string? group, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
+        Action<(string? key, string? propertyName, string[]? groups, T? oldValue, T newValue, bool hasChanges)>? postAction = null)
     {
         return GetFirebasePropertyWithKey(propertyName, defaultValueFactory, propertyName, postAction);
     }
@@ -350,11 +351,11 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
     #region ObservableObject Members
 
     /// <inheritdoc/>
-    protected override NamedProperty NamedPropertyFactory(string? key, string? propertyName, string? group)
+    protected override NamedProperty NamedPropertyFactory(string? key, string? propertyName, string[]? groups)
     {
         return new NamedProperty(
-            group == nameof(FirebaseObject) ? new FirebaseProperty() : new ObservableProperty(),
-            key, propertyName, group);
+            (groups?.Contains(nameof(FirebaseObject)) ?? false) ? new FirebaseProperty() : new ObservableProperty(),
+            key, propertyName, groups);
     }
 
     #endregion
@@ -409,6 +410,8 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                     return;
                 }
 
+                InitializeProperties();
+
                 List<string> children = realtimeInstance
                     .GetChildren()
                     .Select(i => i.key)
@@ -438,7 +441,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
 
                 foreach (var child in children)
                 {
-                    GetOrAddNamedProperty<string?>(child, null, nameof(FirebaseObject),
+                    GetOrAddNamedProperty<string?>(child, null, new string[] { nameof(FirebaseObject) },
                         () => null,
                         args =>
                         {
@@ -560,7 +563,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         });
     }
 
-    private void RealtimeInstance_ImmediateDataChanges(object sender, DataChangesEventArgs e)
+    private void RealtimeInstance_ImmediateDataChanges(object? sender, DataChangesEventArgs e)
     {
         if (IsDisposed)
         {
@@ -584,7 +587,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
                 return;
             }
 
-            CreateOrUpdateNamedProperty<string?>(e.Path[0], null, nameof(FirebaseObject),
+            CreateOrUpdateNamedProperty<string?>(e.Path[0], null, new string[] { nameof(FirebaseObject) },
                 () => null,
                 args => RealtimeInstance.InternalGetData(e.Path[0]).HasValue,
                 args => false,
@@ -601,7 +604,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         });
     }
 
-    private void RealtimeInstance_Error(object sender, WireExceptionEventArgs e)
+    private void RealtimeInstance_Error(object? sender, WireExceptionEventArgs e)
     {
         if (IsDisposed)
         {
@@ -611,7 +614,7 @@ public class FirebaseObject : ObservableObject, IInternalRealtimeModel
         OnWireError(e);
     }
 
-    private void RealtimeInstance_Disposing(object sender, EventArgs e)
+    private void RealtimeInstance_Disposing(object? sender, EventArgs e)
     {
         if (IsDisposed)
         {

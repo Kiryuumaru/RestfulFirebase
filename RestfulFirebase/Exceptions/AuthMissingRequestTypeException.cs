@@ -10,13 +10,22 @@ public class AuthMissingRequestTypeException : AuthException
     private const string ExceptionMessage =
         "Request type was expected but one was not provided.";
 
-    internal AuthMissingRequestTypeException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthMissingRequestTypeException"/>.
+    /// </summary>
+    public AuthMissingRequestTypeException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthMissingRequestTypeException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthMissingRequestTypeException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthMissingRequestTypeException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

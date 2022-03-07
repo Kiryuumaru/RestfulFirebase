@@ -10,13 +10,22 @@ public class AuthInvalidPasswordException : AuthException
     private const string ExceptionMessage =
         "The password is invalid or the user does not have a password.";
 
-    internal AuthInvalidPasswordException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidPasswordException"/>.
+    /// </summary>
+    public AuthInvalidPasswordException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthInvalidPasswordException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidPasswordException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthInvalidPasswordException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

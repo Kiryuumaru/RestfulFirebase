@@ -10,13 +10,22 @@ public class AuthWeakPasswordException : AuthException
     private const string ExceptionMessage =
         "The password must be 6 characters long or more.";
 
-    internal AuthWeakPasswordException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthWeakPasswordException"/>.
+    /// </summary>
+    public AuthWeakPasswordException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthWeakPasswordException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthWeakPasswordException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthWeakPasswordException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

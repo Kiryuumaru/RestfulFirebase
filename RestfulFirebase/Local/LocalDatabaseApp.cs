@@ -512,7 +512,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalContains(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -521,13 +521,13 @@ public class LocalDatabaseApp : SyncContext
 
     internal void InternalDelete(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder holder = GetHandler(localDatabase);
+            LocalDatabaseEventHolder? holder = LocalDatabaseApp.GetHandler(localDatabase);
 
             HelperDeleteChildren(localDatabase, holder, true, path, serializedPath);
 
@@ -554,7 +554,7 @@ public class LocalDatabaseApp : SyncContext
                 {
                     if (hierData.Length > 1 && hierData[0] == PathIndicator)
                     {
-                        string?[]? deserialized = StringSerializer.Deserialize(hierData.Substring(1));
+                        string?[]? deserialized = StringSerializer.Deserialize(hierData[1..]);
                         if (deserialized != null)
                         {
                             int indexOf = Array.IndexOf(deserialized, lastNode);
@@ -588,7 +588,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal (string[] path, string key)[] InternalGetChildren(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
@@ -598,7 +598,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal LocalDataType InternalGetDataType(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
@@ -615,7 +615,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal (string[] path, LocalDataType type)[] InternalGetTypedChildren(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -629,7 +629,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal string[][] InternalGetRecursiveChildren(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -642,7 +642,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal string[][] InternalGetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -655,7 +655,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal (string key, LocalDataType type)[] InternalGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -668,7 +668,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal string? InternalGetValue(ILocalDatabase localDatabase, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -676,7 +676,7 @@ public class LocalDatabaseApp : SyncContext
 
         if (data != null && data.Length > 0)
         {
-            return data[0] == ValueIndicator ? data.Substring(1) : default;
+            return data[0] == ValueIndicator ? data[1..] : default;
         }
         else
         {
@@ -686,12 +686,12 @@ public class LocalDatabaseApp : SyncContext
 
     internal void InternalSetValue(ILocalDatabase localDatabase, string? value, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder holder = GetHandler(localDatabase);
+            LocalDatabaseEventHolder? holder = LocalDatabaseApp.GetHandler(localDatabase);
 
             HelperDeleteChildren(localDatabase, holder, false, path, serializedPath);
 
@@ -715,14 +715,14 @@ public class LocalDatabaseApp : SyncContext
                     string? data = DBGet(localDatabase, serializedKeyHier);
                     if (data != null && data.Length > 0 && data[0] == PathIndicator)
                     {
-                        string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+                        string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
                         if (deserialized != null && deserialized.Length != 0)
                         {
                             if (!deserialized.Contains(path[nextI]))
                             {
                                 string[] modified = new string[deserialized.Length + 1];
                                 Array.Copy(deserialized, 0, modified, 0, deserialized.Length);
-                                modified[modified.Length - 1] = path[nextI];
+                                modified[^1] = path[nextI];
                                 lastValueToSet = PathIndicator + StringSerializer.Serialize(modified);
                                 skipLast = true;
                                 break;
@@ -760,7 +760,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal void InternalTryGetNearestHierarchyValueOrPath(ILocalDatabase localDatabase, Action<(string[] path, string? value)> onValue, Action<string[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -784,7 +784,7 @@ public class LocalDatabaseApp : SyncContext
                         }
                         else if (hierData[0] == ValueIndicator)
                         {
-                            onValue?.Invoke((hierPath, hierData.Substring(1)));
+                            onValue?.Invoke((hierPath, hierData[1..]));
                             return;
                         }
                     }
@@ -806,7 +806,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -816,7 +816,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrPath(ILocalDatabase localDatabase, Action<string> onValue, Action onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -826,7 +826,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrRecursiveChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -836,7 +836,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrRecursiveRelativeChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -846,7 +846,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrRecursiveValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -856,7 +856,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrRecursiveRelativeValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -866,7 +866,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrRelativeTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -876,7 +876,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal bool InternalTryGetValueOrTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        LocalDatabaseApp.Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -900,7 +900,7 @@ public class LocalDatabaseApp : SyncContext
             {
                 if (data[0] == ValueIndicator)
                 {
-                    onValue?.Invoke((data.Substring(1), serializedPath));
+                    onValue?.Invoke((data[1..], serializedPath));
                     return true;
                 }
                 else if (data[0] == PathIndicator)
@@ -914,11 +914,11 @@ public class LocalDatabaseApp : SyncContext
         });
     }
     
-    private (string[] path, string key)[] HelperGetChildren(string[] path, string? data)
+    private static (string[] path, string key)[] HelperGetChildren(string[] path, string? data)
     {
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 (string[] path, string key)[] paths = new (string[] path, string key)[deserialized.Length];
@@ -930,14 +930,14 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     paths[i] = (subPath, currentPath);
                 }
                 return paths;
             }
         }
-        return new (string[] path, string key)[0];
+        return Array.Empty<(string[] path, string key)>();
     }
 
     private (string[] path, LocalDataType type)[] HelperGetTypedChildren(ILocalDatabase localDatabase, string[] path, string? data)
@@ -946,7 +946,7 @@ public class LocalDatabaseApp : SyncContext
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -957,7 +957,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(subPath, () =>
@@ -986,7 +986,7 @@ public class LocalDatabaseApp : SyncContext
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -997,7 +997,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(subPath, () =>
@@ -1006,11 +1006,11 @@ public class LocalDatabaseApp : SyncContext
 
                         if (subData != null && subData.Length > 0 && subData[0] == PathIndicator)
                         {
-                            paths.Add((subPath[subPath.Length - 1], LocalDataType.Path));
+                            paths.Add((subPath[^1], LocalDataType.Path));
                         }
                         else
                         {
-                            paths.Add((subPath[subPath.Length - 1], LocalDataType.Value));
+                            paths.Add((subPath[^1], LocalDataType.Value));
                         }
                     });
                 }
@@ -1032,7 +1032,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
-                string?[]? deserialized = StringSerializer.Deserialize(recvData.Substring(1));
+                string?[]? deserialized = StringSerializer.Deserialize(recvData[1..]);
                 if (deserialized != null)
                 {
                     for (int i = 0; i < deserialized.Length; i++)
@@ -1043,7 +1043,7 @@ public class LocalDatabaseApp : SyncContext
                             throw new Exception();
                         }
                         string[] subPath = new string[recvPath.Length + 1];
-                        subPath[subPath.Length - 1] = currentPath;
+                        subPath[^1] = currentPath;
                         Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
                         string serializedSubPath = StringSerializer.Serialize(subPath);
                         rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
@@ -1058,7 +1058,7 @@ public class LocalDatabaseApp : SyncContext
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -1069,7 +1069,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
@@ -1092,7 +1092,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
-                string?[]? deserialized = StringSerializer.Deserialize(recvData.Substring(1));
+                string?[]? deserialized = StringSerializer.Deserialize(recvData[1..]);
                 if (deserialized != null)
                 {
                     for (int i = 0; i < deserialized.Length; i++)
@@ -1103,7 +1103,7 @@ public class LocalDatabaseApp : SyncContext
                             throw new Exception();
                         }
                         string[] subPath = new string[recvPath.Length + 1];
-                        subPath[subPath.Length - 1] = currentPath;
+                        subPath[^1] = currentPath;
                         Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
                         string serializedSubPath = StringSerializer.Serialize(subPath);
                         rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
@@ -1120,7 +1120,7 @@ public class LocalDatabaseApp : SyncContext
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -1131,7 +1131,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
@@ -1154,7 +1154,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
-                string?[]? deserialized = StringSerializer.Deserialize(recvData.Substring(1));
+                string?[]? deserialized = StringSerializer.Deserialize(recvData[1..]);
                 if (deserialized != null)
                 {
                     for (int i = 0; i < deserialized.Length; i++)
@@ -1165,7 +1165,7 @@ public class LocalDatabaseApp : SyncContext
                             throw new Exception();
                         }
                         string[] subPath = new string[recvPath.Length + 1];
-                        subPath[subPath.Length - 1] = currentPath;
+                        subPath[^1] = currentPath;
                         Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
                         string serializedSubPath = StringSerializer.Serialize(subPath);
                         rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
@@ -1174,13 +1174,13 @@ public class LocalDatabaseApp : SyncContext
             }
             else if (recvData != null)
             {
-                paths.Add((recvPath, recvData.Substring(1)));
+                paths.Add((recvPath, recvData[1..]));
             }
         }
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -1191,7 +1191,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
@@ -1214,7 +1214,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
-                string?[]? deserialized = StringSerializer.Deserialize(recvData.Substring(1));
+                string?[]? deserialized = StringSerializer.Deserialize(recvData[1..]);
                 if (deserialized != null)
                 {
                     for (int i = 0; i < deserialized.Length; i++)
@@ -1225,7 +1225,7 @@ public class LocalDatabaseApp : SyncContext
                             throw new Exception();
                         }
                         string[] subPath = new string[recvPath.Length + 1];
-                        subPath[subPath.Length - 1] = currentPath;
+                        subPath[^1] = currentPath;
                         Array.Copy(recvPath, 0, subPath, 0, recvPath.Length);
                         string serializedSubPath = StringSerializer.Serialize(subPath);
                         rwLock.LockRead(recvPath, () => recursive(subPath, serializedSubPath, nextRoot));
@@ -1236,13 +1236,13 @@ public class LocalDatabaseApp : SyncContext
             {
                 string[] pathToAdd = new string[root];
                 Array.Copy(recvPath, recvPath.Length - root, pathToAdd, 0, root);
-                paths.Add((pathToAdd, recvData.Substring(1)));
+                paths.Add((pathToAdd, recvData[1..]));
             }
         }
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
-            string?[]? deserialized = StringSerializer.Deserialize(data.Substring(1));
+            string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
             if (deserialized != null)
             {
                 for (int i = 0; i < deserialized.Length; i++)
@@ -1253,7 +1253,7 @@ public class LocalDatabaseApp : SyncContext
                         throw new Exception();
                     }
                     string[] subPath = new string[path.Length + 1];
-                    subPath[subPath.Length - 1] = currentPath;
+                    subPath[^1] = currentPath;
                     Array.Copy(path, 0, subPath, 0, path.Length);
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(path, () => recursive(subPath, serializedSubPath, 1));
@@ -1264,14 +1264,14 @@ public class LocalDatabaseApp : SyncContext
         return paths.ToArray();
     }
 
-    private void HelperDeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder holder, bool includeSelf, string[] path, string serializedPath)
+    private void HelperDeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder? holder, bool includeSelf, string[] path, string serializedPath)
     {
         string? childData = DBGet(localDatabase, serializedPath);
         if (childData != null)
         {
             if (childData.Length > 1 && childData[0] == PathIndicator)
             {
-                string?[]? deserialized = StringSerializer.Deserialize(childData.Substring(1));
+                string?[]? deserialized = StringSerializer.Deserialize(childData[1..]);
                 if (deserialized != null)
                 {
                     foreach (string? deserializedChildPath in deserialized)
@@ -1281,7 +1281,7 @@ public class LocalDatabaseApp : SyncContext
                             throw new Exception();
                         }
                         string[] nextChild = new string[path.Length + 1];
-                        nextChild[nextChild.Length - 1] = deserializedChildPath;
+                        nextChild[^1] = deserializedChildPath;
                         Array.Copy(path, 0, nextChild, 0, path.Length);
                         string serializedChildPath = StringSerializer.Serialize(nextChild);
                         rwLock.LockUpgradeableRead(path, () => HelperDeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
@@ -1296,16 +1296,16 @@ public class LocalDatabaseApp : SyncContext
         }
     }
 
-    private void OnDataChanges(LocalDatabaseEventHolder holder, string[] path)
+    private static void OnDataChanges(LocalDatabaseEventHolder? holder, string[] path)
     {
         holder?.Invoke(new DataChangesEventArgs(path));
     }
 
-    private LocalDatabaseEventHolder GetHandler(ILocalDatabase localDatabase)
+    private static LocalDatabaseEventHolder? GetHandler(ILocalDatabase localDatabase)
     {
         return databaseDictionaryLock.LockRead(() =>
         {
-            databaseDictionary.TryGetValue(localDatabase, out LocalDatabaseEventHolder holder);
+            databaseDictionary.TryGetValue(localDatabase, out LocalDatabaseEventHolder? holder);
             return holder;
         });
     }
@@ -1382,7 +1382,7 @@ public class LocalDatabaseApp : SyncContext
         return read(0);
     }
 
-    private void Validate(ILocalDatabase localDatabase, string[] path)
+    private static void Validate(ILocalDatabase localDatabase, string[] path)
     {
         if (localDatabase == null)
         {
@@ -1414,7 +1414,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
             {
-                throw new ArgumentNullException(nameof(encryptedKey));
+                throw new ArgumentNullException(nameof(key));
             }
 
             return localDatabase.ContainsKey(encryptedKey);
@@ -1433,7 +1433,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
             {
-                throw new ArgumentNullException(nameof(encryptedKey));
+                throw new ArgumentNullException(nameof(key));
             }
 
             localDatabase.Delete(encryptedKey);
@@ -1453,7 +1453,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
             {
-                throw new ArgumentNullException(nameof(encryptedKey));
+                throw new ArgumentNullException(nameof(key));
             }
 
             encryptedValue = localDatabase.Get(encryptedKey);
@@ -1475,7 +1475,7 @@ public class LocalDatabaseApp : SyncContext
 
             if (encryptedKey == null || string.IsNullOrEmpty(encryptedKey))
             {
-                throw new ArgumentNullException(nameof(encryptedKey));
+                throw new ArgumentNullException(nameof(key));
             }
 
             localDatabase.Set(encryptedKey, encryptedValue);
@@ -1511,7 +1511,7 @@ public class LocalDatabaseApp : SyncContext
 
                 Task.Run(delegate
                 {
-                    while (invokes.TryDequeue(out DataChangesEventArgs argsToInvoke))
+                    while (invokes.TryDequeue(out DataChangesEventArgs? argsToInvoke))
                     {
                         Changes?.Invoke(localDatabaseApp, argsToInvoke);
                     }

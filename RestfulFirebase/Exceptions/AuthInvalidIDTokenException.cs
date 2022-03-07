@@ -10,13 +10,22 @@ public class AuthInvalidIDTokenException : AuthException
     private const string ExceptionMessage =
         "The user's credential is no longer valid. The user must sign in again.";
 
-    internal AuthInvalidIDTokenException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidIDTokenException"/>.
+    /// </summary>
+    public AuthInvalidIDTokenException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthInvalidIDTokenException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthInvalidIDTokenException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthInvalidIDTokenException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

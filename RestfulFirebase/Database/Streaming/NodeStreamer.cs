@@ -8,11 +8,11 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Utilities;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using RestfulFirebase.Exceptions;
 using ObservableHelpers.Utilities;
 using DisposableHelpers;
+using System.Text.Json.Nodes;
+using System.Text.Json;
 
 namespace RestfulFirebase.Database.Streaming;
 
@@ -198,7 +198,27 @@ internal class NodeStreamer : Disposable
         }
     }
 
-    private ServerEventType ParseServerEvent(ServerEventType serverEvent, string eventName)
+    private void ProcessServerData(string url, ServerEventType serverEvent, string serverData)
+    {
+        switch (serverEvent)
+        {
+            case ServerEventType.Put:
+            case ServerEventType.Patch:
+                var result = JsonDocument.Parse(serverData);
+                var pathToken = result.RootElement.GetProperty("path");
+                var dataToken = result.RootElement.GetProperty("data");
+                var path = pathToken.ToString();
+                onNext?.Invoke(this, new StreamObject(dataToken, url, path[1..]));
+                break;
+            case ServerEventType.KeepAlive:
+                break;
+            case ServerEventType.Cancel:
+                onError?.Invoke(this, new ErrorEventArgs(url, new DatabaseUnauthorizedException()));
+                break;
+        }
+    }
+
+    private static ServerEventType ParseServerEvent(ServerEventType serverEvent, string eventName)
     {
         switch (eventName)
         {
@@ -220,29 +240,6 @@ internal class NodeStreamer : Disposable
         }
 
         return serverEvent;
-    }
-
-    private void ProcessServerData(string url, ServerEventType serverEvent, string serverData)
-    {
-        switch (serverEvent)
-        {
-            case ServerEventType.Put:
-            case ServerEventType.Patch:
-                var result = JObject.Parse(serverData);
-                var dataToken = result["data"];
-                var streamPath = result["path"]?.ToString();
-                if (dataToken == null || streamPath == null)
-                {
-                    return;
-                }
-                onNext?.Invoke(this, new StreamObject(dataToken, url, streamPath.Substring(1)));
-                break;
-            case ServerEventType.KeepAlive:
-                break;
-            case ServerEventType.Cancel:
-                onError?.Invoke(this, new ErrorEventArgs(url, new DatabaseUnauthorizedException()));
-                break;
-        }
     }
 
     #endregion

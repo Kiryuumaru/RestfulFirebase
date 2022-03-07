@@ -10,13 +10,22 @@ public class DatabaseInternalServerErrorException : DatabaseException
     private const string ExceptionMessage =
         "An internal server error occured.";
 
-    internal DatabaseInternalServerErrorException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInternalServerErrorException"/>.
+    /// </summary>
+    public DatabaseInternalServerErrorException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseInternalServerErrorException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseInternalServerErrorException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseInternalServerErrorException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

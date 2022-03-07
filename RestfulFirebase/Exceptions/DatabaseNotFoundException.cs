@@ -10,13 +10,22 @@ public class DatabaseNotFoundException : DatabaseException
     private const string ExceptionMessage =
         "The specified Realtime Database was not found.";
 
-    internal DatabaseNotFoundException()
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseNotFoundException"/>.
+    /// </summary>
+    public DatabaseNotFoundException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal DatabaseNotFoundException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="DatabaseNotFoundException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public DatabaseNotFoundException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

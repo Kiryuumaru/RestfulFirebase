@@ -1,16 +1,13 @@
-﻿using Newtonsoft.Json.Linq;
+﻿namespace RestfulFirebase.Database.Realtime;
+
 using RestfulFirebase.Database.Query;
 using RestfulFirebase.Database.Streaming;
-using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace RestfulFirebase.Database.Realtime;
+using System.Text.Json;
 
 /// <summary>
 /// The base query subscribing fluid implementations for firebase realtime database.
@@ -80,7 +77,7 @@ public class RealtimeWire : RealtimeInstance
         }
     }
 
-    private void OnNext(object sender, StreamObject streamObject)
+    private void OnNext(object? sender, StreamObject streamObject)
     {
         if (IsDisposed)
         {
@@ -93,23 +90,18 @@ public class RealtimeWire : RealtimeInstance
 
             string[] path = UrlUtilities.Separate(streamObject.Path);
 
-            if (streamObject.JToken.Type == JTokenType.Null)
+            switch (streamObject.JsonElement.ValueKind)
             {
-                MakeSync(default(string), path);
-            }
-            else if (streamObject.JToken is JValue jValue)
-            {
-                MakeSync(jValue.ToString(), path);
-            }
-            else if (streamObject.JToken is JObject || streamObject.JToken is JArray)
-            {
-                IDictionary<string[], object?> pairs = streamObject.JToken.GetFlatHierarchy();
-                Dictionary<string[], string?> values = new(pairs.Count, PathEqualityComparer.Instance);
-                foreach (KeyValuePair<string[], object?> pair in pairs)
-                {
-                    values.Add(pair.Key, pair.Value?.ToString());
-                }
-                MakeSync(values, path);
+                case JsonValueKind.Null:
+                    MakeSync(default(string), path);
+                    break;
+                case JsonValueKind.Object:
+                case JsonValueKind.Array:
+                    MakeSync(GetFlatHierarchy(streamObject.JsonElement), path);
+                    break;
+                default:
+                    MakeSync(streamObject.JsonElement.GetString(), path);
+                    break;
             }
         }
         catch (Exception ex)
@@ -121,6 +113,78 @@ public class RealtimeWire : RealtimeInstance
         {
             hasFirstStream = true;
         }
+    }
+
+    private static IDictionary<string[], string?> GetFlatHierarchy(JsonElement jsonElement, bool removeArrayNulls = true)
+    {
+        Dictionary<string[], string?> descendants = new(PathEqualityComparer.Instance);
+
+        void recursive(JsonElement recToken, string[] path)
+        {
+            switch (recToken.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    foreach (var subToken in recToken.EnumerateObject())
+                    {
+                        string[] subPath = new string[path.Length + 1];
+                        Array.Copy(path, 0, subPath, 0, path.Length);
+                        subPath[^1] = subToken.Name;
+                        recursive(subToken.Value, subPath);
+                    }
+                    break;
+                case JsonValueKind.Array:
+                    int index = 0;
+                    foreach (var subToken in recToken.EnumerateArray())
+                    {
+                        if (!removeArrayNulls || subToken.ValueKind != JsonValueKind.Null)
+                        {
+                            string[] subPath = new string[path.Length + 1];
+                            Array.Copy(path, 0, subPath, 0, path.Length);
+                            subPath[^1] = index.ToString();
+                            recursive(subToken, subPath);
+                        }
+                        index++;
+                    }
+                    break;
+                case JsonValueKind.Null:
+                    descendants.Add(path, null);
+                    break;
+                default:
+                    descendants.Add(path, recToken.GetString());
+                    break;
+            }
+        }
+
+        switch (jsonElement.ValueKind)
+        {
+            case JsonValueKind.Object:
+                foreach (var subToken in jsonElement.EnumerateObject())
+                {
+                    string[] subPath = new string[] { subToken.Name };
+                    recursive(subToken.Value, subPath);
+                }
+                break;
+            case JsonValueKind.Array:
+                int index = 0;
+                foreach (var subToken in jsonElement.EnumerateArray())
+                {
+                    if (!removeArrayNulls || subToken.ValueKind != JsonValueKind.Null)
+                    {
+                        string[] subPath = new string[] { index.ToString() };
+                        recursive(subToken, subPath);
+                    }
+                    index++;
+                }
+                break;
+            case JsonValueKind.Null:
+                descendants.Add(Array.Empty<string>(), null);
+                break;
+            default:
+                descendants.Add(Array.Empty<string>(), jsonElement.GetString());
+                break;
+        }
+
+        return descendants;
     }
 
     #endregion

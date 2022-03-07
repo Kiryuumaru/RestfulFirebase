@@ -10,13 +10,22 @@ public class AuthUserDisabledException : AuthException
     private const string ExceptionMessage =
         "The user account has been disabled by an administrator.";
 
-    internal AuthUserDisabledException()
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUserDisabledException"/>.
+    /// </summary>
+    public AuthUserDisabledException()
         : base(ExceptionMessage)
     {
 
     }
 
-    internal AuthUserDisabledException(Exception innerException)
+    /// <summary>
+    /// Creates an instance of <see cref="AuthUserDisabledException"/> with provided <paramref name="innerException"/>.
+    /// </summary>
+    /// <param name="innerException">
+    /// The inner exception occured.
+    /// </param>
+    public AuthUserDisabledException(Exception innerException)
         : base(ExceptionMessage, innerException)
     {
 

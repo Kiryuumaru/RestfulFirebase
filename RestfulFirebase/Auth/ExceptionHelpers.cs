@@ -1,6 +1,7 @@
-﻿using Newtonsoft.Json;
-using RestfulFirebase.Exceptions;
+﻿using RestfulFirebase.Exceptions;
+using RestfulFirebase.Utilities;
 using System;
+using System.Text.Json;
 
 namespace RestfulFirebase.Auth;
 
@@ -15,7 +16,7 @@ internal class ExceptionHelpers
             {
                 //create error data template and try to parse JSON
                 var errorData = new { error = new { code = 0, message = "errorid" } };
-                errorData = JsonConvert.DeserializeAnonymousType(responseData, errorData);
+                errorData = JsonSerializerExtensions.DeserializeAnonymousType(responseData, errorData);
 
                 //errorData is just null if different JSON was received
                 message = errorData?.error?.message ?? "";

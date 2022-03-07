@@ -2,6 +2,7 @@
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System;
 
 namespace RestfulFirebase.Database.Streaming;
 
@@ -24,13 +25,17 @@ internal class NonBlockingStreamReader : TextReader
         cachedData = string.Empty;
     }
 
-    public override async Task<string> ReadLineAsync()
+    public override async Task<string?> ReadLineAsync()
     {
-        var currentString = TryGetNewLine();
+        string? currentString = TryGetNewLine();
 
         while (currentString == null)
         {
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+            var read = await stream.ReadAsync(buffer.AsMemory(0, bufferSize)).ConfigureAwait(false);
+#else
             var read = await stream.ReadAsync(buffer, 0, bufferSize).ConfigureAwait(false);
+#endif
             var str = Encoding.UTF8.GetString(buffer, 0, read);
 
             cachedData += str;
@@ -40,13 +45,17 @@ internal class NonBlockingStreamReader : TextReader
         return currentString;
     }
 
-    public async Task<string> ReadLineAsync(CancellationToken token)
+    public async Task<string?> ReadLineAsync(CancellationToken token)
     {
-        var currentString = TryGetNewLine();
+        string? currentString = TryGetNewLine();
 
         while (currentString == null)
         {
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+            var read = await stream.ReadAsync(buffer.AsMemory(0, bufferSize), token).ConfigureAwait(false);
+#else
             var read = await stream.ReadAsync(buffer, 0, bufferSize, token).ConfigureAwait(false);
+#endif
             var str = Encoding.UTF8.GetString(buffer, 0, read);
 
             cachedData += str;
@@ -62,7 +71,11 @@ internal class NonBlockingStreamReader : TextReader
 
         if (newLine >= 0)
         {
-            var r = cachedData.Substring(0, newLine + 1);
+#if NETSTANDARD2_1_OR_GREATER || NET5_0_OR_GREATER
+            var r = cachedData[..(newLine + 1)];
+#else
+            var r = cachedData[..(newLine + 1)];
+#endif
             cachedData = cachedData.Remove(0, r.Length);
             return r.Trim();
         }
