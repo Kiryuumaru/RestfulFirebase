@@ -34,19 +34,19 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
         }
         if (isArray)
         {
-            return (JsonConverter)Activator.CreateInstance(typeof(ArrayItemConverterDecorator<>)
+            return (JsonConverter?)Activator.CreateInstance(typeof(ArrayItemConverterDecorator<>)
                 .MakeGenericType(typeof(TItemConverter), itemType), new object[] { options, itemConverter });
         }
         if (!typeToConvert.IsAbstract && !typeToConvert.IsInterface && typeToConvert.GetConstructor(Type.EmptyTypes) != null)
         {
-            return (JsonConverter)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), typeToConvert, typeToConvert, itemType), new object[] { options, itemConverter });
+            return (JsonConverter?)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), typeToConvert, typeToConvert, itemType), new object[] { options, itemConverter });
         }
         if (isSet)
         {
             var setType = typeof(HashSet<>).MakeGenericType(itemType);
             if (typeToConvert.IsAssignableFrom(setType))
             {
-                return (JsonConverter)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), setType, typeToConvert, itemType), new object[] { options, itemConverter });
+                return (JsonConverter?)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), setType, typeToConvert, itemType), new object[] { options, itemConverter });
             }
         }
         else
@@ -54,11 +54,11 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
             var listType = typeof(List<>).MakeGenericType(itemType);
             if (typeToConvert.IsAssignableFrom(listType))
             {
-                return (JsonConverter)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), listType, typeToConvert, itemType), new object[] { options, itemConverter });
+                return (JsonConverter?)Activator.CreateInstance(typeof(ConcreteCollectionItemConverterDecorator<,,>).MakeGenericType(typeof(TItemConverter), listType, typeToConvert, itemType), new object[] { options, itemConverter });
             }
         }
         // OK it's not an array and we can't find a parameterless constructor for the type.  We can serialize, but not deserialize.
-        return (JsonConverter)Activator.CreateInstance(typeof(EnumerableItemConverterDecorator<,>).MakeGenericType(typeof(TItemConverter), typeToConvert, itemType), new object[] { options, itemConverter });
+        return (JsonConverter?)Activator.CreateInstance(typeof(EnumerableItemConverterDecorator<,>).MakeGenericType(typeof(TItemConverter), typeToConvert, itemType), new object[] { options, itemConverter });
     }
 
     static (Type? Type, bool IsArray, bool isSet) GetItemType(Type type)
@@ -182,7 +182,7 @@ internal static class TypeExtensions
 {
     public static IEnumerable<Type> GetInterfacesAndSelf(this Type type)
     {
-        return (type ?? throw new ArgumentNullException()).IsInterface ?
+        return (type ?? throw new ArgumentNullException(nameof(type))).IsInterface ?
             new[] { type }.Concat(type.GetInterfaces()) :
             type.GetInterfaces();
     }
