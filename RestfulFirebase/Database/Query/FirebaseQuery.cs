@@ -345,7 +345,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
             foreach (var path in relativePaths)
             {
-                fanoutObject.Add(path, json == null ? null : JsonSerializer.Deserialize<string>(json));
+                fanoutObject.Add(path, json == null ? null : JsonSerializer.Deserialize<string>(json, RestfulFirebaseApp.DefaultJsonSerializerOption));
             }
 
             return JsonSerializer.Serialize(fanoutObject);

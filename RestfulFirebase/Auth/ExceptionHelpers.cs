@@ -16,7 +16,7 @@ internal class ExceptionHelpers
             {
                 //create error data template and try to parse JSON
                 var errorData = new { error = new { code = 0, message = "errorid" } };
-                errorData = JsonSerializerExtensions.DeserializeAnonymousType(responseData, errorData);
+                errorData = JsonSerializerExtensions.DeserializeAnonymousType(responseData, errorData, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
                 //errorData is just null if different JSON was received
                 message = errorData?.error?.message ?? "";

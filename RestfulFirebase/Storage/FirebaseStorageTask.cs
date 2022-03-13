@@ -86,7 +86,7 @@ public class FirebaseStorageTask
         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         response.EnsureSuccessStatusCode();
-        var data = JsonSerializer.Deserialize<Dictionary<string, object>>(responseData);
+        var data = JsonSerializer.Deserialize<Dictionary<string, object>>(responseData, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
         return downloadUrl + data?["downloadTokens"];
     }

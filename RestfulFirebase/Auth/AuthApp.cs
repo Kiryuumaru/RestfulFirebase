@@ -76,13 +76,6 @@ public class AuthApp : SyncContext
     private IHttpClientProxy? client;
     private readonly Session session;
 
-    private static readonly JsonSerializerOptions firebaseAuthOption = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        IgnoreReadOnlyFields = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString
-    };
-
 #endregion
 
     #region Initializers
@@ -177,8 +170,8 @@ public class AuthApp : SyncContext
     internal async Task<FirebaseAuth> ExecuteAuthWithPostContent(string googleUrl, string postContent)
     {
         string responseData = await ExecuteWithPostContent(googleUrl, postContent);
-        var user = JsonSerializer.Deserialize<User>(responseData);
-        var auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, firebaseAuthOption);
+        var user = JsonSerializer.Deserialize<User>(responseData, RestfulFirebaseApp.DefaultJsonSerializerOption);
+        var auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
         if (user == null || auth == null)
         {
@@ -250,7 +243,7 @@ public class AuthApp : SyncContext
 
         var definition = new { recaptchaSiteKey = "" };
 
-        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition);
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, RestfulFirebaseApp.DefaultJsonSerializerOption);
         
         if (response == null)
         {
@@ -280,7 +273,7 @@ public class AuthApp : SyncContext
 
         var definition = new { sessionInfo = "" };
 
-        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition);
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
         if (response == null)
         {

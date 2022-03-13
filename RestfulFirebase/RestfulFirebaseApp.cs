@@ -6,6 +6,8 @@ using RestfulFirebase.Local;
 using RestfulFirebase.Storage;
 using SynchronizationContextHelpers;
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase;
 
@@ -40,6 +42,13 @@ public class RestfulFirebaseApp : SyncContext
     /// Gets the <see cref="StorageApp"/> for firebase storage app module.
     /// </summary>
     public StorageApp Storage { get; private set; }
+
+    internal static readonly JsonSerializerOptions DefaultJsonSerializerOption = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        IgnoreReadOnlyFields = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString
+    };
 
     #endregion
 

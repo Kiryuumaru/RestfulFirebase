@@ -178,7 +178,7 @@ public class FirebaseStorageReference
             using var http = App.Storage.CreateHttpClientAsync(timeout);
             var result = await http.GetAsync(url).ConfigureAwait(false);
             resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var data = JsonSerializer.Deserialize<T>(resultContent);
+            var data = JsonSerializer.Deserialize<T>(resultContent, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
             result.EnsureSuccessStatusCode();
 

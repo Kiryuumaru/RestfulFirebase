@@ -501,7 +501,7 @@ public class Session : SyncContext
 
             response.EnsureSuccessStatusCode();
 
-            ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData);
+            ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, RestfulFirebaseApp.DefaultJsonSerializerOption);
             
             if (data == null)
             {
@@ -579,7 +579,7 @@ public class Session : SyncContext
                     new CancellationTokenSource(App.Config.CachedAuthRequestTimeout).Token).ConfigureAwait(false);
 
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData);
+                var refreshAuth = JsonSerializer.Deserialize<RefreshAuth>(responseData, RestfulFirebaseApp.DefaultJsonSerializerOption);
 
                 if (refreshAuth == null)
                 {

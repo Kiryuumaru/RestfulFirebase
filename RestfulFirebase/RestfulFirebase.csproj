@@ -17,8 +17,8 @@
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>* Migrated from Newtonsoft.Json to Sustem.Text.Json.</PackageReleaseNotes>
-    <Version>1.4.4</Version>
+    <PackageReleaseNotes>* Bug fixes on auth expire exception</PackageReleaseNotes>
+    <Version>1.4.5</Version>
   </PropertyGroup>
 
   <ItemGroup>
