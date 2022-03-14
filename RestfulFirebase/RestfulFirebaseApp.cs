@@ -1,7 +1,7 @@
 ﻿using ObservableHelpers;
 using ObservableHelpers.Utilities;
 using RestfulFirebase.Auth;
-using RestfulFirebase.Database;
+using RestfulFirebase.RealtimeDatabase;
 using RestfulFirebase.Local;
 using RestfulFirebase.Storage;
 using SynchronizationContextHelpers;
@@ -34,9 +34,9 @@ public class RestfulFirebaseApp : SyncContext
     public AuthApp Auth { get; private set; }
 
     /// <summary>
-    /// Gets the <see cref="DatabaseApp"/> for firebase database app module.
+    /// Gets the <see cref="RealtimeDatabaseApp"/> for firebase database app module.
     /// </summary>
-    public DatabaseApp Database { get; private set; }
+    public RealtimeDatabaseApp Database { get; private set; }
 
     /// <summary>
     /// Gets the <see cref="StorageApp"/> for firebase storage app module.
@@ -64,7 +64,7 @@ public class RestfulFirebaseApp : SyncContext
     {
         Config = config;
         LocalDatabase = new LocalDatabaseApp(this);
-        Database = new DatabaseApp(this);
+        Database = new RealtimeDatabaseApp(this);
         Storage = new StorageApp(this);
         Auth = new AuthApp(this);
     }

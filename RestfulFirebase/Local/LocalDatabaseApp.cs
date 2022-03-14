@@ -6,6 +6,7 @@ using ObservableHelpers.Utilities;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using SerializerHelpers;
+using SerializerHelpers.Exceptions;
 using SynchronizationContextHelpers;
 using System;
 using System.Collections.Concurrent;
@@ -29,10 +30,12 @@ public class LocalDatabaseApp : SyncContext
 
     private const char ValueIndicator = 'v';
     private const char PathIndicator = 'p';
+    private const string ExposedStoreIndicator = "exdb";
 
     private readonly RWLockDictionary<string[]> rwLock = new(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
     private static readonly RWLock databaseDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
     private static readonly Dictionary<ILocalDatabase, LocalDatabaseEventHolder> databaseDictionary = new();
+    private readonly ConcurrentDictionary<string, object?> nonPersistentStore = new();
 
     #endregion
 
@@ -50,437 +53,152 @@ public class LocalDatabaseApp : SyncContext
     #region Methods
 
     /// <summary>
-    /// Subscribe to local database changes.
+    /// Sets a value of the specified <paramref name="key"/>.
     /// </summary>
-    /// <param name="changesHandler">
-    /// The handler to subscribe.
-    /// </param>
-    public void Subscribe(EventHandler<DataChangesEventArgs> changesHandler)
-    {
-        InternalSubscribe(App.Config.CachedLocalDatabase, changesHandler);
-    }
-
-    /// <summary>
-    /// Unsubscribe to local database changes.
-    /// </summary>
-    /// <param name="changesHandler">
-    /// The handler to unsubscribe.
-    /// </param>
-    public void Unsubscribe(EventHandler<DataChangesEventArgs> changesHandler)
-    {
-        InternalUnsubscribe(App.Config.CachedLocalDatabase, changesHandler);
-    }
-
-    /// <summary>
-    /// Check if the specified <paramref name="path"/> exists.
-    /// </summary>
-    /// <param name="path">
-    /// The path to check.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> if the <paramref name="path"/> exists; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool Contains(params string[] path)
-    {
-        return InternalContains(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Deletes the data of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the data to delete.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public void Delete(params string[] path)
-    {
-        InternalDelete(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets the children of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the children to get.
-    /// </param>
-    /// <returns>
-    /// The children of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public (string[] path, string key)[] GetChildren(params string[] path)
-    {
-        return InternalGetChildren(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets the data type of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the data to get.
-    /// </param>
-    /// <returns>
-    /// The data type of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public LocalDataType GetDataType(params string[] path)
-    {
-        return InternalGetDataType(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets all the recursive children of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the children to get.
-    /// </param>
-    /// <returns>
-    /// The children of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public string[][] GetRecursiveChildren(params string[] path)
-    {
-        return InternalGetRecursiveChildren(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets all the recursive children relative to the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the children to get.
-    /// </param>
-    /// <returns>
-    /// The children of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public string[][] GetRecursiveRelativeChildren(params string[] path)
-    {
-        return InternalGetRecursiveRelativeChildren(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets the children relative to the specified <paramref name="path"/> with its corresponding <see cref="LocalDataType"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the children to get.
-    /// </param>
-    /// <returns>
-    /// The children of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public (string key, LocalDataType type)[] GetRelativeTypedChildren(params string[] path)
-    {
-        return InternalGetRelativeTypedChildren(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets the children with its corresponding <see cref="LocalDataType"/> of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the children to get.
-    /// </param>
-    /// <returns>
-    /// The children of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public (string[] path, LocalDataType type)[] GetTypedChildren(params string[] path)
-    {
-        return InternalGetTypedChildren(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Gets the value of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the value to get.
-    /// </param>
-    /// <returns>
-    /// The value of the specified <paramref name="path"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public string? GetValue(params string[] path)
-    {
-        return InternalGetValue(App.Config.CachedLocalDatabase, path);
-    }
-
-    /// <summary>
-    /// Sets the data of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="path">
-    /// The path of the data to set.
+    /// <typeparam name="T">
+    /// The type of the value to set.
+    /// </typeparam>
+    /// <param name="key">
+    /// The key of the value to set.
     /// </param>
     /// <param name="value">
     /// The value to set.
     /// </param>
+    /// <param name="fromPersistentStore">
+    /// <c>true</c> if the value will set to the persistent store; otherwise, <c>false</c>.
+    /// </param>
     /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
+    /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
+    /// <exception cref="SerializerNotSupportedException">
+    /// <paramref name="fromPersistentStore"/> is set to true and <typeparamref name="T"/> has no registered serializer.
     /// </exception>
-    public void SetValue(string value, params string[] path)
+    public void SetValue<T>(string key, T value, bool fromPersistentStore)
     {
-        InternalSetValue(App.Config.CachedLocalDatabase, value, path);
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new ArgumentException("Parameter key is null or empty");
+        }
+        if (fromPersistentStore)
+        {
+            string? serialized = Serializer.Serialize(value);
+            SetValue(App.Config.CachedLocalDatabase, serialized, new string[] { ExposedStoreIndicator, key });
+        }
+        else
+        {
+            nonPersistentStore.AddOrUpdate(key, value, (_, _) => value);
+        }
     }
 
     /// <summary>
-    /// Gets the value or children of the specified <paramref name="path"/>.
+    /// Gets a value of the specified <paramref name="key"/>.
     /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
+    /// <typeparam name="T">
+    /// The type of the value to get.
+    /// </typeparam>
+    /// <param name="key">
+    /// The key of the value to get.
     /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
+    /// <param name="fromPersistentStore">
+    /// <c>true</c> if the value will get from the persistent store; otherwise, <c>false</c>.
     /// </param>
     /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+    /// The value of the specified <paramref name="key"/>.
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
+    /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
+    /// <exception cref="SerializerNotSupportedException">
+    /// <paramref name="fromPersistentStore"/> is set to true and <typeparamref name="T"/> has no registered serializer.
     /// </exception>
-    public bool TryGetValueOrChildren(Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
+    public T? GetValue<T>(string key, bool fromPersistentStore)
     {
-        return InternalTryGetValueOrChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new ArgumentException("Parameter key is null or empty");
+        }
+        if (fromPersistentStore)
+        {
+            string? serialized = GetValue(App.Config.CachedLocalDatabase, new string[] { ExposedStoreIndicator, key });
+            return Serializer.Deserialize<T>(serialized);
+        }
+        else
+        {
+            if (nonPersistentStore.TryGetValue(key, out object? value))
+            {
+                if (value != null)
+                {
+                    return (T)value;
+                }
+            }
+            return default;
+        }
     }
 
     /// <summary>
-    /// Gets the value of the specified <paramref name="path"/>.
+    /// Deletes a value of the specified <paramref name="key"/>.
     /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
+    /// <param name="key">
+    /// The key of the value to delete.
     /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains another path.
+    /// <param name="fromPersistentStore">
+    /// <c>true</c> if the value will delete from the persistent store; otherwise, <c>false</c>.
     /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
     /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
+    /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrPath(Action<string> onValue, Action onPath, params string[] path)
+    public void RemoveValue(string key, bool fromPersistentStore)
     {
-        return InternalTryGetValueOrPath(App.Config.CachedLocalDatabase, onValue, onPath, path);
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new ArgumentException("Parameter key is null or empty");
+        }
+        if (fromPersistentStore)
+        {
+            Delete(App.Config.CachedLocalDatabase, new string[] { ExposedStoreIndicator, key });
+        }
+        else
+        {
+            nonPersistentStore.TryRemove(key, out _);
+        }
     }
 
     /// <summary>
-    /// Gets the value or recursive children of the specified <paramref name="path"/>.
+    /// Checks a value of the specified <paramref name="key"/>, gets <c>true</c> if exists; otherwise, <c>false</c>.
     /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
+    /// <param name="key">
+    /// The key of the value to check.
     /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
+    /// <param name="fromPersistentStore">
+    /// <c>true</c> if the value will check from the persistent store; otherwise, <c>false</c>.
     /// </param>
     /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
+    /// <c>true</c> if the value exists; otherwise, <c>false</c>.
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
+    /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrRecursiveChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
+    public bool ContainsKey(string key, bool fromPersistentStore)
     {
-        return InternalTryGetValueOrRecursiveChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
-    }
-
-    /// <summary>
-    /// Gets the value or recursive relative children of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
-    /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrRecursiveRelativeChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
-    {
-        return InternalTryGetValueOrRecursiveRelativeChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
-    }
-
-    /// <summary>
-    /// Gets the value or recursive values of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
-    /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrRecursiveValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
-    {
-        return InternalTryGetValueOrRecursiveValues(App.Config.CachedLocalDatabase, onValue, onPath, path);
-    }
-
-    /// <summary>
-    /// Gets the value or recursive relative values of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
-    /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrRecursiveRelativeValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
-    {
-        return InternalTryGetValueOrRecursiveRelativeValues(App.Config.CachedLocalDatabase, onValue, onPath, path);
-    }
-
-    /// <summary>
-    /// Gets the value or relative typed children of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
-    /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrRelativeTypedChildren(Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
-    {
-        return InternalTryGetValueOrRelativeTypedChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
-    }
-
-    /// <summary>
-    /// Gets the value or typed children of the specified <paramref name="path"/>.
-    /// </summary>
-    /// <param name="onValue">
-    /// Action executed whether the <paramref name="path"/> contains a value.
-    /// </param>
-    /// <param name="onPath">
-    /// Action executed whether the <paramref name="path"/> contains children.
-    /// </param>
-    /// <param name="path">
-    /// The path to get.
-    /// </param>
-    /// <returns>
-    /// <c>true</c> whether the path contains value or path; otherwise, <c>false</c>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="path"/> is null or empty.
-    /// </exception>
-    /// <exception cref="StringNullOrEmptyException">
-    /// <paramref name="path"/> has null or empty path.
-    /// </exception>
-    public bool TryGetValueOrTypedChildren(Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
-    {
-        return InternalTryGetValueOrTypedChildren(App.Config.CachedLocalDatabase, onValue, onPath, path);
+        if (string.IsNullOrEmpty(key))
+        {
+            throw new ArgumentException("Parameter key is null or empty");
+        }
+        if (fromPersistentStore)
+        {
+            return Contains(App.Config.CachedLocalDatabase, new string[] { ExposedStoreIndicator, key });
+        }
+        else
+        {
+            return nonPersistentStore.ContainsKey(key);
+        }
     }
 
     #endregion
 
     #region Internal Implementations
 
-    internal void InternalSubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
+    internal void Subscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
     {
         databaseDictionaryLock.LockUpgradeableRead(() =>
         {
@@ -495,7 +213,7 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal void InternalUnsubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
+    internal void Unsubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
     {
         databaseDictionaryLock.LockUpgradeableRead(() =>
         {
@@ -510,24 +228,24 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal bool InternalContains(ILocalDatabase localDatabase, string[] path)
+    internal bool Contains(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
         return LockReadHierarchy(path, () => DBContains(localDatabase, serializedPath));
     }
 
-    internal void InternalDelete(ILocalDatabase localDatabase, string[] path)
+    internal void Delete(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder? holder = LocalDatabaseApp.GetHandler(localDatabase);
+            LocalDatabaseEventHolder? holder = GetHandler(localDatabase);
 
             HelperDeleteChildren(localDatabase, holder, true, path, serializedPath);
 
@@ -586,9 +304,9 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal (string[] path, string key)[] InternalGetChildren(ILocalDatabase localDatabase, string[] path)
+    internal (string[] path, string key)[] GetChildren(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
@@ -596,9 +314,9 @@ public class LocalDatabaseApp : SyncContext
         return HelperGetChildren(path, data);
     }
 
-    internal LocalDataType InternalGetDataType(ILocalDatabase localDatabase, string[] path)
+    internal LocalDataType GetDataType(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
@@ -613,9 +331,9 @@ public class LocalDatabaseApp : SyncContext
         }
     }
 
-    internal (string[] path, LocalDataType type)[] InternalGetTypedChildren(ILocalDatabase localDatabase, string[] path)
+    internal (string[] path, LocalDataType type)[] GetTypedChildren(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -627,9 +345,9 @@ public class LocalDatabaseApp : SyncContext
 
     }
 
-    internal string[][] InternalGetRecursiveChildren(ILocalDatabase localDatabase, string[] path)
+    internal string[][] GetRecursiveChildren(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -640,9 +358,9 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal string[][] InternalGetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path)
+    internal string[][] GetRecursiveRelativeChildren(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -653,9 +371,9 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal (string key, LocalDataType type)[] InternalGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path)
+    internal (string key, LocalDataType type)[] GetRelativeTypedChildren(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
@@ -666,9 +384,9 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal string? InternalGetValue(ILocalDatabase localDatabase, string[] path)
+    internal string? GetValue(ILocalDatabase localDatabase, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -684,14 +402,14 @@ public class LocalDatabaseApp : SyncContext
         }
     }
 
-    internal void InternalSetValue(ILocalDatabase localDatabase, string? value, string[] path)
+    internal void SetValue(ILocalDatabase localDatabase, string? value, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder? holder = LocalDatabaseApp.GetHandler(localDatabase);
+            LocalDatabaseEventHolder? holder = GetHandler(localDatabase);
 
             HelperDeleteChildren(localDatabase, holder, false, path, serializedPath);
 
@@ -760,7 +478,7 @@ public class LocalDatabaseApp : SyncContext
 
     internal void InternalTryGetNearestHierarchyValueOrPath(ILocalDatabase localDatabase, Action<(string[] path, string? value)> onValue, Action<string[]> onPath, string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -804,9 +522,9 @@ public class LocalDatabaseApp : SyncContext
         });
     }
 
-    internal bool InternalTryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, string[] path)
+    internal bool TryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -814,9 +532,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrPath(ILocalDatabase localDatabase, Action<string> onValue, Action onPath, string[] path)
+    internal bool TryGetValueOrPath(ILocalDatabase localDatabase, Action<string> onValue, Action onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -824,9 +542,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrRecursiveChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
+    internal bool TryGetValueOrRecursiveChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -834,9 +552,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrRecursiveRelativeChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, string[] path)
+    internal bool TryGetValueOrRecursiveRelativeChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -844,9 +562,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrRecursiveValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
+    internal bool TryGetValueOrRecursiveValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -854,9 +572,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrRecursiveRelativeValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, string[] path)
+    internal bool TryGetValueOrRecursiveRelativeValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -864,9 +582,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrRelativeTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, string[] path)
+    internal bool TryGetValueOrRelativeTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {
@@ -874,9 +592,9 @@ public class LocalDatabaseApp : SyncContext
         }, path);
     }
 
-    internal bool InternalTryGetValueOrTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, string[] path)
+    internal bool TryGetValueOrTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
     {
-        LocalDatabaseApp.Validate(localDatabase, path);
+        Validate(localDatabase, path);
 
         return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
         {

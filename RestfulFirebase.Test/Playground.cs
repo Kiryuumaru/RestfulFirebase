@@ -2,8 +2,8 @@
 using ObservableHelpers;
 using ObservableHelpers.Utilities;
 using RestfulFirebase;
-using RestfulFirebase.Database.Models;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Models;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Local;
 using System;
 using System.Collections.Generic;

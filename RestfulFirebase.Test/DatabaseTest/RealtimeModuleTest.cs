@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase;
-using RestfulFirebase.Database.Models;
+using RestfulFirebase.RealtimeDatabase.Models;
 using RestfulFirebase.Test.Utilities;
 using RestfulFirebase.Test;
 using System;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Xunit;
 using RestfulFirebase.Local;
 using System.Collections.Concurrent;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
 using ObservableHelpers.Utilities;

@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Local;
 using RestfulFirebase.Test.Utilities;
 using System;

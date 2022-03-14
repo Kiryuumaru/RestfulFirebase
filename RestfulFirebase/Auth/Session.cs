@@ -810,7 +810,7 @@ public class Session : SyncContext
         PhotoUrl = default;
         PhoneNumber = default;
 
-        App.LocalDatabase.InternalDelete(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase, new string[] { Root });
+        App.LocalDatabase.Delete(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase, new string[] { Root });
     }
 
     internal void Fetch(ILocalDatabase? localDatabase)
@@ -820,7 +820,7 @@ public class Session : SyncContext
             return;
         }
 
-        var auth = App.LocalDatabase.InternalGetValue(localDatabase, new string[] { Root }) ?? "";
+        var auth = App.LocalDatabase.GetValue(localDatabase, new string[] { Root }) ?? "";
 
         FirebaseToken = BlobSerializer.GetValue(auth, "tok");
         RefreshToken = BlobSerializer.GetValue(auth, "ref");
@@ -855,7 +855,7 @@ public class Session : SyncContext
         auth = BlobSerializer.SetValue(auth, "purl", PhotoUrl);
         auth = BlobSerializer.SetValue(auth, "pnum", PhoneNumber);
 
-        App.LocalDatabase.InternalSetValue(localDatabase, auth, new string[] { Root });
+        App.LocalDatabase.SetValue(localDatabase, auth, new string[] { Root });
     }
 
     private void Config_ImmediatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)

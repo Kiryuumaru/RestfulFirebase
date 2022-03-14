@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;net6.0;</TargetFrameworks>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
@@ -17,8 +18,9 @@
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>* Bug fixes on auth expire exception</PackageReleaseNotes>
-    <Version>1.4.5</Version>
+    <PackageReleaseNotes>* Replaced namespace RestfulFirebase.Database with RestfulFirebase.RealtimeDatabase.
+* Removed unecessary local database features and added key value pair local database with optional serialize store feature.</PackageReleaseNotes>
+    <Version>1.5.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +32,12 @@
     <PackageReference Include="SerializerHelpers" Version="1.0.4" />
     <PackageReference Include="ObservableHelpers" Version="1.5.5" />
     <PackageReference Include="System.Text.Json" Version="6.0.2" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>RestfulFirebase.Test</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
 </Project>
