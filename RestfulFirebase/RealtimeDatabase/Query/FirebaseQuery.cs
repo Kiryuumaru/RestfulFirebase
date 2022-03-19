@@ -306,6 +306,51 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
+    public async Task<bool> FanOut(IDictionary<string, string> pathValues, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    {
+        if (pathValues == null)
+        {
+            throw new ArgumentNullException(nameof(pathValues));
+        }
+        foreach (var path in pathValues.Values)
+        {
+            if (path.Any(
+                c =>
+                {
+                    switch (c)
+                    {
+                        case '$': return true;
+                        case '[': return true;
+                        case ']': return true;
+                        case '#': return true;
+                        case '.': return true;
+                        default:
+                            if ((c >= 0 && c <= 31) || c == 127)
+                            {
+                                return true;
+                            }
+                            return false;
+                    }
+                }))
+            {
+                throw new DatabaseForbiddenNodeNameCharacter();
+            }
+        }
+
+        return await Patch(() =>
+        {
+            var fanoutObject = new Dictionary<string, object?>(pathValues.Count);
+
+            foreach (var pathValue in pathValues)
+            {
+                fanoutObject.Add(pathValue.Key, pathValue.Value == null ? null : JsonSerializer.Deserialize<string>(pathValue.Value, RestfulFirebaseApp.DefaultJsonSerializerOption));
+            }
+
+            return JsonSerializer.Serialize(fanoutObject);
+        }, token, onException);
+    }
+
+    /// <inheritdoc/>
     public async Task<bool> FanOut(Func<string?> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         if (relativePaths == null)

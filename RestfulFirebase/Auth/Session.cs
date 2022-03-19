@@ -730,7 +730,7 @@ public class Session : SyncContext
     public void Signout()
     {
         Purge();
-        App.Database.Flush();
+        //App.Database.Flush();
         App.Auth.InvokeAuthenticationEvents();
     }
 

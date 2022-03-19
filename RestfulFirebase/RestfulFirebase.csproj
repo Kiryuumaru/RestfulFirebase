@@ -18,9 +18,8 @@
     <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>* Replaced namespace RestfulFirebase.Database with RestfulFirebase.RealtimeDatabase.
-* Removed unecessary local database features and added key value pair local database with optional serialize store feature.</PackageReleaseNotes>
-    <Version>1.5.0</Version>
+    <PackageReleaseNotes>* Changed auth signout to not to remove local database on signout.</PackageReleaseNotes>
+    <Version>1.5.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
