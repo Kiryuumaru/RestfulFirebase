@@ -1,4 +1,4 @@
-namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
 using RestfulFirebase.Exceptions;
 using System;
@@ -14,8 +14,8 @@ internal class AuthQuery : ParameterQuery
 
     #region Initializers
 
-    internal AuthQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent)
-        : base(realtimeDatabase, parent, () => realtimeDatabase.App.Config.CachedAsAccessToken ? "access_token" : "auth")
+    internal AuthQuery(RestfulFirebaseApp app, FirebaseQuery parent)
+        : base(app, parent, () => app.Config.CachedAsAccessToken ? "access_token" : "auth")
     {
 
     }

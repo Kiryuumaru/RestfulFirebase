@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿namespace RestfulFirebase.RealtimeDatabase.Query;
 
-namespace RestfulFirebase.RealtimeDatabase.Query;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Appends shallow=true to the url.
@@ -14,8 +14,8 @@ public class ShallowQuery : ParameterQuery
 
     #region Initializers
 
-    internal ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent)
-        : base(app, parent, () => "shallow")
+    internal ShallowQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent)
+        : base(realtimeDatabase, parent, () => "shallow")
     {
 
     }

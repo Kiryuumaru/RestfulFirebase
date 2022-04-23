@@ -1,4 +1,4 @@
-namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
 using RestfulFirebase.Exceptions;
 using System;
@@ -18,8 +18,8 @@ public class ChildQuery : FirebaseQuery
 
     #region Initializers
 
-    internal ChildQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery? parent, string path)
-        : base(realtimeDatabase, parent)
+    internal ChildQuery(RestfulFirebaseApp app, FirebaseQuery? parent, string path)
+        : base(app, parent)
     {
         this.path = path;
         if (parent != null)
@@ -61,7 +61,7 @@ public class ChildQuery : FirebaseQuery
     /// </returns>
     public ShallowQuery Shallow()
     {
-        return new ShallowQuery(RealtimeDatabase, this);
+        return new ShallowQuery(App, this);
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public class ChildQuery : FirebaseQuery
     /// </returns>
     public OrderQuery OrderBy(Func<string> propertyNameFactory)
     {
-        return new OrderQuery(RealtimeDatabase, this, propertyNameFactory);
+        return new OrderQuery(App, this, propertyNameFactory);
     }
 
     /// <summary>

@@ -14,7 +14,9 @@ public class StorageApp : SyncContext
 {
     #region Properties
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
+    /// </summary>
     public RestfulFirebaseApp App { get; }
 
     #endregion
@@ -33,17 +35,17 @@ public class StorageApp : SyncContext
     #region Methods
 
     /// <summary>
-    /// Creates new instance of <see cref="FirebaseStorageReference"/> child reference.
+    /// Creates new instance of <see cref="StorageBucket"/> reference.
     /// </summary>
-    /// <param name="childRoot">
-    /// The child reference name or file name.
+    /// <param name="bucket">
+    /// The storage bucket (i.e., "projectid.appspot.com").
     /// </param>
     /// <returns>
-    /// The instance of <see cref="FirebaseStorageReference"/> child reference.
+    /// The instance of <see cref="StorageBucket"/> reference.
     /// </returns>
-    public FirebaseStorageReference Child(string childRoot)
+    public StorageBucket Bucket(string bucket)
     {
-        return new FirebaseStorageReference(App, childRoot);
+        return new StorageBucket(App, bucket);
     }
 
     internal HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)

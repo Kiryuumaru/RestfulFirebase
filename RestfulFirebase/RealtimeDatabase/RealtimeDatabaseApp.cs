@@ -24,7 +24,9 @@ public class RealtimeDatabaseApp : SyncContext
 {
     #region Properties
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
+    /// </summary>
     public RestfulFirebaseApp App { get; private set; }
 
     internal const string OfflineDatabaseIndicator = "rtdb";
@@ -42,7 +44,7 @@ public class RealtimeDatabaseApp : SyncContext
 
         App = app;
 
-        App.Config.ImmediatePropertyChanged += Config_ImmediatePropertyChanged;
+        App.Config.PropertyChanged += Config_PropertyChanged;
 
         writeTaskPutControl.ConcurrentTokenCount = App.Config.CachedDatabaseMaxConcurrentSyncWrites;
     }
@@ -52,57 +54,25 @@ public class RealtimeDatabaseApp : SyncContext
     #region Methods
 
     /// <summary>
-    /// Creates new instance of <see cref="ChildQuery"/> node with the specified child <paramref name="resourceNameFactory"/>.
+    /// Creates new instance of <see cref="RealtimeDatabase"/> database with the specified <paramref name="databaseUrl"/>.
     /// </summary>
-    /// <param name="resourceNameFactory">
-    /// The resource name factory of the node.
+    /// <param name="databaseUrl">
+    /// The URL of the database (i.e., "https://projectid-default-rtdb.firebaseio.com/").
     /// </param>
     /// <returns>
-    /// The created <see cref="ChildQuery"/> node.
+    /// The created <see cref="RealtimeDatabase"/> node.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// Throws when <paramref name="resourceNameFactory"/> or <see cref="FirebaseConfig.DatabaseURL"/> is null.
+    /// Throws when <paramref name="databaseUrl"/> is null or empty.
     /// </exception>
-    /// <exception cref="DatabaseUrlMissingException">
-    /// Throws when <see cref="FirebaseConfig.DatabaseURL"/> is null.
-    /// </exception>
-    public ChildQuery Child(Func<string> resourceNameFactory)
+    public RealtimeDatabase Database(string databaseUrl)
     {
-        if (resourceNameFactory == null)
+        if (databaseUrl == null)
         {
-            throw new ArgumentNullException(nameof(resourceNameFactory));
+            throw new ArgumentNullException(nameof(databaseUrl));
         }
 
-        if (App.Config.CachedDatabaseURL == null)
-        {
-            throw new DatabaseUrlMissingException();
-        }
-
-        return new ChildQuery(App, null, () => UrlUtilities.Combine(App.Config.CachedDatabaseURL, resourceNameFactory()));
-    }
-
-    /// <summary>
-    /// Creates new instance of <see cref="ChildQuery"/> node with the specified child <paramref name="resourceName"/>.
-    /// </summary>
-    /// <param name="resourceName">
-    /// The resource name of the node.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="ChildQuery"/> node.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Throws when <paramref name="resourceName"/> is null or empty.
-    /// </exception>
-    /// <exception cref="DatabaseUrlMissingException">
-    /// Throws when <see cref="FirebaseConfig.DatabaseURL"/> is null.
-    /// </exception>
-    public ChildQuery Child(string resourceName)
-    {
-        if (string.IsNullOrEmpty(resourceName))
-        {
-            throw new ArgumentNullException(nameof(resourceName));
-        }
-        return Child(() => resourceName);
+        return new RealtimeDatabase(App, databaseUrl);
     }
 
     /// <summary>
@@ -116,7 +86,7 @@ public class RealtimeDatabaseApp : SyncContext
         App.LocalDatabase.Delete(localDatabase ?? App.Config.CachedLocalDatabase, new string[] { OfflineDatabaseIndicator });
     }
 
-    private void Config_ImmediatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(App.Config.DatabaseMaxConcurrentSyncWrites))
         {
@@ -141,13 +111,13 @@ public class RealtimeDatabaseApp : SyncContext
         return writeTasks.ContainsKey(path);
     }
 
-    internal void DBPut(string? blob, string[] path, Action<(WriteTask writeTask, RetryExceptionEventArgs err)> onError, Action onSuccess)
+    internal void DBPut(RealtimeDatabase realtimeDatabase, string[] path, string? blob, Action<(WriteTask writeTask, RetryExceptionEventArgs err)> onError, Action onSuccess)
     {
         WriteTask? writeTaskAdd = null;
         WriteTask writeTaskAdded = writeTasks.AddOrUpdate(path,
             k =>
             {
-                writeTaskAdd = new WriteTask(App, path, blob,
+                writeTaskAdd = new WriteTask(realtimeDatabase, path, blob,
                     () => writeTasks.TryRemove(path, out _),
                     onSuccess,
                     args =>
@@ -167,7 +137,7 @@ public class RealtimeDatabaseApp : SyncContext
                 }
                 else
                 {
-                    writeTaskAdd = new WriteTask(App, path, blob,
+                    writeTaskAdd = new WriteTask(realtimeDatabase, path, blob,
                         () => writeTasks.TryRemove(path, out _),
                         onSuccess,
                         args =>
@@ -195,7 +165,7 @@ public class RealtimeDatabaseApp : SyncContext
     {
         if (disposing)
         {
-            App.Config.PropertyChanged -= Config_ImmediatePropertyChanged;
+            App.Config.PropertyChanged -= Config_PropertyChanged;
         }
         base.Dispose(disposing);
     }
@@ -210,11 +180,11 @@ public class RealtimeDatabaseApp : SyncContext
 
         public RestfulFirebaseApp App { get; }
 
+        public string? Blob { get; set; }
+
         public string[] Path { get; }
 
         public string Uri { get; }
-
-        public string? Blob { get; set; }
 
         public IFirebaseQuery Query { get; }
 
@@ -229,21 +199,23 @@ public class RealtimeDatabaseApp : SyncContext
         #region Initializers
 
         public WriteTask(
-            RestfulFirebaseApp app,
+            RealtimeDatabase realtimeDatabase,
             string[] path,
             string? blob,
             Action finish,
             Action onSuccess,
             Action<RetryExceptionEventArgs> error)
         {
-            App = app;
+            App = realtimeDatabase.App;
             Path = path;
-            Uri = "https://" + UrlUtilities.Combine(path.Skip(1));
             Blob = blob;
+            Query = new ChildQuery(realtimeDatabase, null, UrlUtilities.Combine(path.Skip(2)));
+            Uri = Query.GetAbsoluteUrl();
+
             this.finish = finish;
             this.onSuccess = onSuccess;
             this.error = error;
-            Query = new ChildQuery(app, null, () => Uri);
+
         }
 
         #endregion
@@ -259,7 +231,7 @@ public class RealtimeDatabaseApp : SyncContext
 
             try
             {
-                await App.Database.writeTaskPutControl.SendAsync(async delegate
+                await App.RealtimeDatabase.writeTaskPutControl.SendAsync(async delegate
                 {
                     if (tokenSource.Token.IsCancellationRequested)
                     {

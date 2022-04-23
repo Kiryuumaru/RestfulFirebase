@@ -1,11 +1,11 @@
-﻿namespace RestfulFirebase.RealtimeDatabase.Query;
+﻿namespace RestfulFirebase.CloudFirestore.Query;
 
 using System.Threading.Tasks;
 
 /// <summary>
-/// Appends print=silent to the url.
+/// Appends shallow=true to the url.
 /// </summary>
-public class SilentQuery : ParameterQuery
+public class ShallowQuery : ParameterQuery
 {
     #region Properties
 
@@ -14,8 +14,8 @@ public class SilentQuery : ParameterQuery
 
     #region Initializers
 
-    internal SilentQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent)
-        : base(realtimeDatabase, parent, () => "print")
+    internal ShallowQuery(RestfulFirebaseApp app, FirebaseQuery parent)
+        : base(app, parent, () => "shallow")
     {
 
     }
@@ -32,7 +32,7 @@ public class SilentQuery : ParameterQuery
     /// <inheritdoc/>
     protected override string BuildUrlParameter()
     {
-        return "silent";
+        return "true";
     }
 
     /// <inheritdoc/>

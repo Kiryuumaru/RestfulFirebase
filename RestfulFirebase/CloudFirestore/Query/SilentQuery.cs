@@ -1,4 +1,4 @@
-﻿namespace RestfulFirebase.RealtimeDatabase.Query;
+﻿namespace RestfulFirebase.CloudFirestore.Query;
 
 using System.Threading.Tasks;
 
@@ -14,8 +14,8 @@ public class SilentQuery : ParameterQuery
 
     #region Initializers
 
-    internal SilentQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent)
-        : base(realtimeDatabase, parent, () => "print")
+    internal SilentQuery(RestfulFirebaseApp app, FirebaseQuery parent)
+        : base(app, parent, () => "print")
     {
 
     }

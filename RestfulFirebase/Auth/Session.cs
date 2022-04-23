@@ -121,7 +121,7 @@ public class Session : SyncContext
 
         App = app;
 
-        App.Config.ImmediatePropertyChanged +=  Config_ImmediatePropertyChanged;
+        App.Config.PropertyChanged +=  Config_PropertyChanged;
 
         Fetch(App.Config.CachedCustomAuthLocalDatabase ?? App.Config.CachedLocalDatabase);
     }
@@ -858,7 +858,7 @@ public class Session : SyncContext
         App.LocalDatabase.SetValue(localDatabase, auth, new string[] { Root });
     }
 
-    private void Config_ImmediatePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
             e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))
@@ -876,7 +876,7 @@ public class Session : SyncContext
     {
         if (disposing)
         {
-            App.Config.ImmediatePropertyChanged -= Config_ImmediatePropertyChanged;
+            App.Config.PropertyChanged -= Config_PropertyChanged;
         }
         base.Dispose(disposing);
     }

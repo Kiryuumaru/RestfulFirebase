@@ -208,7 +208,7 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -265,8 +265,8 @@ namespace DatabaseTest.ModelsTest
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
 
-                model1.ImmediatePropertyChanged += (s, e) => propertyChanges1.Add(e);
-                model2.ImmediatePropertyChanged += (s, e) => propertyChanges2.Add(e);
+                model1.PropertyChanged += (s, e) => propertyChanges1.Add(e);
+                model2.PropertyChanged += (s, e) => propertyChanges2.Add(e);
 
                 wire.SubModel(model1);
 
@@ -347,12 +347,12 @@ namespace DatabaseTest.ModelsTest
                 var model1 = new FirebaseProperty<FirebaseProperty<string>>();
                 var subModel1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 List<PropertyChangedEventArgs> subPropertyChanges1 = new();
-                subModel1.ImmediatePropertyChanged += (s, e) =>
+                subModel1.PropertyChanged += (s, e) =>
                 {
                     subPropertyChanges1.Add(e);
                 };
@@ -406,7 +406,7 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -453,7 +453,7 @@ namespace DatabaseTest.ModelsTest
 
                 var model2 = new FirebaseProperty<DateTime?>();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                model2.ImmediatePropertyChanged += (s, e) =>
+                model2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -521,13 +521,13 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                model2.ImmediatePropertyChanged += (s, e) =>
+                model2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -635,7 +635,7 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<Dinosaur>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -691,13 +691,13 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                model2.ImmediatePropertyChanged += (s, e) =>
+                model2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -838,13 +838,13 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                model2.ImmediatePropertyChanged += (s, e) =>
+                model2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -982,13 +982,13 @@ namespace DatabaseTest.ModelsTest
 
                 var model1 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                model1.ImmediatePropertyChanged += (s, e) =>
+                model1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var model2 = new FirebaseProperty<string>();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                model2.ImmediatePropertyChanged += (s, e) =>
+                model2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -1127,7 +1127,7 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -1227,8 +1227,8 @@ namespace DatabaseTest.ModelsTest
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
 
-                person1.ImmediatePropertyChanged += (s, e) => propertyChanges1.Add(e);
-                person2.ImmediatePropertyChanged += (s, e) => propertyChanges2.Add(e);
+                person1.PropertyChanged += (s, e) => propertyChanges1.Add(e);
+                person2.PropertyChanged += (s, e) => propertyChanges2.Add(e);
 
                 wire.SubModel(person1);
 
@@ -1313,12 +1313,12 @@ namespace DatabaseTest.ModelsTest
                 var couple1 = new Couple();
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> couplePropertyChanges1 = new();
-                couple1.ImmediatePropertyChanged += (s, e) =>
+                couple1.PropertyChanged += (s, e) =>
                 {
                     couplePropertyChanges1.Add(e);
                 };
                 List<PropertyChangedEventArgs> personPropertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     personPropertyChanges1.Add(e);
                 };
@@ -1424,7 +1424,7 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -1489,13 +1489,13 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                person2.ImmediatePropertyChanged += (s, e) =>
+                person2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -1628,7 +1628,7 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new PersonWithPet();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
@@ -1753,13 +1753,13 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                person2.ImmediatePropertyChanged += (s, e) =>
+                person2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -1918,13 +1918,13 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                person2.ImmediatePropertyChanged += (s, e) =>
+                person2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -2089,13 +2089,13 @@ namespace DatabaseTest.ModelsTest
 
                 var person1 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
-                person1.ImmediatePropertyChanged += (s, e) =>
+                person1.PropertyChanged += (s, e) =>
                 {
                     propertyChanges1.Add(e);
                 };
                 var person2 = new Person();
                 List<PropertyChangedEventArgs> propertyChanges2 = new();
-                person2.ImmediatePropertyChanged += (s, e) =>
+                person2.PropertyChanged += (s, e) =>
                 {
                     propertyChanges2.Add(e);
                 };
@@ -2251,7 +2251,7 @@ namespace DatabaseTest.ModelsTest
 
                 FirebaseDictionary<string> dictionary = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
-                dictionary.ImmediateCollectionChanged += (s, e) => collectionChanges1.Add(e);
+                dictionary.CollectionChanged += (s, e) => collectionChanges1.Add(e);
 
                 wire.SubModel(dictionary);
 
@@ -2331,8 +2331,8 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) => collectionChanges1.Add(e);
-                dictionary2.ImmediateCollectionChanged += (s, e) => collectionChanges2.Add(e);
+                dictionary1.CollectionChanged += (s, e) => collectionChanges1.Add(e);
+                dictionary2.CollectionChanged += (s, e) => collectionChanges2.Add(e);
 
                 wire.SubModel(dictionary1);
 
@@ -2426,11 +2426,11 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };
@@ -2577,7 +2577,7 @@ namespace DatabaseTest.ModelsTest
                 wire.Start();
                 var dictionary1 = new FirebaseDictionary<string>();
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
@@ -2625,7 +2625,7 @@ namespace DatabaseTest.ModelsTest
                 appInstance2.wire.Start();
                 var dictionary2 = new FirebaseDictionary<Person>();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };
@@ -2707,11 +2707,11 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };
@@ -2901,7 +2901,7 @@ namespace DatabaseTest.ModelsTest
 
                 var dictionary1 = new FirebaseDictionary<Dinosaur>();
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
@@ -3001,11 +3001,11 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };
@@ -3240,11 +3240,11 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };
@@ -3476,11 +3476,11 @@ namespace DatabaseTest.ModelsTest
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
                 List<NotifyCollectionChangedEventArgs> collectionChanges2 = new();
 
-                dictionary1.ImmediateCollectionChanged += (s, e) =>
+                dictionary1.CollectionChanged += (s, e) =>
                 {
                     collectionChanges1.Add(e);
                 };
-                dictionary2.ImmediateCollectionChanged += (s, e) =>
+                dictionary2.CollectionChanged += (s, e) =>
                 {
                     collectionChanges2.Add(e);
                 };

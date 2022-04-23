@@ -25,7 +25,9 @@ public class LocalDatabaseApp : SyncContext
 {
     #region Properties
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
+    /// </summary>
     public RestfulFirebaseApp App { get; }
 
     private const char ValueIndicator = 'v';

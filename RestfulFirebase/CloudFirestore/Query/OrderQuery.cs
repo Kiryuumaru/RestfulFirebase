@@ -1,23 +1,25 @@
-﻿namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
+using System;
 using System.Threading.Tasks;
 
 /// <summary>
-/// Appends print=silent to the url.
+/// Represents a firebase ordering query, e.g. "?OrderBy=Foo".
 /// </summary>
-public class SilentQuery : ParameterQuery
+public class OrderQuery : ParameterQuery
 {
     #region Properties
 
+    private readonly Func<string> propertyNameFactory;
 
     #endregion
 
     #region Initializers
 
-    internal SilentQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent)
-        : base(realtimeDatabase, parent, () => "print")
+    internal OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
+        : base(app, parent, () => "orderBy")
     {
-
+        this.propertyNameFactory = propertyNameFactory;
     }
 
     #endregion
@@ -32,7 +34,7 @@ public class SilentQuery : ParameterQuery
     /// <inheritdoc/>
     protected override string BuildUrlParameter()
     {
-        return "silent";
+        return $"\"{propertyNameFactory()}\"";
     }
 
     /// <inheritdoc/>

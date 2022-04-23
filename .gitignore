@@ -339,3 +339,4 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 /Playground/Config.cs
+/RestfulFirebase.Test/Credentials.cs

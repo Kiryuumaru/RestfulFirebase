@@ -1,9 +1,9 @@
-﻿namespace RestfulFirebase.RealtimeDatabase.Query;
+﻿namespace RestfulFirebase.CloudFirestore.Query;
 
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.RealtimeDatabase.Realtime;
+//using RestfulFirebase.CloudFirestore.Realtime;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
@@ -20,11 +20,6 @@ public interface IFirebaseQuery
     RestfulFirebaseApp App { get; }
 
     /// <summary>
-    /// Gets the underlying <see cref="RestfulFirebaseApp"/> the module uses.
-    /// </summary>
-    RealtimeDatabase RealtimeDatabase { get; }
-
-    /// <summary>
     /// Creates new instance of <see cref="RealtimeWire"/> at the given query location.
     /// </summary>
     /// <param name="customLocalDatabase">
@@ -33,7 +28,7 @@ public interface IFirebaseQuery
     /// <returns>
     /// The created <see cref="RealtimeWire"/> of the query location.
     /// </returns>
-    RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default);
+    //RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default);
 
     /// <summary>
     /// Builds the url of the query.

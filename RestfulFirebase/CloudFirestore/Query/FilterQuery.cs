@@ -1,4 +1,4 @@
-namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
 using System;
 using System.Globalization;
@@ -20,26 +20,26 @@ public class FilterQuery : ParameterQuery
 
     #region Initializers
 
-    internal FilterQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent, Func<string> filterFactory, Func<string?> valueFactory)
-        : base(realtimeDatabase, parent, filterFactory)
+    internal FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<string?> valueFactory)
+        : base(app, parent, filterFactory)
     {
         this.valueFactory = valueFactory;
     }
 
-    internal FilterQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory)
-        : base(realtimeDatabase, parent, filterFactory)
+    internal FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<double> valueFactory)
+        : base(app, parent, filterFactory)
     {
         doubleValueFactory = valueFactory;
     }
 
-    internal FilterQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory)
-        : base(realtimeDatabase, parent, filterFactory)
+    internal FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<long> valueFactory)
+        : base(app, parent, filterFactory)
     {
         longValueFactory = valueFactory;
     }
 
-    internal FilterQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory)
-        : base(realtimeDatabase, parent, filterFactory)
+    internal FilterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> filterFactory, Func<bool> valueFactory)
+        : base(app, parent, filterFactory)
     {
         boolValueFactory = valueFactory;
     }

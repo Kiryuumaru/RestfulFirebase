@@ -23,7 +23,9 @@ public class AuthApp : SyncContext
 {
     #region Properties
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
+    /// </summary>
     public RestfulFirebaseApp App { get; private set; }
 
     /// <summary>

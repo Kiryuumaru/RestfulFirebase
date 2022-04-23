@@ -411,7 +411,8 @@ namespace DatabaseTest.RealtimeModuleTest
         {
             var (generator, dispose) = await RestfulFirebase.Test.Helpers.AuthenticatedAppGenerator();
             var app1 = await generator();
-            var wire1 = app1.Database
+            var wire1 = app1.RealtimeDatabase
+                .Database(Credentials.DefaultRealtimeDatabaseUrl)
                 .Child("unauthorized")
                 .AsRealtimeWire();
             var wire1Errors = new List<WireExceptionEventArgs>();
@@ -444,7 +445,8 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 throw new Exception("Not authenticated.");
             }
-            var wire2 = app2.Database
+            var wire2 = app2.RealtimeDatabase
+                .Database(Credentials.DefaultRealtimeDatabaseUrl)
                 .Child("users")
                 .Child(app2.Auth.Session.LocalId)
                 .Child(nameof(RealtimeModuleTest))
@@ -1628,7 +1630,8 @@ namespace DatabaseTest.RealtimeModuleTest
                     throw new Exception("Not authenticated.");
                 }
 
-                var wire2 = app.Database
+                var wire2 = app.RealtimeDatabase
+                    .Database(Credentials.DefaultRealtimeDatabaseUrl)
                     .Child("users")
                     .Child(app.Auth.Session.LocalId)
                     .Child(nameof(RealtimeModuleTest))
@@ -1643,7 +1646,8 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 await Task.Delay(1000);
 
-                var wire3 = app.Database
+                var wire3 = app.RealtimeDatabase
+                    .Database(Credentials.DefaultRealtimeDatabaseUrl)
                     .Child("users")
                     .Child(app.Auth.Session.LocalId)
                     .Child(nameof(RealtimeModuleTest))
@@ -3644,7 +3648,8 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 throw new Exception("Not authenticated.");
             }
-            var wire1 = app1.Database
+            var wire1 = app1.RealtimeDatabase
+                .Database(Credentials.DefaultRealtimeDatabaseUrl)
                 .Child("users")
                 .Child(app1.Auth.Session.LocalId)
                 .Child(nameof(RealtimeModuleTest))
@@ -3674,7 +3679,8 @@ namespace DatabaseTest.RealtimeModuleTest
             app1.Dispose();
 
             var app2 = await generator();
-            var wire2 = app2.Database
+            var wire2 = app2.RealtimeDatabase
+                .Database(Credentials.DefaultRealtimeDatabaseUrl)
                 .Child("unauthorized")
                 .AsRealtimeWire();
             var wire2Errors = new List<WireExceptionEventArgs>();

@@ -8,6 +8,7 @@ using SynchronizationContextHelpers;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RestfulFirebase.CloudFirestore;
 
 namespace RestfulFirebase;
 
@@ -34,9 +35,14 @@ public class RestfulFirebaseApp : SyncContext
     public AuthApp Auth { get; private set; }
 
     /// <summary>
-    /// Gets the <see cref="RealtimeDatabaseApp"/> for firebase database app module.
+    /// Gets the <see cref="CloudFirestoreApp"/> for firebase cloud firestore database app module.
     /// </summary>
-    public RealtimeDatabaseApp Database { get; private set; }
+    public CloudFirestoreApp CloudFirestore { get; private set; }
+
+    /// <summary>
+    /// Gets the <see cref="RealtimeDatabaseApp"/> for firebase realtime database app module.
+    /// </summary>
+    public RealtimeDatabaseApp RealtimeDatabase { get; private set; }
 
     /// <summary>
     /// Gets the <see cref="StorageApp"/> for firebase storage app module.
@@ -64,7 +70,8 @@ public class RestfulFirebaseApp : SyncContext
     {
         Config = config;
         LocalDatabase = new LocalDatabaseApp(this);
-        Database = new RealtimeDatabaseApp(this);
+        CloudFirestore = new CloudFirestoreApp(this);
+        RealtimeDatabase = new RealtimeDatabaseApp(this);
         Storage = new StorageApp(this);
         Auth = new AuthApp(this);
     }
@@ -85,7 +92,8 @@ public class RestfulFirebaseApp : SyncContext
         if (disposing)
         {
             Auth?.Dispose();
-            Database?.Dispose();
+            CloudFirestore?.Dispose();
+            RealtimeDatabase?.Dispose();
             Storage?.Dispose();
         }
         base.Dispose(disposing);

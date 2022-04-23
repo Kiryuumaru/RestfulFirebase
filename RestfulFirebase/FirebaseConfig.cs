@@ -15,33 +15,14 @@ public class FirebaseConfig : ObservableObject
     #region Properties
 
     /// <summary>
-    /// Gets or sets the firebase api key used by the app.
+    /// Gets or sets the firebase API key.
     /// </summary>
     public string ApiKey { get; }
 
     /// <summary>
-    /// Gets or sets the firebase database url used by the app.
+    /// Gets or sets the firebase API key.
     /// </summary>
-    public string? DatabaseURL
-    {
-        get => GetProperty<string?>();
-        set => SetProperty(value, postAction: args =>
-        {
-            if (args.newValue != null && !args.newValue.EndsWith("/"))
-            {
-                DatabaseURL += "/";
-            }
-        });
-    }
-
-    /// <summary>
-    /// Gets or sets the firebase storage bucket used by the app.
-    /// </summary>
-    public string? StorageBucket
-    {
-        get => GetProperty<string?>();
-        set => SetProperty(value);
-    }
+    public string ProjectId { get; }
 
     /// <summary>
     /// Gets or sets the <see cref="ILocalDatabase"/> used for auth persistency and offline database.
@@ -71,7 +52,7 @@ public class FirebaseConfig : ObservableObject
     }
 
     /// <summary>
-    /// Gets or sets the <see cref="IHttpClientFactory"/> used by the app.
+    /// Gets or sets the <see cref="IHttpClientFactory"/>.
     /// </summary>
     public IHttpClientFactory HttpClientFactory
     {
@@ -169,10 +150,6 @@ public class FirebaseConfig : ObservableObject
         set => SetProperty(value);
     }
 
-    internal string? CachedDatabaseURL { get; private set; }
-
-    internal string? CachedStorageBucket { get; private set; }
-
     internal ILocalDatabase CachedLocalDatabase
     {
         get
@@ -245,28 +222,30 @@ public class FirebaseConfig : ObservableObject
     /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
     /// </summary>
     /// <param name="apiKey">
-    /// The api key of the app to be used.
+    /// The API key of the app.
     /// </param>
-    public FirebaseConfig(string apiKey)
+    /// <param name="projectId">
+    /// The project ID of the app.
+    /// </param>
+    public FirebaseConfig(string projectId, string apiKey)
     {
         ApiKey = apiKey;
+        ProjectId = projectId;
 
-        AttachOnImmediatePropertyChanged<string>(v => CachedDatabaseURL = v, nameof(DatabaseURL));
-        AttachOnImmediatePropertyChanged<string>(v => CachedStorageBucket = v, nameof(StorageBucket));
-        AttachOnImmediatePropertyChanged<ILocalDatabase>(v => cachedLocalDatabase = v, nameof(LocalDatabase));
-        AttachOnImmediatePropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
-        AttachOnImmediatePropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
-        AttachOnImmediatePropertyChanged<IHttpClientFactory>(v => cachedHttpClientFactory = v, nameof(HttpClientFactory));
-        AttachOnImmediatePropertyChanged<IHttpStreamFactory>(v => cachedHttpStreamFactory = v, nameof(HttpStreamFactory));
-        AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));
-        AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseRequestTimeout = v, nameof(DatabaseRequestTimeout));
-        AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseColdStreamTimeout = v, nameof(DatabaseColdStreamTimeout));
-        AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedDatabaseRetryDelay = v, nameof(DatabaseRetryDelay));
-        AttachOnImmediatePropertyChanged<TimeSpan>(v => CachedStorageRequestTimeout = v, nameof(StorageRequestTimeout));
-        AttachOnImmediatePropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
-        AttachOnImmediatePropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
-        AttachOnImmediatePropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
-        AttachOnImmediatePropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
+        AttachOnPropertyChanged<ILocalDatabase>(v => cachedLocalDatabase = v, nameof(LocalDatabase));
+        AttachOnPropertyChanged<ILocalDatabase>(v => CachedCustomAuthLocalDatabase = v, nameof(CustomAuthLocalDatabase));
+        AttachOnPropertyChanged<ILocalEncryption>(v => CachedLocalEncryption = v, nameof(LocalEncryption));
+        AttachOnPropertyChanged<IHttpClientFactory>(v => cachedHttpClientFactory = v, nameof(HttpClientFactory));
+        AttachOnPropertyChanged<IHttpStreamFactory>(v => cachedHttpStreamFactory = v, nameof(HttpStreamFactory));
+        AttachOnPropertyChanged<TimeSpan>(v => CachedAuthRequestTimeout = v, nameof(AuthRequestTimeout));
+        AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRequestTimeout = v, nameof(DatabaseRequestTimeout));
+        AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseColdStreamTimeout = v, nameof(DatabaseColdStreamTimeout));
+        AttachOnPropertyChanged<TimeSpan>(v => CachedDatabaseRetryDelay = v, nameof(DatabaseRetryDelay));
+        AttachOnPropertyChanged<TimeSpan>(v => CachedStorageRequestTimeout = v, nameof(StorageRequestTimeout));
+        AttachOnPropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
+        AttachOnPropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
+        AttachOnPropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
+        AttachOnPropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
 
         InitializeProperties();
     }

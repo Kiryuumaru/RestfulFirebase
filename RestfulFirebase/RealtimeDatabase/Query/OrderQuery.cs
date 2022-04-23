@@ -1,7 +1,7 @@
+namespace RestfulFirebase.RealtimeDatabase.Query;
+
 using System;
 using System.Threading.Tasks;
-
-namespace RestfulFirebase.RealtimeDatabase.Query;
 
 /// <summary>
 /// Represents a firebase ordering query, e.g. "?OrderBy=Foo".
@@ -16,8 +16,8 @@ public class OrderQuery : ParameterQuery
 
     #region Initializers
 
-    internal OrderQuery(RestfulFirebaseApp app, ChildQuery parent, Func<string> propertyNameFactory)
-        : base(app, parent, () => "orderBy")
+    internal OrderQuery(RealtimeDatabase realtimeDatabase, ChildQuery parent, Func<string> propertyNameFactory)
+        : base(realtimeDatabase, parent, () => "orderBy")
     {
         this.propertyNameFactory = propertyNameFactory;
     }

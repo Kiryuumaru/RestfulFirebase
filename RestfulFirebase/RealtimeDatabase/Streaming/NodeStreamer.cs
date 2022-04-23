@@ -25,6 +25,7 @@ internal class NodeStreamer : Disposable
     private readonly CancellationTokenSource cancel;
     private readonly IFirebaseQuery query;
     private readonly HttpClient http;
+    private readonly string absoluteUrl;
 
     private readonly EventHandler<StreamObject> onNext;
     private readonly EventHandler<ErrorEventArgs> onError;
@@ -51,6 +52,7 @@ internal class NodeStreamer : Disposable
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
 
         http = httpClient;
+        absoluteUrl = query.GetAbsoluteUrl();
     }
 
     #endregion
@@ -79,7 +81,6 @@ internal class NodeStreamer : Disposable
                 CancellationToken initToken = GetTrancientToken();
 
                 string requestUrl = string.Empty;
-                string absoluteUrl = query.GetAbsoluteUrl();
 
                 try
                 {

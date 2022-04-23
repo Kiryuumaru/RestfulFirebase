@@ -25,13 +25,19 @@ public class FirebaseStorageReference
     /// </summary>
     public RestfulFirebaseApp App { get; }
 
+    /// <summary>
+    /// Gets the <see cref="StorageBucket"/> this reference uses.
+    /// </summary>
+    public StorageBucket StorageBucket { get; }
+
     #endregion
 
     #region Initializers
 
-    internal FirebaseStorageReference(RestfulFirebaseApp app, string childRoot)
+    internal FirebaseStorageReference(StorageBucket storageBucket, string childRoot)
     {
-        App = app;
+        App = storageBucket.App;
+        StorageBucket = storageBucket;
 
         children = new List<string>
         {
@@ -39,9 +45,10 @@ public class FirebaseStorageReference
         };
     }
 
-    internal FirebaseStorageReference(RestfulFirebaseApp app, IEnumerable<string> children)
+    internal FirebaseStorageReference(StorageBucket storageBucket, IEnumerable<string> children)
     {
-        App = app;
+        App = storageBucket.App;
+        StorageBucket = storageBucket;
 
         this.children = children.ToList();
     }
@@ -65,16 +72,8 @@ public class FirebaseStorageReference
     /// <returns>
     /// The <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Throws when <see cref="FirebaseConfig.StorageBucket"/> is null.
-    /// </exception>
     public FirebaseStorageTask Put(Stream stream, CancellationToken cancellationToken, string? mimeType = null)
     {
-        if (App.Config.CachedStorageBucket == null)
-        {
-            throw new StorageBucketMissingException();
-        }
-
         return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
     }
 
@@ -165,7 +164,7 @@ public class FirebaseStorageReference
         {
             name
         };
-        return new FirebaseStorageReference(App, children);
+        return new FirebaseStorageReference(StorageBucket, children);
     }
 
     private async Task<T?> PerformFetch<T>(TimeSpan? timeout = null)
@@ -192,12 +191,12 @@ public class FirebaseStorageReference
 
     private string GetTargetUrl()
     {
-        return $"{FirebaseStorageEndpoint}{App.Config.CachedStorageBucket}/o?name={GetEscapedPath()}";
+        return $"{FirebaseStorageEndpoint}{StorageBucket.Bucket}/o?name={GetEscapedPath()}";
     }
 
     private string GetDownloadUrl()
     {
-        return $"{FirebaseStorageEndpoint}{App.Config.CachedStorageBucket}/o/{GetEscapedPath()}";
+        return $"{FirebaseStorageEndpoint}{StorageBucket.Bucket}/o/{GetEscapedPath()}";
     }
 
     private string GetFullDownloadUrl()

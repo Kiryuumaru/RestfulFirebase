@@ -1,7 +1,6 @@
 ﻿using RestfulFirebase;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Local;
-using RestfulFirebase.Test.Utilities;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -59,7 +58,7 @@ namespace RestfulFirebase.Test
 
         public static RestfulFirebaseApp GenerateApp()
         {
-            FirebaseConfig config = Config.YourConfig();
+            FirebaseConfig config = Credentials.YourConfig();
             config.LocalDatabase = new SampleLocalDatabase();
             return new RestfulFirebaseApp(config);
         }
@@ -172,7 +171,8 @@ namespace RestfulFirebase.Test
                 subNode ??= Array.Empty<string>();
                 if (subNode.Length == 0)
                 {
-                    wire = app.Database
+                    wire = app.RealtimeDatabase
+                        .Database(Credentials.DefaultRealtimeDatabaseUrl)
                         .Child("users")
                         .Child(app.Auth.Session.LocalId)
                         .Child(unitName)
@@ -200,7 +200,8 @@ namespace RestfulFirebase.Test
                     }
                     string additionalPath = builder.ToString();
                     additionalPath = additionalPath[0..^1];
-                    wire = app.Database
+                    wire = app.RealtimeDatabase
+                        .Database(Credentials.DefaultRealtimeDatabaseUrl)
                         .Child("users")
                         .Child(app.Auth.Session.LocalId)
                         .Child(unitName)

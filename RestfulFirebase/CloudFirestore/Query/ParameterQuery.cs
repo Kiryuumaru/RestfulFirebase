@@ -1,4 +1,4 @@
-namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
 using System;
 using System.Threading.Tasks;
@@ -17,8 +17,8 @@ public abstract class ParameterQuery : FirebaseQuery
 
     #region Initializers
 
-    private protected ParameterQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery parent, Func<string> parameterFactory)
-        : base(realtimeDatabase, parent)
+    private protected ParameterQuery(RestfulFirebaseApp app, FirebaseQuery parent, Func<string> parameterFactory)
+        : base(app, parent)
     {
         this.parameterFactory = parameterFactory;
         separator = (Parent is ChildQuery) ? "?" : "&";
@@ -39,7 +39,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery StartAt(Func<string> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "startAt", valueFactory);
+        return new FilterQuery(App, this, () => "startAt", valueFactory);
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EndAt(Func<string> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "endAt", valueFactory);
+        return new FilterQuery(App, this, () => "endAt", valueFactory);
     }
 
     /// <summary>
@@ -65,7 +65,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EqualTo(Func<string?> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "equalTo", valueFactory);
+        return new FilterQuery(App, this, () => "equalTo", valueFactory);
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery StartAt(Func<double> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "startAt", valueFactory);
+        return new FilterQuery(App, this, () => "startAt", valueFactory);
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EndAt(Func<double> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "endAt", valueFactory);
+        return new FilterQuery(App, this, () => "endAt", valueFactory);
     }
 
     /// <summary>
@@ -107,7 +107,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EqualTo(Func<double> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "equalTo", valueFactory);
+        return new FilterQuery(App, this, () => "equalTo", valueFactory);
     }
 
     /// <summary>
@@ -121,7 +121,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery StartAt(Func<long> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "startAt", valueFactory);
+        return new FilterQuery(App, this, () => "startAt", valueFactory);
     }
 
     /// <summary>
@@ -135,7 +135,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EndAt(Func<long> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "endAt", valueFactory);
+        return new FilterQuery(App, this, () => "endAt", valueFactory);
     }
 
     /// <summary>
@@ -149,7 +149,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EqualTo(Func<long> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "equalTo", valueFactory);
+        return new FilterQuery(App, this, () => "equalTo", valueFactory);
     }
 
     /// <summary>
@@ -163,7 +163,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery EqualTo(Func<bool> valueFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "equalTo", valueFactory);
+        return new FilterQuery(App, this, () => "equalTo", valueFactory);
     }
 
     /// <summary>
@@ -177,7 +177,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery LimitToFirst(Func<int> countFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "limitToFirst", () => countFactory());
+        return new FilterQuery(App, this, () => "limitToFirst", () => countFactory());
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public abstract class ParameterQuery : FirebaseQuery
     /// </returns>
     public FilterQuery LimitToLast(Func<int> countFactory)
     {
-        return new FilterQuery(RealtimeDatabase, this, () => "limitToLast", () => countFactory());
+        return new FilterQuery(App, this, () => "limitToLast", () => countFactory());
     }
 
     /// <summary>

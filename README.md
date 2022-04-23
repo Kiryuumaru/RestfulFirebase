@@ -41,11 +41,8 @@ namespace YourNamespace
         
         public static void Main(string[] args)
         {
-            config = new FirebaseConfig()
+            config = new FirebaseConfig("<Your project ID>", "<Your API key>")
             {
-                ApiKey = "<Your API key>",
-                DatabaseURL = "<Your realtime database URL>", // Ends with firebaseio.com
-                StorageBucket = "<Your storage bucket>", // Ends with appspot.com
                 LocalDatabase = "<Your implementation of RestfulFirebase.Local.ILocalDatabase>" // For optional offline persistency 
             };
             app = new RestfulFirebaseApp(config);
@@ -78,7 +75,7 @@ The RealtimeWire holds a database subscription for real-time online and local da
 #### FirebaseObject Sample
 
 ```csharp
-using RestfulFirebase.Database.Models;
+using RestfulFirebase.RealtimeDatabase.Models;
 
 namespace YourNamespace
 {
@@ -113,7 +110,7 @@ Predefined model values will be overwritten by the database values.
 ```csharp
 using System.Threading.Tasks;
 using RestfulFirebase;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 
 namespace YourNamespace
 {
@@ -122,7 +119,8 @@ namespace YourNamespace
         public static void Subscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
-            RealtimeWire userWire = app.Database
+            RealtimeWire userWire = app.RealtimeDatabase
+                .Database("<Your realtime database URL (i.e https://some-database.firebase.io)>")
                 .Child("users")
                 .Child(app.Auth.Session.LocalId) // User UID
                 .Child("pets")
@@ -158,7 +156,7 @@ Database values will be overwritten by the predefined model values.
 ```csharp
 using System.Threading.Tasks;
 using RestfulFirebase;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 
 namespace YourNamespace
 {
@@ -167,7 +165,8 @@ namespace YourNamespace
         public static void WriteAndSubscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/pets/dinosaur
-            RealtimeWire userWire = app.Database
+            RealtimeWire userWire = app.RealtimeDatabase
+                .Database("<Your realtime database URL (i.e https://some-database.firebase.io)>")
                 .Child("users")
                 .Child(app.Auth.Session.LocalId) // User UID
                 .Child("pets")
@@ -205,7 +204,7 @@ Creating a listen instance of the existing realtime wire without resubscribing t
 ```csharp
 using System.Threading.Tasks;
 using RestfulFirebase;
-using RestfulFirebase.Database.Realtime;
+using RestfulFirebase.RealtimeDatabase.Realtime;
 
 namespace YourNamespace
 {
@@ -214,7 +213,8 @@ namespace YourNamespace
         public static void WriteAndSubscribe()
         {
             // Creates new realtime wire for https://some-database.firebaseio.com/users/some-uid/
-            RealtimeWire userWire = app.Database
+            RealtimeWire userWire = app.RealtimeDatabase
+                .Database("<Your realtime database URL (i.e https://some-database.firebase.io)>")
                 .Child("users")
                 .Child(app.Auth.Session.LocalId) // User UID
                 .AsRealtimeWire();
@@ -242,7 +242,7 @@ namespace YourNamespace
 ### UI safe
 
 ```csharp
-using RestfulFirebase.Database.Models;
+using RestfulFirebase.RealtimeDatabase.Models;
 
 namespace YourNamespace
 {
@@ -259,6 +259,10 @@ namespace YourNamespace
         {
             // Subscribe to both online and local updates
             dinosaur.PropertyChanged += (s, e) =>
+            {
+                // Executed on current thread
+            }
+            dinosaur.SynchronizedPropertyChanged += (s, e) =>
             {
                 // Executed on UI thread
             }

@@ -1,4 +1,4 @@
-namespace RestfulFirebase.RealtimeDatabase.Query;
+namespace RestfulFirebase.CloudFirestore.Query;
 
 using System;
 using System.Collections.Generic;
@@ -39,10 +39,9 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
     #region Initializers
 
-    private protected FirebaseQuery(RealtimeDatabase realtimeDatabase, FirebaseQuery? parent)
+    private protected FirebaseQuery(RestfulFirebaseApp app, FirebaseQuery? parent)
     {
-        App = realtimeDatabase.App;
-        RealtimeDatabase = realtimeDatabase;
+        App = app;
         Parent = parent;
         AuthenticateRequests = true;
     }
@@ -141,23 +140,19 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
     internal AuthQuery WithAuth()
     {
-        return new AuthQuery(RealtimeDatabase, this);
+        return new AuthQuery(App, this);
     }
 
     internal SilentQuery Silent()
     {
-        return new SilentQuery(RealtimeDatabase, this);
+        return new SilentQuery(App, this);
     }
 
     internal string BuildUrl(IFirebaseQuery child)
     {
         var url = BuildUrlSegment(child);
 
-        if (Parent == null)
-        {
-            url = RealtimeDatabase.DatabaseUrl + url;
-        }
-        else
+        if (Parent != null)
         {
             url = Parent.BuildUrl(this) + url;
         }
@@ -169,11 +164,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     {
         var url = await BuildUrlSegmentAsync(child);
 
-        if (Parent == null)
-        {
-            url = RealtimeDatabase.DatabaseUrl + url;
-        }
-        else
+        if (Parent != null)
         {
             url = (await Parent.BuildUrlAsync(this)) + url;
         }
@@ -269,13 +260,10 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     public RestfulFirebaseApp App { get; }
 
     /// <inheritdoc/>
-    public RealtimeDatabase RealtimeDatabase { get; }
-
-    /// <inheritdoc/>
-    public RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default)
-    {
-        return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.CachedLocalDatabase);
-    }
+    //public RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default)
+    //{
+    //    return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.CachedLocalDatabase);
+    //}
 
     /// <inheritdoc/>
     public async Task<string> BuildUrl(CancellationToken? token = null)
@@ -305,7 +293,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
             throw new ArgumentNullException(nameof(path));
         }
 
-        return new ChildQuery(RealtimeDatabase, this, path);
+        return new ChildQuery(App, this, path);
     }
 
     /// <inheritdoc/>

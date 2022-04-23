@@ -1315,7 +1315,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
     {
         if (Started)
         {
-            App.Database.DBCancelPut(absolutePath);
+            App.RealtimeDatabase.DBCancelPut(absolutePath);
         }
     }
 
@@ -1327,7 +1327,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
         }
         if (Started)
         {
-            App.Database.DBPut(blob, absolutePath, args =>
+            App.RealtimeDatabase.DBPut(Query.RealtimeDatabase, absolutePath, blob, args =>
             {
                 if (IsDisposed)
                 {
