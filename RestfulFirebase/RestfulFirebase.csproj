@@ -38,5 +38,9 @@
       <_Parameter1>RestfulFirebase.Test</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="CloudFirestore\Models\" />
+  </ItemGroup>
 
 </Project>

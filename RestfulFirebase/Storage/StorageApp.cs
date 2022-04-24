@@ -54,7 +54,8 @@ public class StorageApp : SyncContext
 
         if (App.Auth.Session != null)
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", App.Auth.Session.FirebaseToken);
+            //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Firebase", App.Auth.Session.FirebaseToken);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", App.Auth.Session.FirebaseToken);
         }
 
         return client;

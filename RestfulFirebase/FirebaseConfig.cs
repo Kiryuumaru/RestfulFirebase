@@ -142,9 +142,18 @@ public class FirebaseConfig : ObservableObject
     }
 
     /// <summary>
+    /// Gets or sets the firebase cloud firestore max concurrent writes.
+    /// </summary>
+    public int CloudFirestoreMaxConcurrentSyncWrites
+    {
+        get => GetProperty(() => 100);
+        set => SetProperty(value);
+    }
+
+    /// <summary>
     /// Gets or sets the firebase realtime database max concurrent writes.
     /// </summary>
-    public int DatabaseMaxConcurrentSyncWrites
+    public int RealtimeDatabaseMaxConcurrentSyncWrites
     {
         get => GetProperty(() => 100);
         set => SetProperty(value);
@@ -206,7 +215,9 @@ public class FirebaseConfig : ObservableObject
 
     internal bool CachedDatabaseSerializeEnumerableAsBlobs { get; private set; }
 
-    internal int CachedDatabaseMaxConcurrentSyncWrites { get; private set; }
+    internal int CachedCloudFirestoreMaxConcurrentSyncWrites { get; private set; }
+
+    internal int CachedRealtimeDatabaseMaxConcurrentSyncWrites { get; private set; }
 
     private ILocalDatabase? cachedLocalDatabase;
 
@@ -245,7 +256,8 @@ public class FirebaseConfig : ObservableObject
         AttachOnPropertyChanged<bool>(v => CachedAsAccessToken = v, nameof(AsAccessToken));
         AttachOnPropertyChanged<bool>(v => CachedOfflineMode = v, nameof(OfflineMode));
         AttachOnPropertyChanged<bool>(v => CachedDatabaseSerializeEnumerableAsBlobs = v, nameof(DatabaseSerializeEnumerableAsBlobs));
-        AttachOnPropertyChanged<int>(v => CachedDatabaseMaxConcurrentSyncWrites = v, nameof(DatabaseMaxConcurrentSyncWrites));
+        AttachOnPropertyChanged<int>(v => CachedCloudFirestoreMaxConcurrentSyncWrites = v, nameof(CloudFirestoreMaxConcurrentSyncWrites));
+        AttachOnPropertyChanged<int>(v => CachedRealtimeDatabaseMaxConcurrentSyncWrites = v, nameof(RealtimeDatabaseMaxConcurrentSyncWrites));
 
         InitializeProperties();
     }

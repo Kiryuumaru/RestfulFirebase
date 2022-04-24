@@ -66,7 +66,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 var child = wire.Child("0", "1");
 
@@ -167,7 +167,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 var clone = wire.Clone();
                 var cloneDataChanges = new List<DataChangesEventArgs>();
@@ -317,7 +317,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var appInstance1 = await generator(null);
                 appInstance1.wire.Start();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                appInstance1.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 var dataChanges = new List<DataChangesEventArgs>();
                 appInstance1.wire.ImmediateDataChanges += (s, e) =>
                 {
@@ -367,7 +367,7 @@ namespace DatabaseTest.RealtimeModuleTest
                     });
 
                 dataChanges.Clear();
-                appInstance1.app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                appInstance1.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance1.wire));
 
                 Assert.Equal(2, dataChanges.Count);
@@ -386,7 +386,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 wire.Dispose();
 
@@ -493,7 +493,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -576,7 +576,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.Equal((0, 0), wire.GetDataCount());
                 Assert.Equal((0, 0), wire.GetDataCount("prop4"));
@@ -593,7 +593,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal((6, 0), wire.GetDataCount());
                 Assert.Equal((3, 0), wire.GetDataCount("prop4"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal((6, 6), wire.GetDataCount());
@@ -656,7 +656,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -674,7 +674,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal((null, "test5", "test5", LocalDataChangesType.Create), wire.GetData("prop4", "subProp2"));
                 Assert.Equal((null, "test6", "test6", LocalDataChangesType.Create), wire.GetData("prop4", "subProp3"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal(("test1", null, "test1", LocalDataChangesType.Synced), wire.GetData("prop1"));
@@ -737,7 +737,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -833,7 +833,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -933,7 +933,7 @@ namespace DatabaseTest.RealtimeModuleTest
                         Assert.Equal("subProp3", i.path[0]);
                     });
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 await Task.Delay(5000);
@@ -1175,7 +1175,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -1193,7 +1193,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.Equal("test5", wire.GetValue("prop4", "subProp2"));
                 Assert.Equal("test6", wire.GetValue("prop4", "subProp3"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("test1", wire.GetValue("prop1"));
@@ -1256,7 +1256,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.False(wire.HasChildren());
                 Assert.False(wire.HasChildren("prop4"));
@@ -1273,7 +1273,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(wire.HasChildren());
                 Assert.True(wire.HasChildren("prop4"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(wire.HasChildren());
@@ -1349,7 +1349,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.False(wire.IsLocallyAvailable());
                 Assert.False(wire.IsLocallyAvailable("prop1"));
@@ -1366,7 +1366,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.True(wire.IsLocallyAvailable("prop1"));
                 Assert.True(wire.IsLocallyAvailable("prop4"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(wire.IsLocallyAvailable());
@@ -1420,7 +1420,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.IsNull());
                 Assert.True(wire.IsNull("prop1"));
@@ -1447,7 +1447,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 Assert.False(wire.IsNull("prop4", "subProp2"));
                 Assert.False(wire.IsNull("prop4", "subProp3"));
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.False(wire.IsNull());
@@ -1560,7 +1560,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -1571,7 +1571,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 Assert.False(wire.IsSynced());
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(wire.IsSynced());
@@ -1619,7 +1619,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.Equal(app.Config.LocalDatabase, wire.LocalDatabase);
 
@@ -1674,7 +1674,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 Assert.True(wire.SetValue("test1", "prop1"));
                 Assert.True(wire.SetValue("test2", "prop2"));
@@ -1685,7 +1685,7 @@ namespace DatabaseTest.RealtimeModuleTest
 
                 Assert.False(wire.IsSynced());
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 100;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 100;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.True(wire.IsSynced());
@@ -1715,7 +1715,7 @@ namespace DatabaseTest.RealtimeModuleTest
             {
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 var child1 = wire.Child("child1");
                 var child1DataChanges = new List<DataChangesEventArgs>();

@@ -46,7 +46,7 @@ public class RealtimeDatabaseApp : SyncContext
 
         App.Config.PropertyChanged += Config_PropertyChanged;
 
-        writeTaskPutControl.ConcurrentTokenCount = App.Config.CachedDatabaseMaxConcurrentSyncWrites;
+        writeTaskPutControl.ConcurrentTokenCount = App.Config.CachedRealtimeDatabaseMaxConcurrentSyncWrites;
     }
 
     #endregion
@@ -88,9 +88,9 @@ public class RealtimeDatabaseApp : SyncContext
 
     private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(App.Config.DatabaseMaxConcurrentSyncWrites))
+        if (e.PropertyName == nameof(App.Config.RealtimeDatabaseMaxConcurrentSyncWrites))
         {
-            writeTaskPutControl.ConcurrentTokenCount = App.Config.DatabaseMaxConcurrentSyncWrites;
+            writeTaskPutControl.ConcurrentTokenCount = App.Config.RealtimeDatabaseMaxConcurrentSyncWrites;
         }
     }
 

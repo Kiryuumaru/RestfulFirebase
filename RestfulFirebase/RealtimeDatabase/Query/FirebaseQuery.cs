@@ -26,7 +26,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     /// <summary>
     /// Gets or sets <c>true</c> whether to use authenticated requests; otherwise <c>false</c>.
     /// </summary>
-    public bool AuthenticateRequests { get; set; }
+    public bool AuthenticateRequests { get; set; } = true;
 
     /// <summary>
     /// The parent of the query.
@@ -44,7 +44,6 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
         App = realtimeDatabase.App;
         RealtimeDatabase = realtimeDatabase;
         Parent = parent;
-        AuthenticateRequests = true;
     }
 
     #endregion

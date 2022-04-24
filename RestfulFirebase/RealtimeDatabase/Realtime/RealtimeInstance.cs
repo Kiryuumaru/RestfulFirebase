@@ -1369,7 +1369,7 @@ public class RealtimeInstance : SyncContext, INullableObject, ICloneable
                 OnError(args.writeTask.Uri, args.err.Exception);
             }, delegate
             {
-                writeTaskErrorControl.ConcurrentTokenCount = App.Config.CachedDatabaseMaxConcurrentSyncWrites;
+                writeTaskErrorControl.ConcurrentTokenCount = App.Config.CachedRealtimeDatabaseMaxConcurrentSyncWrites;
             });
         }
     }

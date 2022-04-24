@@ -58,28 +58,33 @@ namespace Playground
         [Fact]
         public async void Mockk()
         {
-            await Helpers.CleanTest(nameof(Mock), nameof(Mockk), generator =>
+            await Helpers.CleanTest(nameof(Mock), nameof(Mockk), async generator =>
             {
-                MockObj obj = new();
+                var (app, wire, dataChanges) = await generator(null);
 
-                RWLock rwLock = new(System.Threading.LockRecursionPolicy.SupportsRecursion);
+                var user = app.CloudFirestore
+                    .Collection("users")
+                    .Document("KmwDJOir91FD3BR95IL7");
 
-                ObservableProperty<DateTime?> ssss = new();
-                FirebaseProperty<DateTime?> sss = new();
+                var pub = app.CloudFirestore
+                    .Collection("public")
+                    .Document("u3RuGQJghheSrtSrdFeb");
 
-                if (sss.Value == null)
+                string? get1;
+                string? get2;
+                try
+                {
+                    get1 = await user.Get();
+                }
+                catch (Exception ex)
                 {
 
                 }
-                if (sss.GetValue() == null)
+                try
                 {
-
+                    get2 = await pub.Get();
                 }
-                if (ssss.Value == null)
-                {
-
-                }
-                if (ssss.GetValue() == null)
+                catch (Exception ex)
                 {
 
                 }

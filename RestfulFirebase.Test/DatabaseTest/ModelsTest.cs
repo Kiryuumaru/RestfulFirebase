@@ -253,8 +253,8 @@ namespace DatabaseTest.ModelsTest
                 var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 wire.Start();
                 appInstance2.wire.Start();
@@ -280,12 +280,12 @@ namespace DatabaseTest.ModelsTest
                 dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 appInstance2.wire.PutModel(model2);
 
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
@@ -1122,7 +1122,7 @@ namespace DatabaseTest.ModelsTest
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(Normal), async generator =>
             {
                 var (app, wire, dataChanges) = await generator(null);
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 wire.Start();
 
                 var person1 = new Person();
@@ -1188,7 +1188,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("John", person1.FirstName);
@@ -1215,8 +1215,8 @@ namespace DatabaseTest.ModelsTest
                 var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 wire.Start();
                 appInstance2.wire.Start();
@@ -1250,13 +1250,13 @@ namespace DatabaseTest.ModelsTest
                 dataChanges.Clear();
                 appInstance2.dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 appInstance2.wire.PutModel(person2);
 
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 await Task.WhenAny(Task.Delay(10000), Task.Run(async delegate
@@ -1307,7 +1307,7 @@ namespace DatabaseTest.ModelsTest
             await Helpers.CleanTest(nameof(FirebaseObjectTest), nameof(Cascade), async generator =>
             {
                 var (app, wire, dataChanges) = await generator(null);
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 wire.Start();
 
                 var couple1 = new Couple();
@@ -1384,7 +1384,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(dataChanges, i => i.Path.Length == 2 && i.Path[0] == "partner" && i.Path[1] == "birthdate");
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("John", person1.FirstName);
@@ -1624,7 +1624,7 @@ namespace DatabaseTest.ModelsTest
 
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 var person1 = new PersonWithPet();
                 List<PropertyChangedEventArgs> propertyChanges1 = new();
@@ -1719,7 +1719,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("Peter", person1.FirstName);
@@ -2246,7 +2246,7 @@ namespace DatabaseTest.ModelsTest
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(Normal), async generator =>
             {
                 var (app, wire, dataChanges) = await generator(null);
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 wire.Start();
 
                 FirebaseDictionary<string> dictionary = new();
@@ -2306,7 +2306,7 @@ namespace DatabaseTest.ModelsTest
                     });
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
             });
         }
@@ -2319,8 +2319,8 @@ namespace DatabaseTest.ModelsTest
                 var (app, wire, dataChanges) = await generator(null);
                 var appInstance2 = await generator(null);
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 wire.Start();
                 appInstance2.wire.Start();
@@ -2349,7 +2349,7 @@ namespace DatabaseTest.ModelsTest
                 collectionChanges1.Clear();
                 collectionChanges2.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
@@ -2357,7 +2357,7 @@ namespace DatabaseTest.ModelsTest
 
                 appInstance2.wire.PutModel(dictionary2);
 
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(appInstance2.wire));
 
                 await Task.Delay(10000);
@@ -2413,11 +2413,11 @@ namespace DatabaseTest.ModelsTest
             await Helpers.CleanTest(nameof(FirebaseDictionaryTest), nameof(Cascade), async generator =>
             {
                 var (app, wire, dataChanges) = await generator(null);
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 wire.Start();
 
                 var appInstance2 = await generator(null);
-                appInstance2.app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                appInstance2.app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
                 appInstance2.wire.Start();
 
                 var dictionary1 = new FirebaseDictionary<Couple>();
@@ -2495,7 +2495,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(dataChanges, i => i.Path.Length == 3 && i.Path[0] == "key1" && i.Path[1] == "partner" && i.Path[2] == "birthdate");
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Equal("Lara", dictionary1["key1"]?.FirstName);
@@ -2897,7 +2897,7 @@ namespace DatabaseTest.ModelsTest
 
                 var (app, wire, dataChanges) = await generator(null);
                 wire.Start();
-                app.Config.DatabaseMaxConcurrentSyncWrites = 0;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 0;
 
                 var dictionary1 = new FirebaseDictionary<Dinosaur>();
                 List<NotifyCollectionChangedEventArgs> collectionChanges1 = new();
@@ -2970,7 +2970,7 @@ namespace DatabaseTest.ModelsTest
                 Assert.Contains(dataChanges, i => i.Path.Length == 1 && i.Path[0] == "key2");
                 dataChanges.Clear();
 
-                app.Config.DatabaseMaxConcurrentSyncWrites = 10;
+                app.Config.RealtimeDatabaseMaxConcurrentSyncWrites = 10;
                 Assert.True(await RestfulFirebase.Test.Helpers.WaitForSynced(wire));
 
                 Assert.Empty(collectionChanges1);
