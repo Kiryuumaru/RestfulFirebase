@@ -75,7 +75,7 @@ public class AuthApp : SyncContext
     internal const string ProfileDeleteDisplayName = "DISPLAY_NAME";
     internal const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
-    private IHttpClientProxy? client;
+    private HttpClient? client;
     private readonly Session session;
 
 #endregion
@@ -112,10 +112,10 @@ public class AuthApp : SyncContext
     {
         if (client == null)
         {
-            client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedAuthRequestTimeout);
+            client = App.Config.CachedHttpClientFactory.GetHttpClient();
         }
 
-        return client.GetHttpClient();
+        return client;
     }
 
     internal async Task<string> ExecuteWithGet(string googleUrl)

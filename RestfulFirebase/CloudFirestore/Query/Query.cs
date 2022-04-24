@@ -23,7 +23,7 @@ public abstract class Query
 
     internal async Task<HttpClient> GetClient()
     {
-        var client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.DatabaseRequestTimeout).GetHttpClient();
+        var client = App.Config.CachedHttpClientFactory.GetHttpClient();
 
         if (AuthenticateRequests && App.Auth.Session != null)
         {

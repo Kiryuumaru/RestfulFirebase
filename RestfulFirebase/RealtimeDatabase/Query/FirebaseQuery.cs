@@ -33,7 +33,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     /// </summary>
     protected FirebaseQuery? Parent { get; }
 
-    private IHttpClientProxy? client;
+    private HttpClient? client;
 
     #endregion
 
@@ -184,21 +184,26 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     {
         if (client == null)
         {
-            client = App.Config.CachedHttpClientFactory.GetHttpClient(App.Config.CachedDatabaseRequestTimeout);
+            client = App.Config.CachedHttpClientFactory.GetHttpClient();
         }
 
-        return client.GetHttpClient();
+        return client;
     }
 
-    private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? token = null)
+    private async Task<string> SendAsync(HttpClient client, string data, HttpMethod method, CancellationToken? cancellationToken = null)
     {
         string responseData;
         var statusCode = HttpStatusCode.OK;
         var requestData = data;
 
+        if (cancellationToken == null)
+        {
+            cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+        }
+
         string url;
 
-        url = await BuildUrl(token).ConfigureAwait(false);
+        url = await BuildUrl(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -207,18 +212,8 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
                 Content = new StringContent(requestData)
             };
 
-            CancellationToken invokeToken;
-            if (token == null)
-            {
-                invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-            }
-            else
-            {
-                invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-            }
-
-            HttpResponseMessage result = await client.SendAsync(message, invokeToken).ConfigureAwait(false);
-            invokeToken.ThrowIfCancellationRequested();
+            HttpResponseMessage result = await client.SendAsync(message, cancellationToken.Value).ConfigureAwait(false);
+            cancellationToken.Value.ThrowIfCancellationRequested();
             statusCode = result.StatusCode;
             responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -277,23 +272,19 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
-    public async Task<string> BuildUrl(CancellationToken? token = null)
+    public async Task<string> BuildUrl(CancellationToken? cancellationToken = null)
     {
-        if (token == null)
+        if (cancellationToken == null)
         {
-            token = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-        }
-        else
-        {
-            token = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
+            cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
         }
 
         if (App.Auth.Session != null && AuthenticateRequests)
         {
-            return await Task.Run(() => WithAuth().BuildUrlAsync((FirebaseQuery?)null), token.Value);
+            return await Task.Run(() => WithAuth().BuildUrlAsync((FirebaseQuery?)null), cancellationToken.Value);
         }
 
-        return await Task.Run(() => BuildUrlAsync((FirebaseQuery?)null), token.Value);
+        return await Task.Run(() => BuildUrlAsync((FirebaseQuery?)null), cancellationToken.Value);
     }
 
     /// <inheritdoc/>
@@ -308,7 +299,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
-    public async Task<bool> FanOut(IDictionary<string, string> pathValues, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public async Task<bool> FanOut(IDictionary<string, string> pathValues, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         if (pathValues == null)
         {
@@ -349,11 +340,11 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
             }
 
             return JsonSerializer.Serialize(fanoutObject);
-        }, token, onException);
+        }, cancellationToken, onException);
     }
 
     /// <inheritdoc/>
-    public async Task<bool> FanOut(Func<string?> jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public async Task<bool> FanOut(Func<string?> jsonData, string[] relativePaths, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         if (relativePaths == null)
         {
@@ -396,17 +387,17 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
             }
 
             return JsonSerializer.Serialize(fanoutObject);
-        }, token, onException);
+        }, cancellationToken, onException);
     }
 
     /// <inheritdoc/>
-    public Task<bool> FanOut(string? jsonData, string[] relativePaths, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public Task<bool> FanOut(string? jsonData, string[] relativePaths, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
-        return FanOut(() => jsonData, relativePaths, token, onException);
+        return FanOut(() => jsonData, relativePaths, cancellationToken, onException);
     }
 
     /// <inheritdoc/>
-    public async Task<string?> Get(CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public async Task<string?> Get(CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         async Task<string> invoke()
         {
@@ -419,23 +410,17 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
                 throw new OfflineModeException();
             }
 
-            url = await BuildUrl(token).ConfigureAwait(false);
+            url = await BuildUrl(cancellationToken).ConfigureAwait(false);
 
             try
             {
-                CancellationToken invokeToken;
-
-                if (token == null)
+                if (cancellationToken == null)
                 {
-                    invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-                }
-                else
-                {
-                    invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
+                    cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
                 }
 
-                var response = await GetClient().GetAsync(url, invokeToken).ConfigureAwait(false);
-                invokeToken.ThrowIfCancellationRequested();
+                var response = await GetClient().GetAsync(url, cancellationToken.Value).ConfigureAwait(false);
+                cancellationToken.Value.ThrowIfCancellationRequested();
                 statusCode = response.StatusCode;
                 responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -487,7 +472,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
-    public async Task<bool> Patch(Func<string?> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public async Task<bool> Patch(Func<string?> jsonData, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         async Task invoke(string? jsonToInvoke)
         {
@@ -502,25 +487,19 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
             var c = GetClient();
 
+            if (cancellationToken == null)
+            {
+                cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+            }
+
             if (jsonToInvoke == null)
             {
-                url = await BuildUrl(token).ConfigureAwait(false);
+                url = await BuildUrl(cancellationToken).ConfigureAwait(false);
 
                 try
                 {
-                    CancellationToken invokeToken;
-
-                    if (token == null)
-                    {
-                        invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-                    }
-                    else
-                    {
-                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-                    }
-
-                    var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                    invokeToken.ThrowIfCancellationRequested();
+                    var result = await c.DeleteAsync(url, cancellationToken.Value).ConfigureAwait(false);
+                    cancellationToken.Value.ThrowIfCancellationRequested();
                     statusCode = result.StatusCode;
                     responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -537,7 +516,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
             }
             else
             {
-                await Silent().SendAsync(c, jsonToInvoke, new HttpMethod("PATCH"), token).ConfigureAwait(false);
+                await Silent().SendAsync(c, jsonToInvoke, new HttpMethod("PATCH"), cancellationToken).ConfigureAwait(false);
             }
         };
 
@@ -569,13 +548,13 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
-    public Task<bool> Patch(string? jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public Task<bool> Patch(string? jsonData, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
-        return Patch(() => jsonData, token, onException);
+        return Patch(() => jsonData, cancellationToken, onException);
     }
 
     /// <inheritdoc/>
-    public async Task<bool> Put(Func<string?> jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public async Task<bool> Put(Func<string?> jsonData, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
         async Task invoke(string? jsonToInvoke)
         {
@@ -590,25 +569,19 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
 
             var c = GetClient();
 
+            if (cancellationToken == null)
+            {
+                cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+            }
+
             if (jsonToInvoke == null)
             {
-                url = await BuildUrl(token).ConfigureAwait(false);
+                url = await BuildUrl(cancellationToken).ConfigureAwait(false);
 
                 try
                 {
-                    CancellationToken invokeToken;
-
-                    if (token == null)
-                    {
-                        invokeToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
-                    }
-                    else
-                    {
-                        invokeToken = CancellationTokenSource.CreateLinkedTokenSource(token.Value, new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token).Token;
-                    }
-
-                    var result = await c.DeleteAsync(url, invokeToken).ConfigureAwait(false);
-                    invokeToken.ThrowIfCancellationRequested();
+                    var result = await c.DeleteAsync(url, cancellationToken.Value).ConfigureAwait(false);
+                    cancellationToken.Value.ThrowIfCancellationRequested();
                     statusCode = result.StatusCode;
                     responseData = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -625,7 +598,7 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
             }
             else
             {
-                await Silent().SendAsync(c, jsonToInvoke, HttpMethod.Put, token).ConfigureAwait(false);
+                await Silent().SendAsync(c, jsonToInvoke, HttpMethod.Put, cancellationToken).ConfigureAwait(false);
             }
         };
 
@@ -657,9 +630,9 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     }
 
     /// <inheritdoc/>
-    public Task<bool> Put(string? jsonData, CancellationToken? token = null, Action<RetryExceptionEventArgs>? onException = null)
+    public Task<bool> Put(string? jsonData, CancellationToken? cancellationToken = null, Action<RetryExceptionEventArgs>? onException = null)
     {
-        return Put(() => jsonData, token, onException);
+        return Put(() => jsonData, cancellationToken, onException);
     }
 
     #endregion

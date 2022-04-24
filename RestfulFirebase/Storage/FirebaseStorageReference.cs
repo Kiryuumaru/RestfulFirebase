@@ -72,7 +72,7 @@ public class FirebaseStorageReference
     /// <returns>
     /// The <see cref="FirebaseStorageTask"/> which can be used to track the progress of the upload.
     /// </returns>
-    public FirebaseStorageTask Put(Stream stream, CancellationToken cancellationToken, string? mimeType = null)
+    public FirebaseStorageTask Put(Stream stream, CancellationToken? cancellationToken, string? mimeType = null)
     {
         return new FirebaseStorageTask(App, GetTargetUrl(), GetFullDownloadUrl(), stream, cancellationToken, mimeType);
     }
@@ -94,12 +94,15 @@ public class FirebaseStorageReference
     /// <summary>
     /// Gets the meta data for given file.
     /// </summary>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> of the request.
+    /// </param>
     /// <returns>
     /// A <see cref="Task"/> which results a <see cref="FirebaseMetaData"/> of this reference.
     /// </returns>
-    public async Task<FirebaseMetaData?> GetMetaData(TimeSpan? timeout = null)
+    public async Task<FirebaseMetaData?> GetMetaData(CancellationToken? cancellationToken = null)
     {
-        var data = await PerformFetch<FirebaseMetaData>(timeout).ConfigureAwait(false);
+        var data = await PerformFetch<FirebaseMetaData>(cancellationToken).ConfigureAwait(false);
 
         return data;
     }
@@ -107,12 +110,15 @@ public class FirebaseStorageReference
     /// <summary>
     /// Gets the meta data for given file.
     /// </summary>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> of the request.
+    /// </param>
     /// <returns>
     /// A <see cref="Task"/> which results a <see cref="string"/> that represents the download url of the reference.
     /// </returns>
-    public async Task<string> GetDownloadUrl(TimeSpan? timeout = null)
+    public async Task<string> GetDownloadUrl(CancellationToken? cancellationToken = null)
     {
-        var data = await PerformFetch<Dictionary<string, object>>(timeout).ConfigureAwait(false);
+        var data = await PerformFetch<Dictionary<string, object>>(cancellationToken).ConfigureAwait(false);
 
         if (data == null || !data.TryGetValue("downloadTokens", out object? downloadTokens))
         {
@@ -125,19 +131,26 @@ public class FirebaseStorageReference
     /// <summary>
     /// Deletes the file of this reference.
     /// </summary>
-    /// <param name="timeout"></param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> of the request.
+    /// </param>
     /// <returns>
     /// A <see cref="Task"/> that represents a proxy for the task returned by deletion.
     /// </returns>
-    public async Task Delete(TimeSpan? timeout = null)
+    public async Task Delete(CancellationToken? cancellationToken = null)
     {
         var url = GetDownloadUrl();
         string resultContent;
 
+        if (cancellationToken == null)
+        {
+            cancellationToken = new CancellationTokenSource(App.Config.CachedStorageRequestTimeout).Token;
+        }
+
         try
         {
-            using var http = App.Storage.CreateHttpClientAsync(timeout);
-            var result = await http.DeleteAsync(url).ConfigureAwait(false);
+            using var http = App.Storage.CreateHttpClientAsync();
+            var result = await http.DeleteAsync(url, cancellationToken.Value).ConfigureAwait(false);
 
             resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -167,15 +180,20 @@ public class FirebaseStorageReference
         return new FirebaseStorageReference(StorageBucket, children);
     }
 
-    private async Task<T?> PerformFetch<T>(TimeSpan? timeout = null)
+    private async Task<T?> PerformFetch<T>(CancellationToken? cancellationToken = null)
     {
         var url = GetDownloadUrl();
         string resultContent;
 
+        if (cancellationToken == null)
+        {
+            cancellationToken = new CancellationTokenSource(App.Config.CachedStorageRequestTimeout).Token;
+        }
+
         try
         {
-            using var http = App.Storage.CreateHttpClientAsync(timeout);
-            var result = await http.GetAsync(url).ConfigureAwait(false);
+            using var http = App.Storage.CreateHttpClientAsync();
+            var result = await http.GetAsync(url, cancellationToken.Value).ConfigureAwait(false);
             resultContent = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
             var data = JsonSerializer.Deserialize<T>(resultContent, RestfulFirebaseApp.DefaultJsonSerializerOption);
 

@@ -41,7 +41,7 @@ public class FirebaseStorageTask
 
     #region Initializers
 
-    internal FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string? mimeType = null)
+    internal FirebaseStorageTask(RestfulFirebaseApp app, string url, string downloadUrl, Stream stream, CancellationToken? cancellationToken, string? mimeType = null)
     {
         App = app;
         TargetUrl = url;
@@ -67,7 +67,7 @@ public class FirebaseStorageTask
         return uploadTask.GetAwaiter();
     }
 
-    private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken cancellationToken, string? mimeType = null)
+    private async Task<string> UploadFile(string url, string downloadUrl, Stream stream, CancellationToken? cancellationToken, string? mimeType = null)
     {
         string responseData;
 
@@ -82,7 +82,12 @@ public class FirebaseStorageTask
             request.Content.Headers.ContentType = new MediaTypeHeaderValue(mimeType);
         }
 
-        var response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        if (cancellationToken == null)
+        {
+            cancellationToken = new CancellationTokenSource(App.Config.CachedDatabaseRequestTimeout).Token;
+        }
+
+        var response = await client.SendAsync(request, cancellationToken.Value).ConfigureAwait(false);
         responseData = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
         response.EnsureSuccessStatusCode();

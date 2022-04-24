@@ -17,13 +17,8 @@ public sealed class StockHttpClientFactory : IHttpClientFactory
     }
 
     /// <inheritdoc/>
-    public IHttpClientProxy GetHttpClient(TimeSpan? timeout)
+    public HttpClient GetHttpClient()
     {
-        var client = new HttpClient();
-        if (timeout != null) {
-            client.Timeout = timeout.Value;
-        }
-
-        return new StockHttpClientProxy(client);
+        return new HttpClient();
     }
 }

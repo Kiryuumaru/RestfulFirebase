@@ -48,9 +48,9 @@ public class StorageApp : SyncContext
         return new StorageBucket(App, bucket);
     }
 
-    internal HttpClient CreateHttpClientAsync(TimeSpan? timeout = null)
+    internal HttpClient CreateHttpClientAsync()
     {
-        var client = App.Config.CachedHttpClientFactory.GetHttpClient(timeout).GetHttpClient();
+        var client = App.Config.CachedHttpClientFactory.GetHttpClient();
 
         if (App.Auth.Session != null)
         {
