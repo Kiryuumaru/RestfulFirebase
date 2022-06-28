@@ -1,0 +1,75 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;net6.0;</TargetFrameworks>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Title>RestfulFirebase</Title>
+    <Authors>Kiryuumaru</Authors>
+    <Company>Kiryuumaru</Company>
+    <Copyright>Kiryuumaru</Copyright>
+    <Description>Firebase REST API wrapper wired with MVVM observables.</Description>
+    <PackageTags>Firebase REST API, Authentication, Realtime Database, Storage, MVVM Observable</PackageTags>
+    <PackageProjectUrl>https://github.com/Kiryuumaru/RestfulFirebase</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Kiryuumaru/RestfulFirebase</RepositoryUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>2.0.0-alpha</Version>
+    <PackageReleaseNotes>* Changed auth signout to not to remove local database on signout.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="RealtimeDatabase\Models2\FirebaseDictionary.cs" />
+    <Compile Remove="RealtimeDatabase\Models2\FirebaseObject.cs" />
+    <Compile Remove="RealtimeDatabase\Models2\FirebaseObject2.cs" />
+    <Compile Remove="RealtimeDatabase\Models2\FirebaseProperty1.cs" />
+    <Compile Remove="RealtimeDatabase\Models2\IInternalRealtimeModel.cs" />
+    <Compile Remove="RealtimeDatabase\Models2\IRealtimeModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="RealtimeDatabase\Models2\FirebaseDictionary.cs" />
+    <None Include="RealtimeDatabase\Models2\FirebaseObject.cs" />
+    <None Include="RealtimeDatabase\Models2\FirebaseObject2.cs" />
+    <None Include="RealtimeDatabase\Models2\FirebaseProperty1.cs" />
+    <None Include="RealtimeDatabase\Models2\IInternalRealtimeModel.cs" />
+    <None Include="RealtimeDatabase\Models2\IRealtimeModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
+    <PackageReference Include="DisposableHelpers" Version="1.0.2" />
+    <PackageReference Include="LockerHelpers" Version="1.0.2" />
+    <PackageReference Include="SerializerHelpers" Version="1.0.4" />
+    <PackageReference Include="System.Text.Json" Version="6.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Playground</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>RestfulFirebase.Test</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
