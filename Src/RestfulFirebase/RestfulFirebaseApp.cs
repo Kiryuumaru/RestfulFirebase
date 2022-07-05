@@ -54,6 +54,12 @@ public class RestfulFirebaseApp : Disposable
         NumberHandling = JsonNumberHandling.AllowReadingFromString
     };
 
+    internal static readonly JsonDocumentOptions DefaultJsonDocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip
+    };
+
     #endregion
 
     #region Initializers

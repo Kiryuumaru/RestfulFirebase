@@ -16,29 +16,30 @@ using System.Net.Http.Headers;
 namespace RestfulFirebase.CloudFirestore;
 
 /// <summary>
-/// App module that provides firebase cloud firestore database implementations.
+/// The database instance of the firestore.
 /// </summary>
-public class CloudFirestoreApp : Disposable
+public class FirestoreDatabase : Disposable
 {
     #region Properties
 
     /// <summary>
     /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
     /// </summary>
-    public RestfulFirebaseApp App { get; private set; }
+    public RestfulFirebaseApp App { get; }
 
-    internal const string CloudFirestoreDocumentsEndpoint = "https://firestore.googleapis.com/v1/projects/{0}/databases/{1}/documents/{2}";
-
-    internal const string DefaultDatabase = "(default)";
-    internal const string OfflineDatabaseIndicator = "cfdb";
+    /// <summary>
+    /// Gets the database id of the firestore.
+    /// </summary>
+    public string DatabaseId { get; }
 
     #endregion
 
     #region Initializers
 
-    internal CloudFirestoreApp(RestfulFirebaseApp app)
+    internal FirestoreDatabase(RestfulFirebaseApp app, string databaseId)
     {
         App = app;
+        DatabaseId = databaseId;
     }
 
     #endregion
@@ -48,23 +49,23 @@ public class CloudFirestoreApp : Disposable
     /// <summary>
     /// Creates a root collection reference <see cref="CollectionReference"/>.
     /// </summary>
-    /// <param name="databaseId">
-    /// The ID of the database to use.
+    /// <param name="collectionId">
+    /// The ID of the collection reference.
     /// </param>
     /// <returns>
-    /// The <see cref="FirestoreDatabase"/> of the specified <paramref name="databaseId"/>.
+    /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionId"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <paramref name="databaseId"/> is a <c>null</c> reference.
+    /// <paramref name="collectionId"/> is a <c>null</c> reference.
     /// </exception>
-    public FirestoreDatabase Database(string databaseId = DefaultDatabase)
+    public CollectionReference Collection(string collectionId)
     {
-        if (databaseId == null)
+        if (collectionId == null)
         {
-            throw new ArgumentNullException(nameof(databaseId));
+            throw new ArgumentNullException(nameof(collectionId));
         }
 
-        return new FirestoreDatabase(App, databaseId);
+        return new CollectionReference(App, null, collectionId);
     }
 
     #endregion

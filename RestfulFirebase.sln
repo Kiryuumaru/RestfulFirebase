@@ -4,6 +4,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31815.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA4E9CD5-D164-4E0E-8BBE-F92EA3DB5D61}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		full_clean.bat = full_clean.bat
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Src", "Src", "{30492E59-35BE-4725-872C-C9416AD5A113}"
 EndProject
@@ -15,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase.UnitTest", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase.Playground", "Tests\RestfulFirebase.Playground\RestfulFirebase.Playground.csproj", "{8DD19409-FB4C-45F5-A10B-46F27591190E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestfulFirebase.TestCore", "Tests\RestfulFirebase.TestCore\RestfulFirebase.TestCore.csproj", "{28646866-D74E-4BF3-97D7-C1E7854DB691}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase.TestCore", "Tests\RestfulFirebase.TestCore\RestfulFirebase.TestCore.csproj", "{28646866-D74E-4BF3-97D7-C1E7854DB691}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

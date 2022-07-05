@@ -2,6 +2,7 @@ using RestfulFirebase.Local;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -40,27 +41,28 @@ public class UnitTest1
         {
             var (app, wire, dataChanges) = await generator(null);
 
-            var user = app.CloudFirestore
-                .Collection("users")
-                .Document("KmwDJOir91FD3BR95IL7");
+            if (app.Auth.Session?.LocalId == null)
+            {
+                Assert.True(false, "Auth is null");
+                return;
+            }
 
-            var pub = app.CloudFirestore
+            var user1 = app.CloudFirestore
                 .Collection("public")
-                .Document("u3RuGQJghheSrtSrdFeb");
+                .Document("uNxJbRMEipmQ2Qza0oES");
 
-            string? get1;
-            string? get2;
+            var user2 = app.CloudFirestore
+                .Collection("public")
+                .Document("uNxJbRMEipmQ2Qza0oES")
+                .Collection("awd")
+                .Document("dwa");
+
+            JsonDocument get1;
+            JsonDocument get2;
             try
             {
-                get1 = await user.GetAsync();
-            }
-            catch (Exception ex)
-            {
-
-            }
-            try
-            {
-                get2 = await pub.GetAsync();
+                get1 = await user1.GetAsync();
+                get2 = await user2.GetAsync();
             }
             catch (Exception ex)
             {

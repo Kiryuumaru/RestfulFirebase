@@ -16,6 +16,8 @@ internal class ExceptionHelpers
             HttpStatusCode.Unauthorized => new DatabaseUnauthorizedException(originalException),
             //402
             HttpStatusCode.PaymentRequired => new DatabasePaymentRequiredException(originalException),
+            //403
+            HttpStatusCode.Forbidden => new DatabaseUnauthorizedException(originalException),
             //404
             HttpStatusCode.NotFound => new DatabaseNotFoundException(originalException),
             //412

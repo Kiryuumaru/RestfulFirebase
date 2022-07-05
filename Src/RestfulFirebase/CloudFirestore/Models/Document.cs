@@ -33,21 +33,6 @@ namespace RestfulFirebase.CloudFirestore.Models
             }
         }
 
-        /// <summary>
-        /// Gets the name of the document.
-        /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// Gets the time when document is created.
-        /// </summary>
-        public DateTimeOffset CreateTime { get; }
-
-        /// <summary>
-        /// Gets the time when document is updated.
-        /// </summary>
-        public DateTimeOffset UpdateTime { get; }
-
         private readonly ConcurrentDictionary<string, Field> fields = new();
 
         #endregion
@@ -55,22 +40,11 @@ namespace RestfulFirebase.CloudFirestore.Models
         #region Initializers
 
         /// <summary>
-        /// Creates an instance of <see cref="Document"/> that contains the value of the specified firebase cloud firestore document.
+        /// Creates new instance of <see cref="Document"/>.
         /// </summary>
-        /// <param name="name">
-        /// The name of the document.
-        /// </param>
-        /// <param name="createTime">
-        /// The time when document is created.
-        /// </param>
-        /// <param name="updateTime">
-        /// The time when document is updated.
-        /// </param>
-        public Document(string name, DateTimeOffset createTime, DateTimeOffset updateTime)
+        public Document()
         {
-            Name = name;
-            CreateTime = createTime;
-            UpdateTime = updateTime;
+
         }
 
         #endregion
