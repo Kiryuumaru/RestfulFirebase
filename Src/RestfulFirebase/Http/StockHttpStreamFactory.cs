@@ -4,7 +4,7 @@ using System.Net.Http;
 namespace RestfulFirebase.Http;
 
 /// <summary>
-/// The provided stock <see cref="IHttpClientProxy"/> implementation to be used.
+/// The provided stock <see cref="IHttpStreamFactory"/> implementation to be used.
 /// </summary>
 public sealed class StockHttpStreamFactory : IHttpStreamFactory
 {
