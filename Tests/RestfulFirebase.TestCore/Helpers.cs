@@ -58,7 +58,7 @@ public class Helpers
 
     public static RestfulFirebaseApp GenerateApp()
     {
-        FirebaseConfig config = Credentials.YourConfig();
+        FirebaseConfig config = Credentials.Config();
         config.LocalDatabase = new SampleLocalDatabase();
         return new RestfulFirebaseApp(config);
     }
@@ -172,7 +172,7 @@ public class Helpers
             if (subNode.Length == 0)
             {
                 wire = app.RealtimeDatabase
-                    .Database(Credentials.DefaultRealtimeDatabaseUrl)
+                    .Database()
                     .Child("users")
                     .Child(app.Auth.Session.LocalId)
                     .Child(unitName)
@@ -201,7 +201,7 @@ public class Helpers
                 string additionalPath = builder.ToString();
                 additionalPath = additionalPath[0..^1];
                 wire = app.RealtimeDatabase
-                    .Database(Credentials.DefaultRealtimeDatabaseUrl)
+                    .Database()
                     .Child("users")
                     .Child(app.Auth.Session.LocalId)
                     .Child(unitName)

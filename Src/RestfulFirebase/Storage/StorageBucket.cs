@@ -1,4 +1,5 @@
 ﻿using DisposableHelpers;
+using DisposableHelpers.Attributes;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -8,7 +9,8 @@ namespace RestfulFirebase.Storage;
 /// <summary>
 /// App module that provides firebase storage implementations
 /// </summary>
-public class StorageBucket : Disposable
+[Disposable]
+public partial class StorageBucket
 {
     #region Properties
 

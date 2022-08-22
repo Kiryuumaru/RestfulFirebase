@@ -12,13 +12,15 @@ using LockerHelpers;
 using System.Text.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using DisposableHelpers.Attributes;
 
 namespace RestfulFirebase.CloudFirestore;
 
 /// <summary>
 /// App module that provides firebase cloud firestore database implementations.
 /// </summary>
-public class CloudFirestoreApp : Disposable
+[Disposable]
+public partial class CloudFirestoreApp
 {
     #region Properties
 
@@ -29,7 +31,6 @@ public class CloudFirestoreApp : Disposable
 
     internal const string CloudFirestoreDocumentsEndpoint = "https://firestore.googleapis.com/v1/projects/{0}/databases/{1}/documents/{2}";
 
-    internal const string DefaultDatabase = "(default)";
     internal const string OfflineDatabaseIndicator = "cfdb";
 
     #endregion
@@ -49,7 +50,7 @@ public class CloudFirestoreApp : Disposable
     /// Creates a root collection reference <see cref="CollectionReference"/>.
     /// </summary>
     /// <param name="databaseId">
-    /// The ID of the database to use.
+    /// The ID of the database to use. Set to <c>null</c> if the instance will use the default database.
     /// </param>
     /// <returns>
     /// The <see cref="FirestoreDatabase"/> of the specified <paramref name="databaseId"/>.
@@ -57,14 +58,14 @@ public class CloudFirestoreApp : Disposable
     /// <exception cref="ArgumentNullException">
     /// <paramref name="databaseId"/> is a <c>null</c> reference.
     /// </exception>
-    public FirestoreDatabase Database(string databaseId = DefaultDatabase)
+    public FirestoreDatabase Database(string? databaseId = default)
     {
-        if (databaseId == null)
+        if (string.IsNullOrEmpty(databaseId))
         {
-            throw new ArgumentNullException(nameof(databaseId));
+            databaseId = "(default)";
         }
 
-        return new FirestoreDatabase(App, databaseId);
+        return new FirestoreDatabase(App, databaseId!);
     }
 
     #endregion

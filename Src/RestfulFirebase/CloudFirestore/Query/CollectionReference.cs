@@ -30,15 +30,15 @@ public class CollectionReference : Reference
 
     #region Initializers
 
-    internal CollectionReference(RestfulFirebaseApp app, DocumentReference? parent, string collectionId)
-        : base(app)
+    internal CollectionReference(RestfulFirebaseApp app, FirestoreDatabase firestoreDatabase, DocumentReference? parent, string collectionId)
+        : base(app, firestoreDatabase)
     {
         Id = collectionId;
         Parent = parent;
 
         if (parent == null)
         {
-            Name = $"projects/{App.Config.ProjectId}/databases/{CloudFirestoreApp.DefaultDatabase}/documents/{Id}";
+            Name = $"projects/{App.Config.ProjectId}/databases/{firestoreDatabase.DatabaseId}/documents/{Id}";
         }
         else
         {
@@ -69,7 +69,7 @@ public class CollectionReference : Reference
             throw new ArgumentNullException(nameof(documentId));
         }
 
-        return new DocumentReference(App, this, documentId);
+        return new DocumentReference(App, Database, this, documentId);
     }
 
     internal override string BuildUrl()

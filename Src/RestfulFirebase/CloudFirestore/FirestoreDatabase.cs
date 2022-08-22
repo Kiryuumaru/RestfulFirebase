@@ -65,7 +65,7 @@ public class FirestoreDatabase : Disposable
             throw new ArgumentNullException(nameof(collectionId));
         }
 
-        return new CollectionReference(App, null, collectionId);
+        return new CollectionReference(App, this, null, collectionId);
     }
 
     #endregion

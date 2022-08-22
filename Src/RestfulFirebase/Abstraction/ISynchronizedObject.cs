@@ -5,8 +5,8 @@ namespace RestfulFirebase.Abstraction;
 /// <summary>
 /// Contains bundle declarations for observable operations.
 /// </summary>
-public interface ISynchronizedObject :
-    INullableObject,
+public interface ISynchronizedObject1 :
+    INullableObject1,
     INotifyPropertyChanged
 {
     /// <summary>

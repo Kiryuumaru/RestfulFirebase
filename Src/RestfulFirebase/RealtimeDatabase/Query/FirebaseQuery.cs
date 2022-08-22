@@ -265,9 +265,9 @@ public abstract class FirebaseQuery : Disposable, IFirebaseQuery
     public RealtimeDatabase RealtimeDatabase { get; }
 
     /// <inheritdoc/>
-    public RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default)
+    public RealtimeWire AsRealtimeWire()
     {
-        return new RealtimeWire(App, this, customLocalDatabase ?? App.Config.LocalDatabase);
+        return new RealtimeWire(App, this);
     }
 
     /// <inheritdoc/>

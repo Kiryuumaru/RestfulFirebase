@@ -1,10 +1,8 @@
 ﻿using LockerHelpers;
-using RestfulFirebase.RealtimeDatabase.Models;
 using RestfulFirebase.RealtimeDatabase.Query;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
-using SerializerHelpers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -13,13 +11,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Abstraction;
 using DisposableHelpers;
+using DisposableHelpers.Attributes;
+using RestfulFirebase.Attributes;
+using System.Collections.Specialized;
+using System.ComponentModel;
 
 namespace RestfulFirebase.RealtimeDatabase.Realtime;
 
 /// <summary>
 /// Provides fluid implementations for firebase realtime database.
 /// </summary>
-public class RealtimeInstance : Disposable, INullableObject, ICloneable
+[Disposable]
+public partial class RealtimeInstance : ICloneable
 {
     #region Properties
 
@@ -42,11 +45,6 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
     /// The parent <see cref="RealtimeInstance"/> of the instance.
     /// </summary>
     public RealtimeInstance? Parent { get; }
-
-    /// <summary>
-    /// Local database used by this realtime instance.
-    /// </summary>
-    public ILocalDatabase LocalDatabase { get; }
 
     /// <summary>
     /// Gets <c>true</c> whether the wire has first stream since creation; otherwise, <c>false</c>.
@@ -100,21 +98,20 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     #region Initializers
 
-    private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
+    private protected RealtimeInstance(RestfulFirebaseApp app, IFirebaseQuery query)
     {
         App = app;
         Query = query;
-        LocalDatabase = localDatabase;
         App.Disposing += App_Disposing;
 
         AbsoluteUrl = Query.GetAbsoluteUrl();
         DBPath = UrlUtilities.Separate(AbsoluteUrl[8..]); // Removes 'https://'
 
-        App.LocalDatabase.Subscribe(LocalDatabase, OnDataChanges);
+        App.LocalDatabase.Changes += OnDataChanges;
     }
 
-    private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire? root, RealtimeInstance? parent, IFirebaseQuery query, ILocalDatabase localDatabase)
-       : this(app, query, localDatabase)
+    private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire? root, RealtimeInstance? parent, IFirebaseQuery query)
+       : this(app, query)
     {
         Root = root;
         Parent = parent;
@@ -129,8 +126,8 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
         }
     }
 
-    private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire? root, RealtimeInstance parent, string path, ILocalDatabase localDatabase)
-       : this(app, root, parent, parent.Query.Child(path), localDatabase)
+    private protected RealtimeInstance(RestfulFirebaseApp app, RealtimeWire? root, RealtimeInstance parent, string path)
+       : this(app, root, parent, parent.Query.Child(path))
     {
 
     }
@@ -356,51 +353,9 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
     }
 
     /// <summary>
-    /// Writes and subscribes realtime model to the node instance.
-    /// </summary>
-    /// <typeparam name="T">
-    /// The underlying type of the realtime model.
-    /// </typeparam>
-    /// <param name="model">
-    /// The realtime model to write and subscribe.
-    /// </param>
-    /// <param name="path">
-    /// The path of the instance to attach.
-    /// </param>
-    /// <returns>
-    /// The provided <paramref name="model"/>.
-    /// </returns>
-    /// <exception cref="DatabaseForbiddenNodeNameCharacter">
-    /// Throws when any node has forbidden node name character.
-    /// </exception>
-    /// <exception cref="ObjectDisposedException">
-    /// Throws when the object is already disposed.
-    /// </exception>
-    public void PutModel<T>(T model, params string[] path)
-        where T : RealtimeModel
-    {
-        VerifyNotDisposed();
-
-        if (model.IsDisposed)
-        {
-            throw new ObjectDisposedException(nameof(T));
-        }
-
-        if (path == null || path.Length == 0)
-        {
-            model.AttachRealtime(this, true);
-        }
-        else
-        {
-            EnsureValidPath(path);
-            model.AttachRealtime(Child(path), true);
-        }
-    }
-
-    /// <summary>
     /// Subscribes realtime model to the node instance.
     /// </summary>
-    /// <typeparam name="T">
+    /// <typeparam name="TModel">
     /// The underlying type of the realtime model.
     /// </typeparam>
     /// <param name="model">
@@ -410,7 +365,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
     /// The path of the instance to attach.
     /// </param>
     /// <returns>
-    /// The provided <paramref name="model"/>.
+    /// The <see cref="IDisposable"/> subscription.
     /// </returns>
     /// <exception cref="DatabaseForbiddenNodeNameCharacter">
     /// Throws when any node has forbidden node name character.
@@ -418,25 +373,63 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
     /// <exception cref="ObjectDisposedException">
     /// Throws when the object is already disposed.
     /// </exception>
-    public void SubModel<T>(T model, params string[] path)
-        where T : RealtimeModel
+    public RealtimeModel<TModel> Subscribe<TModel>(TModel model, params string[] path)
     {
         VerifyNotDisposed();
 
-        if (model.IsDisposed)
-        {
-            throw new ObjectDisposedException(nameof(T));
-        }
+        RealtimeModel<TModel> realtimeModel = new(model);
 
         if (path == null || path.Length == 0)
         {
-            model.AttachRealtime(this, false);
+            realtimeModel.AttachRealtime(this, false);
         }
         else
         {
             EnsureValidPath(path);
-            model.AttachRealtime(Child(path), false);
+            realtimeModel.AttachRealtime(Child(path), false);
         }
+
+        return realtimeModel;
+    }
+
+    /// <summary>
+    /// Writes and subscribes realtime model to the node instance.
+    /// </summary>
+    /// <typeparam name="TModel">
+    /// The underlying type of the realtime model.
+    /// </typeparam>
+    /// <param name="model">
+    /// The realtime model to write and subscribe.
+    /// </param>
+    /// <param name="path">
+    /// The path of the instance to attach.
+    /// </param>
+    /// <returns>
+    /// The <see cref="IDisposable"/> subscription.
+    /// </returns>
+    /// <exception cref="DatabaseForbiddenNodeNameCharacter">
+    /// Throws when any node has forbidden node name character.
+    /// </exception>
+    /// <exception cref="ObjectDisposedException">
+    /// Throws when the object is already disposed.
+    /// </exception>
+    public RealtimeModel<TModel> SubscribeAndWrite<TModel>(TModel model, params string[] path)
+    {
+        VerifyNotDisposed();
+
+        RealtimeModel<TModel> realtimeModel = new(model);
+
+        if (path == null || path.Length == 0)
+        {
+            realtimeModel.AttachRealtime(this, true);
+        }
+        else
+        {
+            EnsureValidPath(path);
+            realtimeModel.AttachRealtime(Child(path), true);
+        }
+
+        return realtimeModel;
     }
 
     /// <summary>
@@ -600,11 +593,11 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
         RealtimeInstance childWire;
         if (Root == null && this is RealtimeWire wire)
         {
-            childWire = new RealtimeInstance(App, wire, this, UrlUtilities.Combine(path), LocalDatabase);
+            childWire = new RealtimeInstance(App, wire, this, UrlUtilities.Combine(path));
         }
         else
         {
-            childWire = new RealtimeInstance(App, Root, this, UrlUtilities.Combine(path), LocalDatabase);
+            childWire = new RealtimeInstance(App, Root, this, UrlUtilities.Combine(path));
         }
 
         return childWire;
@@ -623,7 +616,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
     {
         VerifyNotDisposed();
 
-        var clone = new RealtimeInstance(App, Root, Parent, Query, LocalDatabase);
+        var clone = new RealtimeInstance(App, Root, Parent, Query);
 
         return clone;
     }
@@ -1339,7 +1332,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     private void DBDeleteData(string[] absolutePath)
     {
-        App.LocalDatabase.Delete(LocalDatabase, absolutePath);
+        App.LocalDatabase.Delete(absolutePath);
     }
 
     private string[] DBGetAbsoluteDataPath(string[]? path)
@@ -1361,7 +1354,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
         string? data = null;
         (string[] path, string value)[]? children = null;
 
-        App.LocalDatabase.TryGetValueOrRecursiveValues(LocalDatabase,
+        App.LocalDatabase.TryGetValueOrRecursiveValues(
             v => data = v,
             c => children = c,
             absolutePath);
@@ -1401,7 +1394,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
         string? data = null;
         (string[] path, string value)[]? children = null;
 
-        App.LocalDatabase.TryGetValueOrRecursiveRelativeValues(LocalDatabase,
+        App.LocalDatabase.TryGetValueOrRecursiveRelativeValues(
            v => data = v,
            c => children = c,
            absolutePath);
@@ -1438,7 +1431,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     private (string? sync, string? local, string? value, LocalDataChangesType changesType)? DBGetData(string[] absolutePath)
     {
-        string? data = App.LocalDatabase.GetValue(LocalDatabase, absolutePath);
+        string? data = App.LocalDatabase.GetValue(absolutePath);
 
         if (data == null || string.IsNullOrEmpty(data))
         {
@@ -1460,7 +1453,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
         (string key, LocalDataType type)[]? children = null;
 
-        App.LocalDatabase.TryGetValueOrRelativeTypedChildren(LocalDatabase,
+        App.LocalDatabase.TryGetValueOrRelativeTypedChildren(
             v => data = v,
             c => children = c,
             absolutePath);
@@ -1492,7 +1485,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
         string[][]? children = null;
 
-        App.LocalDatabase.TryGetValueOrRecursiveChildren(LocalDatabase,
+        App.LocalDatabase.TryGetValueOrRecursiveChildren(
             v => data = v,
             c => children = c,
             absolutePath);
@@ -1524,7 +1517,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
         string[][]? children = null;
 
-        App.LocalDatabase.TryGetValueOrRecursiveRelativeChildren(LocalDatabase,
+        App.LocalDatabase.TryGetValueOrRecursiveRelativeChildren(
             v => data = v,
             c => children = c,
             absolutePath);
@@ -1552,7 +1545,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     private LocalDataType DBGetDataType(string[] absolutePath)
     {
-        return App.LocalDatabase.GetDataType(LocalDatabase, absolutePath);
+        return App.LocalDatabase.GetDataType(absolutePath);
     }
 
     private void DBGetNearestHierarchyDataOrRelativePath(Action onEmpty, Action<(string[] path, string? sync, string? local, string? value, LocalDataChangesType changesType)> onData, Action<string[]> onPath, string[] absolutePath)
@@ -1561,7 +1554,7 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
         string[]? hierPath = null;
 
-        App.LocalDatabase.InternalTryGetNearestHierarchyValueOrPath(LocalDatabase,
+        App.LocalDatabase.InternalTryGetNearestHierarchyValueOrPath(
             d => hierData = d,
             p => hierPath = p,
             absolutePath);
@@ -1589,19 +1582,19 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     private (string key, LocalDataType type)[] DBGetRelativeTypedChildren(string[] absolutePath)
     {
-        return App.LocalDatabase.GetRelativeTypedChildren(LocalDatabase, absolutePath);
+        return App.LocalDatabase.GetRelativeTypedChildren(absolutePath);
     }
 
     private string[][] DBGetRecursiveRelativeChildren(string[] absolutePath)
     {
-        return App.LocalDatabase.GetRecursiveRelativeChildren(LocalDatabase, absolutePath);
+        return App.LocalDatabase.GetRecursiveRelativeChildren(absolutePath);
     }
 
     private void DBSetData(string? sync, string? local, LocalDataChangesType changesType, string[] absolutePath)
     {
         string serialized = SerializeData(sync, local, changesType);
 
-        App.LocalDatabase.SetValue(LocalDatabase, serialized, absolutePath);
+        App.LocalDatabase.SetValue(serialized, absolutePath);
     }
 
     private static (string? sync, string? local, string? value, LocalDataChangesType changesType)? DeserializeData(string data)
@@ -1654,12 +1647,17 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
 
     #region Disposable Members
 
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            App.LocalDatabase.Unsubscribe(LocalDatabase, OnDataChanges);
+            App.LocalDatabase.Changes -= OnDataChanges;
             if (Root != null)
             {
                 Root.Error -= Parent_Error;
@@ -1671,7 +1669,6 @@ public class RealtimeInstance : Disposable, INullableObject, ICloneable
             DataChanges = null;
             Error = null;
         }
-        base.Dispose(disposing);
     }
 
     #endregion

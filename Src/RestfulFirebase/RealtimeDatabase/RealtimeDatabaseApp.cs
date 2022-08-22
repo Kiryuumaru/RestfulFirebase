@@ -9,18 +9,18 @@ using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using DisposableHelpers;
-using LockerHelpers;
 using System.Text.Json;
+using DisposableHelpers.Attributes;
+using LockerHelpers;
 
 namespace RestfulFirebase.RealtimeDatabase;
 
 /// <summary>
 /// App module that provides firebase realtime database implementations.
 /// </summary>
-public class RealtimeDatabaseApp : Disposable
+[Disposable]
+public partial class RealtimeDatabaseApp
 {
-    #region Properties
-
     /// <summary>
     /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
     /// </summary>
@@ -31,10 +31,6 @@ public class RealtimeDatabaseApp : Disposable
     private readonly OperationInvoker writeTaskPutControl = new(0);
     private readonly ConcurrentDictionary<string[], WriteTask> writeTasks = new(PathEqualityComparer.Instance);
 
-    #endregion
-
-    #region Initializers
-
     internal RealtimeDatabaseApp(RestfulFirebaseApp app)
     {
         App = app;
@@ -44,41 +40,31 @@ public class RealtimeDatabaseApp : Disposable
         writeTaskPutControl.ConcurrentTokenCount = App.Config.RealtimeDatabaseMaxConcurrentSyncWrites;
     }
 
-    #endregion
-
-    #region Methods
-
     /// <summary>
     /// Creates new instance of <see cref="RealtimeDatabase"/> database with the specified <paramref name="databaseUrl"/>.
     /// </summary>
     /// <param name="databaseUrl">
-    /// The URL of the database (i.e., "https://projectid-default-rtdb.firebaseio.com/").
+    /// The URL of the database. Set to <c>null</c> if the instance will use the default firebase realtime database (i.e., "https://projectid-default-rtdb.firebaseio.com/").
     /// </param>
     /// <returns>
     /// The created <see cref="RealtimeDatabase"/> node.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Throws when <paramref name="databaseUrl"/> is null or empty.
-    /// </exception>
-    public RealtimeDatabase Database(string databaseUrl)
+    public RealtimeDatabase Database(string? databaseUrl = default)
     {
-        if (databaseUrl == null)
+        if (string.IsNullOrEmpty(databaseUrl))
         {
-            throw new ArgumentNullException(nameof(databaseUrl));
+            databaseUrl = $"https://{App.Config.ProjectId}-default-rtdb.firebaseio.com/";
         }
 
-        return new RealtimeDatabase(App, databaseUrl);
+        return new RealtimeDatabase(App, databaseUrl!);
     }
 
     /// <summary>
     /// Flush all data of the offline database.
     /// </summary>
-    /// <param name="localDatabase">
-    /// Local database to flush. Leave <c>default</c> or <c>null</c> to flush default local database <see cref="FirebaseConfig.LocalDatabase"/>.
-    /// </param>
-    public void Flush(ILocalDatabase? localDatabase = default)
+    public void Flush()
     {
-        App.LocalDatabase.Delete(localDatabase ?? App.Config.LocalDatabase, new string[] { OfflineDatabaseIndicator });
+        App.LocalDatabase.Delete(new string[] { OfflineDatabaseIndicator });
     }
 
     private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -88,10 +74,6 @@ public class RealtimeDatabaseApp : Disposable
             writeTaskPutControl.ConcurrentTokenCount = App.Config.RealtimeDatabaseMaxConcurrentSyncWrites;
         }
     }
-
-    #endregion
-
-    #region DB Sync Helpers
 
     internal void DBCancelPut(string[] path)
     {
@@ -151,23 +133,19 @@ public class RealtimeDatabaseApp : Disposable
         }
     }
 
-    #endregion
-
-    #region Disposable Members
-
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected void Dispose(bool disposing)
     {
         if (disposing)
         {
             App.Config.PropertyChanged -= Config_PropertyChanged;
         }
-        base.Dispose(disposing);
     }
-
-    #endregion
-
-    #region Helper Classes
 
     internal class WriteTask : Disposable
     {
@@ -274,6 +252,4 @@ public class RealtimeDatabaseApp : Disposable
 
         #endregion
     }
-
-    #endregion
 }

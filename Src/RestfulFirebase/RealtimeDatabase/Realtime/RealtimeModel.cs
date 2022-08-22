@@ -1,21 +1,29 @@
 ﻿using DisposableHelpers;
+using DisposableHelpers.Attributes;
 using LockerHelpers;
 using RestfulFirebase.Abstraction;
+using RestfulFirebase.Attributes;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Local;
 using RestfulFirebase.RealtimeDatabase.Realtime;
-using SerializerHelpers;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
-namespace RestfulFirebase.RealtimeDatabase.Models;
+namespace RestfulFirebase.RealtimeDatabase.Realtime;
 
 /// <summary>
-/// Provides realtime base model for <see cref="Realtime.RealtimeInstance"/>
+/// Provides realtime base model for <see cref="RealtimeInstance"/>
 /// </summary>
-public abstract class RealtimeModel : Disposable
+[Disposable]
+public partial class RealtimeModel<TModel>
 {
     #region Properties
 
@@ -23,6 +31,11 @@ public abstract class RealtimeModel : Disposable
     /// Gets the <see cref="Realtime.RealtimeInstance"/> the model uses.
     /// </summary>
     public RealtimeInstance? RealtimeInstance { get; private set; }
+
+    /// <summary>
+    /// Gets the corresponding model of the realtime instance.
+    /// </summary>
+    public TModel Model { get; }
 
     /// <summary>
     /// Gets <c>true</c> whether model has realtime instance attached; otherwise, <c>false</c>.
@@ -74,11 +87,18 @@ public abstract class RealtimeModel : Disposable
 
     internal bool HasPostAttachedRealtime { get; private set; }
 
+    private (Type keyType, Type valueType)? dictionaryType;
+    private Type? collectionType;
+    private (IEnumerable<(PropertyInfo propertyInfo, FirebasePropertyAttribute attribute)> properties, IEnumerable<(FieldInfo fieldInfo, FirebasePropertyAttribute attribute)> fields)? objectType;
+
     #endregion
 
     #region Initializers
 
-
+    internal RealtimeModel(TModel model)
+    {
+        Model = model;
+    }
 
     #endregion
 
@@ -117,12 +137,6 @@ public abstract class RealtimeModel : Disposable
         WireError?.Invoke(this, args);
     }
 
-    internal abstract void RealtimeInstanceAttaching();
-
-    internal abstract void RealtimeInstanceDetaching();
-
-    internal abstract void RealtimeInstanceDataChanges(DataChangesEventArgs e);
-
     internal void AttachRealtime(RealtimeInstance realtimeInstance, bool invokeSetFirst)
     {
         if (IsDisposed && !realtimeInstance.IsDisposed)
@@ -141,7 +155,48 @@ public abstract class RealtimeModel : Disposable
                     return;
                 }
 
-                RealtimeInstanceAttaching();
+                if (Model is IDictionary dictionaryModel)
+                {
+                    if (Model.GetType().GetInterfaces().FirstOrDefault(x =>
+                          x.IsGenericType &&
+                          x.GetGenericTypeDefinition() == typeof(IDictionary<,>)) is Type type &&
+                        type.GetGenericArguments() is Type[] genericTypes &&
+                        genericTypes.Length == 2)
+                    {
+                        dictionaryType = (genericTypes[0], genericTypes[1]);
+                    }
+                }
+                else if (Model is ICollection collection)
+                {
+                    if (Model.GetType().GetInterfaces().FirstOrDefault(x =>
+                          x.IsGenericType &&
+                          x.GetGenericTypeDefinition() == typeof(ICollection<>)) is Type type &&
+                        type.GetGenericArguments() is Type[] genericTypes &&
+                        genericTypes.Length == 1)
+                    {
+                        collectionType = genericTypes[0];
+                    }
+                }
+
+                if (dictionaryType != null)
+                {
+                    DictionaryTypeAttaching(dictionaryType.Value.keyType, dictionaryType.Value.valueType);
+                }
+                else if (collectionType != null)
+                {
+                    CollectionTypeAttaching(collectionType);
+                }
+                else
+                {
+                    var properties = typeof(TModel).GetProperties()
+                        .Where(prop => prop.IsDefined(typeof(FirebasePropertyAttribute), true))
+                        .Select(prop => (prop, (FirebasePropertyAttribute)prop.GetCustomAttributes(typeof(FirebasePropertyAttribute), false).First()));
+                    var fields = typeof(TModel).GetFields()
+                        .Where(field => field.IsDefined(typeof(FirebasePropertyAttribute), true))
+                        .Select(field => (field, (FirebasePropertyAttribute)field.GetCustomAttributes(typeof(FirebasePropertyAttribute), false).First()));
+                    objectType = (properties, fields);
+                    ObjectTypeAttaching(properties, fields);
+                }
 
                 Subscribe(realtimeInstance, invokeSetFirst);
 
@@ -174,7 +229,22 @@ public abstract class RealtimeModel : Disposable
                 return;
             }
 
-            RealtimeInstanceDetaching();
+            if (dictionaryType != null)
+            {
+                DictionaryTypeDetaching(dictionaryType.Value.keyType, dictionaryType.Value.valueType);
+            }
+            else if (collectionType != null)
+            {
+                CollectionTypeDetaching(collectionType);
+            }
+            else if (objectType != null)
+            {
+                ObjectTypeDetaching(objectType.Value.properties, objectType.Value.fields);
+            }
+            else
+            {
+                throw new Exception("Unknown type");
+            }
 
             var args = new RealtimeInstanceEventArgs(RealtimeInstance);
 
@@ -249,7 +319,22 @@ public abstract class RealtimeModel : Disposable
                 return;
             }
 
-            RealtimeInstanceDataChanges(e);
+            if (dictionaryType != null)
+            {
+                DictionaryTypeDataChanges(dictionaryType.Value.keyType, dictionaryType.Value.valueType, e);
+            }
+            else if (collectionType != null)
+            {
+                CollectionTypeDataChanges(collectionType, e);
+            }
+            else if (objectType != null)
+            {
+                ObjectTypeDataChanges(objectType.Value.properties, objectType.Value.fields, e);
+            }
+            else
+            {
+                throw new Exception("Unknown type");
+            }
         });
     }
 
@@ -271,6 +356,81 @@ public abstract class RealtimeModel : Disposable
         }
 
         DetachRealtime();
+    }
+
+    #endregion
+
+    #region Dictionary Model
+
+    private void DictionaryTypeAttaching(Type keyType, Type valueType)
+    {
+
+    }
+
+    private void DictionaryTypeDetaching(Type keyType, Type valueType)
+    {
+
+    }
+
+    private void DictionaryTypeDataChanges(Type keyType, Type valueType, DataChangesEventArgs e)
+    {
+
+    }
+
+    #endregion
+
+    #region Collection Model
+
+    private void CollectionTypeAttaching(Type itemType)
+    {
+
+    }
+
+    private void CollectionTypeDetaching(Type itemType)
+    {
+
+    }
+
+    private void CollectionTypeDataChanges(Type itemType, DataChangesEventArgs e)
+    {
+
+    }
+
+    #endregion
+
+    #region Object Model
+
+    private void ObjectTypeAttaching(IEnumerable<(PropertyInfo propertyInfo, FirebasePropertyAttribute attribute)> properties, IEnumerable<(FieldInfo fieldInfo, FirebasePropertyAttribute attribute)> fields)
+    {
+
+    }
+
+    private void ObjectTypeDetaching(IEnumerable<(PropertyInfo propertyInfo, FirebasePropertyAttribute attribute)> properties, IEnumerable<(FieldInfo fieldInfo, FirebasePropertyAttribute attribute)> fields)
+    {
+
+    }
+
+    private void ObjectTypeDataChanges(IEnumerable<(PropertyInfo propertyInfo, FirebasePropertyAttribute attribute)> properties, IEnumerable<(FieldInfo fieldInfo, FirebasePropertyAttribute attribute)> fields, DataChangesEventArgs e)
+    {
+
+    }
+
+    #endregion
+
+    #region Disposable Members
+
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            DetachRealtime();
+        }
     }
 
     #endregion

@@ -10,14 +10,15 @@ using RestfulFirebase.Exceptions;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DisposableHelpers;
+using DisposableHelpers.Attributes;
 
 namespace RestfulFirebase.Auth;
 
 /// <summary>
 /// App module that provides firebase authentication implementations.
 /// </summary>
-public class AuthApp : Disposable
+[Disposable]
+public partial class AuthApp
 {
     #region Properties
 
@@ -106,10 +107,7 @@ public class AuthApp : Disposable
 
     internal HttpClient GetClient()
     {
-        if (client == null)
-        {
-            client = App.Config.HttpClientFactory.GetHttpClient();
-        }
+        client ??= App.Config.HttpClientFactory.GetHttpClient();
 
         return client;
     }
@@ -718,14 +716,18 @@ public class AuthApp : Disposable
 
     #region Disposable Members
 
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected void Dispose(bool disposing)
     {
         if (disposing)
         {
             client?.Dispose();
         }
-        base.Dispose(disposing);
     }
 
     #endregion

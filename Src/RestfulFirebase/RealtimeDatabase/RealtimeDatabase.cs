@@ -9,7 +9,6 @@ using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using DisposableHelpers;
-using LockerHelpers;
 using System.Text.Json;
 
 namespace RestfulFirebase.RealtimeDatabase;
@@ -19,8 +18,6 @@ namespace RestfulFirebase.RealtimeDatabase;
 /// </summary>
 public class RealtimeDatabase : Disposable
 {
-    #region Properties
-
     /// <summary>
     /// Gets the <see cref="RestfulFirebaseApp"/> used by this instance.
     /// </summary>
@@ -30,10 +27,6 @@ public class RealtimeDatabase : Disposable
     /// Gets the database URL used by this instance.
     /// </summary>
     public string DatabaseUrl { get; }
-
-    #endregion
-
-    #region Initializers
 
     internal RealtimeDatabase(RestfulFirebaseApp app, string databaseUrl)
     {
@@ -45,10 +38,6 @@ public class RealtimeDatabase : Disposable
         App = app;
         DatabaseUrl = databaseUrl;
     }
-
-    #endregion
-
-    #region Methods
 
     /// <summary>
     /// Creates new instance of <see cref="ChildQuery"/> node with the specified <paramref name="path"/>.
@@ -71,6 +60,4 @@ public class RealtimeDatabase : Disposable
 
         return new ChildQuery(this, null, path);
     }
-
-    #endregion
 }

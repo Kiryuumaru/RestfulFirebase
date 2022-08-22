@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;net6.0;</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;</TargetFrameworks>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -35,29 +35,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="RealtimeDatabase\Models2\FirebaseDictionary.cs" />
-    <Compile Remove="RealtimeDatabase\Models2\FirebaseObject.cs" />
-    <Compile Remove="RealtimeDatabase\Models2\FirebaseObject2.cs" />
-    <Compile Remove="RealtimeDatabase\Models2\FirebaseProperty1.cs" />
-    <Compile Remove="RealtimeDatabase\Models2\IInternalRealtimeModel.cs" />
-    <Compile Remove="RealtimeDatabase\Models2\IRealtimeModel.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="RealtimeDatabase\Models2\FirebaseDictionary.cs" />
-    <None Include="RealtimeDatabase\Models2\FirebaseObject.cs" />
-    <None Include="RealtimeDatabase\Models2\FirebaseObject2.cs" />
-    <None Include="RealtimeDatabase\Models2\FirebaseProperty1.cs" />
-    <None Include="RealtimeDatabase\Models2\IInternalRealtimeModel.cs" />
-    <None Include="RealtimeDatabase\Models2\IRealtimeModel.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
-    <PackageReference Include="DisposableHelpers" Version="1.0.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0" />
+    <PackageReference Include="DisposableHelpers" Version="1.1.6" />
     <PackageReference Include="LockerHelpers" Version="1.0.2" />
-    <PackageReference Include="SerializerHelpers" Version="1.0.4" />
-    <PackageReference Include="System.Text.Json" Version="6.0.5" />
+    <PackageReference Include="System.Text.Json" Version="7.0.0-preview.7.22375.6" />
   </ItemGroup>
 
   <ItemGroup>

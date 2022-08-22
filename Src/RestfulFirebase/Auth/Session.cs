@@ -6,16 +6,19 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Local;
-using SerializerHelpers;
 using System.Text.Json;
 using DisposableHelpers;
+using DisposableHelpers.Attributes;
+using RestfulFirebase.CloudFirestore.Models;
+using static System.Collections.Specialized.BitVector32;
 
 namespace RestfulFirebase.Auth;
 
 /// <summary>
 /// Provides firebase user authentication implementations.
 /// </summary>
-public class Session : Disposable
+[Disposable]
+public partial class Session
 {
     #region Properties
 
@@ -119,7 +122,7 @@ public class Session : Disposable
 
         App.Config.PropertyChanged +=  Config_PropertyChanged;
 
-        Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
+        Fetch(App);
     }
 
     #endregion
@@ -749,9 +752,8 @@ public class Session : Disposable
     /// </param>
     public void CopyAuthenticationFrom(RestfulFirebaseApp app)
     {
-        ILocalDatabase localDatabase = app.Config.CustomAuthLocalDatabase ?? app.Config.LocalDatabase;
-        Fetch(localDatabase);
-        Store(localDatabase);
+        Fetch(app);
+        Store(App);
     }
 
     internal void OnAuthRefreshed()
@@ -784,7 +786,7 @@ public class Session : Disposable
         IsEmailVerified = user.IsEmailVerified;
         PhotoUrl = user.PhoneNumber;
         PhoneNumber = user.PhoneNumber;
-        Store(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
+        Store(App);
     }
 
     internal void Purge()
@@ -803,60 +805,56 @@ public class Session : Disposable
         PhotoUrl = default;
         PhoneNumber = default;
 
-        App.LocalDatabase.Delete(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase, new string[] { Root });
+        App.LocalDatabase.Delete(new string[] { Root });
     }
 
-    internal void Fetch(ILocalDatabase? localDatabase)
+    internal void Fetch(RestfulFirebaseApp app)
     {
-        if (localDatabase == null)
-        {
-            return;
-        }
-
-        var auth = App.LocalDatabase.GetValue(localDatabase, new string[] { Root }) ?? "";
+        var auth = app.LocalDatabase.GetValue(new string[] { Root }) ?? "";
 
         FirebaseToken = BlobSerializer.GetValue(auth, "tok");
         RefreshToken = BlobSerializer.GetValue(auth, "ref");
-        ExpiresIn = Serializer.Deserialize<int>(BlobSerializer.GetValue(auth, "exp"));
-        Created = Serializer.Deserialize<DateTime>(BlobSerializer.GetValue(auth, "ctd"));
+        var exp = BlobSerializer.GetValue(auth, "exp");
+        ExpiresIn = string.IsNullOrEmpty(exp) ? default : (int)StringSerializer.ExtractNumber(exp!);
+        var ctd = BlobSerializer.GetValue(auth, "ctd");
+        Created = string.IsNullOrEmpty(ctd) ? default : new DateTime(StringSerializer.ExtractNumber(ctd!));
         LocalId = BlobSerializer.GetValue(auth, "lid");
         FederatedId = BlobSerializer.GetValue(auth, "fid");
         FirstName = BlobSerializer.GetValue(auth, "fname");
         LastName = BlobSerializer.GetValue(auth, "lname");
         DisplayName = BlobSerializer.GetValue(auth, "dname");
         Email = BlobSerializer.GetValue(auth, "email");
-        IsEmailVerified = Serializer.Deserialize<bool>(BlobSerializer.GetValue(auth, "vmail"));
+        IsEmailVerified = BlobSerializer.GetValue(auth, "vmail") == "1";
         PhotoUrl = BlobSerializer.GetValue(auth, "purl");
         PhoneNumber = BlobSerializer.GetValue(auth, "pnum");
     }
 
-    internal void Store(ILocalDatabase localDatabase)
+    internal void Store(RestfulFirebaseApp app)
     {
         var auth = "";
 
         auth = BlobSerializer.SetValue(auth, "tok", FirebaseToken);
         auth = BlobSerializer.SetValue(auth, "ref", RefreshToken);
-        auth = BlobSerializer.SetValue(auth, "exp", Serializer.Serialize(ExpiresIn));
-        auth = BlobSerializer.SetValue(auth, "ctd", Serializer.Serialize(Created));
+        auth = BlobSerializer.SetValue(auth, "exp", StringSerializer.CompressNumber(ExpiresIn));
+        auth = BlobSerializer.SetValue(auth, "ctd", StringSerializer.CompressNumber(Created.Ticks));
         auth = BlobSerializer.SetValue(auth, "lid", LocalId);
         auth = BlobSerializer.SetValue(auth, "fid", FederatedId);
         auth = BlobSerializer.SetValue(auth, "fname", FirstName);
         auth = BlobSerializer.SetValue(auth, "lname", LastName);
         auth = BlobSerializer.SetValue(auth, "dname", DisplayName);
         auth = BlobSerializer.SetValue(auth, "email", Email);
-        auth = BlobSerializer.SetValue(auth, "vmail", Serializer.Serialize(IsEmailVerified));
+        auth = BlobSerializer.SetValue(auth, "vmail", IsEmailVerified ? "1" : "0");
         auth = BlobSerializer.SetValue(auth, "purl", PhotoUrl);
         auth = BlobSerializer.SetValue(auth, "pnum", PhoneNumber);
 
-        App.LocalDatabase.SetValue(localDatabase, auth, new string[] { Root });
+        app.LocalDatabase.SetValue(auth, new string[] { Root });
     }
 
     private void Config_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(App.Config.LocalDatabase) ||
-            e.PropertyName == nameof(App.Config.CustomAuthLocalDatabase))
+        if (e.PropertyName == nameof(App.Config.LocalDatabase))
         {
-            Fetch(App.Config.CustomAuthLocalDatabase ?? App.Config.LocalDatabase);
+            Fetch(App);
         }
     }
 
@@ -864,14 +862,18 @@ public class Session : Disposable
 
     #region Disposable Members
 
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected void Dispose(bool disposing)
     {
         if (disposing)
         {
             App.Config.PropertyChanged -= Config_PropertyChanged;
         }
-        base.Dispose(disposing);
     }
 
     #endregion

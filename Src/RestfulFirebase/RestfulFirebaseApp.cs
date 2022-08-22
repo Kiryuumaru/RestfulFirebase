@@ -7,16 +7,16 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using RestfulFirebase.CloudFirestore;
 using DisposableHelpers;
+using DisposableHelpers.Attributes;
 
 namespace RestfulFirebase;
 
 /// <summary>
 /// App session for whole restful firebase operations.
 /// </summary>
-public class RestfulFirebaseApp : Disposable
+[Disposable]
+public partial class RestfulFirebaseApp
 {
-    #region Properties
-
     /// <summary>
     /// Gets <see cref="FirebaseConfig"/> of the app session 
     /// </summary>
@@ -60,10 +60,6 @@ public class RestfulFirebaseApp : Disposable
         CommentHandling = JsonCommentHandling.Skip
     };
 
-    #endregion
-
-    #region Initializers
-
     /// <summary>
     /// Creates new instance of <see cref="RestfulFirebaseApp"/> app.
     /// </summary>
@@ -80,18 +76,13 @@ public class RestfulFirebaseApp : Disposable
         Auth = new AuthApp(this);
     }
 
-    #endregion
-
-    #region Methods
-
-
-
-    #endregion
-
-    #region Disposable Members
-
-    /// <inheritdoc/>
-    protected override void Dispose(bool disposing)
+    /// <summary>
+    /// The dispose logic.
+    /// </summary>
+    /// <param name = "disposing">
+    /// Whether the method is being called in response to disposal, or finalization.
+    /// </param>
+    protected void Dispose(bool disposing)
     {
         if (disposing)
         {
@@ -100,8 +91,5 @@ public class RestfulFirebaseApp : Disposable
             RealtimeDatabase?.Dispose();
             Storage?.Dispose();
         }
-        base.Dispose(disposing);
     }
-
-    #endregion
 }

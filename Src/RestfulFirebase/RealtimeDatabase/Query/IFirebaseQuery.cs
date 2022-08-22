@@ -27,13 +27,10 @@ public interface IFirebaseQuery
     /// <summary>
     /// Creates new instance of <see cref="RealtimeWire"/> at the given query location.
     /// </summary>
-    /// <param name="customLocalDatabase">
-    /// Custom local database <see cref="ILocalDatabase"/> used for realtime wire. Leave <c>default</c> or <c>null</c> to use <see cref="ILocalDatabase"/> implementation from <see cref="FirebaseConfig"/>.
-    /// </param>
     /// <returns>
     /// The created <see cref="RealtimeWire"/> of the query location.
     /// </returns>
-    RealtimeWire AsRealtimeWire(ILocalDatabase? customLocalDatabase = default);
+    RealtimeWire AsRealtimeWire();
 
     /// <summary>
     /// Builds the url of the query.

@@ -31,8 +31,8 @@ public class RealtimeWire : RealtimeInstance
 
     #region Initializers
 
-    internal RealtimeWire(RestfulFirebaseApp app, IFirebaseQuery query, ILocalDatabase localDatabase)
-        : base(app, query, localDatabase)
+    internal RealtimeWire(RestfulFirebaseApp app, IFirebaseQuery query)
+        : base(app, query)
     {
 
     }
@@ -196,7 +196,7 @@ public class RealtimeWire : RealtimeInstance
     {
         VerifyNotDisposed();
 
-        var clone = new RealtimeWire(App, Query, LocalDatabase);
+        var clone = new RealtimeWire(App, Query);
 
         Next += clone.OnNext;
         Disposing += delegate

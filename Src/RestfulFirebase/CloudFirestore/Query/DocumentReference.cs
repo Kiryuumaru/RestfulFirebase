@@ -38,8 +38,8 @@ public class DocumentReference : Reference
 
     #region Initializers
 
-    internal DocumentReference(RestfulFirebaseApp app, CollectionReference parent, string documentId)
-        : base(app)
+    internal DocumentReference(RestfulFirebaseApp app, FirestoreDatabase firestoreDatabase, CollectionReference parent, string documentId)
+        : base(app, firestoreDatabase)
     {
         Id = documentId;
         Parent = parent;
@@ -70,7 +70,7 @@ public class DocumentReference : Reference
             throw new ArgumentNullException(nameof(collectionId));
         }
 
-        return new CollectionReference(App, this, collectionId);
+        return new CollectionReference(App, Database, this, collectionId);
     }
 
     /// <summary>

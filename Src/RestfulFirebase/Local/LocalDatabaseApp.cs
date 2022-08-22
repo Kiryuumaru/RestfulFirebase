@@ -1,16 +1,16 @@
 ﻿// Partial locking mechianism
 
 using DisposableHelpers;
+using DisposableHelpers.Attributes;
 using LockerHelpers;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
-using SerializerHelpers;
-using SerializerHelpers.Exceptions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,7 +19,8 @@ namespace RestfulFirebase.Local;
 /// <summary>
 /// App module that provides persistency for the <see cref="RestfulFirebaseApp"/>.
 /// </summary>
-public class LocalDatabaseApp : Disposable
+[Disposable]
+public partial class LocalDatabaseApp
 {
     #region Properties
 
@@ -28,14 +29,20 @@ public class LocalDatabaseApp : Disposable
     /// </summary>
     public RestfulFirebaseApp App { get; }
 
+    /// <summary>
+    /// Event that invokes if the local database has data changes.
+    /// </summary>
+    public event EventHandler<DataChangesEventArgs>? Changes;
+
+    private bool isChangesInvoking = false;
+
     private const char ValueIndicator = 'v';
     private const char PathIndicator = 'p';
     private const string ExposedStoreIndicator = "exdb";
 
     private readonly RWLockDictionary<string[]> rwLock = new(LockRecursionPolicy.SupportsRecursion, PathEqualityComparer.Instance);
-    private static readonly RWLock databaseDictionaryLock = new(LockRecursionPolicy.SupportsRecursion);
-    private static readonly Dictionary<ILocalDatabase, LocalDatabaseEventHolder> databaseDictionary = new();
     private readonly ConcurrentDictionary<string, object?> nonPersistentStore = new();
+    private readonly ConcurrentQueue<DataChangesEventArgs> changesInvokes = new();
 
     #endregion
 
@@ -68,8 +75,8 @@ public class LocalDatabaseApp : Disposable
     /// <exception cref="ArgumentException">
     /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="SerializerNotSupportedException">
-    /// <paramref name="fromPersistentStore"/> is set to true and <typeparamref name="T"/> has no registered serializer.
+    /// <exception cref="NotSupportedException">
+    /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/> for <typeparamref name="T"/> or its serializable members.
     /// </exception>
     public void SetValue<T>(string key, T value, bool fromPersistentStore)
     {
@@ -79,8 +86,8 @@ public class LocalDatabaseApp : Disposable
         }
         if (fromPersistentStore)
         {
-            string? serialized = Serializer.Serialize(value);
-            SetValue(App.Config.LocalDatabase, serialized, new string[] { ExposedStoreIndicator, key });
+            string? serialized = JsonSerializer.Serialize(value, App.Config.DatabaseJsonSerializerOptions);
+            SetValue(serialized, new string[] { ExposedStoreIndicator, key });
         }
         else
         {
@@ -106,8 +113,8 @@ public class LocalDatabaseApp : Disposable
     /// <exception cref="ArgumentException">
     /// <paramref name="key"/> is null or empty.
     /// </exception>
-    /// <exception cref="SerializerNotSupportedException">
-    /// <paramref name="fromPersistentStore"/> is set to true and <typeparamref name="T"/> has no registered serializer.
+    /// <exception cref="NotSupportedException">
+    /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/> for <typeparamref name="T"/> or its serializable members.
     /// </exception>
     public T? GetValue<T>(string key, bool fromPersistentStore)
     {
@@ -117,8 +124,8 @@ public class LocalDatabaseApp : Disposable
         }
         if (fromPersistentStore)
         {
-            string? serialized = GetValue(App.Config.LocalDatabase, new string[] { ExposedStoreIndicator, key });
-            return Serializer.Deserialize<T>(serialized);
+            string? serialized = GetValue(new string[] { ExposedStoreIndicator, key });
+            return serialized == null ? default : JsonSerializer.Deserialize<T>(serialized, App.Config.DatabaseJsonSerializerOptions);
         }
         else
         {
@@ -153,7 +160,7 @@ public class LocalDatabaseApp : Disposable
         }
         if (fromPersistentStore)
         {
-            Delete(App.Config.LocalDatabase, new string[] { ExposedStoreIndicator, key });
+            Delete(new string[] { ExposedStoreIndicator, key });
         }
         else
         {
@@ -184,7 +191,7 @@ public class LocalDatabaseApp : Disposable
         }
         if (fromPersistentStore)
         {
-            return Contains(App.Config.LocalDatabase, new string[] { ExposedStoreIndicator, key });
+            return Contains(new string[] { ExposedStoreIndicator, key });
         }
         else
         {
@@ -196,56 +203,24 @@ public class LocalDatabaseApp : Disposable
 
     #region Internal Implementations
 
-    internal void Subscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
+    internal bool Contains(params string[] path)
     {
-        databaseDictionaryLock.LockUpgradeableRead(() =>
-        {
-            if (databaseDictionary.TryGetValue(localDatabase, out var data))
-            {
-                data.Changes += changesHandler;
-            }
-            else
-            {
-                databaseDictionaryLock.LockWrite(() => databaseDictionary.Add(localDatabase, new LocalDatabaseEventHolder(this, changesHandler)));
-            }
-        });
-    }
-
-    internal void Unsubscribe(ILocalDatabase localDatabase, EventHandler<DataChangesEventArgs> changesHandler)
-    {
-        databaseDictionaryLock.LockUpgradeableRead(() =>
-        {
-            if (databaseDictionary.TryGetValue(localDatabase, out var data))
-            {
-                data.Changes -= changesHandler;
-            }
-            else
-            {
-                databaseDictionaryLock.LockWrite(() => databaseDictionary.Add(localDatabase, new LocalDatabaseEventHolder(this, delegate{ })));
-            }
-        });
-    }
-
-    internal bool Contains(ILocalDatabase localDatabase, params string[] path)
-    {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
-        return LockReadHierarchy(path, () => DBContains(localDatabase, serializedPath));
+        return LockReadHierarchy(path, () => DBContains(serializedPath));
     }
 
-    internal void Delete(ILocalDatabase localDatabase, params string[] path)
+    internal void Delete(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder? holder = GetHandler(localDatabase);
-
-            HelperDeleteChildren(localDatabase, holder, true, path, serializedPath);
+            HelperDeleteChildren(true, path, serializedPath);
 
             string[] hierPath = path;
             string? lastNode = null;
@@ -265,7 +240,7 @@ public class LocalDatabaseApp : Disposable
                 }
 
                 string serializedHierPath = StringSerializer.Serialize(hierPath);
-                string? hierData = DBGet(localDatabase, serializedHierPath);
+                string? hierData = DBGet(serializedHierPath);
                 if (hierData != null)
                 {
                     if (hierData.Length > 1 && hierData[0] == PathIndicator)
@@ -278,15 +253,15 @@ public class LocalDatabaseApp : Disposable
                             {
                                 if (deserialized.Length == 1)
                                 {
-                                    rwLock.LockWrite(hierPath, () => DBDelete(localDatabase, serializedHierPath));
-                                    OnDataChanges(holder, hierPath);
+                                    rwLock.LockWrite(hierPath, () => DBDelete(serializedHierPath));
+                                    OnDataChanges(hierPath);
                                 }
                                 else
                                 {
                                     string?[] modified = deserialized.RemoveAt(indexOf);
                                     string data = PathIndicator + StringSerializer.Serialize(modified);
-                                    rwLock.LockWrite(hierPath, () => DBSet(localDatabase, serializedHierPath, data));
-                                    OnDataChanges(holder, hierPath);
+                                    rwLock.LockWrite(hierPath, () => DBSet(serializedHierPath, data));
+                                    OnDataChanges(hierPath);
                                     break;
                                 }
                             }
@@ -294,30 +269,30 @@ public class LocalDatabaseApp : Disposable
                     }
                     else
                     {
-                        rwLock.LockWrite(hierPath, () => DBDelete(localDatabase, serializedHierPath));
-                        OnDataChanges(holder, hierPath);
+                        rwLock.LockWrite(hierPath, () => DBDelete(serializedHierPath));
+                        OnDataChanges(hierPath);
                     }
                 }
             }
         });
     }
 
-    internal (string[] path, string key)[] GetChildren(ILocalDatabase localDatabase, params string[] path)
+    internal (string[] path, string key)[] GetChildren(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
-        string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+        string? data = LockReadHierarchy(path, () => DBGet(serializedPath));
 
         return HelperGetChildren(path, data);
     }
 
-    internal LocalDataType GetDataType(ILocalDatabase localDatabase, params string[] path)
+    internal LocalDataType GetDataType(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
-        string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+        string? data = LockReadHierarchy(path, () => DBGet(serializedPath));
 
         if (data != null && data.Length > 0 && data[0] == PathIndicator)
         {
@@ -329,66 +304,66 @@ public class LocalDatabaseApp : Disposable
         }
     }
 
-    internal (string[] path, LocalDataType type)[] GetTypedChildren(ILocalDatabase localDatabase, params string[] path)
+    internal (string[] path, LocalDataType type)[] GetTypedChildren(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
         {
-            string? data = DBGet(localDatabase, serializedPath);
+            string? data = DBGet(serializedPath);
 
-            return HelperGetTypedChildren(localDatabase, path, data);
+            return HelperGetTypedChildren(path, data);
         });
 
     }
 
-    internal string[][] GetRecursiveChildren(ILocalDatabase localDatabase, params string[] path)
+    internal string[][] GetRecursiveChildren(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
         {
-            string? data = DBGet(localDatabase, serializedPath);
+            string? data = DBGet(serializedPath);
 
-            return HelperGetRecursiveChildren(localDatabase, path, data);
+            return HelperGetRecursiveChildren(path, data);
         });
     }
 
-    internal string[][] GetRecursiveRelativeChildren(ILocalDatabase localDatabase, params string[] path)
+    internal string[][] GetRecursiveRelativeChildren(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
         {
-            string? data = DBGet(localDatabase, serializedPath);
+            string? data = DBGet(serializedPath);
 
-            return HelperGetRecursiveRelativeChildren(localDatabase, path, data);
+            return HelperGetRecursiveRelativeChildren(path, data);
         });
     }
 
-    internal (string key, LocalDataType type)[] GetRelativeTypedChildren(ILocalDatabase localDatabase, params string[] path)
+    internal (string key, LocalDataType type)[] GetRelativeTypedChildren(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
         return rwLock.LockRead(path, () =>
         {
-            string? data = DBGet(localDatabase, serializedPath);
+            string? data = DBGet(serializedPath);
 
-            return HelperGetRelativeTypedChildren(localDatabase, path, data);
+            return HelperGetRelativeTypedChildren(path, data);
         });
     }
 
-    internal string? GetValue(ILocalDatabase localDatabase, params string[] path)
+    internal string? GetValue(params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
-        string? data = LockReadHierarchy(path, () => DBGet(localDatabase, serializedPath));
+        string? data = LockReadHierarchy(path, () => DBGet(serializedPath));
 
         if (data != null && data.Length > 0)
         {
@@ -400,16 +375,14 @@ public class LocalDatabaseApp : Disposable
         }
     }
 
-    internal void SetValue(ILocalDatabase localDatabase, string? value, params string[] path)
+    internal void SetValue(string? value, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
         LockReadUpgradableHierarchy(path, () =>
         {
-            LocalDatabaseEventHolder? holder = GetHandler(localDatabase);
-
-            HelperDeleteChildren(localDatabase, holder, false, path, serializedPath);
+            HelperDeleteChildren(false, path, serializedPath);
 
             if (path.Length > 1)
             {
@@ -428,7 +401,7 @@ public class LocalDatabaseApp : Disposable
                     startIndex = i;
                     absolutePaths[i] = (keyHier, serializedKeyHier);
 
-                    string? data = DBGet(localDatabase, serializedKeyHier);
+                    string? data = DBGet(serializedKeyHier);
                     if (data != null && data.Length > 0 && data[0] == PathIndicator)
                     {
                         string?[]? deserialized = StringSerializer.Deserialize(data[1..]);
@@ -456,27 +429,27 @@ public class LocalDatabaseApp : Disposable
                 {
                     rwLock.LockWrite(
                         absolutePaths[startIndex].path,
-                        () => DBSet(localDatabase, absolutePaths[startIndex].serializedPath, lastValueToSet));
-                    OnDataChanges(holder, absolutePaths[startIndex].path);
+                        () => DBSet(absolutePaths[startIndex].serializedPath, lastValueToSet));
+                    OnDataChanges(absolutePaths[startIndex].path);
                 }
 
                 for (int i = skipLast ? startIndex + 1 : startIndex; i < absolutePaths.Length; i++)
                 {
                     string valueToSet = PathIndicator + StringSerializer.Serialize(new string[] { path[i + 1] });
                     rwLock.LockWrite(absolutePaths[i].path,
-                        () => DBSet(localDatabase, absolutePaths[i].serializedPath, valueToSet));
-                    OnDataChanges(holder, absolutePaths[i].path);
+                        () => DBSet(absolutePaths[i].serializedPath, valueToSet));
+                    OnDataChanges(absolutePaths[i].path);
                 }
             }
 
-            rwLock.LockWrite(path, () => DBSet(localDatabase, serializedPath, ValueIndicator + value));
-            OnDataChanges(holder, path);
+            rwLock.LockWrite(path, () => DBSet(serializedPath, ValueIndicator + value));
+            OnDataChanges(path);
         });
     }
 
-    internal void InternalTryGetNearestHierarchyValueOrPath(ILocalDatabase localDatabase, Action<(string[] path, string? value)> onValue, Action<string[]> onPath, string[] path)
+    internal void InternalTryGetNearestHierarchyValueOrPath(Action<(string[] path, string? value)> onValue, Action<string[]> onPath, string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
         string serializedPath = StringSerializer.Serialize(path);
 
@@ -487,7 +460,7 @@ public class LocalDatabaseApp : Disposable
             while (true)
             {
                 string serializedHierPath = StringSerializer.Serialize(hierPath);
-                string? hierData = DBGet(localDatabase, serializedHierPath);
+                string? hierData = DBGet(serializedHierPath);
 
                 if (hierData != null)
                 {
@@ -520,83 +493,83 @@ public class LocalDatabaseApp : Disposable
         });
     }
 
-    internal bool TryGetValueOrChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
+    internal bool TryGetValueOrChildren(Action<string> onValue, Action<(string[] path, string key)[]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
             onPath?.Invoke(HelperGetChildren(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrPath(ILocalDatabase localDatabase, Action<string> onValue, Action onPath, params string[] path)
+    internal bool TryGetValueOrPath(Action<string> onValue, Action onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
             onPath?.Invoke();
         }, path);
     }
 
-    internal bool TryGetValueOrRecursiveChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, params string[] path)
+    internal bool TryGetValueOrRecursiveChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetRecursiveChildren(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetRecursiveChildren(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrRecursiveRelativeChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<string[][]> onPath, params string[] path)
+    internal bool TryGetValueOrRecursiveRelativeChildren(Action<string> onValue, Action<string[][]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetRecursiveRelativeChildren(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetRecursiveRelativeChildren(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrRecursiveValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
+    internal bool TryGetValueOrRecursiveValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetRecursiveValues(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetRecursiveValues(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrRecursiveRelativeValues(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
+    internal bool TryGetValueOrRecursiveRelativeValues(Action<string> onValue, Action<(string[] path, string value)[]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetRecursiveRelativeValues(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetRecursiveRelativeValues(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrRelativeTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
+    internal bool TryGetValueOrRelativeTypedChildren(Action<string> onValue, Action<(string key, LocalDataType type)[]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetRelativeTypedChildren(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetRelativeTypedChildren(path, p.data));
         }, path);
     }
 
-    internal bool TryGetValueOrTypedChildren(ILocalDatabase localDatabase, Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
+    internal bool TryGetValueOrTypedChildren(Action<string> onValue, Action<(string[] path, LocalDataType type)[]> onPath, params string[] path)
     {
-        Validate(localDatabase, path);
+        Validate(path);
 
-        return HelperTryGetValueOrPath(localDatabase, v => onValue?.Invoke(v.value), p =>
+        return HelperTryGetValueOrPath(v => onValue?.Invoke(v.value), p =>
         {
-            onPath?.Invoke(HelperGetTypedChildren(localDatabase, path, p.data));
+            onPath?.Invoke(HelperGetTypedChildren(path, p.data));
         }, path);
     }
 
@@ -604,13 +577,13 @@ public class LocalDatabaseApp : Disposable
 
     #region Helper Methods
 
-    private bool HelperTryGetValueOrPath(ILocalDatabase localDatabase, Action<(string value, string serializedPath)> onValue, Action<(string data, string serializedPath)> onPath, string[] path)
+    private bool HelperTryGetValueOrPath(Action<(string value, string serializedPath)> onValue, Action<(string data, string serializedPath)> onPath, string[] path)
     {
         string serializedPath = StringSerializer.Serialize(path);
 
         return LockReadHierarchy(path, () =>
         {
-            string? data = DBGet(localDatabase, serializedPath);
+            string? data = DBGet(serializedPath);
 
             if (data != null && data.Length > 0)
             {
@@ -656,7 +629,7 @@ public class LocalDatabaseApp : Disposable
         return Array.Empty<(string[] path, string key)>();
     }
 
-    private (string[] path, LocalDataType type)[] HelperGetTypedChildren(ILocalDatabase localDatabase, string[] path, string? data)
+    private (string[] path, LocalDataType type)[] HelperGetTypedChildren(string[] path, string? data)
     {
         List<(string[] path, LocalDataType type)> paths = new();
 
@@ -678,7 +651,7 @@ public class LocalDatabaseApp : Disposable
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(subPath, () =>
                     {
-                        string? subData = DBGet(localDatabase, serializedSubPath);
+                        string? subData = DBGet(serializedSubPath);
 
                         if (subData != null && subData.Length > 0 && subData[0] == PathIndicator)
                         {
@@ -696,7 +669,7 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private (string key, LocalDataType type)[] HelperGetRelativeTypedChildren(ILocalDatabase localDatabase, string[] path, string? data)
+    private (string key, LocalDataType type)[] HelperGetRelativeTypedChildren(string[] path, string? data)
     {
         List<(string key, LocalDataType type)> paths = new();
 
@@ -718,7 +691,7 @@ public class LocalDatabaseApp : Disposable
                     string serializedSubPath = StringSerializer.Serialize(subPath);
                     rwLock.LockRead(subPath, () =>
                     {
-                        string? subData = DBGet(localDatabase, serializedSubPath);
+                        string? subData = DBGet(serializedSubPath);
 
                         if (subData != null && subData.Length > 0 && subData[0] == PathIndicator)
                         {
@@ -736,7 +709,7 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private string[][] HelperGetRecursiveChildren(ILocalDatabase localDatabase, string[] path, string? data)
+    private string[][] HelperGetRecursiveChildren(string[] path, string? data)
     {
         List<string[]> paths = new();
 
@@ -744,7 +717,7 @@ public class LocalDatabaseApp : Disposable
         {
             int nextRoot = root + 1;
 
-            string? recvData = DBGet(localDatabase, serializedRecvPath);
+            string? recvData = DBGet(serializedRecvPath);
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
@@ -796,7 +769,7 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private string[][] HelperGetRecursiveRelativeChildren(ILocalDatabase localDatabase, string[] path, string? data)
+    private string[][] HelperGetRecursiveRelativeChildren(string[] path, string? data)
     {
         List<string[]> paths = new();
 
@@ -804,7 +777,7 @@ public class LocalDatabaseApp : Disposable
         {
             int nextRoot = root + 1;
 
-            string? recvData = DBGet(localDatabase, serializedRecvPath);
+            string? recvData = DBGet(serializedRecvPath);
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
@@ -858,7 +831,7 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private (string[] path, string value)[] HelperGetRecursiveValues(ILocalDatabase localDatabase, string[] path, string data)
+    private (string[] path, string value)[] HelperGetRecursiveValues(string[] path, string data)
     {
         List<(string[] path, string value)> paths = new();
 
@@ -866,7 +839,7 @@ public class LocalDatabaseApp : Disposable
         {
             int nextRoot = root + 1;
 
-            string? recvData = DBGet(localDatabase, serializedRecvPath);
+            string? recvData = DBGet(serializedRecvPath);
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
@@ -918,7 +891,7 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private (string[] path, string value)[] HelperGetRecursiveRelativeValues(ILocalDatabase localDatabase, string[] path, string data)
+    private (string[] path, string value)[] HelperGetRecursiveRelativeValues(string[] path, string data)
     {
         List<(string[] path, string value)> paths = new();
 
@@ -926,7 +899,7 @@ public class LocalDatabaseApp : Disposable
         {
             int nextRoot = root + 1;
 
-            string? recvData = DBGet(localDatabase, serializedRecvPath);
+            string? recvData = DBGet(serializedRecvPath);
 
             if (recvData != null && recvData.Length > 0 && recvData[0] == PathIndicator)
             {
@@ -980,9 +953,9 @@ public class LocalDatabaseApp : Disposable
         return paths.ToArray();
     }
 
-    private void HelperDeleteChildren(ILocalDatabase localDatabase, LocalDatabaseEventHolder? holder, bool includeSelf, string[] path, string serializedPath)
+    private void HelperDeleteChildren(bool includeSelf, string[] path, string serializedPath)
     {
-        string? childData = DBGet(localDatabase, serializedPath);
+        string? childData = DBGet(serializedPath);
         if (childData != null)
         {
             if (childData.Length > 1 && childData[0] == PathIndicator)
@@ -1000,30 +973,40 @@ public class LocalDatabaseApp : Disposable
                         nextChild[^1] = deserializedChildPath;
                         Array.Copy(path, 0, nextChild, 0, path.Length);
                         string serializedChildPath = StringSerializer.Serialize(nextChild);
-                        rwLock.LockUpgradeableRead(path, () => HelperDeleteChildren(localDatabase, holder, true, nextChild, serializedChildPath));
+                        rwLock.LockUpgradeableRead(path, () => HelperDeleteChildren(true, nextChild, serializedChildPath));
                     }
                 }
             }
             if (includeSelf)
             {
-                rwLock.LockWrite(path, () => DBDelete(localDatabase, serializedPath));
-                OnDataChanges(holder, path);
+                rwLock.LockWrite(path, () => DBDelete(serializedPath));
+                OnDataChanges(path);
             }
         }
     }
 
-    private static void OnDataChanges(LocalDatabaseEventHolder? holder, string[] path)
+    private void OnDataChanges(string[] path)
     {
-        holder?.Invoke(new DataChangesEventArgs(path));
-    }
+        //Changes?.Invoke(localDatabaseApp, args);
+        changesInvokes.Enqueue(new DataChangesEventArgs(path));
 
-    private static LocalDatabaseEventHolder? GetHandler(ILocalDatabase localDatabase)
-    {
-        return databaseDictionaryLock.LockRead(() =>
+        if (!isChangesInvoking)
         {
-            databaseDictionary.TryGetValue(localDatabase, out LocalDatabaseEventHolder? holder);
-            return holder;
-        });
+            isChangesInvoking = true;
+
+            Task.Run(delegate
+            {
+                while (changesInvokes.TryDequeue(out DataChangesEventArgs? argsToInvoke))
+                {
+                    try
+                    {
+                        Changes?.Invoke(this, argsToInvoke);
+                    }
+                    catch { }
+                }
+                isChangesInvoking = false;
+            });
+        }
     }
 
     private void LockReadHierarchy(string[] path, Action action)
@@ -1098,12 +1081,8 @@ public class LocalDatabaseApp : Disposable
         return read(0);
     }
 
-    private static void Validate(ILocalDatabase localDatabase, string[] path)
+    private static void Validate(string[] path)
     {
-        if (localDatabase == null)
-        {
-            throw new ArgumentNullException(nameof(localDatabase));
-        }
         if (path == null || path.Length == 0)
         {
             throw StringNullOrEmptyException.FromSingleArgument(nameof(path));
@@ -1118,11 +1097,11 @@ public class LocalDatabaseApp : Disposable
 
     #region DB Methods
 
-    private bool DBContains(ILocalDatabase localDatabase, string key)
+    private bool DBContains(string key)
     {
         if (App.Config.LocalEncryption == null)
         {
-            return localDatabase.ContainsKey(key);
+            return App.Config.LocalDatabase.ContainsKey(key);
         }
         else
         {
@@ -1133,15 +1112,15 @@ public class LocalDatabaseApp : Disposable
                 throw new ArgumentNullException(nameof(key));
             }
 
-            return localDatabase.ContainsKey(encryptedKey);
+            return App.Config.LocalDatabase.ContainsKey(encryptedKey);
         }
     }
 
-    private void DBDelete(ILocalDatabase localDatabase, string key)
+    private void DBDelete(string key)
     {
         if (App.Config.LocalEncryption == null)
         {
-            localDatabase.Delete(key);
+            App.Config.LocalDatabase.Delete(key);
         }
         else
         {
@@ -1152,15 +1131,15 @@ public class LocalDatabaseApp : Disposable
                 throw new ArgumentNullException(nameof(key));
             }
 
-            localDatabase.Delete(encryptedKey);
+            App.Config.LocalDatabase.Delete(encryptedKey);
         }
     }
 
-    private string? DBGet(ILocalDatabase localDatabase, string key)
+    private string? DBGet(string key)
     {
         if (App.Config.LocalEncryption == null)
         {
-            return localDatabase.Get(key);
+            return App.Config.LocalDatabase.Get(key);
         }
         else
         {
@@ -1172,17 +1151,17 @@ public class LocalDatabaseApp : Disposable
                 throw new ArgumentNullException(nameof(key));
             }
 
-            encryptedValue = localDatabase.Get(encryptedKey);
+            encryptedValue = App.Config.LocalDatabase.Get(encryptedKey);
 
             return App.Config.LocalEncryption.Decrypt(encryptedValue);
         }
     }
 
-    private void DBSet(ILocalDatabase localDatabase, string key, string value)
+    private void DBSet(string key, string value)
     {
         if (App.Config.LocalEncryption == null)
         {
-            localDatabase.Set(key, value);
+            App.Config.LocalDatabase.Set(key, value);
         }
         else
         {
@@ -1194,46 +1173,7 @@ public class LocalDatabaseApp : Disposable
                 throw new ArgumentNullException(nameof(key));
             }
 
-            localDatabase.Set(encryptedKey, encryptedValue);
-        }
-    }
-
-    #endregion
-
-    #region Helper Classes
-
-    private class LocalDatabaseEventHolder
-    {
-        public event EventHandler<DataChangesEventArgs> Changes;
-
-        private readonly LocalDatabaseApp localDatabaseApp;
-        private readonly ConcurrentQueue<DataChangesEventArgs> invokes = new();
-        private bool isInvoking = false;
-
-        public LocalDatabaseEventHolder(LocalDatabaseApp localDatabaseApp, EventHandler<DataChangesEventArgs> initialChangesHandler)
-        {
-            this.localDatabaseApp = localDatabaseApp;
-            Changes += initialChangesHandler;
-        }
-
-        public void Invoke(DataChangesEventArgs args)
-        {
-            //Changes?.Invoke(localDatabaseApp, args);
-            invokes.Enqueue(args);
-
-            if (!isInvoking)
-            {
-                isInvoking = true;
-
-                Task.Run(delegate
-                {
-                    while (invokes.TryDequeue(out DataChangesEventArgs? argsToInvoke))
-                    {
-                        Changes?.Invoke(localDatabaseApp, argsToInvoke);
-                    }
-                    isInvoking = false;
-                });
-            }
+            App.Config.LocalDatabase.Set(encryptedKey, encryptedValue);
         }
     }
 

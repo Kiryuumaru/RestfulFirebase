@@ -4,6 +4,7 @@ using RestfulFirebase.Local;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Text.Json;
 
 namespace RestfulFirebase;
 
@@ -13,8 +14,6 @@ namespace RestfulFirebase;
 [ObservableObject]
 public partial class FirebaseConfig
 {
-    #region Properties
-
     /// <summary>
     /// Gets or sets the firebase API key.
     /// </summary>
@@ -30,12 +29,6 @@ public partial class FirebaseConfig
     /// </summary>
     [ObservableProperty]
     private ILocalDatabase localDatabase = new StockLocalDatabase();
-
-    /// <summary>
-    /// Gets or sets the <see cref="ILocalDatabase"/> to optionally separate the auth persistency storage from the <see cref="LocalDatabase"/>.
-    /// </summary>
-    [ObservableProperty]
-    private ILocalDatabase? customAuthLocalDatabase;
 
     /// <summary>
     /// Gets or sets the <see cref="ILocalEncryption"/> used for local database security.
@@ -115,10 +108,15 @@ public partial class FirebaseConfig
     [ObservableProperty]
     private int realtimeDatabaseMaxConcurrentSyncWrites = 100;
 
-    #endregion
+    /// <summary>
+    /// Gets or sets the firebase realtime database max concurrent writes.
+    /// </summary>
+    [ObservableProperty]
+    private JsonSerializerOptions databaseJsonSerializerOptions = new()
+    {
 
-    #region Initializers
-
+    };
+    
     /// <summary>
     /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
     /// </summary>
@@ -133,12 +131,4 @@ public partial class FirebaseConfig
         ApiKey = apiKey;
         ProjectId = projectId;
     }
-
-    #endregion
-
-    #region Methods
-
-
-
-    #endregion
 }

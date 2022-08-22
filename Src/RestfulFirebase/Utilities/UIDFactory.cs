@@ -1,5 +1,4 @@
-﻿using SerializerHelpers;
-using System;
+﻿using System;
 using System.Text;
 
 namespace RestfulFirebase.Utilities;
