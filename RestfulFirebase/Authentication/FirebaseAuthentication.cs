@@ -1089,11 +1089,7 @@ public static class FirebaseAuthentication
 
         var content = $"{{ \"idToken\": \"{token}\" }}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleDeleteUserUrl, content);
-
-        request.FirebaseUser.UpdateAuth(auth);
-
-        await RefreshUserInfo(request, request.FirebaseUser);
+        await ExecuteAuthWithPostContent(request, GoogleDeleteUserUrl, content);
     }
 
     /// <summary>
@@ -1195,7 +1191,7 @@ public static class FirebaseAuthentication
     /// <exception cref="AuthUndefinedException">
     /// The error occured is undefined.
     /// </exception>
-    public static async Task LinkAccounts(LinkOAuthAccountRequest request)
+    public static async Task LinkAccount(LinkOAuthAccountRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.AuthType);
