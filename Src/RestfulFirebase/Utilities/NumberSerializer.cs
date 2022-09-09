@@ -89,7 +89,7 @@ internal static class NumberSerializer
         }
         if (arbitraryBaseNumber == null)
         {
-            throw new ArgumentNullException(nameof(arbitraryBaseNumber));
+            ArgumentNullException.ThrowIfNull(arbitraryBaseNumber);
         }
         if (arbitraryBaseNumber.Length == 0)
         {

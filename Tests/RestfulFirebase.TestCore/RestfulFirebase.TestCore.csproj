@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Src\RestfulFirebase\RestfulFirebase.csproj" />
+    <ProjectReference Include="..\..\Src\RestfulFirebaseOld\RestfulFirebaseOld.csproj" />
   </ItemGroup>
 
 </Project>

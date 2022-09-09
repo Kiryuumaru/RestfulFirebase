@@ -44,7 +44,7 @@ public static class UrlUtilities
     {
         if (paths == null)
         {
-            throw new ArgumentNullException(nameof(paths));
+            ArgumentNullException.ThrowIfNull(paths);
         }
         StringBuilder builder = new();
         foreach (var path in paths)
@@ -91,7 +91,7 @@ public static class UrlUtilities
     {
         if (paths == null)
         {
-            throw new ArgumentNullException(nameof(paths));
+            ArgumentNullException.ThrowIfNull(paths);
         }
 
         StringBuilder builder = new();

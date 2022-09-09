@@ -123,7 +123,7 @@ internal static class StringSerializer
     {
         if (data == null)
         {
-            throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
         }
         if (startIndex < 0)
         {
@@ -195,7 +195,7 @@ internal static class StringSerializer
         int indexDigits = (int)ExtractNumber(data[0].ToString());
         int indexCount = (int)ExtractNumber(data.Substring(1, indexDigits));
         var indices = data.Substring(1 + indexDigits, indexDigits * indexCount);
-        var dataPart = data.Substring(1 + indexDigits + (indexDigits * indexCount));
+        var dataPart = data[(1 + indexDigits + (indexDigits * indexCount))..];
         string?[] datas = new string[indexCount];
         var currIndex = 0;
         for (int i = 0; i < indexCount; i++)

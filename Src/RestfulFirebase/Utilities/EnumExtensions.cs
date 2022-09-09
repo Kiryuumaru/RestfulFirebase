@@ -26,7 +26,7 @@ public static class EnumExtensions
     {
         if (value == null)
         {
-            throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
         }
         var enumType = typeof(T);
         var name = Enum.GetName(enumType, value);

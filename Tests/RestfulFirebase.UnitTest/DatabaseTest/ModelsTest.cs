@@ -11,7 +11,7 @@ using Xunit;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Local;
 using System.ComponentModel;
-using ObservableHelpers;
+using RestfulFirebase;
 using System.Collections.Specialized;
 using RestfulFirebase.Utilities;
 using System.Diagnostics;

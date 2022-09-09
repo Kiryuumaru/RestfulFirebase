@@ -34,7 +34,7 @@ public static class ArrayExtensions
     {
         if (array == null)
         {
-            throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
         }
         if (index < 0 || index >= array.Length)
         {

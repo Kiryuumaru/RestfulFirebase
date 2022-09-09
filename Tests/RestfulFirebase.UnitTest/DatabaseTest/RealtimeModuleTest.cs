@@ -13,8 +13,8 @@ using System.Collections.Concurrent;
 using RestfulFirebase.RealtimeDatabase.Realtime;
 using RestfulFirebase.Exceptions;
 using RestfulFirebase.Utilities;
-using ObservableHelpers.Utilities;
-using ObservableHelpers;
+using RestfulFirebase.Utilities;
+using RestfulFirebase;
 
 namespace DatabaseTest.RealtimeModuleTest
 {
@@ -1817,13 +1817,13 @@ namespace DatabaseTest.RealtimeModuleTest
 
     public class PutModelTest
     {
-        private class PutModelErrorTest : ObservableObject, IRealtimeModel
+        private class PutModelErrorTest : ObservableObject, IRealtimeComponent
         {
             public RealtimeInstance? RealtimeInstance { get; }
 
             public bool HasAttachedRealtime { get; }
 
-            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeAttached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeComponent.RealtimeAttached
             {
                 add
                 {
@@ -1836,7 +1836,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeDetached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeComponent.RealtimeDetached
             {
                 add
                 {
@@ -1849,7 +1849,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<WireExceptionEventArgs>? IRealtimeModel.WireError
+            event EventHandler<WireExceptionEventArgs>? IRealtimeComponent.WireError
             {
                 add
                 {
@@ -3557,13 +3557,13 @@ namespace DatabaseTest.RealtimeModuleTest
 
     public class SubModelTest
     {
-        private class SubModelErrorTest : ObservableObject, IRealtimeModel
+        private class SubModelErrorTest : ObservableObject, IRealtimeComponent
         {
             public RealtimeInstance? RealtimeInstance { get; }
 
             public bool HasAttachedRealtime { get; }
 
-            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeAttached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeComponent.RealtimeAttached
             {
                 add
                 {
@@ -3576,7 +3576,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeModel.RealtimeDetached
+            event EventHandler<RealtimeInstanceEventArgs>? IRealtimeComponent.RealtimeDetached
             {
                 add
                 {
@@ -3589,7 +3589,7 @@ namespace DatabaseTest.RealtimeModuleTest
                 }
             }
 
-            event EventHandler<WireExceptionEventArgs>? IRealtimeModel.WireError
+            event EventHandler<WireExceptionEventArgs>? IRealtimeComponent.WireError
             {
                 add
                 {

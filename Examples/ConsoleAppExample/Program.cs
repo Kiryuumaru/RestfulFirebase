@@ -1,8 +1,26 @@
-﻿using RestfulFirebase;
+﻿using ConsoleAppExample;
+using RestfulFirebase;
+using RestfulFirebase.Authentication;
+using RestfulFirebase.Authentication.Requests;
 
-FirebaseConfig config;
-RestfulFirebaseApp app;
+FirebaseConfig config = Credentials.Config(); // Your config
 
-config = new FirebaseConfig("<Your project ID>", "<Your API key>");
+FirebaseUser newUser = await FirebaseAuthentication.CreateUserWithEmailAndPassword(new CreateUserWithEmailAndPasswordRequest()
+{
+    Config = config,
+    Email = "t@st.com",
+    Password = "123123",
+});
 
-app = new RestfulFirebaseApp(config);
+Console.WriteLine(newUser.Email);
+Console.WriteLine(newUser.LocalId);
+
+FirebaseUser user = await FirebaseAuthentication.SignInWithEmailAndPassword(new SignInWithEmailAndPasswordRequest()
+{
+    Config = config,
+    Email = "t@st.com",
+    Password = "123123",
+});
+
+Console.WriteLine(user.Email);
+Console.WriteLine(user.LocalId);

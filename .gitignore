@@ -341,3 +341,4 @@ healthchecksdb
 
 
 /Tests/RestfulFirebase.TestCore/Credentials.cs
+/Examples/ConsoleAppExample/Credentials.cs

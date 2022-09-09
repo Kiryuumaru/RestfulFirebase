@@ -76,7 +76,7 @@ public class UnitTest1
 
     public class TestModel
     {
-        [FirebaseProperty]
+        [FirebaseValue]
         public string? Name { get; set; }
     }
 
@@ -93,21 +93,28 @@ public class UnitTest1
                 return;
             }
 
-            var wire1 = app.RealtimeDatabase
-                .Database()
-                .Child("awd")
-                .AsRealtimeWire();
-
-            wire1.Start();
-
             var dict = new Dictionary<string, string>();
             var col = new List<decimal>();
             var obj = new TestModel();
 
-            var rw1 = wire1.Subscribe(dict, "1");
-            var rw2 = wire1.Subscribe(col, "2");
-            var rw3 = wire1.Subscribe(obj, "3");
+            var rw1 = app.RealtimeDatabase
+                .Database()
+                .Child("awd")
+                .Subscribe(dict, "1");
+            var rw2 = app.RealtimeDatabase
+                .Database()
+                .Child("awd")
+                .Subscribe(col, "2");
+            var rw3 = app.RealtimeDatabase
+                .Database()
+                .Child("awd")
+                .Subscribe(obj, "3");
 
+            await Task.Delay(5000);
+
+            rw1.Dispose();
+            rw2.Dispose();
+            rw3.Dispose();
 
             Assert.True(true);
         });
