@@ -23,8 +23,17 @@ public static class FirebaseAuthentication
 {
     #region Properties
 
-    internal static readonly JsonSerializerOptions DefaultJsonSerializerOption = new()
+    internal static readonly JsonSerializerOptions SnakeCaseJsonSerializerOption = new()
     {
+        PropertyNamingPolicy = new JsonSnakeCaseNamingPolicy(),
+        PropertyNameCaseInsensitive = true,
+        IgnoreReadOnlyFields = true,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString
+    };
+
+    internal static readonly JsonSerializerOptions CamelCaseJsonSerializerOption = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
         IgnoreReadOnlyFields = true,
         NumberHandling = JsonNumberHandling.AllowReadingFromString
@@ -126,35 +135,9 @@ public static class FirebaseAuthentication
         }
     }
 
-    internal static async Task<FirebaseAuth> ExecuteAuthWithPostContent(AuthenticationRequest request, string googleUrl, string postContent)
-    {
-        AuthenticatedRequest? authenticatedRequest = request as AuthenticatedRequest;
-
-        if (authenticatedRequest != null)
-        {
-            ArgumentNullException.ThrowIfNull(authenticatedRequest.FirebaseUser);
-        }
-
-        string responseData = await ExecuteWithPostContent(request, googleUrl, postContent);
-
-        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, DefaultJsonSerializerOption);
-
-        if (auth == null)
-        {
-            throw new AuthUndefinedException();
-        }
-
-        if (authenticatedRequest != null)
-        {
-            authenticatedRequest.FirebaseUser!.UpdateAuth(auth);
-        }
-
-        return auth;
-    }
-
     internal static async Task RefreshUserInfo(AuthenticationRequest request, FirebaseUser user)
     {
-        var content = $"{{\"idToken\":\"{user.FirebaseToken}\"}}";
+        var content = $"{{\"idToken\":\"{user.IdToken}\"}}";
 
         var responseData = await ExecuteWithPostContent(request, GoogleGetUser, content);
 
@@ -163,7 +146,7 @@ public static class FirebaseAuthentication
         {
             throw new AuthUndefinedException();
         }
-        var auth = JsonSerializer.Deserialize<FirebaseAuth>(userJson.EnumerateArray().First(), DefaultJsonSerializerOption);
+        var auth = JsonSerializer.Deserialize<FirebaseAuth>(userJson.EnumerateArray().First(), CamelCaseJsonSerializerOption);
 
         if (auth == null)
         {
@@ -171,6 +154,7 @@ public static class FirebaseAuthentication
         }
 
         user.UpdateAuth(auth);
+        user.UpdateInfo(auth);
     }
 
     internal static Exception GetException(string responseData, Exception originalException)
@@ -182,7 +166,7 @@ public static class FirebaseAuthentication
             {
                 //create error data template and try to parse JSON
                 var errorData = new { error = new { code = 0, message = "errorid" } };
-                errorData = JsonSerializerExtensions.DeserializeAnonymousType(responseData, errorData, DefaultJsonSerializerOption);
+                errorData = JsonSerializerExtensions.DeserializeAnonymousType(responseData, errorData, CamelCaseJsonSerializerOption);
 
                 //errorData is just null if different JSON was received
                 message = errorData?.error?.message ?? "";
@@ -368,7 +352,7 @@ public static class FirebaseAuthentication
 
         var definition = new { recaptchaSiteKey = "" };
 
-        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, DefaultJsonSerializerOption);
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, CamelCaseJsonSerializerOption);
 
         if (response == null)
         {
@@ -406,7 +390,7 @@ public static class FirebaseAuthentication
 
         var definition = new { sessionInfo = "" };
 
-        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, DefaultJsonSerializerOption);
+        var response = JsonSerializerExtensions.DeserializeAnonymousType(responseData, definition, CamelCaseJsonSerializerOption);
 
         if (response == null)
         {
@@ -464,7 +448,14 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleSignUpUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -534,7 +525,16 @@ public static class FirebaseAuthentication
 
         sb.Append("\"returnSecureToken\":true}");
 
-        var auth = await ExecuteAuthWithPostContent(request, GooglePasswordUrl, sb.ToString());
+        string content = sb.ToString();
+
+        var responseData = await ExecuteWithPostContent(request, GooglePasswordUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -567,7 +567,14 @@ public static class FirebaseAuthentication
 
         string content = $"{{\"sessionInfo\":\"{request.SessionInfo}\",\"code\":\"{request.Code}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSignInWithPhoneNumber, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleSignInWithPhoneNumber, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -610,7 +617,14 @@ public static class FirebaseAuthentication
 
         string content = $"{{\"token\":\"{request.CustomToken}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleCustomAuthUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleCustomAuthUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -667,7 +681,14 @@ public static class FirebaseAuthentication
             _ => $"{{\"postBody\":\"access_token={request.OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
         };
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleIdentityUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -719,7 +740,14 @@ public static class FirebaseAuthentication
         var providerId = GetProviderId(FirebaseAuthType.Twitter);
         var content = $"{{\"postBody\":\"access_token={request.OAuthAccessToken}&oauth_token_secret={request.OAuthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleIdentityUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -769,7 +797,14 @@ public static class FirebaseAuthentication
         var providerId = GetProviderId(FirebaseAuthType.Google);
         var content = $"{{\"postBody\":\"id_token={request.IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleIdentityUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -812,7 +847,14 @@ public static class FirebaseAuthentication
     {
         var content = $"{{\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleSignUpUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         FirebaseUser user = new(auth);
 
@@ -895,7 +937,7 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
 
-        await ExecuteAuthWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+        await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
     }
 
     /// <summary>
@@ -939,9 +981,14 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.NewEmail}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleUpdateUser, content);
 
-        request.FirebaseUser.UpdateAuth(auth);
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -987,9 +1034,14 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"idToken\":\"{token}\",\"password\":\"{request.NewPassword}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleUpdateUser, content);
 
-        request.FirebaseUser.UpdateAuth(auth);
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -1046,9 +1098,16 @@ public static class FirebaseAuthentication
 
         sb.Append($",\"returnSecureToken\":true}}");
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, sb.ToString());
+        string content = sb.ToString();
 
-        request.FirebaseUser.UpdateAuth(auth);
+        var responseData = await ExecuteWithPostContent(request, GoogleSetAccountUrl, content);
+
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -1089,7 +1148,7 @@ public static class FirebaseAuthentication
 
         var content = $"{{ \"idToken\": \"{token}\" }}";
 
-        await ExecuteAuthWithPostContent(request, GoogleDeleteUserUrl, content);
+        await ExecuteWithPostContent(request, GoogleDeleteUserUrl, content);
     }
 
     /// <summary>
@@ -1141,9 +1200,14 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleSetAccountUrl, content);
 
-        request.FirebaseUser.UpdateAuth(auth);
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -1202,9 +1266,14 @@ public static class FirebaseAuthentication
         var providerId = GetProviderId(request.AuthType.Value);
         var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={request.OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleIdentityUrl, content);
 
-        request.FirebaseUser.UpdateAuth(auth);
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -1262,9 +1331,14 @@ public static class FirebaseAuthentication
 
         var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content);
+        var responseData = await ExecuteWithPostContent(request, GoogleSetAccountUrl, content);
 
-        request.FirebaseUser.UpdateAuth(auth);
+        FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, CamelCaseJsonSerializerOption);
+
+        if (auth == null)
+        {
+            throw new AuthUndefinedException();
+        }
 
         await RefreshUserInfo(request, request.FirebaseUser);
     }
@@ -1302,7 +1376,7 @@ public static class FirebaseAuthentication
 
         var responseData = await ExecuteWithPostContent(request, GoogleCreateAuthUrl, content);
 
-        ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, DefaultJsonSerializerOption);
+        ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, CamelCaseJsonSerializerOption);
 
 
         if (data == null)
@@ -1366,14 +1440,21 @@ public static class FirebaseAuthentication
         {
             var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{request.FirebaseUser.RefreshToken}\"}}";
 
-            var auth = await ExecuteAuthWithPostContent(request, GoogleRefreshAuth, content);
+            var responseData = await ExecuteWithPostContent(request, GoogleRefreshAuth, content);
+
+            FirebaseAuth? auth = JsonSerializer.Deserialize<FirebaseAuth>(responseData, SnakeCaseJsonSerializerOption);
+
+            if (auth == null)
+            {
+                throw new AuthUndefinedException();
+            }
 
             request.FirebaseUser.UpdateAuth(auth);
 
             await RefreshUserInfo(request, request.FirebaseUser);
         }
 
-        return request.FirebaseUser.FirebaseToken;
+        return request.FirebaseUser.IdToken;
     }
 
     #endregion

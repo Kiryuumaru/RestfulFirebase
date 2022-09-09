@@ -27,9 +27,10 @@ catch (AuthEmailNotFoundException)
     });
 }
 
-FirebaseUser user2 = await FirebaseAuthentication.SignInAnonymously(new AuthenticationRequest()
+string ss = await FirebaseAuthentication.GetFreshToken(new AuthenticatedRequest()
 {
     Config = config,
+    FirebaseUser = user,
 });
 
 await FirebaseAuthentication.DeleteUser(new AuthenticatedRequest()
@@ -37,11 +38,6 @@ await FirebaseAuthentication.DeleteUser(new AuthenticatedRequest()
     Config = config,
     FirebaseUser = user,
 });
-await FirebaseAuthentication.DeleteUser(new AuthenticatedRequest()
-{
-    Config = config,
-    FirebaseUser = user2,
-});
 
-Console.WriteLine(user2.Email);
-Console.WriteLine(user2.LocalId);
+Console.WriteLine(user.Email);
+Console.WriteLine(user.LocalId);

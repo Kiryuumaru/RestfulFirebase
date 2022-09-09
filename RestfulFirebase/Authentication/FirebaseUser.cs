@@ -22,7 +22,7 @@ public class FirebaseUser
     /// <summary>
     /// Gets the firebase token of the authenticated account which can be used for authenticated queries. 
     /// </summary>
-    public string FirebaseToken { get; private set; }
+    public string IdToken { get; private set; }
 
     /// <summary>
     /// Gets the refresh token of the underlying service which can be used to get a new access token. 
@@ -95,12 +95,12 @@ public class FirebaseUser
 
     internal FirebaseUser(FirebaseAuth auth)
     {
-        ArgumentNullException.ThrowIfNull(auth.FirebaseToken);
+        ArgumentNullException.ThrowIfNull(auth.IdToken);
         ArgumentNullException.ThrowIfNull(auth.RefreshToken);
         ArgumentNullException.ThrowIfNull(auth.ExpiresIn);
         ArgumentNullException.ThrowIfNull(auth.LocalId);
 
-        FirebaseToken = auth.FirebaseToken;
+        IdToken = auth.IdToken;
         RefreshToken = auth.RefreshToken;
         ExpiresIn = auth.ExpiresIn.Value;
         LocalId = auth.LocalId;
@@ -135,37 +135,80 @@ public class FirebaseUser
 
     internal void UpdateAuth(FirebaseAuth auth)
     {
-        if (auth.FirebaseToken != null && !string.IsNullOrEmpty(auth.FirebaseToken))
+        bool hasChanges = false;
+
+        if (auth.IdToken != null && auth.IdToken != IdToken)
         {
-            if (FirebaseToken != auth.FirebaseToken)
-            {
-                Created = DateTime.UtcNow;
-            }
-            FirebaseToken = auth.FirebaseToken;
+            IdToken = auth.IdToken;
+            Created = DateTime.UtcNow;
+            hasChanges = true;
         }
-        if (auth.RefreshToken != null && !string.IsNullOrEmpty(auth.RefreshToken))
+        if (auth.RefreshToken != null && auth.RefreshToken != RefreshToken)
         {
             RefreshToken = auth.RefreshToken;
+            hasChanges = true;
         }
-        if (auth.ExpiresIn.HasValue)
+        if (auth.ExpiresIn.HasValue && auth.ExpiresIn.Value != ExpiresIn)
         {
             ExpiresIn = auth.ExpiresIn.Value;
+            hasChanges = true;
         }
-        if (auth.LocalId != null && !string.IsNullOrEmpty(auth.FirebaseToken))
+        if (auth.LocalId != null && auth.LocalId != LocalId)
         {
             LocalId = auth.LocalId;
+            hasChanges = true;
         }
 
-        FederatedId = auth.FederatedId;
-        FirstName = auth.FirstName;
-        LastName = auth.LastName;
-        DisplayName = auth.DisplayName;
-        Email = auth.Email;
-        IsEmailVerified = auth.IsEmailVerified;
-        PhotoUrl = auth.PhoneNumber;
-        PhoneNumber = auth.PhoneNumber;
+        if (hasChanges)
+        {
+            OnAuthRefreshed();
+        }
+    }
 
-        OnAuthRefreshed();
+    internal void UpdateInfo(FirebaseAuth auth)
+    {
+        bool hasChanges = false;
+
+        if (FederatedId != auth.FederatedId)
+        {
+            FederatedId = auth.FederatedId;
+            hasChanges = true;
+        }
+        if (FirstName != auth.FirstName)
+        {
+            FirstName = auth.FirstName;
+            hasChanges = true;
+        }
+        if (LastName != auth.LastName)
+        {
+            LastName = auth.LastName;
+            hasChanges = true;
+        }
+        if (DisplayName != auth.DisplayName)
+        {
+            DisplayName = auth.DisplayName;
+            hasChanges = true;
+        }
+        if (Email != auth.Email)
+        {
+            Email = auth.Email;
+            hasChanges = true;
+        }
+        if (IsEmailVerified != auth.IsEmailVerified)
+        {
+            IsEmailVerified = auth.IsEmailVerified;
+            hasChanges = true;
+        }
+        if (PhoneNumber != auth.PhoneNumber)
+        {
+            PhoneNumber = auth.PhoneNumber;
+            hasChanges = true;
+        }
+
+        if (hasChanges)
+        {
+            OnAuthRefreshed();
+        }
     }
 
     #endregion
