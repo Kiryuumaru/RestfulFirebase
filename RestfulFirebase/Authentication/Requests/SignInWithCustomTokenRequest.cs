@@ -7,7 +7,7 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// The base request for all authenticated firebase request.
+/// Request to sign in with custom token provided by firebase.
 /// </summary>
 public class SignInWithCustomTokenRequest : AuthenticationRequest
 {

@@ -7,7 +7,7 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// The base request for all authenticated firebase request.
+/// Request to send a verification code to a phone number.
 /// </summary>
 public class SendVerificationCodeRequest : AuthenticationRequest
 {

@@ -7,7 +7,7 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// The base request for all authenticated firebase request.
+/// Request to sign in a phone number with the provided sessionInfo and code from reCaptcha validation and sms OTP message.
 /// </summary>
 public class SignInWithPhoneNumber : AuthenticationRequest
 {

@@ -7,12 +7,12 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// Request to sign in with google id token.
+/// Request to change the password of the authenticated user.
 /// </summary>
-public class SignInWithGoogleIdTokenRequest : AuthenticationRequest
+public class ChangeUserPasswordRequest : AuthenticatedRequest
 {
     /// <summary>
-    /// Gets or sets the id token provided by google.
+    /// Gets or sets the new password.
     /// </summary>
-    public string? IdToken { get; set; }
+    public string? NewPassword { get; set; }
 }

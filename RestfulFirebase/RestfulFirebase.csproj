@@ -29,13 +29,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Authentication\AuthApp.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="..\LICENSE" Pack="true" PackagePath="" />
     <None Include="..\README.md" Pack="true" PackagePath="" />
-    <None Include="Authentication\AuthApp.cs" />
   </ItemGroup>
 
   <ItemGroup>

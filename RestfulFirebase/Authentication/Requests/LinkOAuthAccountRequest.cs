@@ -8,17 +8,17 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// Request to sign in with oauth provided with auth type and oauth token.
+/// Request to links the account with oauth provided with auth type and oauth access token.
 /// </summary>
-public class SignInWithOAuthRequest : AuthenticationRequest
+public class LinkOAuthAccountRequest : AuthenticatedRequest
 {
     /// <summary>
-    /// Gets or sets the <see cref="FirebaseAuthType"/> of the oauth used.
+    /// Gets or sets the <see cref="FirebaseAuthType"/> to be linked.
     /// </summary>
     public FirebaseAuthType? AuthType { get; set; }
 
     /// <summary>
-    /// Gets or sets the token of the provided oauth type.
+    /// Gets or sets the token of the provided auth type to be linked.
     /// </summary>
-    public string? OAuthToken { get; set; }
+    public string? OAuthAccessToken { get; set; }
 }

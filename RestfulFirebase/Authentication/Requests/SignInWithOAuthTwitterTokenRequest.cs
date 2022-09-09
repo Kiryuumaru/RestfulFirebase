@@ -8,7 +8,7 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// The base request for all authenticated firebase request.
+/// Request to sign in with twitter oauth token provided with oauth access token and oauth access secret from twitter.
 /// </summary>
 public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest
 {

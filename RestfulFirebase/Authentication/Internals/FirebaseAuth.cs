@@ -15,29 +15,29 @@ internal class FirebaseAuth
     public int? ExpiresIn { get; set; }
 
     [JsonPropertyName("localId")]
-    public string? LocalId { get; set; } = "";
+    public string? LocalId { get; set; }
 
     [JsonPropertyName("federatedId")]
-    public string? FederatedId { get; set; } = "";
+    public string? FederatedId { get; set; }
 
     [JsonPropertyName("firstName")]
-    public string? FirstName { get; set; } = "";
+    public string? FirstName { get; set; }
 
     [JsonPropertyName("lastName")]
-    public string? LastName { get; set; } = "";
+    public string? LastName { get; set; }
 
     [JsonPropertyName("displayName")]
-    public string? DisplayName { get; set; } = "";
+    public string? DisplayName { get; set; }
 
     [JsonPropertyName("email")]
-    public string? Email { get; set; } = "";
+    public string? Email { get; set; }
 
     [JsonPropertyName("emailVerified")]
-    public bool IsEmailVerified { get; set; } = false;
+    public bool IsEmailVerified { get; set; }
 
     [JsonPropertyName("photoUrl")]
     public string? PhotoUrl { get; set; }
 
     [JsonPropertyName("phoneNumber")]
-    public string? PhoneNumber { get; set; } = "";
+    public string? PhoneNumber { get; set; } 
 }

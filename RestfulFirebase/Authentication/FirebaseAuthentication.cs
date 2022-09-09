@@ -43,7 +43,7 @@ public static class FirebaseAuthentication
     internal const string GoogleGetConfirmationCodeUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/getOobConfirmationCode?key={0}";
     internal const string GoogleSetAccountUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/setAccountInfo?key={0}";
     internal const string GoogleCreateAuthUrl = "https://www.googleapis.com/identitytoolkit/v3/relyingparty/createAuthUri?key={0}";
-    internal const string GoogleUpdateUserPassword = "https://identitytoolkit.googleapis.com/v1/accounts:update?key={0}";
+    internal const string GoogleUpdateUser = "https://identitytoolkit.googleapis.com/v1/accounts:update?key={0}";
     internal const string ProfileDeleteDisplayName = "DISPLAY_NAME";
     internal const string ProfileDeletePhotoUrl = "PHOTO_URL";
 
@@ -433,6 +433,30 @@ public static class FirebaseAuthentication
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
     /// </exception>
+    /// <exception cref="AuthEmailExistsException">
+    /// The email address is already in use by another account.
+    /// </exception>
+    /// <exception cref="AuthWeakPasswordException">
+    /// The password must be 6 characters long or more.
+    /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// Password sign-in is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthTooManyAttemptsException">
+    /// There is an unusual activity on device.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
     public static async Task<FirebaseUser> CreateUserWithEmailAndPassword(CreateUserWithEmailAndPasswordRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Email);
@@ -474,6 +498,27 @@ public static class FirebaseAuthentication
     /// </exception>
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthEmailNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthInvalidPasswordException">
+    /// The password is invalid or the user does not have a password.
+    /// </exception>
+    /// <exception cref="AuthUserDisabledException">
+    /// The user account has been disabled by an administrator.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
     /// </exception>
     public static async Task<FirebaseUser> SignInWithEmailAndPassword(SignInWithEmailAndPasswordRequest request)
     {
@@ -547,6 +592,18 @@ public static class FirebaseAuthentication
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
     /// </exception>
+    /// <exception cref="AuthInvalidCustomTokenException">
+    /// The custom token format is incorrect or the token is invalid for some reason (e.g. expired, invalid signature etc.)
+    /// </exception>
+    /// <exception cref="AuthCredentialMismatchException">
+    /// The custom token corresponds to a different Firebase project.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
     public static async Task<FirebaseUser> SignInWithCustomToken(SignInWithCustomTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.CustomToken);
@@ -578,6 +635,24 @@ public static class FirebaseAuthentication
     /// </exception>
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// The corresponding provider is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDPResponseException">
+    /// The supplied auth credential is malformed or has expired.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
     /// </exception>
     public static async Task<FirebaseUser> SignInWithOAuth(SignInWithOAuthRequest request)
     {
@@ -618,6 +693,24 @@ public static class FirebaseAuthentication
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
     /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// The corresponding provider is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDPResponseException">
+    /// The supplied auth credential is malformed or has expired.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
     public static async Task<FirebaseUser> SignInWithOAuthTwitterToken(SignInWithOAuthTwitterTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.OAuthAccessToken);
@@ -626,7 +719,7 @@ public static class FirebaseAuthentication
         var providerId = GetProviderId(FirebaseAuthType.Twitter);
         var content = $"{{\"postBody\":\"access_token={request.OAuthAccessToken}&oauth_token_secret={request.OAuthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
 
         FirebaseUser user = new(auth);
 
@@ -651,6 +744,24 @@ public static class FirebaseAuthentication
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
     /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// The corresponding provider is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDPResponseException">
+    /// The supplied auth credential is malformed or has expired.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
     public static async Task<FirebaseUser> SignInWithGoogleIdToken(SignInWithGoogleIdTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.IdToken);
@@ -658,7 +769,7 @@ public static class FirebaseAuthentication
         var providerId = GetProviderId(FirebaseAuthType.Google);
         var content = $"{{\"postBody\":\"id_token={request.IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
 
         FirebaseUser user = new(auth);
 
@@ -682,17 +793,66 @@ public static class FirebaseAuthentication
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
     /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// Anonymous user sign-in is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
     public static async Task<FirebaseUser> SignInAnonymously(AuthenticationRequest request)
     {
         var content = $"{{\"returnSecureToken\":true}}";
 
-        var auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content).ConfigureAwait(false);
+        var auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content);
 
         FirebaseUser user = new(auth);
 
         await RefreshUserInfo(request, user);
 
         return user;
+    }
+
+    /// <summary>
+    /// Send password reset email to the existing account provided with the email.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> and
+    /// <see cref="SendPasswordResetEmailRequest.Email"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthEmailNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task SendPasswordResetEmail(SendPasswordResetEmailRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.Email);
+
+        var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{request.Email}\"}}";
+
+        await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
     }
 
     #endregion
@@ -708,16 +868,516 @@ public static class FirebaseAuthentication
     /// <returns>
     /// The <see cref="Task"/> proxy of the specified task.
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> and
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> are either a null reference.
+    /// </exception>
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
     /// </exception>
     public static async Task SendEmailVerification(AuthenticatedRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{request.FirebaseUser.FirebaseToken}\"}}";
+        string token = await GetFreshToken(request);
+
+        var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
 
         await ExecuteAuthWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+    }
+
+    /// <summary>
+    /// Change the email of the authenticated user.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/>,
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> and
+    /// <see cref="ChangeUserEmailRequest.NewEmail"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthEmailExistsException">
+    /// The email address is already in use by another account.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task ChangeUserEmail(ChangeUserEmailRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+        ArgumentNullException.ThrowIfNull(request.NewEmail);
+
+        string token = await GetFreshToken(request);
+
+        var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.NewEmail}\",\"returnSecureToken\":true}}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Change the password of the authenticated user.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/>,
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> and
+    /// <see cref="ChangeUserPasswordRequest.NewPassword"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthWeakPasswordException">
+    /// The password must be 6 characters long or more.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task ChangeUserPassword(ChangeUserPasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+        ArgumentNullException.ThrowIfNull(request.NewPassword);
+
+        string token = await GetFreshToken(request);
+
+        var content = $"{{\"idToken\":\"{token}\",\"password\":\"{request.NewPassword}\",\"returnSecureToken\":true}}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Update the accounts profile provided with display name and photo URL.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    public static async Task UpdateProfile(UpdateProfileRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+
+        string token = await GetFreshToken(request);
+
+        StringBuilder sb = new($"{{\"idToken\":\"{token}\"");
+        if (!string.IsNullOrWhiteSpace(request.DisplayName) && !string.IsNullOrWhiteSpace(request.PhotoUrl))
+        {
+            sb.Append($",\"displayName\":\"{request.DisplayName}\",\"photoUrl\":\"{request.PhotoUrl}\"");
+        }
+        else if (!string.IsNullOrWhiteSpace(request.DisplayName))
+        {
+            sb.Append($",\"displayName\":\"{request.DisplayName}\"");
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
+        }
+        else if (!string.IsNullOrWhiteSpace(request.PhotoUrl))
+        {
+            sb.Append($",\"photoUrl\":\"{request.PhotoUrl}\"");
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
+        }
+        else
+        {
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
+        }
+
+        sb.Append($",\"returnSecureToken\":true}}");
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, sb.ToString());
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Delete the authenticated user.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> and
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    public static async Task DeleteUser(AuthenticatedRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+
+        string token = await GetFreshToken(request);
+
+        var content = $"{{ \"idToken\": \"{token}\" }}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleDeleteUserUrl, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Links the account with the provided email and password.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/>,
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/>,
+    /// <see cref="LinkAccountRequest.Email"/> and
+    /// <see cref="LinkAccountRequest.Password"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthLoginCredentialsTooOldException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthTokenExpiredException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthWeakPasswordException">
+    /// The password must be 6 characters long or more.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task LinkAccount(LinkAccountRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+        ArgumentNullException.ThrowIfNull(request.Email);
+        ArgumentNullException.ThrowIfNull(request.Password);
+
+        string token = await GetFreshToken(request);
+
+        var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+
+    /// <summary>
+    /// Links the account with oauth provided with auth type and oauth access token.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/>,
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/>,
+    /// <see cref="LinkOAuthAccountRequest.AuthType"/> and
+    /// <see cref="LinkOAuthAccountRequest.OAuthAccessToken"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthOperationNotAllowedException">
+    /// The corresponding provider is disabled for this project.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDPResponseException">
+    /// The supplied auth credential is malformed or has expired.
+    /// </exception>
+    /// <exception cref="AuthEmailExistsException">
+    /// The email address is already in use by another account.
+    /// </exception>
+    /// <exception cref="AuthAlreadyLinkedException">
+    /// This credential is already associated with a different user account.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task LinkAccounts(LinkOAuthAccountRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+        ArgumentNullException.ThrowIfNull(request.AuthType);
+        ArgumentNullException.ThrowIfNull(request.OAuthAccessToken);
+
+        string token = await GetFreshToken(request);
+
+        var providerId = GetProviderId(request.AuthType.Value);
+        var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={request.OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Unlinks the account with oauth provided with auth type.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/>,
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> and
+    /// <see cref="UnlinkAccountRequest.AuthType"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// There is no user record corresponding to this identifier. The user may have been deleted.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task UnlinkAccounts(UnlinkAccountRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+        ArgumentNullException.ThrowIfNull(request.AuthType);
+
+        string token = await GetFreshToken(request);
+
+        string? providerId;
+        if (request.AuthType.Value == FirebaseAuthType.EmailAndPassword)
+        {
+            providerId = request.AuthType.Value.ToEnumString();
+        }
+        else
+        {
+            providerId = GetProviderId(request.AuthType.Value);
+        }
+
+        if (string.IsNullOrEmpty(providerId))
+        {
+            throw new AuthUndefinedException();
+        }
+
+        var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
+
+        var auth = await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content);
+
+        request.FirebaseUser.UpdateAuth(auth);
+
+        await RefreshUserInfo(request, request.FirebaseUser);
+    }
+
+    /// <summary>
+    /// Gets all linked accounts of the authenticated account.
+    /// </summary>
+    /// <returns>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// The <see cref="Task"/>{<see cref="ProviderQueryResult"/>} proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> and
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthInvalidEmailAddressException">
+    /// The email address is badly formatted.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task<ProviderQueryResult> GetLinkedAccounts(AuthenticatedRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+
+        string content = $"{{\"identifier\":\"{request.FirebaseUser.Email}\", \"continueUri\": \"http://localhost\"}}";
+
+        var responseData = await ExecuteWithPostContent(request, GoogleCreateAuthUrl, content);
+
+        ProviderQueryResult? data = JsonSerializer.Deserialize<ProviderQueryResult>(responseData, DefaultJsonSerializerOption);
+
+
+        if (data == null)
+        {
+            throw new AuthUndefinedException();
+        }
+
+        data.Email = request.FirebaseUser.Email;
+
+        return data;
+    }
+
+    /// <summary>
+    /// Gets the fresh token of the authenticated account.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy of the specified task.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="AuthenticationRequest.Config"/> and
+    /// <see cref="AuthenticatedRequest.FirebaseUser"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    /// <exception cref="AuthAPIKeyNotValidException">
+    /// API key not valid. Please pass a valid API key.
+    /// </exception>
+    /// <exception cref="AuthTokenExpiredException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthUserDisabledException">
+    /// The user account has been disabled by an administrator.
+    /// </exception>
+    /// <exception cref="AuthUserNotFoundException">
+    /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
+    /// </exception>
+    /// <exception cref="AuthInvalidIDTokenException">
+    /// The user's credential is no longer valid. The user must sign in again.
+    /// </exception>
+    /// <exception cref="AuthInvalidRefreshTokenException">
+    /// An invalid refresh token is provided.
+    /// </exception>
+    /// <exception cref="AuthInvalidJSONReceivedException">
+    /// Invalid JSON payload received.
+    /// </exception>
+    /// <exception cref="AuthMissingRefreshTokenException">
+    /// No refresh token provided.
+    /// </exception>
+    /// <exception cref="AuthUndefinedException">
+    /// The error occured is undefined.
+    /// </exception>
+    public static async Task<string> GetFreshToken(AuthenticatedRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.FirebaseUser);
+
+        if (request.FirebaseUser.IsExpired())
+        {
+            var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{request.FirebaseUser.RefreshToken}\"}}";
+
+            var auth = await ExecuteAuthWithPostContent(request, GoogleRefreshAuth, content);
+
+            request.FirebaseUser.UpdateAuth(auth);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+        }
+
+        return request.FirebaseUser.FirebaseToken;
     }
 
     #endregion

@@ -7,7 +7,7 @@ using System.Threading;
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
-/// The base request for all authenticated firebase request.
+/// Request to sign in with provided email and password.
 /// </summary>
 public class SignInWithEmailAndPasswordRequest : AuthenticationRequest
 {
