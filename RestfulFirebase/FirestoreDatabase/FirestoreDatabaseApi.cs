@@ -173,7 +173,7 @@ public static class FirestoreDatabase
     }
 
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"{nameof(T)} type must preserve when .Net 6 trimming is enabled")]
+    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
 #endif
     internal static Document<T>? ParseDocument<T>(T? existingModel, JsonElement.ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
@@ -330,7 +330,7 @@ public static class FirestoreDatabase
     /// The operation was cancelled.
     /// </exception>
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"{nameof(T)} type must preserve when .Net 6 trimming is enabled")]
+    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
 #endif
     public static async Task<Document<T>?> GetDocument<T>(GetDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class
@@ -368,7 +368,7 @@ public static class FirestoreDatabase
     /// The operation was cancelled.
     /// </exception>
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"{nameof(T)} type must preserve when .Net 6 trimming is enabled")]
+    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
 #endif
     public static async Task<Document<T>?> PatchDocument<T>(PatchDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class
