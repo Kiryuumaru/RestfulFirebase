@@ -5,6 +5,8 @@ on: push
 env:
   PROJECT_NAME: RestfulFirebase
   PROJECT_PATH: RestfulFirebase/RestfulFirebase.csproj
+  PROJECT_UNIT_TEST_NAME: RestfulFirebase.UnitTest
+  PROJECT_UNIT_TEST_PATH: RestfulFirebase.UnitTest/RestfulFirebase.UnitTest.csproj
   PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}/output
   NUGET_SOURCE_URL: https://api.nuget.org/v3/index.json
   GITHUB_SOURCE_URL: https://nuget.pkg.github.com/kiryuumaru/index.json
@@ -12,8 +14,28 @@ env:
 
 jobs:
 
+  unit_test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['2.0.x', '2.1.x', '6.0.x' ]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - name: Install dependencies
+        run: dotnet restore ${{ env.PROJECT_UNIT_TEST_PATH }}
+      - name: Build
+        run: dotnet build ${{ env.PROJECT_UNIT_TEST_PATH }} --configuration Release --no-restore
+      - name: Test
+        run: dotnet test ${{ env.PROJECT_UNIT_TEST_PATH }} --no-restore --verbosity normal
+
   version_bumper:
     name: Version Bumper
+    needs: unit_test
     runs-on: ubuntu-latest
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
