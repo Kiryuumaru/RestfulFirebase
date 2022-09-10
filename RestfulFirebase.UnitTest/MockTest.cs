@@ -18,30 +18,6 @@ namespace RestfulFirebase.UnitTest
 
             FirebaseUser user;
 
-            try
-            {
-                user = await Api.Authentication.SignInWithEmailAndPassword(new SignInWithEmailAndPasswordRequest()
-                {
-                    Config = config,
-                    Email = "test@mail.com",
-                    Password = "123123",
-                });
-            }
-            catch (AuthEmailNotFoundException)
-            {
-                user = await Api.Authentication.CreateUserWithEmailAndPassword(new CreateUserWithEmailAndPasswordRequest()
-                {
-                    Config = config,
-                    Email = "test@mail.com",
-                    Password = "123123",
-                });
-            }
-
-            await Api.Authentication.DeleteUser(new AuthenticatedCommonRequest()
-            {
-                Config = config,
-                FirebaseUser = user,
-            });
 
             Assert.True(true);
         }
