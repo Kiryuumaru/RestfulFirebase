@@ -11,6 +11,7 @@ env:
   NUGET_SOURCE_URL: https://api.nuget.org/v3/index.json
   GITHUB_SOURCE_URL: https://nuget.pkg.github.com/kiryuumaru/index.json
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NUGET_AUTH_TOKEN: ${{ secrets.NUGET_AUTH_TOKEN }}
   FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
   FIREBASE_APIKEY: ${{ secrets.FIREBASE_APIKEY }}
 
@@ -88,6 +89,6 @@ jobs:
           generate_release_notes: true
           draft: false
       - name: Push package to Github
-        run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s ${{ env.GITHUB_SOURCE_URL }}
+        run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.GITHUB_TOKEN }} -s ${{ env.GITHUB_SOURCE_URL }}
       #- name: Push package to NuGet
-      #  run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ secrets.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
+      #  run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
