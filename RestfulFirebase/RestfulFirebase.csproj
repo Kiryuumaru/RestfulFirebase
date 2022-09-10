@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;net6.0;</TargetFrameworks>
@@ -24,7 +24,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.0.0-beta</Version>
     <PackageReleaseNotes>* Changed auth signout to not to remove local database on signout.</PackageReleaseNotes>
   </PropertyGroup>
 

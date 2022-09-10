@@ -653,8 +653,8 @@ public static class Authentication
     /// The <see cref="Task"/> proxy of the specified task.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="CommonRequest.Config"/> and
-    /// <see cref="SignInWithOAuthRequest.AuthType"/> are either a null reference.
+    /// <see cref="CommonRequest.Config"/>,
+    /// <see cref="SignInWithOAuthRequest.AuthType"/> and
     /// <see cref="SignInWithOAuthRequest.OAuthToken"/> are either a null reference.
     /// </exception>
     /// <exception cref="OperationCanceledException">
@@ -710,8 +710,8 @@ public static class Authentication
     /// The <see cref="Task"/> proxy of the specified task.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="CommonRequest.Config"/> and
-    /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthAccessToken"/> are either a null reference.
+    /// <see cref="CommonRequest.Config"/>,
+    /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthAccessToken"/> and
     /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthTokenSecret"/> are either a null reference.
     /// </exception>
     /// <exception cref="OperationCanceledException">

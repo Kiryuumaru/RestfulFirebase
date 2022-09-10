@@ -38,6 +38,15 @@ Document<Person>? person = await RestfulFirebase.Api.FirestoreDatabase.GetDocume
         .Document("sample")
 });
 
+await RestfulFirebase.Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Person>()
+{
+    Config = config,
+    Model = person.Model,
+    Reference = RestfulFirebase.Api.FirestoreDatabase.Database()
+        .Collection("public")
+        .Document("sample1")
+});
+
 await RestfulFirebase.Api.Authentication.DeleteUser(new AuthenticatedCommonRequest()
 {
     Config = config,
