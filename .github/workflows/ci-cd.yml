@@ -17,15 +17,12 @@ jobs:
   unit_test:
     name: Unit Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: ['2.0.x', '2.1.x', '6.0.x' ]
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET SDK ${{ matrix.dotnet-version }}
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
+          dotnet-version: 6.0.x
       - name: Install dependencies
         run: dotnet restore ${{ env.PROJECT_UNIT_TEST_PATH }}
       - name: Build
