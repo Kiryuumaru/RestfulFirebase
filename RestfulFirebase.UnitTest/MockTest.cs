@@ -9,7 +9,7 @@ using Xunit;
 
 namespace RestfulFirebase.UnitTest
 {
-    public class UnitTest1
+    public class MockTest
     {
         [Fact]
         public async void Test1()
