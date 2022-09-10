@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Requests;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -9,7 +10,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to send a verification code to a phone number.
 /// </summary>
-public class SendVerificationCodeRequest : AuthenticationRequest
+public class SendVerificationCodeRequest : CommonRequest
 {
     /// <summary>
     /// The phone number to send verification code.

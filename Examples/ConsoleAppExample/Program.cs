@@ -3,6 +3,9 @@ using RestfulFirebase;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Requests;
+using RestfulFirebase.CloudFirestore.Requests;
+using RestfulFirebase.Common.Requests;
+using RestfulFirebase.FirestoreDatabase;
 
 FirebaseConfig config = Credentials.Config(); // Your config
 
@@ -10,30 +13,32 @@ FirebaseUser user;
 
 try
 {
-    user = await FirebaseAuthentication.SignInWithEmailAndPassword(new SignInWithEmailAndPasswordRequest()
+    user = await RestfulFirebase.Api.Authentication.SignInWithEmailAndPassword(new SignInWithEmailAndPasswordRequest()
     {
         Config = config,
-        Email = "t@st.com",
+        Email = "test@mail.com",
         Password = "123123",
     });
 }
 catch (AuthEmailNotFoundException)
 {
-    user = await FirebaseAuthentication.CreateUserWithEmailAndPassword(new CreateUserWithEmailAndPasswordRequest()
+    user = await RestfulFirebase.Api.Authentication.CreateUserWithEmailAndPassword(new CreateUserWithEmailAndPasswordRequest()
     {
         Config = config,
-        Email = "t@st.com",
+        Email = "test@mail.com",
         Password = "123123",
     });
 }
 
-string ss = await FirebaseAuthentication.GetFreshToken(new AuthenticatedRequest()
+Document<Person>? person = await RestfulFirebase.Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Person>()
 {
     Config = config,
-    FirebaseUser = user,
+    Reference = RestfulFirebase.Api.FirestoreDatabase.Database()
+        .Collection("public")
+        .Document("sample")
 });
 
-await FirebaseAuthentication.DeleteUser(new AuthenticatedRequest()
+await RestfulFirebase.Api.Authentication.DeleteUser(new AuthenticatedCommonRequest()
 {
     Config = config,
     FirebaseUser = user,

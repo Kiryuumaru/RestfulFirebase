@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Common.Requests;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,7 +11,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to unlink the account with oauth provided with auth type.
 /// </summary>
-public class UnlinkAccountRequest : AuthenticatedRequest
+public class UnlinkAccountRequest : AuthenticatedCommonRequest
 {
     /// <summary>
     /// Gets or sets the <see cref="FirebaseAuthType"/> to unlink.

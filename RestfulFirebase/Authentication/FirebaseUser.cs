@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Exceptions;
-using RestfulFirebase.Utilities;
+﻿using RestfulFirebase.Common.Utilities;
 using System;
 using System.Net.Http;
 using System.Text;
@@ -94,6 +93,12 @@ public class FirebaseUser
     #region Initializers
 
     internal FirebaseUser(FirebaseAuth auth)
+        : this(auth, DateTimeOffset.UtcNow)
+    {
+
+    }
+
+    internal FirebaseUser(FirebaseAuth auth, DateTimeOffset created)
     {
         ArgumentNullException.ThrowIfNull(auth.IdToken);
         ArgumentNullException.ThrowIfNull(auth.RefreshToken);
@@ -105,9 +110,51 @@ public class FirebaseUser
         ExpiresIn = auth.ExpiresIn.Value;
         LocalId = auth.LocalId;
 
-        Created = DateTime.UtcNow;
+        Created = created;
 
         UpdateAuth(auth);
+    }
+
+    /// <summary>
+    /// Deserializes the <see cref="FirebaseUser"/> using the serialized <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static FirebaseUser Deserialize(string data)
+    {
+        string? idToken = BlobSerializer.GetValue(data, "tok");
+        string? refreshToken = BlobSerializer.GetValue(data, "ref");
+        var exp = BlobSerializer.GetValue(data, "exp");
+        int expiresIn = string.IsNullOrEmpty(exp) ? default : (int)StringSerializer.ExtractNumber(exp!);
+        var ctd = BlobSerializer.GetValue(data, "ctd");
+        DateTimeOffset created = string.IsNullOrEmpty(ctd) ? default : new DateTimeOffset(StringSerializer.ExtractNumber(ctd!), DateTimeOffset.Now.Offset);
+        string? localId = BlobSerializer.GetValue(data, "lid");
+        string? federatedId = BlobSerializer.GetValue(data, "fid");
+        string? firstName = BlobSerializer.GetValue(data, "fname");
+        string? lastName = BlobSerializer.GetValue(data, "lname");
+        string? displayName = BlobSerializer.GetValue(data, "dname");
+        string? email = BlobSerializer.GetValue(data, "email");
+        bool isEmailVerified = BlobSerializer.GetValue(data, "vmail") == "1";
+        string? photoUrl = BlobSerializer.GetValue(data, "purl");
+        string? phoneNumber = BlobSerializer.GetValue(data, "pnum");
+
+        FirebaseAuth auth = new()
+        {
+            IdToken = idToken,
+            RefreshToken = refreshToken,
+            ExpiresIn = expiresIn,
+            LocalId = localId,
+            FederatedId = federatedId,
+            FirstName = firstName,
+            LastName = lastName,
+            DisplayName = displayName,
+            Email = email,
+            IsEmailVerified = isEmailVerified,
+            PhotoUrl = photoUrl,
+            PhoneNumber = phoneNumber
+        };
+
+        return new(auth, created);
     }
 
     #endregion
@@ -131,6 +178,32 @@ public class FirebaseUser
     protected void OnAuthRefreshed()
     {
         AuthRefreshed?.Invoke(this, new EventArgs());
+    }
+
+    /// <summary>
+    /// Serializes the <see cref="FirebaseUser"/> to <see cref="string"/>.
+    /// </summary>
+    /// <returns>
+    /// </returns>
+    public string Serialize()
+    {
+        var auth = "";
+
+        auth = BlobSerializer.SetValue(auth, "tok", IdToken);
+        auth = BlobSerializer.SetValue(auth, "ref", RefreshToken);
+        auth = BlobSerializer.SetValue(auth, "exp", StringSerializer.CompressNumber(ExpiresIn));
+        auth = BlobSerializer.SetValue(auth, "ctd", StringSerializer.CompressNumber(Created.Ticks));
+        auth = BlobSerializer.SetValue(auth, "lid", LocalId);
+        auth = BlobSerializer.SetValue(auth, "fid", FederatedId);
+        auth = BlobSerializer.SetValue(auth, "fname", FirstName);
+        auth = BlobSerializer.SetValue(auth, "lname", LastName);
+        auth = BlobSerializer.SetValue(auth, "dname", DisplayName);
+        auth = BlobSerializer.SetValue(auth, "email", Email);
+        auth = BlobSerializer.SetValue(auth, "vmail", IsEmailVerified ? "1" : "0");
+        auth = BlobSerializer.SetValue(auth, "purl", PhotoUrl);
+        auth = BlobSerializer.SetValue(auth, "pnum", PhoneNumber);
+
+        return auth;
     }
 
     internal void UpdateAuth(FirebaseAuth auth)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Requests;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -9,7 +10,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to sign in with provided email and password.
 /// </summary>
-public class SignInWithEmailAndPasswordRequest : AuthenticationRequest
+public class SignInWithEmailAndPasswordRequest : CommonRequest
 {
     /// <summary>
     /// Gets or sets the email of the user.

@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Authentication.Internals;
 
@@ -26,5 +28,5 @@ internal class FirebaseAuth
 
     public string? PhotoUrl { get; set; }
 
-    public string? PhoneNumber { get; set; } 
+    public string? PhoneNumber { get; set; }
 }

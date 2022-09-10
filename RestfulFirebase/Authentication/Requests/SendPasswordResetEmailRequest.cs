@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Common.Requests;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,7 +11,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to send password reset email to the existing account provided with the email.
 /// </summary>
-public class SendPasswordResetEmailRequest : AuthenticationRequest
+public class SendPasswordResetEmailRequest : CommonRequest
 {
     /// <summary>
     /// Gets or sets the email of the user to send the password reset.

@@ -77,4 +77,8 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="FirestoreDatabase\Internals\" />
+  </ItemGroup>
+
 </Project>

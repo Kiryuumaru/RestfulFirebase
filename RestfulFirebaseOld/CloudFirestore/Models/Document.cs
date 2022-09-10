@@ -33,7 +33,7 @@ namespace RestfulFirebase.CloudFirestore.Models
             }
         }
 
-        private readonly ConcurrentDictionary<string, Field> fields = new();
+        private readonly Dictionary<string, Field> fields = new();
 
         #endregion
 

@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Common.Requests;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,7 +11,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to sign in with oauth provided with auth type and oauth token.
 /// </summary>
-public class SignInWithOAuthRequest : AuthenticationRequest
+public class SignInWithOAuthRequest : CommonRequest
 {
     /// <summary>
     /// Gets or sets the <see cref="FirebaseAuthType"/> of the oauth used.

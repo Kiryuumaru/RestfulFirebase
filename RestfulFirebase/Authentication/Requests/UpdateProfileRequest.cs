@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Requests;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -9,7 +10,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to update the accounts profile provided with display name and photo URL.
 /// </summary>
-public class UpdateProfileRequest : AuthenticatedRequest
+public class UpdateProfileRequest : AuthenticatedCommonRequest
 {
     /// <summary>
     /// Gets or sets the new display name of the account.

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
+using RestfulFirebase.Common.Requests;
 
 namespace RestfulFirebase.Authentication.Requests;
 
 /// <summary>
 /// Request to creates user with the provided email and password.
 /// </summary>
-public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest
+public class CreateUserWithEmailAndPasswordRequest : CommonRequest
 {
     /// <summary>
     /// Gets or sets the email of the user.

@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Common.Requests;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,7 +11,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to sign in with twitter oauth token provided with oauth access token and oauth access secret from twitter.
 /// </summary>
-public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest
+public class SignInWithOAuthTwitterTokenRequest : CommonRequest
 {
     /// <summary>
     /// Gets or sets the access token provided by twitter.
