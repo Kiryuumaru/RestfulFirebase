@@ -31,7 +31,7 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.PROJECT_UNIT_TEST_PATH }} --configuration Release --no-restore
       - name: Test
-        run: dotnet test ${{ env.PROJECT_UNIT_TEST_PATH }} --no-build --no-restore --verbosity normal
+        run: dotnet test ${{ env.PROJECT_UNIT_TEST_PATH }} --no-restore --verbosity normal
 
   version_bumper:
     name: Version Bumper
