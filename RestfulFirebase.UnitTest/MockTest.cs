@@ -3,9 +3,11 @@ using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Requests;
+using RestfulFirebase.CloudFirestore.Query;
 using RestfulFirebase.CloudFirestore.Requests;
 using RestfulFirebase.Common.Requests;
 using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.FirestoreDatabase.Abstraction;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
@@ -13,6 +15,18 @@ using Xunit;
 
 namespace RestfulFirebase.UnitTest
 {
+    public class Test11
+    {
+        public string? Val1 { get; set; }
+    }
+
+    public class Coordinates : IGeoPoint
+    {
+        public double Latitude { get; set; }
+
+        public double Longitude { get; set; }
+    }
+
     public class AllType
     {
         public string? Type1 { get; set; }
@@ -28,6 +42,10 @@ namespace RestfulFirebase.UnitTest
         public object? Type6 { get; set; }
 
         public DateTimeOffset? Type7 { get; set; }
+
+        public Coordinates? Type8 { get; set; }
+
+        public DocumentReference? Type9 { get; set; }
     }
 
     public class MockTest

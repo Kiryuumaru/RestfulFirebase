@@ -64,13 +64,11 @@ public class DocumentReference : Reference
         return new CollectionReference(Database, this, collectionId);
     }
 
-    internal override string BuildUrl(FirestoreDatabaseRequest request)
+    internal override string BuildUrl(string projectId)
     {
-        ArgumentNullException.ThrowIfNull(request.Config);
+        var url = BuildUrlSegment(projectId);
 
-        var url = BuildUrlSegment(request);
-
-        string parentUrl = Parent.BuildUrl(request);
+        string parentUrl = Parent.BuildUrl(projectId);
         if (parentUrl != string.Empty && !parentUrl.EndsWith("/"))
         {
             parentUrl += '/';
@@ -80,7 +78,7 @@ public class DocumentReference : Reference
         return url;
     }
 
-    internal override string BuildUrlSegment(FirestoreDatabaseRequest request)
+    internal override string BuildUrlSegment(string projectId)
     {
         return Id;
     }

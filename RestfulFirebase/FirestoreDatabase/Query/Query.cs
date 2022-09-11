@@ -35,9 +35,9 @@ public abstract class Query
 
     #region Methods
 
-    internal abstract string BuildUrl(FirestoreDatabaseRequest request);
+    internal abstract string BuildUrl(string projectId);
 
-    internal abstract string BuildUrlSegment(FirestoreDatabaseRequest request);
+    internal abstract string BuildUrlSegment(string projectId);
 
     #endregion
 }

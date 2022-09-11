@@ -20,7 +20,9 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Collections;
 using System.IO;
-using RestfulFirebase.FirestoreDatabase.ComponentModel;
+using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.CloudFirestore.Query;
+using System.Data;
 
 namespace RestfulFirebase.Api;
 
@@ -47,7 +49,12 @@ public static class FirestoreDatabase
         NumberHandling = JsonNumberHandling.AllowReadingFromString
     };
 
+    internal const string RequiresUnreferencedCodeMessage = $"Model objects must preserve all its required types when trimming is enabled";
     internal const string FirestoreDatabaseDocumentsEndpoint = "https://firestore.googleapis.com/v1/projects/{0}/databases/{1}/documents/{2}";
+
+    private static readonly object?[] emptyParameterPlaceholder = Array.Empty<object?>();
+    private static readonly object?[] parseDictionaryFieldsReflectionKey = new object?[1];
+    private static readonly object?[] parseCollectionFieldsAddMethodParameter = new object?[1];
 
     #endregion
 
@@ -62,7 +69,7 @@ public static class FirestoreDatabase
 
         string responseData = "N/A";
         HttpStatusCode statusCode = HttpStatusCode.OK;
-        string uri = request.Query.BuildUrl(request);
+        string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
         try
         {
@@ -97,7 +104,7 @@ public static class FirestoreDatabase
 
         string responseData = "N/A";
         HttpStatusCode statusCode = HttpStatusCode.OK;
-        string uri = request.Query.BuildUrl(request);
+        string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
         try
         {
@@ -133,7 +140,7 @@ public static class FirestoreDatabase
 
         string responseData = "N/A";
         HttpStatusCode statusCode = HttpStatusCode.OK;
-        string uri = request.Query.BuildUrl(request);
+        string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
         try
         {
@@ -176,7 +183,7 @@ public static class FirestoreDatabase
     }
 
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
     internal static Document<T>? ParseDocument<T>(T? existingModel, JsonElement.ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
@@ -202,6 +209,9 @@ public static class FirestoreDatabase
             }
         }
 
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
         object? parseJsonElement(string documentFieldType, JsonElement documentFieldValue, Type objType, object? obj)
         {
             switch (documentFieldType)
@@ -214,23 +224,104 @@ public static class FirestoreDatabase
                 case "timestampValue":
                 case "stringValue":
                 case "bytesValue":
-                    obj = JsonSerializer.Deserialize(
-                        documentFieldValue.GetRawText(),
-                        objType,
-                        jsonSerializerOptions);
+                    try
+                    {
+                        obj = JsonSerializer.Deserialize(
+                            documentFieldValue.GetRawText(),
+                            objType,
+                            jsonSerializerOptions);
+                    }
+                    catch { }
                     break;
                 case "referenceValue":
-                    string? reference = JsonSerializer.Deserialize<string>(documentFieldValue.GetRawText(), jsonSerializerOptions);
+                    if (objType == typeof(DocumentReference))
+                    {
+                        string? reference = JsonSerializer.Deserialize<string>(documentFieldValue.GetRawText(), jsonSerializerOptions);
+                        if (reference != null && !string.IsNullOrEmpty(reference))
+                        {
+                            string[] paths = reference.Split('/');
+                            object currentPath = Database(paths[3]);
+
+                            for (int i = 5; i < paths.Length; i++)
+                            {
+                                if (currentPath is Database database)
+                                {
+                                    currentPath = database.Collection(paths[i]);
+                                }
+                                else if (currentPath is CollectionReference colPath)
+                                {
+                                    currentPath = colPath.Document(paths[i]);
+                                }
+                                else if (currentPath is DocumentReference docPath)
+                                {
+                                    currentPath = docPath.Collection(paths[i]);
+                                }
+                            }
+
+                            if (currentPath is DocumentReference documentReference)
+                            {
+                                obj = documentReference;
+                            }
+                        }
+                    }
                     break;
                 case "geoPointValue":
                     if (objType.GetInterfaces().Any(i => i == typeof(IGeoPoint)))
                     {
-                        //obj ??= Activator.CreateInstance(objType);
-                        //objType.GetProperty(nameof(IGeoPoint.Latitude)).SetValue(obj, );
-                        //objType.GetProperty(nameof(IGeoPoint.Longitude)).SetValue(obj, );
+                        double? latitude = default;
+                        double? longitude = default;
+                        foreach (var geoProperty in documentFieldValue.EnumerateObject())
+                        {
+                            if (geoProperty.Name == "latitude")
+                            {
+                                latitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
+                            }
+                            else if (geoProperty.Name == "longitude")
+                            {
+                                longitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
+                            }
+                        }
+
+                        obj ??= Activator.CreateInstance(objType);
+
+                        if (latitude.HasValue && longitude.HasValue)
+                        {
+                            objType.GetProperty(nameof(IGeoPoint.Latitude))?.SetValue(obj, latitude.Value);
+                            objType.GetProperty(nameof(IGeoPoint.Longitude))?.SetValue(obj, longitude.Value);
+                        }
                     }
                     break;
                 case "arrayValue":
+                    var arrayEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateArray();
+
+                    if (objType.IsArray && objType.GetArrayRank() == 1)
+                    {
+                        Type? arrayElementType = objType.GetElementType();
+
+                        if (arrayElementType != null)
+                        {
+                            obj = parseArrayFields(arrayElementType, arrayEnumerator);
+                        }
+                    }
+                    else
+                    {
+                        var collectionInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                            i.IsGenericType &&
+                            i.GetGenericTypeDefinition() == typeof(ICollection<>));
+
+                        if (collectionInterfaceType != null)
+                        {
+                            obj ??= Activator.CreateInstance(objType);
+
+                            if (obj != null)
+                            {
+                                Type[] dictionaryGenericArgsType = collectionInterfaceType.GetGenericArguments();
+
+                                parseCollectionFields(collectionInterfaceType, dictionaryGenericArgsType[0], obj, arrayEnumerator);
+                            }
+                        }
+                    }
+
                     break;
                 case "mapValue":
                     var mapEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateObject();
@@ -241,15 +332,18 @@ public static class FirestoreDatabase
 
                     obj ??= Activator.CreateInstance(objType);
 
-                    if (dictionaryInterfaceType != null)
+                    if (obj != null)
                     {
-                        Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+                        if (dictionaryInterfaceType != null)
+                        {
+                            Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
-                    }
-                    else
-                    {
-                        parseObjectFields(objType, obj, mapEnumerator);
+                            parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                        }
+                        else
+                        {
+                            parseObjectFields(objType, obj, mapEnumerator);
+                        }
                     }
                     break;
             }
@@ -257,6 +351,9 @@ public static class FirestoreDatabase
             return obj;
         }
 
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
         void parseObjectField(Type objType, object modelObject, JsonProperty fieldProperty)
         {
             string? fieldName = fieldProperty.Name;
@@ -279,43 +376,95 @@ public static class FirestoreDatabase
             fieldInfo.SetValue(modelObject, parsedSubObj);
         }
 
-        void parseArrayField(Type modelType, object modelObject, JsonElement.ArrayEnumerator enumerator)
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        object? parseArrayFields(Type valueType, JsonElement.ArrayEnumerator enumerator)
         {
+            List<object?> items = new();
+
             foreach (var fieldElement in enumerator)
             {
-
-            }
-        }
-
-        void parseDictionaryFields(Type dictionaryType, Type keyType, Type ValueType, object dictionaryObj, JsonElement.ObjectEnumerator enumerator)
-        {
-            var itemProperty = dictionaryType.GetProperty("Item");
-            var containsKeyMethod = dictionaryType.GetMethod("ContainsKey");
-
-            foreach (var fieldProperty in enumerator)
-            {
-                var documentField = fieldProperty.Value.EnumerateObject().FirstOrDefault();
+                var documentField = fieldElement.EnumerateObject().FirstOrDefault();
                 var documentFieldType = documentField.Name;
-                string? documentFieldKey = $"\"{fieldProperty.Name}\"";
+                object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, null);
 
-                var objKey = JsonSerializer.Deserialize(
-                    documentFieldKey,
-                    keyType,
-                    jsonSerializerOptions);
-                var reflectionKey = new[] { objKey };
+                items.Add(parsedSubObj);
+            }
 
-                object? subObj = default;
-                if ((bool)containsKeyMethod.Invoke(dictionaryObj, reflectionKey))
+            Array obj = Array.CreateInstance(valueType, items.Count);
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                obj.SetValue(items[i], i);
+            }
+
+            return obj;
+        }
+
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, JsonElement.ArrayEnumerator enumerator)
+        {
+            var addMethod = collectionInterfaceType.GetMethod("Add");
+            var clearMethod = collectionInterfaceType.GetMethod("Clear");
+
+            if (addMethod != null && clearMethod != null)
+            {
+                clearMethod.Invoke(collectionObj, emptyParameterPlaceholder);
+
+                foreach (var fieldElement in enumerator)
                 {
-                    subObj = itemProperty.GetValue(dictionaryObj, reflectionKey);
+                    var documentField = fieldElement.EnumerateObject().FirstOrDefault();
+                    var documentFieldType = documentField.Name;
+                    object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, null);
+
+                    parseCollectionFieldsAddMethodParameter[0] = parsedSubObj;
+
+                    addMethod.Invoke(collectionObj, parseCollectionFieldsAddMethodParameter);
                 }
-
-                object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, ValueType, subObj);
-
-                itemProperty.SetValue(dictionaryObj, parsedSubObj, reflectionKey);
             }
         }
 
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, JsonElement.ObjectEnumerator enumerator)
+        {
+            var itemProperty = dictionaryInterfaceType.GetProperty("Item");
+            var containsKeyMethod = dictionaryInterfaceType.GetMethod("ContainsKey");
+
+            if (itemProperty != null && containsKeyMethod != null)
+            {
+                foreach (var fieldProperty in enumerator)
+                {
+                    var documentField = fieldProperty.Value.EnumerateObject().FirstOrDefault();
+                    var documentFieldType = documentField.Name;
+                    string? documentFieldKey = $"\"{fieldProperty.Name}\"";
+
+                    var objKey = JsonSerializer.Deserialize(
+                        documentFieldKey,
+                        keyType,
+                        jsonSerializerOptions);
+                    parseDictionaryFieldsReflectionKey[0] = objKey;
+
+                    object? subObj = default;
+                    if (containsKeyMethod.Invoke(dictionaryObj, parseDictionaryFieldsReflectionKey) is bool containsKey && containsKey)
+                    {
+                        subObj = itemProperty.GetValue(dictionaryObj, parseDictionaryFieldsReflectionKey);
+                    }
+
+                    object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, subObj);
+
+                    itemProperty.SetValue(dictionaryObj, parsedSubObj, parseDictionaryFieldsReflectionKey);
+                }
+            }
+        }
+
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
         void parseObjectFields(Type objType, object obj, JsonElement.ObjectEnumerator enumerator)
         {
             foreach (var fieldProperty in enumerator)
@@ -365,7 +514,7 @@ public static class FirestoreDatabase
     }
 
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
     internal static string? PopulateDocument<T>(T model, JsonSerializerOptions jsonSerializerOptions)
         where T : class
@@ -540,7 +689,7 @@ public static class FirestoreDatabase
     /// The operation was cancelled.
     /// </exception>
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
     public static async Task<Document<T>?> GetDocument<T>(GetDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class
@@ -578,7 +727,7 @@ public static class FirestoreDatabase
     /// The operation was cancelled.
     /// </exception>
 #if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode($"Model objects must preserve all its required types when trimming is enabled")]
+    [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
     public static async Task<Document<T>?> PatchDocument<T>(PatchDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class

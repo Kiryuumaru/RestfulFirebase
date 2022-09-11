@@ -57,23 +57,21 @@ public class CollectionReference : Reference
         return new DocumentReference(Database, this, documentId);
     }
 
-    internal override string BuildUrl(FirestoreDatabaseRequest request)
+    internal override string BuildUrl(string projectId)
     {
-        ArgumentNullException.ThrowIfNull(request.Config);
-
-        var url = BuildUrlSegment(request);
+        var url = BuildUrlSegment(projectId);
 
         if (Parent == null)
         {
             url = string.Format(
                 Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint,
-                request.Config.ProjectId,
+                projectId,
                 Database.DatabaseId,
                 url);
         }
         else
         {
-            string parentUrl = Parent.BuildUrl(request);
+            string parentUrl = Parent.BuildUrl(projectId);
             if (parentUrl != string.Empty && !parentUrl.EndsWith("/"))
             {
                 parentUrl += '/';
@@ -84,7 +82,7 @@ public class CollectionReference : Reference
         return url;
     }
 
-    internal override string BuildUrlSegment(FirestoreDatabaseRequest request)
+    internal override string BuildUrlSegment(string projectId)
     {
         return Id;
     }
