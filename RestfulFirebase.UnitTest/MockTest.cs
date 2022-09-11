@@ -6,19 +6,28 @@ using RestfulFirebase.Authentication.Requests;
 using RestfulFirebase.CloudFirestore.Requests;
 using RestfulFirebase.Common.Requests;
 using RestfulFirebase.FirestoreDatabase;
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Xunit;
 
 namespace RestfulFirebase.UnitTest
 {
-    public class Person
+    public class AllType
     {
-        public string? FirstName { get; set; }
+        public string? Type1 { get; set; }
 
-        public string? LastName { get; set; }
+        public double Type2 { get; set; }
 
-        [JsonPropertyName("value1")]
-        public string? Others { get; set; }
+        public bool Type3 { get; set; }
+
+        public Dictionary<string, string?>? Type4 { get; set; }
+
+        public List<string?>? Type5 { get; set; }
+
+        public object? Type6 { get; set; }
+
+        public DateTimeOffset? Type7 { get; set; }
     }
 
     public class MockTest
@@ -30,21 +39,21 @@ namespace RestfulFirebase.UnitTest
 
             FirebaseUser user;
 
-            Document<Person>? person = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Person>()
+            Document<AllType>? allType = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<AllType>()
             {
                 Config = config,
                 Reference = Api.FirestoreDatabase.Database()
                     .Collection("public")
-                    .Document("sample")
+                    .Document("allType")
             });
 
-            await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Person>()
+            await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<AllType>()
             {
                 Config = config,
-                Model = person.Model,
+                Model = allType.Model,
                 Reference = Api.FirestoreDatabase.Database()
                     .Collection("public")
-                    .Document("sample1")
+                    .Document("allType1")
             });
 
             Assert.True(true);
