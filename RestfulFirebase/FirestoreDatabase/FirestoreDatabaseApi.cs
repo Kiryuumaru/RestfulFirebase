@@ -170,6 +170,41 @@ public static class FirestoreDatabase
         }
     }
 
+    internal static async Task<string> ExecuteWithDelete(FirestoreDatabaseRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.Config);
+        ArgumentNullException.ThrowIfNull(request.Query);
+
+        HttpClient httpClient = await GetClient(request);
+
+        string responseData = "N/A";
+        HttpStatusCode statusCode = HttpStatusCode.OK;
+        string uri = request.Query.BuildUrl(request.Config.ProjectId);
+
+        try
+        {
+            var response = await httpClient.DeleteAsync(
+                uri,
+                request.CancellationToken);
+
+            statusCode = response.StatusCode;
+
+            responseData = await response.Content.ReadAsStringAsync();
+
+            response.EnsureSuccessStatusCode();
+
+            return responseData;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw GetException(responseData, statusCode, ex);
+        }
+    }
+
     internal static async Task<HttpClient> GetClient(FirestoreDatabaseRequest request)
     {
         var client = request.HttpClient ?? new HttpClient();
@@ -1126,6 +1161,30 @@ public static class FirestoreDatabase
         }
 
         return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
+    }
+
+    /// <summary>
+    /// Delete the <see cref="Document{T}"/> of the specified request query.
+    /// </summary>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the operation.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="CommonRequest.Config"/> and
+    /// <see cref="DeleteDocumentRequest.Reference"/> are either a null reference.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// The operation was cancelled.
+    /// </exception>
+    public static async Task DeleteDocument(DeleteDocumentRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request.Config);
+        ArgumentNullException.ThrowIfNull(request.Reference);
+
+        await ExecuteWithDelete(request);
     }
 
     #endregion
