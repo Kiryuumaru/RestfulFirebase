@@ -11,6 +11,7 @@ using RestfulFirebase.FirestoreDatabase.Abstraction;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
 
@@ -27,6 +28,15 @@ public class FirestoreDatabaseTest
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentTest)}");
 
+        JsonSerializerOptions jsonSerializerOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true
+        };
+
+        jsonSerializerOptions.Converters.Add(CustomSerializerModel1Type.Converter.Instance);
+
+        // Remove residual files from last test
         try
         {
             await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -42,29 +52,27 @@ public class FirestoreDatabaseTest
             Config = config,
             Model = NestedType.Filled1(),
             Reference = documentReference
-        });
+        }, jsonSerializerOptions);
 
         Document<NestedType>? getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             Config = config,
             Reference = documentReference
-        });
+        }, jsonSerializerOptions);
 
-        NestedType getTest2Model = NestedType.Empty();
         Document<NestedType>? getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             Config = config,
-            Model = getTest2Model,
+            Model = NestedType.Empty(),
             Reference = documentReference
-        });
+        }, jsonSerializerOptions);
 
-        NestedType getTest3Model = NestedType.Filled2();
         Document<NestedType>? getTest3 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             Config = config,
-            Model = getTest3Model,
+            Model = NestedType.Filled2(),
             Reference = documentReference
-        });
+        }, jsonSerializerOptions);
 
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
@@ -76,7 +84,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             Reference = documentReference
-        }));
+        }, jsonSerializerOptions));
 
         Assert.Equivalent(patchTest1, getTest1);
         Assert.Equivalent(patchTest1, getTest2);

@@ -35,15 +35,7 @@ public static class FirestoreDatabase
 {
     #region Properties
 
-    internal static readonly JsonSerializerOptions SnakeCaseJsonSerializerOption = new()
-    {
-        PropertyNamingPolicy = new JsonSnakeCaseNamingPolicy(),
-        PropertyNameCaseInsensitive = true,
-        IgnoreReadOnlyFields = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString
-    };
-
-    internal static readonly JsonSerializerOptions CamelCaseJsonSerializerOption = new()
+    internal static readonly JsonSerializerOptions DefaultJsonSerializerOption = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
@@ -60,6 +52,22 @@ public static class FirestoreDatabase
     #endregion
 
     #region Helpers
+
+    internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
+    {
+        if (jsonSerializerOptions == null)
+        {
+            return DefaultJsonSerializerOption;
+        }
+        else
+        {
+            return new JsonSerializerOptions(jsonSerializerOptions)
+            {
+                IgnoreReadOnlyFields = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+        }
+    }
 
     internal static async Task<string> ExecuteWithGet(FirestoreDatabaseRequest request)
     {
@@ -224,7 +232,7 @@ public static class FirestoreDatabase
     internal static Document<T>? ParseDocument<T>(T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
-        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
+        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
         bool isSameProperty(PropertyInfo propertyInfo, string name)
         {
@@ -456,10 +464,11 @@ public static class FirestoreDatabase
                     var documentFieldType = documentField.Name;
                     string? documentFieldKey = $"\"{fieldProperty.Name}\"";
 
-                    var objKey = JsonSerializer.Deserialize(
-                        documentFieldKey,
-                        keyType,
-                        jsonSerializerOptions);
+                    object? objKey = JsonSerializer.Deserialize(
+                            documentFieldKey,
+                            keyType,
+                            jsonSerializerOptions);
+
                     keyParameter[0] = objKey;
 
                     object? subObj = default;
@@ -568,7 +577,7 @@ public static class FirestoreDatabase
     {
         StringBuilder sb = new();
 
-        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
+        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
@@ -838,15 +847,40 @@ public static class FirestoreDatabase
                         break;
                     }
 
-                    parseObjectFields(objType, obj, "\"mapValue\":{\"fields\":{", "}}", () =>
+                    JsonConverter? jsonConverter = jsonSerializerOptions.Converters.FirstOrDefault(i => i.CanConvert(objType));
+
+                    if (jsonConverter != null)
                     {
-                        if (!hasAppended)
+                        string? serialized = null;
+                        try
                         {
-                            hasAppended = true;
-                            onFirstAppend();
-                            sb.Append(headJson);
+                            serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
                         }
-                    });
+                        catch { }
+                        if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                        {
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend();
+                                sb.Append(headJson);
+                            }
+                            sb.Append($"\"stringValue\":{serialized}");
+                        }
+                    }
+                    else
+                    {
+                        parseObjectFields(objType, obj, "\"mapValue\":{\"fields\":{", "}}", () =>
+                        {
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend();
+                                sb.Append(headJson);
+                            }
+                        });
+                    }
+
 
                     break;
                 }
@@ -1104,8 +1138,8 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
-
+        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        
         var responseData = await ExecuteWithGet(request);
 
         return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
@@ -1144,7 +1178,7 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Model);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
+        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
         string? content = PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
 
