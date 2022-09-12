@@ -9,9 +9,6 @@ namespace RestfulFirebase.CloudFirestore.Requests;
 /// <summary>
 /// Request to delete the <see cref="Document{T}"/> of the specified request query.
 /// </summary>
-/// <typeparam name="T">
-/// The type of the model to populate the document fields.
-/// </typeparam>
 public class DeleteDocumentRequest : FirestoreDatabaseRequest
 {
     /// <summary>

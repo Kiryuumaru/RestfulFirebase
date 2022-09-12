@@ -35,15 +35,7 @@ public static class FirestoreDatabase
 {
     #region Properties
 
-    internal static readonly JsonSerializerOptions SnakeCaseJsonSerializerOption = new()
-    {
-        PropertyNamingPolicy = new JsonSnakeCaseNamingPolicy(),
-        PropertyNameCaseInsensitive = true,
-        IgnoreReadOnlyFields = true,
-        NumberHandling = JsonNumberHandling.AllowReadingFromString
-    };
-
-    internal static readonly JsonSerializerOptions CamelCaseJsonSerializerOption = new()
+    internal static readonly JsonSerializerOptions DefaultJsonSerializerOption = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
@@ -60,6 +52,22 @@ public static class FirestoreDatabase
     #endregion
 
     #region Helpers
+
+    internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
+    {
+        if (jsonSerializerOptions == null)
+        {
+            return DefaultJsonSerializerOption;
+        }
+        else
+        {
+            return new JsonSerializerOptions(jsonSerializerOptions)
+            {
+                IgnoreReadOnlyFields = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+        }
+    }
 
     internal static async Task<string> ExecuteWithGet(FirestoreDatabaseRequest request)
     {
@@ -224,7 +232,7 @@ public static class FirestoreDatabase
     internal static Document<T>? ParseDocument<T>(T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
-        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
+        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
         bool isSameProperty(PropertyInfo propertyInfo, string name)
         {
@@ -248,140 +256,159 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        object? parseJsonElement(string documentFieldType, JsonElement documentFieldValue, Type objType, object? obj)
+        object? parseJsonElement(JsonElement jsonElement, Type objType, object? obj)
         {
-            switch (documentFieldType)
+            JsonConverter? jsonConverter = jsonSerializerOptions.Converters.FirstOrDefault(i => i.CanConvert(objType));
+
+            if (jsonConverter != null)
             {
-                case "nullValue":
-                    break;
-                case "booleanValue":
-                case "integerValue":
-                case "doubleValue":
-                case "timestampValue":
-                case "stringValue":
-                case "bytesValue":
-                    try
-                    {
-                        obj = JsonSerializer.Deserialize(
-                            documentFieldValue.GetRawText(),
-                            objType,
-                            jsonSerializerOptions);
-                    }
-                    catch { }
-                    break;
-                case "referenceValue":
-                    if (objType == typeof(DocumentReference))
-                    {
-                        string? reference = JsonSerializer.Deserialize<string>(documentFieldValue.GetRawText(), jsonSerializerOptions);
-                        if (reference != null && !string.IsNullOrEmpty(reference))
+                try
+                {
+                    obj = JsonSerializer.Deserialize(
+                        jsonElement,
+                        objType,
+                        jsonSerializerOptions);
+                }
+                catch { }
+            }
+            else
+            {
+                var documentField = jsonElement.EnumerateObject().FirstOrDefault();
+                string documentFieldType = documentField.Name;
+                JsonElement documentFieldValue = documentField.Value;
+                switch (documentFieldType)
+                {
+                    case "nullValue":
+                        break;
+                    case "booleanValue":
+                    case "integerValue":
+                    case "doubleValue":
+                    case "timestampValue":
+                    case "stringValue":
+                    case "bytesValue":
+                        try
                         {
-                            string[] paths = reference.Split('/');
-                            object currentPath = Database(paths[3]);
-
-                            for (int i = 5; i < paths.Length; i++)
+                            obj = JsonSerializer.Deserialize(
+                                documentFieldValue.GetRawText(),
+                                objType,
+                                jsonSerializerOptions);
+                        }
+                        catch { }
+                        break;
+                    case "referenceValue":
+                        if (objType == typeof(DocumentReference))
+                        {
+                            string? reference = JsonSerializer.Deserialize<string>(documentFieldValue.GetRawText(), jsonSerializerOptions);
+                            if (reference != null && !string.IsNullOrEmpty(reference))
                             {
-                                if (currentPath is Database database)
+                                string[] paths = reference.Split('/');
+                                object currentPath = Database(paths[3]);
+
+                                for (int i = 5; i < paths.Length; i++)
                                 {
-                                    currentPath = database.Collection(paths[i]);
+                                    if (currentPath is Database database)
+                                    {
+                                        currentPath = database.Collection(paths[i]);
+                                    }
+                                    else if (currentPath is CollectionReference colPath)
+                                    {
+                                        currentPath = colPath.Document(paths[i]);
+                                    }
+                                    else if (currentPath is DocumentReference docPath)
+                                    {
+                                        currentPath = docPath.Collection(paths[i]);
+                                    }
                                 }
-                                else if (currentPath is CollectionReference colPath)
+
+                                if (currentPath is DocumentReference documentReference)
                                 {
-                                    currentPath = colPath.Document(paths[i]);
+                                    obj = documentReference;
                                 }
-                                else if (currentPath is DocumentReference docPath)
+                            }
+                        }
+                        break;
+                    case "geoPointValue":
+                        if (objType.GetInterfaces().Any(i => i == typeof(IGeoPoint)))
+                        {
+                            double? latitude = default;
+                            double? longitude = default;
+                            foreach (var geoProperty in documentFieldValue.EnumerateObject())
+                            {
+                                if (geoProperty.Name == "latitude")
                                 {
-                                    currentPath = docPath.Collection(paths[i]);
+                                    latitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
+                                }
+                                else if (geoProperty.Name == "longitude")
+                                {
+                                    longitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
                                 }
                             }
 
-                            if (currentPath is DocumentReference documentReference)
-                            {
-                                obj = documentReference;
-                            }
-                        }
-                    }
-                    break;
-                case "geoPointValue":
-                    if (objType.GetInterfaces().Any(i => i == typeof(IGeoPoint)))
-                    {
-                        double? latitude = default;
-                        double? longitude = default;
-                        foreach (var geoProperty in documentFieldValue.EnumerateObject())
-                        {
-                            if (geoProperty.Name == "latitude")
-                            {
-                                latitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
-                            }
-                            else if (geoProperty.Name == "longitude")
-                            {
-                                longitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
-                            }
-                        }
-
-                        obj ??= Activator.CreateInstance(objType);
-
-                        if (latitude.HasValue && longitude.HasValue)
-                        {
-                            objType.GetProperty(nameof(IGeoPoint.Latitude))?.SetValue(obj, latitude.Value);
-                            objType.GetProperty(nameof(IGeoPoint.Longitude))?.SetValue(obj, longitude.Value);
-                        }
-                    }
-                    break;
-                case "arrayValue":
-                    var arrayEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateArray();
-
-                    if (objType.IsArray && objType.GetArrayRank() == 1)
-                    {
-                        Type? arrayElementType = objType.GetElementType();
-
-                        if (arrayElementType != null)
-                        {
-                            obj = parseArrayFields(arrayElementType, arrayEnumerator);
-                        }
-                    }
-                    else
-                    {
-                        var collectionInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
-                            i.IsGenericType &&
-                            i.GetGenericTypeDefinition() == typeof(ICollection<>));
-
-                        if (collectionInterfaceType != null)
-                        {
                             obj ??= Activator.CreateInstance(objType);
 
-                            if (obj != null)
+                            if (latitude.HasValue && longitude.HasValue)
                             {
-                                Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
-
-                                parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayEnumerator);
+                                objType.GetProperty(nameof(IGeoPoint.Latitude))?.SetValue(obj, latitude.Value);
+                                objType.GetProperty(nameof(IGeoPoint.Longitude))?.SetValue(obj, longitude.Value);
                             }
                         }
-                    }
+                        break;
+                    case "arrayValue":
+                        var arrayEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateArray();
 
-                    break;
-                case "mapValue":
-                    var mapEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateObject();
-
-                    var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
-                        i.IsGenericType &&
-                        i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
-
-                    obj ??= Activator.CreateInstance(objType);
-
-                    if (obj != null)
-                    {
-                        if (dictionaryInterfaceType != null)
+                        if (objType.IsArray && objType.GetArrayRank() == 1)
                         {
-                            Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+                            Type? arrayElementType = objType.GetElementType();
 
-                            parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                            if (arrayElementType != null)
+                            {
+                                obj = parseArrayFields(arrayElementType, arrayEnumerator);
+                            }
                         }
                         else
                         {
-                            parseObjectFields(objType, obj, mapEnumerator);
+                            var collectionInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                                i.IsGenericType &&
+                                i.GetGenericTypeDefinition() == typeof(ICollection<>));
+
+                            if (collectionInterfaceType != null)
+                            {
+                                obj ??= Activator.CreateInstance(objType);
+
+                                if (obj != null)
+                                {
+                                    Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
+
+                                    parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayEnumerator);
+                                }
+                            }
                         }
-                    }
-                    break;
+
+                        break;
+                    case "mapValue":
+                        var mapEnumerator = documentFieldValue.EnumerateObject().FirstOrDefault().Value.EnumerateObject();
+
+                        var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                            i.IsGenericType &&
+                            i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+                        obj ??= Activator.CreateInstance(objType);
+
+                        if (obj != null)
+                        {
+                            if (dictionaryInterfaceType != null)
+                            {
+                                Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+
+                                parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                            }
+                            else
+                            {
+                                parseObjectFields(objType, obj, mapEnumerator);
+                            }
+                        }
+                        break;
+                }
             }
 
             return obj;
@@ -396,9 +423,7 @@ public static class FirestoreDatabase
 
             foreach (var fieldElement in enumerator)
             {
-                var documentField = fieldElement.EnumerateObject().FirstOrDefault();
-                var documentFieldType = documentField.Name;
-                object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, null);
+                object? parsedSubObj = parseJsonElement(fieldElement, valueType, null);
 
                 items.Add(parsedSubObj);
             }
@@ -428,9 +453,7 @@ public static class FirestoreDatabase
 
                 foreach (var fieldElement in enumerator)
                 {
-                    var documentField = fieldElement.EnumerateObject().FirstOrDefault();
-                    var documentFieldType = documentField.Name;
-                    object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, null);
+                    object? parsedSubObj = parseJsonElement(fieldElement, valueType, null);
 
                     addMethodParameter[0] = parsedSubObj;
 
@@ -452,14 +475,13 @@ public static class FirestoreDatabase
             {
                 foreach (var fieldProperty in enumerator)
                 {
-                    var documentField = fieldProperty.Value.EnumerateObject().FirstOrDefault();
-                    var documentFieldType = documentField.Name;
                     string? documentFieldKey = $"\"{fieldProperty.Name}\"";
 
-                    var objKey = JsonSerializer.Deserialize(
-                        documentFieldKey,
-                        keyType,
-                        jsonSerializerOptions);
+                    object? objKey = JsonSerializer.Deserialize(
+                            documentFieldKey,
+                            keyType,
+                            jsonSerializerOptions);
+
                     keyParameter[0] = objKey;
 
                     object? subObj = default;
@@ -468,7 +490,7 @@ public static class FirestoreDatabase
                         subObj = itemProperty.GetValue(dictionaryObj, keyParameter);
                     }
 
-                    object? parsedSubObj = parseJsonElement(documentFieldType, documentField.Value, valueType, subObj);
+                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType, subObj);
 
                     itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
                 }
@@ -491,13 +513,11 @@ public static class FirestoreDatabase
                     return;
                 }
 
-                var field = fieldProperty.Value.EnumerateObject().FirstOrDefault();
-                var fieldType = field.Name;
                 var subObjType = fieldInfo.PropertyType;
 
                 object? subObj = fieldInfo.GetValue(obj);
 
-                object? parsedSubObj = parseJsonElement(fieldType, field.Value, subObjType, subObj);
+                object? parsedSubObj = parseJsonElement(fieldProperty.Value, subObjType, subObj);
 
                 fieldInfo.SetValue(obj, parsedSubObj);
             }
@@ -568,7 +588,7 @@ public static class FirestoreDatabase
     {
         StringBuilder sb = new();
 
-        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
+        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
@@ -577,7 +597,38 @@ public static class FirestoreDatabase
         {
             bool hasAppended = false;
 
-            if (obj == null)
+            JsonConverter? jsonConverter = jsonSerializerOptions.Converters.FirstOrDefault(i => i.CanConvert(objType));
+
+            if (jsonConverter != null)
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized) && serialized != "null")
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        onFirstAppend();
+                        sb.Append(headJson);
+                    }
+                    sb.Append(serialized);
+                }
+                else
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        onFirstAppend();
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"{{\"nullValue\":null}}");
+                }
+            }
+            else if (obj == null)
             {
                 if (!hasAppended)
                 {
@@ -585,7 +636,7 @@ public static class FirestoreDatabase
                     onFirstAppend();
                     sb.Append(headJson);
                 }
-                sb.Append($"\"nullValue\":null");
+                sb.Append($"{{\"nullValue\":null}}");
             }
             else if (objType.IsAssignableFrom(typeof(bool)))
             {
@@ -603,7 +654,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"booleanValue\":\"{serialized}\"");
+                    sb.Append($"{{\"booleanValue\":\"{serialized}\"}}");
                 }
             }
             else if (
@@ -632,7 +683,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"integerValue\":\"{serialized}\"");
+                    sb.Append($"{{\"integerValue\":\"{serialized}\"}}");
                 }
             }
             else if (
@@ -653,7 +704,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"doubleValue\":\"{serialized}\"");
+                    sb.Append($"{{\"doubleValue\":\"{serialized}\"}}");
                 }
             }
             else if (objType.IsAssignableFrom(typeof(decimal)))
@@ -672,7 +723,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"stringValue\":\"{serialized}\"");
+                    sb.Append($"{{\"stringValue\":\"{serialized}\"}}");
                 }
             }
             else if (
@@ -693,7 +744,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"timestampValue\":{serialized}");
+                    sb.Append($"{{\"timestampValue\":{serialized}}}");
                 }
             }
             else if (objType.IsAssignableFrom(typeof(string)))
@@ -712,7 +763,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"stringValue\":{serialized}");
+                    sb.Append($"{{\"stringValue\":{serialized}}}");
                 }
             }
             else if (objType.IsAssignableFrom(typeof(byte[])))
@@ -731,7 +782,7 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"bytesValue\":{serialized}");
+                    sb.Append($"{{\"bytesValue\":{serialized}}}");
                 }
             }
             else if (obj is DocumentReference documentReference)
@@ -742,7 +793,7 @@ public static class FirestoreDatabase
                     onFirstAppend();
                     sb.Append(headJson);
                 }
-                sb.Append($"\"referenceValue\":\"{documentReference.BuildUrlCascade(config.ProjectId)}\"");
+                sb.Append($"{{\"referenceValue\":\"{documentReference.BuildUrlCascade(config.ProjectId)}\"}}");
             }
             else if (obj is IGeoPoint geoPoint)
             {
@@ -752,7 +803,7 @@ public static class FirestoreDatabase
                     onFirstAppend();
                     sb.Append(headJson);
                 }
-                sb.Append($"\"geoPointValue\":{{\"latitude\":{geoPoint.Latitude},\"longitude\":{geoPoint.Longitude}}}");
+                sb.Append($"{{\"geoPointValue\":{{\"latitude\":{geoPoint.Latitude},\"longitude\":{geoPoint.Longitude}}}}}");
             }
             else if (objType.IsArray && objType.GetArrayRank() == 1 && objType.GetElementType() is Type elementType && obj is Array array)
             {
@@ -764,11 +815,11 @@ public static class FirestoreDatabase
                         onFirstAppend();
                         sb.Append(headJson);
                     }
-                    sb.Append($"\"arrayValue\":{{\"values\":[]}}");
+                    sb.Append($"{{\"arrayValue\":{{\"values\":[]}}}}");
                 }
                 else
                 {
-                    parseArrayFields(elementType, array, $"\"arrayValue\":{{\"values\":[", $"]}}", () =>
+                    parseArrayFields(elementType, array, $"{{\"arrayValue\":{{\"values\":[", $"]}}}}", () =>
                     {
                         if (!hasAppended)
                         {
@@ -801,8 +852,8 @@ public static class FirestoreDatabase
                             dictionaryGenericArgsType[0],
                             dictionaryGenericArgsType[1],
                             (IEnumerable)obj,
-                            $"\"mapValue\":{{\"fields\":{{",
-                            $"}}}}",
+                            $"{{\"mapValue\":{{\"fields\":{{",
+                            $"}}}}}}",
                             () =>
                             {
                                 if (!hasAppended)
@@ -823,8 +874,8 @@ public static class FirestoreDatabase
                         parseCollectionFields(
                             collectionGenericArgsType[0],
                             (IEnumerable)obj,
-                            $"\"arrayValue\":{{\"values\":[",
-                            $"]}}",
+                            $"{{\"arrayValue\":{{\"values\":[",
+                            $"]}}}}",
                             () =>
                             {
                                 if (!hasAppended)
@@ -838,7 +889,7 @@ public static class FirestoreDatabase
                         break;
                     }
 
-                    parseObjectFields(objType, obj, "\"mapValue\":{\"fields\":{", "}}", () =>
+                    parseObjectFields(objType, obj, "{\"mapValue\":{\"fields\":{", "}}}", () =>
                     {
                         if (!hasAppended)
                         {
@@ -866,7 +917,7 @@ public static class FirestoreDatabase
             bool hasAppended = false;
             foreach (var obj in arrayObj)
             {
-                parseObject(elementType, obj, "{", "},", () =>
+                parseObject(elementType, obj, "", ",", () =>
                 {
                     if (!hasAppended)
                     {
@@ -891,7 +942,7 @@ public static class FirestoreDatabase
             bool hasAppended = false;
             foreach (var obj in collectionObj)
             {
-                parseObject(elementType, obj, "{", "},", () =>
+                parseObject(elementType, obj, "", ",", () =>
                 {
                     if (!hasAppended)
                     {
@@ -923,7 +974,7 @@ public static class FirestoreDatabase
                 object? value = valueProperty?.GetValue(obj);
                 if (key != null)
                 {
-                    parseObject(valueType, value, $"\"{key}\":{{", "},", () =>
+                    parseObject(valueType, value, $"\"{key}\":", ",", () =>
                     {
                         if (!hasAppended)
                         {
@@ -954,7 +1005,7 @@ public static class FirestoreDatabase
                 Type propertyType = property.PropertyType;
                 object? propertyObj = property.GetValue(obj);
                 string name = jsonNamingPolicy?.ConvertName(property.Name) ?? property.Name;
-                parseObject(propertyType, propertyObj, $"\"{name}\":{{", "},", () =>
+                parseObject(propertyType, propertyObj, $"\"{name}\":", ",", () =>
                 {
                     if (!hasAppended)
                     {
@@ -1104,8 +1155,8 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
-
+        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        
         var responseData = await ExecuteWithGet(request);
 
         return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
@@ -1144,7 +1195,7 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Model);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
+        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
         string? content = PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
 
