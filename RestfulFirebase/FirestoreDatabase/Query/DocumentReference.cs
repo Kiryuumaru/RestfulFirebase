@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.CloudFirestore.Requests;
+using RestfulFirebase.FirestoreDatabase.Abstraction;
+using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.CloudFirestore.Query;
 
@@ -64,11 +66,11 @@ public class DocumentReference : Reference
         return new CollectionReference(Database, this, collectionId);
     }
 
-    internal override string BuildUrl(string projectId)
+    internal override string BuildUrlCascade(string projectId)
     {
         var url = BuildUrlSegment(projectId);
 
-        string parentUrl = Parent.BuildUrl(projectId);
+        string parentUrl = Parent.BuildUrlCascade(projectId);
         if (parentUrl != string.Empty && !parentUrl.EndsWith("/"))
         {
             parentUrl += '/';

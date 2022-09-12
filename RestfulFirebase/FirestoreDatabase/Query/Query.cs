@@ -35,7 +35,12 @@ public abstract class Query
 
     #region Methods
 
-    internal abstract string BuildUrl(string projectId);
+    internal string BuildUrl(string projectId)
+    {
+        return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}{BuildUrlCascade(projectId)}";
+    }
+
+    internal abstract string BuildUrlCascade(string projectId);
 
     internal abstract string BuildUrlSegment(string projectId);
 

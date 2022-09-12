@@ -23,6 +23,8 @@ using System.IO;
 using RestfulFirebase.FirestoreDatabase.Abstraction;
 using RestfulFirebase.CloudFirestore.Query;
 using System.Data;
+using static System.Text.Json.JsonElement;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.Api;
 
@@ -50,7 +52,8 @@ public static class FirestoreDatabase
     };
 
     internal const string RequiresUnreferencedCodeMessage = $"Model objects must preserve all its required types when trimming is enabled";
-    internal const string FirestoreDatabaseDocumentsEndpoint = "https://firestore.googleapis.com/v1/projects/{0}/databases/{1}/documents/{2}";
+    internal const string FirestoreDatabaseV1Endpoint = "https://firestore.googleapis.com/v1/";
+    internal const string FirestoreDatabaseDocumentsEndpoint = "projects/{0}/databases/{1}/documents/{2}";
 
     private static readonly object?[] emptyParameterPlaceholder = Array.Empty<object?>();
     private static readonly object?[] parseDictionaryFieldsReflectionKey = new object?[1];
@@ -185,7 +188,7 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(T? existingModel, JsonElement.ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
+    internal static Document<T>? ParseDocument<T>(T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
@@ -315,9 +318,9 @@ public static class FirestoreDatabase
 
                             if (obj != null)
                             {
-                                Type[] dictionaryGenericArgsType = collectionInterfaceType.GetGenericArguments();
+                                Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
 
-                                parseCollectionFields(collectionInterfaceType, dictionaryGenericArgsType[0], obj, arrayEnumerator);
+                                parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayEnumerator);
                             }
                         }
                     }
@@ -354,32 +357,7 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObjectField(Type objType, object modelObject, JsonProperty fieldProperty)
-        {
-            string? fieldName = fieldProperty.Name;
-
-            var fieldInfo = objType.GetProperties().FirstOrDefault(i => isSameProperty(i, fieldName));
-
-            if (fieldInfo == null)
-            {
-                return;
-            }
-
-            var field = fieldProperty.Value.EnumerateObject().FirstOrDefault();
-            var fieldType = field.Name;
-            var subObjType = fieldInfo.PropertyType;
-
-            object? subObj = fieldInfo.GetValue(modelObject);
-
-            object? parsedSubObj = parseJsonElement(fieldType, field.Value, subObjType, subObj);
-
-            fieldInfo.SetValue(modelObject, parsedSubObj);
-        }
-
-#if NET5_0_OR_GREATER
-        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
-#endif
-        object? parseArrayFields(Type valueType, JsonElement.ArrayEnumerator enumerator)
+        object? parseArrayFields(Type valueType, ArrayEnumerator enumerator)
         {
             List<object?> items = new();
 
@@ -405,7 +383,7 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, JsonElement.ArrayEnumerator enumerator)
+        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, ArrayEnumerator enumerator)
         {
             var addMethod = collectionInterfaceType.GetMethod("Add");
             var clearMethod = collectionInterfaceType.GetMethod("Clear");
@@ -430,7 +408,7 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, JsonElement.ObjectEnumerator enumerator)
+        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, ObjectEnumerator enumerator)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
             var containsKeyMethod = dictionaryInterfaceType.GetMethod("ContainsKey");
@@ -465,18 +443,36 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObjectFields(Type objType, object obj, JsonElement.ObjectEnumerator enumerator)
+        void parseObjectFields(Type objType, object obj, ObjectEnumerator enumerator)
         {
             foreach (var fieldProperty in enumerator)
             {
-                parseObjectField(objType, obj, fieldProperty);
+                string? fieldName = fieldProperty.Name;
+
+                var fieldInfo = objType.GetProperties().FirstOrDefault(i => isSameProperty(i, fieldName));
+
+                if (fieldInfo == null)
+                {
+                    return;
+                }
+
+                var field = fieldProperty.Value.EnumerateObject().FirstOrDefault();
+                var fieldType = field.Name;
+                var subObjType = fieldInfo.PropertyType;
+
+                object? subObj = fieldInfo.GetValue(obj);
+
+                object? parsedSubObj = parseJsonElement(fieldType, field.Value, subObjType, subObj);
+
+                fieldInfo.SetValue(obj, parsedSubObj);
             }
         }
 
         string? name = default;
         DateTimeOffset? createTime = default;
         DateTimeOffset? updateTime = default;
-        T model = existingModel ?? Activator.CreateInstance<T>();
+        T obj = existingObj ?? Activator.CreateInstance<T>();
+        Type objType = typeof(T);
 
         foreach (var documentProperty in jsonElementEnumerator)
         {
@@ -492,7 +488,23 @@ public static class FirestoreDatabase
                     updateTime = documentProperty.Value.GetDateTimeOffset();
                     break;
                 case "fields":
-                    parseObjectFields(typeof(T), model, documentProperty.Value.EnumerateObject());
+                    var mapEnumerator = documentProperty.Value.EnumerateObject();
+
+                    var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                        i.IsGenericType &&
+                        i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+                    if (dictionaryInterfaceType != null)
+                    {
+                        Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+
+                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                    }
+                    else
+                    {
+                        parseObjectFields(objType, obj, mapEnumerator);
+                    }
+
                     break;
             }
         }
@@ -503,7 +515,7 @@ public static class FirestoreDatabase
             createTime.HasValue &&
             updateTime.HasValue)
         {
-            document = new Document<T>(name, model, createTime.Value, updateTime.Value);
+            document = new Document<T>(name, obj, createTime.Value, updateTime.Value);
         }
         else
         {
@@ -516,100 +528,403 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static string? PopulateDocument<T>(T model, JsonSerializerOptions jsonSerializerOptions)
+    internal static string? PopulateDocument<T>(FirebaseConfig config, T obj, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
-        JsonElement modelElement = JsonSerializer.SerializeToElement(model, jsonSerializerOptions);
-
-        List<(string name, string type, object? value)> fields = new();
-
-        foreach (var property in modelElement.EnumerateObject())
-        {
-            string name = property.Name;
-            string? type = null;
-            object? value = null;
-            switch (property.Value.ValueKind)
-            {
-                case JsonValueKind.Null:
-                    type = "nullValue";
-                    break;
-                case JsonValueKind.True:
-                    type = "booleanValue";
-                    value = true;
-                    break;
-                case JsonValueKind.False:
-                    type = "booleanValue";
-                    value = false;
-                    break;
-                case JsonValueKind.Number:
-                    var val = property.Value.ToString();
-                    value = val;
-                    if (val.Contains('.'))
-                    {
-                        type = "doubleValue";
-                    }
-                    else
-                    {
-                        type = "integerValue";
-                    }
-                    break;
-                case JsonValueKind.String:
-                    type = "stringValue";
-                    value = property.Value.ToString();
-                    break;
-                case JsonValueKind.Array:
-                    //type = "arrayValue";
-                    break;
-                default:
-                    if (property.Value.TryGetDateTime(out DateTime dateTime))
-                    {
-                        type = "timestampValue";
-                        value = dateTime;
-                    }
-                    else if (property.Value.TryGetDateTimeOffset(out DateTimeOffset dateTimeOffset))
-                    {
-                        type = "timestampValue";
-                        value = dateTimeOffset;
-                    }
-                    else if (property.Value.TryGetBytesFromBase64(out byte[]? base64))
-                    {
-                        type = "bytesValue";
-                        value = base64;
-                    }
-                    //else if (property.Value.TryGetBytesFromBase64(out byte[]? base64))
-                    //{
-                    //    type = "bytesValue";
-                    //}
-                    //type = "referenceValue";
-                    //type = "geoPointValue";
-                    //type = "mapValue";
-                    break;
-            }
-            if (type != null)
-            {
-                fields.Add((name, type, value));
-            }
-        }
-
+        Type objType = typeof(T);
         StringBuilder sb = new();
 
-        sb.Append("{\"fields\":{");
+        JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? CamelCaseJsonSerializerOption.PropertyNamingPolicy;
 
-        for (int i = 0; i < fields.Count; i++)
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseObject(Type objType, object? obj, string headJson, string tailJson)
         {
-            string name = fields[i].name;
-            string type = fields[i].type;
-            object? value = fields[i].value;
+            bool hasAppended = false;
 
-            sb.Append($"\"{name}\":{{\"{type}\":\"{value}\"}}");
-
-            if (i < fields.Count - 1)
+            if (obj == null)
             {
-                sb.Append(',');
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                sb.Append($"\"nullValue\":null");
+            }
+            else if (objType.IsAssignableFrom(typeof(bool)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"booleanValue\":\"{serialized}\"");
+                }
+            }
+            else if (
+                objType.IsAssignableFrom(typeof(sbyte)) ||
+                objType.IsAssignableFrom(typeof(byte)) ||
+                objType.IsAssignableFrom(typeof(short)) ||
+                objType.IsAssignableFrom(typeof(ushort)) ||
+                objType.IsAssignableFrom(typeof(int)) ||
+                objType.IsAssignableFrom(typeof(uint)) ||
+                objType.IsAssignableFrom(typeof(long)) ||
+                objType.IsAssignableFrom(typeof(ulong)) ||
+                objType.IsAssignableFrom(typeof(nint)) ||
+                objType.IsAssignableFrom(typeof(nuint)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"integerValue\":\"{serialized}\"");
+                }
+            }
+            else if (
+                objType.IsAssignableFrom(typeof(float)) ||
+                objType.IsAssignableFrom(typeof(double)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"doubleValue\":\"{serialized}\"");
+                }
+            }
+            else if (objType.IsAssignableFrom(typeof(decimal)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"stringValue\":{serialized}");
+                }
+            }
+            else if (
+                objType.IsAssignableFrom(typeof(DateTime)) ||
+                objType.IsAssignableFrom(typeof(DateTimeOffset)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null)
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"timestampValue\":{serialized}");
+                }
+            }
+            else if (objType.IsAssignableFrom(typeof(string)))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"stringValue\":{serialized}");
+                }
+            }
+            else if (objType.IsAssignableFrom(typeof(byte[])))
+            {
+                string? serialized = null;
+                try
+                {
+                    serialized = JsonSerializer.Serialize(obj, jsonSerializerOptions);
+                }
+                catch { }
+                if (serialized != null && !string.IsNullOrWhiteSpace(serialized))
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    sb.Append($"\"bytesValue\":\"{serialized}\"");
+                }
+            }
+            else if (obj is DocumentReference documentReference)
+            {
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                sb.Append($"\"referenceValue\":\"{documentReference.BuildUrlCascade(config.ProjectId)}\"");
+            }
+            else if (obj is IGeoPoint geoPoint)
+            {
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                sb.Append($"\"geoPointValue\":{{\"latitude\":{geoPoint.Latitude},\"longitude\":{geoPoint.Longitude}}}");
+            }
+            else if (objType.IsArray && objType.GetArrayRank() == 1 && objType.GetElementType() is Type elementType && obj is Array array)
+            {
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                if (array.Length == 0)
+                {
+                    sb.Append($"\"arrayValue\":{{\"values\":[]}}");
+                }
+                else
+                {
+                    parseArrayFields(elementType, array, $"\"arrayValue\":{{\"values\":[", $"]}}");
+                }
+            }
+            else
+            {
+                while (true)
+                {
+                    var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                        i.IsGenericType &&
+                        i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+                    var collectionInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+                        i.IsGenericType &&
+                        i.GetGenericTypeDefinition() == typeof(ICollection<>));
+
+                    if (dictionaryInterfaceType != null && collectionInterfaceType != null)
+                    {
+                        Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+                        Type[] dictionaryGenericCollectionArgsType = collectionInterfaceType.GetGenericArguments();
+
+                        if (!hasAppended)
+                        {
+                            hasAppended = true;
+                            sb.Append(headJson);
+                        }
+                        parseDictionaryFields(
+                            dictionaryGenericCollectionArgsType[0],
+                            dictionaryGenericArgsType[0],
+                            dictionaryGenericArgsType[1],
+                            (IEnumerable)obj,
+                            $"\"mapValue\":{{\"fields\":{{",
+                            $"}}}}");
+
+                        break;
+                    }
+
+                    if (collectionInterfaceType != null)
+                    {
+                        Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
+
+                        if (!hasAppended)
+                        {
+                            hasAppended = true;
+                            sb.Append(headJson);
+                        }
+                        parseCollectionFields(
+                            collectionGenericArgsType[0],
+                            (IEnumerable)obj,
+                            $"\"arrayValue\":{{\"values\":[",
+                            $"]}}");
+
+                        break;
+                    }
+
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    parseObjectFields(objType, obj, "\"mapValue\":{\"fields\":{", "}}");
+
+                    break;
+                }
+            }
+
+            if (hasAppended)
+            {
+                sb.Append(tailJson);
             }
         }
 
-        sb.Append("}}");
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseArrayFields(Type elementType, Array arrayObj, string headJson, string tailJson)
+        {
+            bool hasAppended = false;
+            foreach (var obj in arrayObj)
+            {
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                parseObject(elementType, obj, "{", "},");
+            }
+            if (hasAppended)
+            {
+                sb.Remove(sb.Length - 1, 1);
+                sb.Append(tailJson);
+            }
+        }
+
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseCollectionFields(Type elementType, IEnumerable collectionObj, string headJson, string tailJson)
+        {
+            bool hasAppended = false;
+            foreach (var obj in collectionObj)
+            {
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                parseObject(elementType, obj, "{", "},");
+            }
+            if (hasAppended)
+            {
+                sb.Remove(sb.Length - 1, 1);
+                sb.Append(tailJson);
+            }
+        }
+
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseDictionaryFields(Type keyValuePairType, Type keyType, Type valueType, IEnumerable dictionaryObj, string headJson, string tailJson)
+        {
+            bool hasAppended = false;
+            var keyProperty = keyValuePairType.GetProperty("Key");
+            var valueProperty = keyValuePairType.GetProperty("Value");
+
+            foreach (var obj in dictionaryObj)
+            {
+                string? key = keyProperty?.GetValue(obj)?.ToString();
+                object? value = valueProperty?.GetValue(obj);
+                if (key != null)
+                {
+                    if (!hasAppended)
+                    {
+                        hasAppended = true;
+                        sb.Append(headJson);
+                    }
+                    parseObject(valueType, value, $"\"{key}\":{{", "},");
+                }
+            }
+            if (hasAppended)
+            {
+                sb.Remove(sb.Length - 1, 1);
+                sb.Append(tailJson);
+            }
+        }
+
+#if NET5_0_OR_GREATER
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+#endif
+        void parseObjectFields(Type objType, object obj, string headJson, string tailJson)
+        {
+            bool hasAppended = false;
+            var properties = objType.GetProperties().Where(i => i.CanRead);
+
+            foreach (var property in properties)
+            {
+                Type propertyType = property.PropertyType;
+                object? propertyObj = property.GetValue(obj);
+                string name = jsonNamingPolicy?.ConvertName(property.Name) ?? property.Name;
+
+                if (!hasAppended)
+                {
+                    hasAppended = true;
+                    sb.Append(headJson);
+                }
+                parseObject(propertyType, propertyObj, $"\"{name}\":{{", "},");
+            }
+            if (hasAppended)
+            {
+                sb.Remove(sb.Length - 1, 1);
+                sb.Append(tailJson);
+            }
+        }
+
+        var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+            i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+        var collectionInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
+            i.IsGenericType &&
+            i.GetGenericTypeDefinition() == typeof(ICollection<>));
+
+        if (dictionaryInterfaceType != null && collectionInterfaceType != null)
+        {
+            Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+            Type[] dictionaryGenericCollectionArgsType = collectionInterfaceType.GetGenericArguments();
+
+            parseDictionaryFields(
+                dictionaryGenericCollectionArgsType[0],
+                dictionaryGenericArgsType[0],
+                dictionaryGenericArgsType[1],
+                (IEnumerable)obj,
+                "{\"fields\":{",
+                "}}");
+        }
+        else
+        {
+            parseObjectFields(
+                objType,
+                obj,
+                "{\"fields\":{",
+                "}}");
+        }
 
         string? content = sb.ToString();
 
@@ -658,12 +973,7 @@ public static class FirestoreDatabase
     /// </returns>
     public static Database Database(string? databaseId = default)
     {
-        if (databaseId == null || string.IsNullOrEmpty(databaseId))
-        {
-            databaseId = "(default)";
-        }
-
-        return new Database(databaseId);
+        return RestfulFirebase.FirestoreDatabase.Database.Get(databaseId);
     }
 
     /// <summary>
@@ -694,6 +1004,7 @@ public static class FirestoreDatabase
     public static async Task<Document<T>?> GetDocument<T>(GetDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
         jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
@@ -732,12 +1043,13 @@ public static class FirestoreDatabase
     public static async Task<Document<T>?> PatchDocument<T>(PatchDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
         where T : class
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Model);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
         jsonSerializerOptions ??= CamelCaseJsonSerializerOption;
 
-        string? content = PopulateDocument(request.Model, jsonSerializerOptions);
+        string? content = PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
 
         if (content == null)
         {

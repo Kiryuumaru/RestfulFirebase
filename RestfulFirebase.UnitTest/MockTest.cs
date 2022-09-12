@@ -37,7 +37,7 @@ namespace RestfulFirebase.UnitTest
 
         public Dictionary<string, string?>? Type4 { get; set; }
 
-        public List<string?>? Type5 { get; set; }
+        public string?[]? Type5 { get; set; }
 
         public object? Type6 { get; set; }
 

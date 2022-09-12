@@ -10,7 +10,7 @@ public class Database
     #region Properties
 
     /// <summary>
-    /// Gets the database id of the firestore.
+    /// Gets the database id of the firestore database.
     /// </summary>
     public string DatabaseId { get; }
 
@@ -18,9 +18,28 @@ public class Database
 
     #region Initializers
 
-    internal Database(string databaseId)
+    private Database(string? databaseId)
     {
+        if (databaseId == null || string.IsNullOrEmpty(databaseId))
+        {
+            databaseId = "(default)";
+        }
+
         DatabaseId = databaseId;
+    }
+
+    /// <summary>
+    /// Creates an instance of <see cref="Database"/> with the specified <paramref name="databaseId"/>
+    /// </summary>
+    /// <param name="databaseId">
+    /// The ID of the database to use. Set to <c>null</c> if the instance will use the default database.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="Database"/>.
+    /// </returns>
+    public static Database Get(string? databaseId = default)
+    {
+        return new Database(databaseId);
     }
 
     #endregion

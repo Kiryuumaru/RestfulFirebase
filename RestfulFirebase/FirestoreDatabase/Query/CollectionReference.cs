@@ -57,7 +57,7 @@ public class CollectionReference : Reference
         return new DocumentReference(Database, this, documentId);
     }
 
-    internal override string BuildUrl(string projectId)
+    internal override string BuildUrlCascade(string projectId)
     {
         var url = BuildUrlSegment(projectId);
 
@@ -71,7 +71,7 @@ public class CollectionReference : Reference
         }
         else
         {
-            string parentUrl = Parent.BuildUrl(projectId);
+            string parentUrl = Parent.BuildUrlCascade(projectId);
             if (parentUrl != string.Empty && !parentUrl.EndsWith("/"))
             {
                 parentUrl += '/';
