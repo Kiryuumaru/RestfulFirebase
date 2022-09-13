@@ -68,28 +68,26 @@ public static class FirestoreDatabase
         }
     }
 
-    internal static async Task<string> ExecuteWithGet(FirestoreDatabaseRequest request)
+    internal static async Task<Stream> ExecuteWithGet(FirestoreDatabaseRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
 
         HttpClient httpClient = await GetClient(request);
 
-        string responseData = "N/A";
+        HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
         string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
         try
         {
-            var response = await httpClient.GetAsync(uri, request.CancellationToken);
+            response = await httpClient.GetAsync(uri, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
-            responseData = await response.Content.ReadAsStringAsync();
-
             response.EnsureSuccessStatusCode();
 
-            return responseData;
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (OperationCanceledException)
         {
@@ -97,18 +95,18 @@ public static class FirestoreDatabase
         }
         catch (Exception ex)
         {
-            throw GetException(responseData, statusCode, ex);
+            throw GetException(response == null ? "N/A" : await response.Content.ReadAsStringAsync(), statusCode, ex);
         }
     }
 
-    internal static async Task<string> ExecuteWithPostContent(FirestoreDatabaseRequest request, Stream contentStream)
+    internal static async Task<Stream> ExecuteWithPostContent(FirestoreDatabaseRequest request, Stream contentStream)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
 
         HttpClient httpClient = await GetClient(request);
 
-        string responseData = "N/A";
+        HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
         string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
@@ -127,15 +125,13 @@ public static class FirestoreDatabase
                 Content = streamContent
             };
 
-            var response = await httpClient.SendAsync(msg, request.CancellationToken);
+            response = await httpClient.SendAsync(msg, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
-            responseData = await response.Content.ReadAsStringAsync();
-
             response.EnsureSuccessStatusCode();
 
-            return responseData;
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (OperationCanceledException)
         {
@@ -143,18 +139,18 @@ public static class FirestoreDatabase
         }
         catch (Exception ex)
         {
-            throw GetException(responseData, statusCode, ex);
+            throw GetException(response == null ? "N/A" : await response.Content.ReadAsStringAsync(), statusCode, ex);
         }
     }
 
-    internal static async Task<string> ExecuteWithPatchContent(FirestoreDatabaseRequest request, Stream contentStream)
+    internal static async Task<Stream> ExecuteWithPatchContent(FirestoreDatabaseRequest request, Stream contentStream)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
 
         HttpClient httpClient = await GetClient(request);
 
-        string responseData = "N/A";
+        HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
         string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
@@ -173,15 +169,13 @@ public static class FirestoreDatabase
                 Content = streamContent
             };
 
-            var response = await httpClient.SendAsync(msg, request.CancellationToken);
+            response = await httpClient.SendAsync(msg, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
-            responseData = await response.Content.ReadAsStringAsync();
-
             response.EnsureSuccessStatusCode();
 
-            return responseData;
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (OperationCanceledException)
         {
@@ -189,34 +183,30 @@ public static class FirestoreDatabase
         }
         catch (Exception ex)
         {
-            throw GetException(responseData, statusCode, ex);
+            throw GetException(response == null ? "N/A" : await response.Content.ReadAsStringAsync(), statusCode, ex);
         }
     }
 
-    internal static async Task<string> ExecuteWithDelete(FirestoreDatabaseRequest request)
+    internal static async Task<Stream> ExecuteWithDelete(FirestoreDatabaseRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
 
         HttpClient httpClient = await GetClient(request);
 
-        string responseData = "N/A";
+        HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
         string uri = request.Query.BuildUrl(request.Config.ProjectId);
 
         try
         {
-            var response = await httpClient.DeleteAsync(
-                uri,
-                request.CancellationToken);
+            response = await httpClient.DeleteAsync(uri, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
-            responseData = await response.Content.ReadAsStringAsync();
-
             response.EnsureSuccessStatusCode();
 
-            return responseData;
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (OperationCanceledException)
         {
@@ -224,7 +214,7 @@ public static class FirestoreDatabase
         }
         catch (Exception ex)
         {
-            throw GetException(responseData, statusCode, ex);
+            throw GetException(response == null ? "N/A" : await response.Content.ReadAsStringAsync(), statusCode, ex);
         }
     }
 
@@ -1230,10 +1220,11 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Reference);
 
         jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
-        
-        var responseData = await ExecuteWithGet(request);
 
-        return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
+        using Stream contentStream = await ExecuteWithGet(request);
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+
+        return ParseDocument(request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>
@@ -1272,9 +1263,10 @@ public static class FirestoreDatabase
         jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
         using Stream stream = await PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
-        string? responseData = await ExecuteWithPatchContent(request, stream);
+        using Stream contentStream = await ExecuteWithPatchContent(request, stream);
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
+        return ParseDocument(request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>
@@ -1298,7 +1290,7 @@ public static class FirestoreDatabase
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        await ExecuteWithDelete(request);
+        using Stream response = await ExecuteWithDelete(request);
     }
 
     #endregion
