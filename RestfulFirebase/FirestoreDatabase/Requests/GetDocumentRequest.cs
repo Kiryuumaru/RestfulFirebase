@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using RestfulFirebase.CloudFirestore.Query;
 using RestfulFirebase.FirestoreDatabase;
 
@@ -14,6 +15,11 @@ namespace RestfulFirebase.CloudFirestore.Requests;
 /// </typeparam>
 public class GetDocumentRequest<T> : FirestoreDatabaseRequest
 {
+    /// <summary>
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </summary>
+    public JsonSerializerOptions? JsonSerializerOptions { get; set; }
+
     /// <summary>
     /// Gets or sets the <typeparamref name="T"/> model to populate the document fields.
     /// </summary>

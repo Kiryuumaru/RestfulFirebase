@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.CloudFirestore.Query;
+using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -16,9 +17,14 @@ namespace RestfulFirebase.FirestoreDatabase
         #region Properties
 
         /// <summary>
-        /// Gets the name of the node.
+        /// Gets the name of the document node.
         /// </summary>
         public string Name { get; internal set; }
+
+        /// <summary>
+        /// Gets the reference of the document node.
+        /// </summary>
+        public DocumentReference Reference { get; internal set; }
 
         /// <summary>
         /// Gets the <typeparamref name="T"/> model of the document.
@@ -39,9 +45,10 @@ namespace RestfulFirebase.FirestoreDatabase
 
         #region Initializers
 
-        internal Document(string name, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
+        internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
         {
             Name = name;
+            Reference = reference;
             Model = model;
             CreateTime = createTime;
             UpdateTime = updateTime;

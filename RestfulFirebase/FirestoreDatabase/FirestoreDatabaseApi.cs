@@ -24,6 +24,7 @@ using RestfulFirebase.FirestoreDatabase.Abstraction;
 using RestfulFirebase.CloudFirestore.Query;
 using System.Data;
 using static System.Text.Json.JsonElement;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.Api;
 
@@ -234,7 +235,7 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
+    internal static Document<T>? ParseDocument<T>(DocumentReference reference, T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
@@ -261,9 +262,11 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        object? parseJsonElement(JsonElement jsonElement, Type objType, object? obj)
+        object? parseJsonElement(JsonElement jsonElement, Type objType)
         {
             JsonConverter? jsonConverter = jsonSerializerOptions.Converters.FirstOrDefault(i => i.CanConvert(objType));
+
+            object? obj = null;
 
             if (jsonConverter != null)
             {
@@ -343,7 +346,7 @@ public static class FirestoreDatabase
                                 }
                             }
 
-                            obj ??= Activator.CreateInstance(objType);
+                            obj = Activator.CreateInstance(objType);
 
                             if (latitude.HasValue && longitude.HasValue)
                             {
@@ -372,7 +375,7 @@ public static class FirestoreDatabase
 
                             if (collectionInterfaceType != null)
                             {
-                                obj ??= Activator.CreateInstance(objType);
+                                obj = Activator.CreateInstance(objType);
 
                                 if (obj != null)
                                 {
@@ -391,7 +394,7 @@ public static class FirestoreDatabase
                             i.IsGenericType &&
                             i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
 
-                        obj ??= Activator.CreateInstance(objType);
+                        obj = Activator.CreateInstance(objType);
 
                         if (obj != null)
                         {
@@ -422,7 +425,7 @@ public static class FirestoreDatabase
 
             foreach (var fieldElement in enumerator)
             {
-                object? parsedSubObj = parseJsonElement(fieldElement, valueType, null);
+                object? parsedSubObj = parseJsonElement(fieldElement, valueType);
 
                 items.Add(parsedSubObj);
             }
@@ -452,7 +455,7 @@ public static class FirestoreDatabase
 
                 foreach (var fieldElement in enumerator)
                 {
-                    object? parsedSubObj = parseJsonElement(fieldElement, valueType, null);
+                    object? parsedSubObj = parseJsonElement(fieldElement, valueType);
 
                     addMethodParameter[0] = parsedSubObj;
 
@@ -467,32 +470,52 @@ public static class FirestoreDatabase
         void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, ObjectEnumerator enumerator)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
-            var containsKeyMethod = dictionaryInterfaceType.GetMethod("ContainsKey");
+            var keysProperty = dictionaryInterfaceType.GetProperty("Keys");
+            var removeMethod = dictionaryInterfaceType.GetMethod("Remove");
             var keyParameter = new object?[1];
 
-            if (itemProperty != null && containsKeyMethod != null)
+            object? keys = keysProperty.GetValue(dictionaryObj, emptyParameterPlaceholder);
+
+            IEnumerable? keysEnumerable = (IEnumerable?)keys;
+
+            if (itemProperty == null || removeMethod == null || keysEnumerable == null)
             {
-                foreach (var fieldProperty in enumerator)
+                throw new Exception("Invalid dictionary type.");
+            }
+
+            List<object?> keysAdded = new();
+            List<object> keysToRemove = new();
+
+            foreach (var fieldProperty in enumerator)
+            {
+                string? documentFieldKey = $"\"{fieldProperty.Name}\"";
+
+                object? objKey = JsonSerializer.Deserialize(
+                    documentFieldKey,
+                    keyType,
+                    jsonSerializerOptions);
+
+                keyParameter[0] = objKey;
+
+                object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType);
+
+                itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
+
+                keysAdded.Add(objKey);
+            }
+
+            foreach (object key in keysEnumerable)
+            {
+                if (!keysAdded.Contains(key))
                 {
-                    string? documentFieldKey = $"\"{fieldProperty.Name}\"";
-
-                    object? objKey = JsonSerializer.Deserialize(
-                        documentFieldKey,
-                        keyType,
-                        jsonSerializerOptions);
-
-                    keyParameter[0] = objKey;
-
-                    object? subObj = default;
-                    if (containsKeyMethod.Invoke(dictionaryObj, keyParameter) is bool containsKey && containsKey)
-                    {
-                        subObj = itemProperty.GetValue(dictionaryObj, keyParameter);
-                    }
-
-                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType, subObj);
-
-                    itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
+                    keysToRemove.Add(key);
                 }
+            }
+
+            foreach (object key in keysToRemove)
+            {
+                keyParameter[0] = key;
+                removeMethod.Invoke(dictionaryObj, keyParameter);
             }
         }
 
@@ -514,9 +537,7 @@ public static class FirestoreDatabase
 
                 var subObjType = fieldInfo.PropertyType;
 
-                object? subObj = fieldInfo.GetValue(obj);
-
-                object? parsedSubObj = parseJsonElement(fieldProperty.Value, subObjType, subObj);
+                object? parsedSubObj = parseJsonElement(fieldProperty.Value, subObjType);
 
                 fieldInfo.SetValue(obj, parsedSubObj);
             }
@@ -569,7 +590,7 @@ public static class FirestoreDatabase
             createTime.HasValue &&
             updateTime.HasValue)
         {
-            document = new Document<T>(name, obj, createTime.Value, updateTime.Value);
+            document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
         }
         else
         {
@@ -1197,9 +1218,6 @@ public static class FirestoreDatabase
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to deserialize the model.
-    /// </param>
     /// <returns>
     /// The created <see cref="Document{T}"/>
     /// </returns>
@@ -1213,18 +1231,18 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    public static async Task<Document<T>?> GetDocument<T>(GetDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
+    public static async Task<Document<T>?> GetDocument<T>(GetDocumentRequest<T> request)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(request.JsonSerializerOptions);
 
         using Stream contentStream = await ExecuteWithGet(request);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        return ParseDocument(request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+        return ParseDocument(request.Reference, request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>
@@ -1235,9 +1253,6 @@ public static class FirestoreDatabase
     /// </typeparam>
     /// <param name="request">
     /// The request of the operation.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to deserialize the model.
     /// </param>
     /// <returns>
     /// The created <see cref="Document{T}"/>
@@ -1253,20 +1268,20 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    public static async Task<Document<T>?> PatchDocument<T>(PatchDocumentRequest<T> request, JsonSerializerOptions? jsonSerializerOptions = default)
+    public static async Task<Document<T>?> PatchDocument<T>(PatchDocumentRequest<T> request)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Model);
         ArgumentNullException.ThrowIfNull(request.Reference);
 
-        jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(request.JsonSerializerOptions);
 
         using Stream stream = await PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
         using Stream contentStream = await ExecuteWithPatchContent(request, stream);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        return ParseDocument(request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+        return ParseDocument(request.Reference, request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>

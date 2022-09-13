@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,6 +12,16 @@ namespace RestfulFirebase.UnitTest;
 
 internal class Helpers
 {
+    public static JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            CustomSerializerModel1Type.Converter.Instance
+        }
+    };
+
     private static FirebaseConfig? firebaseConfig;
 
     public static FirebaseConfig GetFirebaseConfig()

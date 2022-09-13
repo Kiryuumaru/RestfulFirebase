@@ -1,5 +1,8 @@
 ﻿using Newtonsoft.Json.Linq;
+using ObservableHelpers.ComponentModel;
+using RestfulFirebase.Attributes;
 using RestfulFirebase.CloudFirestore.Query;
+using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Abstraction;
 using System;
 using System.Collections.Generic;
@@ -10,6 +13,18 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.UnitTest;
+
+[ObservableObject]
+public partial class MVVMModel1
+{
+    [FirebaseValue]
+    [ObservableProperty]
+    string? val1;
+
+    [FirebaseValue]
+    [ObservableProperty]
+    string? val2;
+}
 
 public class ModelType
 {
@@ -58,7 +73,7 @@ public class CustomSerializerModel1Type
             }
             catch { }
 
-            return new CustomSerializerModel1Type()
+            return new()
             {
                 Val1 = val1,
                 Val2 = val2,
