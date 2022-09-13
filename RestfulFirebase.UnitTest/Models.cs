@@ -3,6 +3,7 @@ using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Attributes;
 using RestfulFirebase.CloudFirestore.Query;
 using RestfulFirebase.Common.Utilities;
+using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstraction;
 using System;
 using System.Collections.Generic;
@@ -14,36 +15,50 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.UnitTest;
 
-[ObservableObject]
-public partial class MVVMModel1
-{
-    [FirebaseValue]
-    [ObservableProperty]
-    string? val1;
-
-    [FirebaseValue]
-    [ObservableProperty]
-    string? val2;
-}
-
-public class ModelType
+public class NormalModel
 {
     public string? Val1 { get; set; }
 
     public string? Val2 { get; set; }
 }
 
-public class CustomSerializerModel1Type
+[ObservableObject]
+public partial class NormalMVVMModel
+{
+    [ObservableProperty]
+    string? val1;
+
+    [ObservableProperty]
+    string? val2;
+}
+
+[ObservableObject]
+[FirebaseValueOnly]
+public partial class MVVMModelWithIncludeOnlyAttribute
+{
+    [ObservableProperty]
+    [FirebaseValue]
+    string? val1;
+
+    [ObservableProperty]
+    [FirebaseValue(Name = "value2")]
+    string? val2;
+
+    [ObservableProperty]
+    string? val3;
+}
+
+public class ModelWithCustomSerializer
 {
     public double? Val1 { get; set; }
 
     public double? Val2 { get; set; }
 
-    public class Converter : JsonConverter<CustomSerializerModel1Type>
+    public class Converter : JsonConverter<ModelWithCustomSerializer>
     {
         public static Converter Instance { get; } = new();
 
-        public override CustomSerializerModel1Type? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ModelWithCustomSerializer? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (!JsonDocument.TryParseValue(ref reader, out JsonDocument? document))
             {
@@ -80,7 +95,7 @@ public class CustomSerializerModel1Type
             };
         }
 
-        public override void Write(Utf8JsonWriter writer, CustomSerializerModel1Type value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ModelWithCustomSerializer value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("stringValue");
@@ -226,9 +241,9 @@ public class AllType
 
     public int?[] ArrayValue4 { get; set; }
 
-    public ModelType[] ArrayValue5 { get; set; }
+    public NormalModel[] ArrayValue5 { get; set; }
 
-    public ModelType?[] ArrayValue6 { get; set; }
+    public NormalModel?[] ArrayValue6 { get; set; }
 
     public string[]? ArrayValue1Null { get; set; }
 
@@ -238,9 +253,9 @@ public class AllType
 
     public int?[]? ArrayValue4Null { get; set; }
 
-    public ModelType[]? ArrayValue5Null { get; set; }
+    public NormalModel[]? ArrayValue5Null { get; set; }
 
-    public ModelType?[]? ArrayValue6Null { get; set; }
+    public NormalModel?[]? ArrayValue6Null { get; set; }
 
     public string[]? ArrayValue7Null { get; set; }
 
@@ -250,43 +265,158 @@ public class AllType
 
     public int?[]? ArrayValue10Null { get; set; }
 
-    public ModelType[]? ArrayValue11Null { get; set; }
+    public NormalModel[]? ArrayValue11Null { get; set; }
 
-    public ModelType?[]? ArrayValue12Null { get; set; }
+    public NormalModel?[]? ArrayValue12Null { get; set; }
 
     public Dictionary<string, string?> MapValue1 { get; set; }
 
-    public Dictionary<string, ModelType?> MapValue2 { get; set; }
+    public Dictionary<string, NormalModel?> MapValue2 { get; set; }
 
     public Dictionary<int, string?> MapValue3 { get; set; }
 
-    public ModelType MapValue4 { get; set; }
+    public NormalModel MapValue4 { get; set; }
 
     public Dictionary<string, string?>? MapValue1Null { get; set; }
 
-    public Dictionary<string, ModelType?>? MapValue2Null { get; set; }
+    public Dictionary<string, NormalModel?>? MapValue2Null { get; set; }
 
     public Dictionary<int, string?>? MapValue3Null { get; set; }
 
-    public ModelType? MapValue4Null { get; set; }
+    public Dictionary<string, string?>? MapValue4Null { get; set; }
 
-    public Dictionary<string, string?>? MapValue5Null { get; set; }
-
-    public Dictionary<string, ModelType?>? MapValue6Null { get; set; }
+    public Dictionary<string, NormalModel?>? MapValue5Null { get; set; }
 
     public Dictionary<int, string?>? MapValue7Null { get; set; }
 
-    public ModelType? MapValue8Null { get; set; }
+    public NormalModel? MapValue8Null { get; set; }
 
-    public CustomSerializerModel1Type CustomSerializerModel1Type1 { get; set; }
+    public NormalModel NormalModel1 { get; set; }
 
-    public CustomSerializerModel1Type CustomSerializerModel1Type2 { get; set; }
+    public NormalModel NormalModel2 { get; set; }
 
-    public CustomSerializerModel1Type? CustomSerializerModel1Type1Null { get; set; }
+    public NormalModel? NormalModel3 { get; set; }
+
+    public NormalMVVMModel NormalMVVMModel1 { get; set; }
+
+    public NormalMVVMModel NormalMVVMModel2 { get; set; }
+
+    public NormalMVVMModel? NormalMVVMModel3 { get; set; }
+
+    public MVVMModelWithIncludeOnlyAttribute MVVMModelWithIncludeOnlyAttribute1 { get; set; }
+
+    public MVVMModelWithIncludeOnlyAttribute MVVMModelWithIncludeOnlyAttribute2 { get; set; }
+
+    public MVVMModelWithIncludeOnlyAttribute? MVVMModelWithIncludeOnlyAttribute3 { get; set; }
+
+    public ModelWithCustomSerializer ModelWithCustomSerializer1 { get; set; }
+
+    public ModelWithCustomSerializer ModelWithCustomSerializer2 { get; set; }
+
+    public ModelWithCustomSerializer? ModelWithCustomSerializer3 { get; set; }
 
     public static AllType Empty()
     {
-        return new AllType();
+        return new AllType()
+        {
+            NullValue1 = null,
+            NullValue2 = null,
+            NullValue3 = null,
+            BooleanValue1 = false,
+            BooleanValue2 = false,
+            BooleanValue1Null = false,
+            BooleanValue2Null = false,
+            BooleanValue3Null = false,
+            IntegerValue1 = 0,
+            IntegerValue2 = 0,
+            IntegerValue3 = 0,
+            IntegerValue4 = 0,
+            IntegerValue5 = 0,
+            IntegerValue6 = 0,
+            IntegerValue7 = 0,
+            IntegerValue8 = 0,
+            IntegerValue1Null = 0,
+            IntegerValue2Null = 0,
+            IntegerValue3Null = 0,
+            IntegerValue4Null = 0,
+            IntegerValue5Null = 0,
+            IntegerValue6Null = 0,
+            IntegerValue7Null = 0,
+            IntegerValue8Null = 0,
+            IntegerValue9Null = 0,
+            IntegerValue10Null = 0,
+            IntegerValue11Null = 0,
+            IntegerValue12Null = 0,
+            IntegerValue13Null = 0,
+            IntegerValue14Null = 0,
+            IntegerValue15Null = 0,
+            IntegerValue16Null = 0,
+            DoubleValue1 = 0,
+            DoubleValue2 = 0,
+            DoubleValue1Null = 0,
+            DoubleValue2Null = 0,
+            DoubleValue3Null = 0,
+            DoubleValue4Null = 0,
+            DecimalValue1 = 0,
+            DecimalValue1Null = 0,
+            DecimalValue2Null = 0,
+            TimestampValue1 = new DateTime(),
+            TimestampValue2 = new DateTimeOffset(),
+            TimestampValue1Null = new DateTime(),
+            TimestampValue2Null = new DateTimeOffset(),
+            TimestampValue3Null = new DateTime(),
+            TimestampValue4Null = new DateTimeOffset(),
+            StringValue1 = "",
+            StringValue1Null = "",
+            StringValue2Null = "",
+            BytesValue1 = Array.Empty<byte>(),
+            BytesValue1Null = Array.Empty<byte>(),
+            BytesValue2Null = Array.Empty<byte>(),
+            ReferenceValue1 = Database.Get().Collection("a").Document("b"),
+            ReferenceValue1Null = Database.Get().Collection("a").Document("b"),
+            ReferenceValue2Null = Database.Get().Collection("a").Document("b"),
+            GeoPointValue1 = new Coordinates(),
+            GeoPointValue1Null = new Coordinates(),
+            GeoPointValue2Null = new Coordinates(),
+            ArrayValue1 = Array.Empty<string>(),
+            ArrayValue2 = Array.Empty<string>(),
+            ArrayValue3 = Array.Empty<int>(),
+            ArrayValue4 = Array.Empty<int?>(),
+            ArrayValue5 = Array.Empty<NormalModel>(),
+            ArrayValue6 = Array.Empty<NormalModel?>(),
+            ArrayValue1Null = Array.Empty<string>(),
+            ArrayValue2Null = Array.Empty<string>(),
+            ArrayValue3Null = Array.Empty<int>(),
+            ArrayValue4Null = Array.Empty<int?>(),
+            ArrayValue5Null = Array.Empty<NormalModel>(),
+            ArrayValue6Null = Array.Empty<NormalModel?>(),
+            ArrayValue7Null = Array.Empty<string>(),
+            ArrayValue8Null = Array.Empty<string?>(),
+            ArrayValue9Null = Array.Empty<int>(),
+            ArrayValue10Null = Array.Empty<int?>(),
+            ArrayValue11Null = Array.Empty<NormalModel>(),
+            ArrayValue12Null = Array.Empty<NormalModel?>(),
+            MapValue1 = new Dictionary<string, string?>(),
+            MapValue2 = new Dictionary<string, NormalModel?>(),
+            MapValue3 = new Dictionary<int, string?>(),
+            MapValue1Null = new Dictionary<string, string?>(),
+            MapValue2Null = new Dictionary<string, NormalModel?>(),
+            MapValue3Null = new Dictionary<int, string?>(),
+            MapValue4Null = new Dictionary<string, string?>(),
+            MapValue5Null = new Dictionary<string, NormalModel?>(),
+            NormalModel1 = new NormalModel(),
+            NormalModel2 = new NormalModel(),
+            NormalModel3 = null,
+            NormalMVVMModel1 = new NormalMVVMModel(),
+            NormalMVVMModel2 = new NormalMVVMModel(),
+            NormalMVVMModel3 = null,
+            MVVMModelWithIncludeOnlyAttribute1 = new MVVMModelWithIncludeOnlyAttribute(),
+            MVVMModelWithIncludeOnlyAttribute2 = new MVVMModelWithIncludeOnlyAttribute(),
+            MVVMModelWithIncludeOnlyAttribute3 = new MVVMModelWithIncludeOnlyAttribute(),
+            ModelWithCustomSerializer1 = new ModelWithCustomSerializer(),
+            ModelWithCustomSerializer2 = new ModelWithCustomSerializer(),
+            ModelWithCustomSerializer3 = new ModelWithCustomSerializer(),
+        };
     }
 
     public static AllType Filled1()
@@ -372,33 +502,33 @@ public class AllType
             ArrayValue2 = new string[4] { "this2", "is2", "a2", "test2" },
             ArrayValue3 = new int[4] { 7, 6, 5, 4 },
             ArrayValue4 = new int?[4] { 7, 6, null, 4 },
-            ArrayValue5 = new ModelType[3]
+            ArrayValue5 = new NormalModel[3]
             {
-                new ModelType() { Val1 = "51Test11Val1", Val2 = "51Test11Val2" },
-                new ModelType() { Val1 = null, Val2 = "52Test11Val2" },
-                new ModelType() { Val1 = "53Test11Val1", Val2 = null }
+                new NormalModel() { Val1 = "51Test11Val1", Val2 = "51Test11Val2" },
+                new NormalModel() { Val1 = null, Val2 = "52Test11Val2" },
+                new NormalModel() { Val1 = "53Test11Val1", Val2 = null }
             },
-            ArrayValue6 = new ModelType?[3]
+            ArrayValue6 = new NormalModel?[3]
             {
-                new ModelType() { Val1 = "61Test11Val1", Val2 = "61Test11Val2" },
-                new ModelType() { Val1 = "62Test11Val1", Val2 = null },
-                new ModelType() { Val1 = null, Val2 = "63Test11Val2" }
+                new NormalModel() { Val1 = "61Test11Val1", Val2 = "61Test11Val2" },
+                new NormalModel() { Val1 = "62Test11Val1", Val2 = null },
+                new NormalModel() { Val1 = null, Val2 = "63Test11Val2" }
             },
             ArrayValue1Null = new string[4] { "this11", "is11", "a11", "test11" },
             ArrayValue2Null = new string[4] { "this22", "is22", "a22", "test22" },
             ArrayValue3Null = new int[4] { 3, 4, 5, 6 },
             ArrayValue4Null = new int?[4] { 1, 2, null, 4 },
-            ArrayValue5Null = new ModelType[3]
+            ArrayValue5Null = new NormalModel[3]
             {
-                new ModelType() { Val1 = "51Test11Val11", Val2 = "51Test11Val22" },
-                new ModelType() { Val1 = null, Val2 = "52Test11Val22" },
-                new ModelType() { Val1 = "53Test11Val11", Val2 = null }
+                new NormalModel() { Val1 = "51Test11Val11", Val2 = "51Test11Val22" },
+                new NormalModel() { Val1 = null, Val2 = "52Test11Val22" },
+                new NormalModel() { Val1 = "53Test11Val11", Val2 = null }
             },
-            ArrayValue6Null = new ModelType?[3]
+            ArrayValue6Null = new NormalModel?[3]
             {
-                new ModelType() { Val1 = "61Test11Val11", Val2 = "61Test11Val22" },
-                new ModelType() { Val1 = "62Test11Val11", Val2 = null },
-                new ModelType() { Val1 = null, Val2 = "63Test11Val22" }
+                new NormalModel() { Val1 = "61Test11Val11", Val2 = "61Test11Val22" },
+                new NormalModel() { Val1 = "62Test11Val11", Val2 = null },
+                new NormalModel() { Val1 = null, Val2 = "63Test11Val22" }
             },
             ArrayValue7Null = null,
             ArrayValue8Null = null,
@@ -412,11 +542,11 @@ public class AllType
                 { "key2", "value2" },
                 { "key3", "value3" }
             },
-            MapValue2 = new Dictionary<string, ModelType?>()
+            MapValue2 = new Dictionary<string, NormalModel?>()
             {
-                { "key1", new ModelType() { Val1 = "val 1", Val2 = "val 2" } },
-                { "key2", new ModelType() { Val1 = "val 3", Val2 = null } },
-                { "key3", new ModelType() { Val1 = null, Val2 = "val 6" } },
+                { "key1", new NormalModel() { Val1 = "val 1", Val2 = "val 2" } },
+                { "key2", new NormalModel() { Val1 = "val 3", Val2 = null } },
+                { "key3", new NormalModel() { Val1 = null, Val2 = "val 6" } },
             },
             MapValue3 = new Dictionary<int, string?>()
             {
@@ -430,11 +560,11 @@ public class AllType
                 { "key22", "value22" },
                 { "key33", "value33" }
             },
-            MapValue2Null = new Dictionary<string, ModelType?>()
+            MapValue2Null = new Dictionary<string, NormalModel?>()
             {
-                { "key11", new ModelType() { Val1 = "val 11", Val2 = "val 22" } },
-                { "key22", new ModelType() { Val1 = null, Val2 = "val 33" } },
-                { "key33", new ModelType() { Val1 = "val 66", Val2 = null } },
+                { "key11", new NormalModel() { Val1 = "val 11", Val2 = "val 22" } },
+                { "key22", new NormalModel() { Val1 = null, Val2 = "val 33" } },
+                { "key33", new NormalModel() { Val1 = "val 66", Val2 = null } },
             },
             MapValue3Null = new Dictionary<int, string?>()
             {
@@ -444,18 +574,52 @@ public class AllType
             },
             MapValue4Null = null,
             MapValue5Null = null,
-            MapValue6Null = null,
-            CustomSerializerModel1Type1 = new CustomSerializerModel1Type()
+            NormalModel1 = new NormalModel()
+            {
+                Val1 = "normal val 11",
+                Val2 = "normal val 12",
+            },
+            NormalModel2 = new NormalModel()
+            {
+                Val1 = "normal val 21",
+                Val2 = null,
+            },
+            NormalModel3 = null,
+            NormalMVVMModel1 = new NormalMVVMModel()
+            {
+                Val1 = "normal mvvm val 11",
+                Val2 = "normal mvvm val 12",
+            },
+            NormalMVVMModel2 = new NormalMVVMModel()
+            {
+                Val1 = null,
+                Val2 = "normal mvvm val 22",
+            },
+            NormalMVVMModel3 = null,
+            MVVMModelWithIncludeOnlyAttribute1 = new MVVMModelWithIncludeOnlyAttribute()
+            {
+                Val1 = "normal mvvm val include only 11",
+                Val2 = "normal mvvm val include only 12",
+                Val3 = "normal mvvm val include only 13"
+            },
+            MVVMModelWithIncludeOnlyAttribute2 = new MVVMModelWithIncludeOnlyAttribute()
+            {
+                Val1 = null,
+                Val2 = "normal mvvm val include only 22",
+                Val3 = "normal mvvm val include only 23"
+            },
+            MVVMModelWithIncludeOnlyAttribute3 = null,
+            ModelWithCustomSerializer1 = new ModelWithCustomSerializer()
             {
                 Val1 = 123.321,
                 Val2 = 345.543,
             },
-            CustomSerializerModel1Type2 = new CustomSerializerModel1Type()
+            ModelWithCustomSerializer2 = new ModelWithCustomSerializer()
             {
                 Val1 = null,
                 Val2 = 345.543,
             },
-            CustomSerializerModel1Type1Null = null,
+            ModelWithCustomSerializer3 = null,
         };
     }
 
@@ -542,33 +706,33 @@ public class AllType
             ArrayValue2 = new string[5] { "and2", "this2", "is2", "another2", "test2" },
             ArrayValue3 = new int[3] { 5, 4, 3 },
             ArrayValue4 = new int?[3] { null, 2, 1 },
-            ArrayValue5 = new ModelType[3]
+            ArrayValue5 = new NormalModel[3]
             {
-                new ModelType() { Val1 = "51AnotherTest11Val1", Val2 = "51AnotherTest11Val2" },
-                new ModelType() { Val1 = null, Val2 = "52AnotherTest11Val2" },
-                new ModelType() { Val1 = "53AnotherTest11Val1", Val2 = null }
+                new NormalModel() { Val1 = "51AnotherTest11Val1", Val2 = "51AnotherTest11Val2" },
+                new NormalModel() { Val1 = null, Val2 = "52AnotherTest11Val2" },
+                new NormalModel() { Val1 = "53AnotherTest11Val1", Val2 = null }
             },
-            ArrayValue6 = new ModelType?[3]
+            ArrayValue6 = new NormalModel?[3]
             {
-                new ModelType() { Val1 = "61AnotherTest11Val1", Val2 = "61AnotherTest11Val2" },
-                new ModelType() { Val1 = "62AnotherTest11Val1", Val2 = null },
-                new ModelType() { Val1 = null, Val2 = "63AnotherTest11Val2" }
+                new NormalModel() { Val1 = "61AnotherTest11Val1", Val2 = "61AnotherTest11Val2" },
+                new NormalModel() { Val1 = "62AnotherTest11Val1", Val2 = null },
+                new NormalModel() { Val1 = null, Val2 = "63AnotherTest11Val2" }
             },
             ArrayValue1Null = new string[5] { "and11", "this11", "is11", "another11", "test11" },
             ArrayValue2Null = new string[5] { "and22", "this22", "is22", "another22", "test22" },
             ArrayValue3Null = new int[6] { 3, 4, 5, 6, 5, 6 },
             ArrayValue4Null = new int?[6] { 1, 2, null, 4, null, 4 },
-            ArrayValue5Null = new ModelType[3]
+            ArrayValue5Null = new NormalModel[3]
             {
-                new ModelType() { Val1 = "51AnotherTest11Val11", Val2 = "51AnotherTest11Val22" },
-                new ModelType() { Val1 = null, Val2 = "52AnotherTest11Val22" },
-                new ModelType() { Val1 = "53AnotherTest11Val11", Val2 = null }
+                new NormalModel() { Val1 = "51AnotherTest11Val11", Val2 = "51AnotherTest11Val22" },
+                new NormalModel() { Val1 = null, Val2 = "52AnotherTest11Val22" },
+                new NormalModel() { Val1 = "53AnotherTest11Val11", Val2 = null }
             },
-            ArrayValue6Null = new ModelType?[3]
+            ArrayValue6Null = new NormalModel?[3]
             {
-                new ModelType() { Val1 = "61AnotherTest11Val11", Val2 = "61AnotherTest11Val22" },
-                new ModelType() { Val1 = "62AnotherTest11Val11", Val2 = null },
-                new ModelType() { Val1 = null, Val2 = "63AnotherTest11Val22" }
+                new NormalModel() { Val1 = "61AnotherTest11Val11", Val2 = "61AnotherTest11Val22" },
+                new NormalModel() { Val1 = "62AnotherTest11Val11", Val2 = null },
+                new NormalModel() { Val1 = null, Val2 = "63AnotherTest11Val22" }
             },
             ArrayValue7Null = null,
             ArrayValue8Null = null,
@@ -583,12 +747,12 @@ public class AllType
                 { "anotherKey3", "anotherValue3" },
                 { "anotherKey4", "anotherValue4" }
             },
-            MapValue2 = new Dictionary<string, ModelType?>()
+            MapValue2 = new Dictionary<string, NormalModel?>()
             {
-                { "anotherKey1", new ModelType() { Val1 = "another val 1", Val2 = "another val 2" } },
-                { "anotherKey2", new ModelType() { Val1 = "another val 3", Val2 = null } },
-                { "anotherKey3", new ModelType() { Val1 = null, Val2 = "another val 6" } },
-                { "anotherKey4", new ModelType() { Val1 = null, Val2 = null } },
+                { "anotherKey1", new NormalModel() { Val1 = "another val 1", Val2 = "another val 2" } },
+                { "anotherKey2", new NormalModel() { Val1 = "another val 3", Val2 = null } },
+                { "anotherKey3", new NormalModel() { Val1 = null, Val2 = "another val 6" } },
+                { "anotherKey4", new NormalModel() { Val1 = null, Val2 = null } },
             },
             MapValue3 = new Dictionary<int, string?>()
             {
@@ -603,12 +767,12 @@ public class AllType
                 { "anotherKey33", "anotherValue33" },
                 { "anotherKey44", "anotherValue44" }
             },
-            MapValue2Null = new Dictionary<string, ModelType?>()
+            MapValue2Null = new Dictionary<string, NormalModel?>()
             {
-                { "anotherKey11", new ModelType() { Val1 = "another val 11", Val2 = "another val 22" } },
-                { "anotherKey22", new ModelType() { Val1 = "another val 33", Val2 = null } },
-                { "anotherKey33", new ModelType() { Val1 = null, Val2 = "another val 66" } },
-                { "anotherKey44", new ModelType() { Val1 = null, Val2 = null } },
+                { "anotherKey11", new NormalModel() { Val1 = "another val 11", Val2 = "another val 22" } },
+                { "anotherKey22", new NormalModel() { Val1 = "another val 33", Val2 = null } },
+                { "anotherKey33", new NormalModel() { Val1 = null, Val2 = "another val 66" } },
+                { "anotherKey44", new NormalModel() { Val1 = null, Val2 = null } },
             },
             MapValue3Null = new Dictionary<int, string?>()
             {
@@ -618,18 +782,52 @@ public class AllType
             },
             MapValue4Null = null,
             MapValue5Null = null,
-            MapValue6Null = null,
-            CustomSerializerModel1Type1 = new CustomSerializerModel1Type()
+            NormalModel1 = new NormalModel()
+            {
+                Val1 = "another normal val 11",
+                Val2 = "another normal val 12",
+            },
+            NormalModel2 = new NormalModel()
+            {
+                Val1 = null,
+                Val2 = "another normal val 22",
+            },
+            NormalModel3 = null,
+            NormalMVVMModel1 = new NormalMVVMModel()
+            {
+                Val1 = "another normal mvvm val 11",
+                Val2 = "another normal mvvm val 12",
+            },
+            NormalMVVMModel2 = new NormalMVVMModel()
+            {
+                Val1 = "another normal mvvm val 21",
+                Val2 = null,
+            },
+            NormalMVVMModel3 = null,
+            MVVMModelWithIncludeOnlyAttribute1 = new MVVMModelWithIncludeOnlyAttribute()
+            {
+                Val1 = "another normal mvvm val include only 11",
+                Val2 = "another normal mvvm val include only 12",
+                Val3 = "another normal mvvm val include only 13"
+            },
+            MVVMModelWithIncludeOnlyAttribute2 = new MVVMModelWithIncludeOnlyAttribute()
+            {
+                Val1 = "another normal mvvm val include only 21",
+                Val2 = null,
+                Val3 = "another normal mvvm val include only 23"
+            },
+            MVVMModelWithIncludeOnlyAttribute3 = null,
+            ModelWithCustomSerializer1 = new ModelWithCustomSerializer()
             {
                 Val1 = 789.987,
                 Val2 = 567.765,
             },
-            CustomSerializerModel1Type2 = new CustomSerializerModel1Type()
+            ModelWithCustomSerializer2 = new ModelWithCustomSerializer()
             {
                 Val1 = 12.21,
                 Val2 = null,
             },
-            CustomSerializerModel1Type1Null = null,
+            ModelWithCustomSerializer3 = null,
         };
     }
 }
@@ -654,7 +852,17 @@ public class NestedType
 
     public static NestedType Empty()
     {
-        return new NestedType();
+        return new NestedType()
+        {
+            AllType1 = AllType.Empty(),
+            ArrayAllType1 = Array.Empty<AllType>(),
+            ArrayAllType2 = Array.Empty<AllType>(),
+            ArrayAllType3 = new List<AllType>(),
+            ArrayAllType4 = new List<AllType?>(),
+            DictionaryAllType1 = new Dictionary<string, AllType>(),
+            DictionaryAllType2 = new Dictionary<string, AllType?>(),
+            DictionaryAllType3 = new Dictionary<int, AllType?>()
+        };
     }
 
     public static NestedType Filled1()
@@ -662,40 +870,47 @@ public class NestedType
         return new NestedType()
         {
             AllType1 = AllType.Filled1(),
-            ArrayAllType1 = new AllType[2]
+            ArrayAllType1 = new AllType[3]
             {
+                AllType.Empty(),
                 AllType.Filled1(),
                 AllType.Filled2(),
             },
-            ArrayAllType2 = new AllType[2]
+            ArrayAllType2 = new AllType[3]
             {
                 AllType.Filled2(),
+                AllType.Empty(),
                 AllType.Filled1(),
             },
             ArrayAllType3 = new List<AllType>()
             {
                 AllType.Filled1(),
                 AllType.Filled2(),
+                AllType.Empty(),
             },
             ArrayAllType4 = new List<AllType?>()
             {
+                AllType.Empty(),
                 AllType.Filled2(),
                 AllType.Filled1(),
             },
             DictionaryAllType1 = new Dictionary<string, AllType>()
             {
                 { "allTypeKey1",  AllType.Filled1() },
-                { "allTypeKey2",  AllType.Filled2() }
+                { "allTypeKey2",  AllType.Empty() },
+                { "allTypeKey3",  AllType.Filled2() },
             },
             DictionaryAllType2 = new Dictionary<string, AllType?>()
             {
-                { "allTypeKey22",  AllType.Filled2() },
-                { "allTypeKey11",  AllType.Filled1() }
+                { "allTypeKey11",  AllType.Filled2() },
+                { "allTypeKey22",  AllType.Filled1() },
+                { "allTypeKey33",  AllType.Empty() },
             },
             DictionaryAllType3 = new Dictionary<int, AllType?>()
             {
-                { 1,  AllType.Filled1() },
-                { 2,  AllType.Filled2() }
+                { 1,  AllType.Empty() },
+                { 2,  AllType.Filled1() },
+                { 3,  AllType.Filled2() },
             }
         };
     }
@@ -705,18 +920,21 @@ public class NestedType
         return new NestedType()
         {
             AllType1 = AllType.Filled2(),
-            ArrayAllType1 = new AllType[2]
+            ArrayAllType1 = new AllType[3]
             {
                 AllType.Filled2(),
                 AllType.Filled1(),
+                AllType.Empty(),
             },
-            ArrayAllType2 = new AllType[2]
+            ArrayAllType2 = new AllType[3]
             {
                 AllType.Filled1(),
+                AllType.Empty(),
                 AllType.Filled2(),
             },
             ArrayAllType3 = new List<AllType>()
             {
+                AllType.Empty(),
                 AllType.Filled2(),
                 AllType.Filled1(),
             },
@@ -724,21 +942,25 @@ public class NestedType
             {
                 AllType.Filled1(),
                 AllType.Filled2(),
+                AllType.Empty(),
             },
             DictionaryAllType1 = new Dictionary<string, AllType>()
             {
-                { "allTypeKey2",  AllType.Filled2() },
-                { "allTypeKey1",  AllType.Filled1() }
+                { "allTypeKey1",  AllType.Filled2() },
+                { "allTypeKey2",  AllType.Empty() },
+                { "allTypeKey3",  AllType.Filled1() }
             },
             DictionaryAllType2 = new Dictionary<string, AllType?>()
             {
-                { "allTypeKey11",  AllType.Filled1() },
-                { "allTypeKey22",  AllType.Filled2() }
+                { "allTypeKey11",  AllType.Empty() },
+                { "allTypeKey22",  AllType.Filled1() },
+                { "allTypeKey33",  AllType.Filled2() }
             },
             DictionaryAllType3 = new Dictionary<int, AllType?>()
             {
-                { 2,  AllType.Filled2() },
-                { 1,  AllType.Filled1() }
+                { 1,  AllType.Filled2() },
+                { 2,  AllType.Filled1() },
+                { 3,  AllType.Empty() },
             }
         };
     }

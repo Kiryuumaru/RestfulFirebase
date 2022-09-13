@@ -18,7 +18,7 @@ internal class Helpers
         PropertyNameCaseInsensitive = true,
         Converters =
         {
-            CustomSerializerModel1Type.Converter.Instance
+            ModelWithCustomSerializer.Converter.Instance
         }
     };
 
