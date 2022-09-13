@@ -264,10 +264,7 @@ public static class FirestoreDatabase
             {
                 try
                 {
-                    obj = JsonSerializer.Deserialize(
-                        jsonElement,
-                        objType,
-                        jsonSerializerOptions);
+                    obj = jsonElement.Deserialize(objType, jsonSerializerOptions);
                 }
                 catch { }
             }
@@ -288,17 +285,14 @@ public static class FirestoreDatabase
                     case "bytesValue":
                         try
                         {
-                            obj = JsonSerializer.Deserialize(
-                                documentFieldValue.GetRawText(),
-                                objType,
-                                jsonSerializerOptions);
+                            obj = documentFieldValue.Deserialize(objType, jsonSerializerOptions);
                         }
                         catch { }
                         break;
                     case "referenceValue":
                         if (objType == typeof(DocumentReference))
                         {
-                            string? reference = JsonSerializer.Deserialize<string>(documentFieldValue.GetRawText(), jsonSerializerOptions);
+                            string? reference = documentFieldValue.Deserialize<string>(jsonSerializerOptions);
                             if (reference != null && !string.IsNullOrEmpty(reference))
                             {
                                 string[] paths = reference.Split('/');
@@ -336,11 +330,11 @@ public static class FirestoreDatabase
                             {
                                 if (geoProperty.Name == "latitude")
                                 {
-                                    latitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
+                                    latitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                                 }
                                 else if (geoProperty.Name == "longitude")
                                 {
-                                    longitude = JsonSerializer.Deserialize<double>(geoProperty.Value.GetRawText());
+                                    longitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                                 }
                             }
 
@@ -478,9 +472,9 @@ public static class FirestoreDatabase
                     string? documentFieldKey = $"\"{fieldProperty.Name}\"";
 
                     object? objKey = JsonSerializer.Deserialize(
-                            documentFieldKey,
-                            keyType,
-                            jsonSerializerOptions);
+                        documentFieldKey,
+                        keyType,
+                        jsonSerializerOptions);
 
                     keyParameter[0] = objKey;
 
