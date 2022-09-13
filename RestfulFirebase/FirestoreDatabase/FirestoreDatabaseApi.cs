@@ -24,7 +24,6 @@ using RestfulFirebase.FirestoreDatabase.Abstraction;
 using RestfulFirebase.CloudFirestore.Query;
 using System.Data;
 using static System.Text.Json.JsonElement;
-using System.Xml.Linq;
 
 namespace RestfulFirebase.Api;
 
@@ -82,9 +81,7 @@ public static class FirestoreDatabase
 
         try
         {
-            var response = await httpClient.GetAsync(
-                uri,
-                request.CancellationToken);
+            var response = await httpClient.GetAsync(uri, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
@@ -104,7 +101,7 @@ public static class FirestoreDatabase
         }
     }
 
-    internal static async Task<string> ExecuteWithPostContent(FirestoreDatabaseRequest request, string postContent)
+    internal static async Task<string> ExecuteWithPostContent(FirestoreDatabaseRequest request, Stream contentStream)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
@@ -117,10 +114,20 @@ public static class FirestoreDatabase
 
         try
         {
-            var response = await httpClient.PostAsync(
-                uri,
-                new StringContent(postContent, Encoding.UTF8, "Application/json"),
-                request.CancellationToken);
+            contentStream.Seek(0, SeekOrigin.Begin);
+
+            StreamContent streamContent = new(contentStream);
+            streamContent.Headers.ContentType = new("Application/json")
+            {
+                CharSet = Encoding.UTF8.WebName
+            };
+
+            HttpRequestMessage msg = new(HttpMethod.Post, uri)
+            {
+                Content = streamContent
+            };
+
+            var response = await httpClient.SendAsync(msg, request.CancellationToken);
 
             statusCode = response.StatusCode;
 
@@ -140,7 +147,7 @@ public static class FirestoreDatabase
         }
     }
 
-    internal static async Task<string> ExecuteWithPatchContent(FirestoreDatabaseRequest request, string postContent)
+    internal static async Task<string> ExecuteWithPatchContent(FirestoreDatabaseRequest request, Stream contentStream)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Query);
@@ -153,9 +160,17 @@ public static class FirestoreDatabase
 
         try
         {
+            contentStream.Seek(0, SeekOrigin.Begin);
+
+            StreamContent streamContent = new(contentStream);
+            streamContent.Headers.ContentType = new("Application/json")
+            {
+                CharSet = Encoding.UTF8.WebName
+            };
+
             HttpRequestMessage msg = new(new HttpMethod("PATCH"), uri)
             {
-                Content = new StringContent(postContent, Encoding.UTF8, "Application/json")
+                Content = streamContent
             };
 
             var response = await httpClient.SendAsync(msg, request.CancellationToken);
@@ -577,17 +592,18 @@ public static class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static string? PopulateDocument<T>(FirebaseConfig config, T obj, JsonSerializerOptions jsonSerializerOptions)
+    internal static async Task<Stream> PopulateDocument<T>(FirebaseConfig config, T obj, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
-        StringBuilder sb = new();
+        MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
 
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObject(Type objType, object? obj, string headJson, string tailJson, Action onFirstAppend)
+        void parseObject(Type objType, object? obj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
 
@@ -606,20 +622,21 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append(serialized);
+                    writer.WriteRawValue(serialized);
                 }
                 else
                 {
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"nullValue\":null}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("nullValue");
+                    writer.WriteNullValue();
+                    writer.WriteEndObject();
                 }
             }
             else if (obj == null)
@@ -627,10 +644,12 @@ public static class FirestoreDatabase
                 if (!hasAppended)
                 {
                     hasAppended = true;
-                    onFirstAppend();
-                    sb.Append(headJson);
+                    onFirstAppend?.Invoke();
                 }
-                sb.Append($"{{\"nullValue\":null}}");
+                writer.WriteStartObject();
+                writer.WritePropertyName("nullValue");
+                writer.WriteNullValue();
+                writer.WriteEndObject();
             }
             else if (objType.IsAssignableFrom(typeof(bool)))
             {
@@ -645,10 +664,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"booleanValue\":\"{serialized}\"}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("booleanValue");
+                    writer.WriteStringValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (
@@ -674,10 +695,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"integerValue\":\"{serialized}\"}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("integerValue");
+                    writer.WriteStringValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (
@@ -695,10 +718,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"doubleValue\":\"{serialized}\"}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("doubleValue");
+                    writer.WriteStringValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (objType.IsAssignableFrom(typeof(decimal)))
@@ -714,10 +739,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"stringValue\":\"{serialized}\"}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("stringValue");
+                    writer.WriteStringValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (
@@ -735,10 +762,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"timestampValue\":{serialized}}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("timestampValue");
+                    writer.WriteRawValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (objType.IsAssignableFrom(typeof(string)))
@@ -754,10 +783,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"stringValue\":{serialized}}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("stringValue");
+                    writer.WriteRawValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (objType.IsAssignableFrom(typeof(byte[])))
@@ -773,10 +804,12 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"bytesValue\":{serialized}}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("bytesValue");
+                    writer.WriteRawValue(serialized);
+                    writer.WriteEndObject();
                 }
             }
             else if (obj is DocumentReference documentReference)
@@ -784,20 +817,29 @@ public static class FirestoreDatabase
                 if (!hasAppended)
                 {
                     hasAppended = true;
-                    onFirstAppend();
-                    sb.Append(headJson);
+                    onFirstAppend?.Invoke();
                 }
-                sb.Append($"{{\"referenceValue\":\"{documentReference.BuildUrlCascade(config.ProjectId)}\"}}");
+                writer.WriteStartObject();
+                writer.WritePropertyName("referenceValue");
+                writer.WriteStringValue(documentReference.BuildUrlCascade(config.ProjectId));
+                writer.WriteEndObject();
             }
             else if (obj is IGeoPoint geoPoint)
             {
                 if (!hasAppended)
                 {
                     hasAppended = true;
-                    onFirstAppend();
-                    sb.Append(headJson);
+                    onFirstAppend?.Invoke();
                 }
-                sb.Append($"{{\"geoPointValue\":{{\"latitude\":{geoPoint.Latitude},\"longitude\":{geoPoint.Longitude}}}}}");
+                writer.WriteStartObject();
+                writer.WritePropertyName("geoPointValue");
+                writer.WriteStartObject();
+                writer.WritePropertyName("latitude");
+                writer.WriteNumberValue(geoPoint.Latitude);
+                writer.WritePropertyName("longitude");
+                writer.WriteNumberValue(geoPoint.Longitude);
+                writer.WriteEndObject();
+                writer.WriteEndObject();
             }
             else if (objType.IsArray && objType.GetArrayRank() == 1 && objType.GetElementType() is Type elementType && obj is Array array)
             {
@@ -806,22 +848,39 @@ public static class FirestoreDatabase
                     if (!hasAppended)
                     {
                         hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
+                        onFirstAppend?.Invoke();
                     }
-                    sb.Append($"{{\"arrayValue\":{{\"values\":[]}}}}");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("arrayValue");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("values");
+                    writer.WriteStartArray();
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
                 }
                 else
                 {
-                    parseArrayFields(elementType, array, $"{{\"arrayValue\":{{\"values\":[", $"]}}}}", () =>
-                    {
-                        if (!hasAppended)
+                    parseArrayFields(elementType, array,
+                        () =>
                         {
-                            hasAppended = true;
-                            onFirstAppend();
-                            sb.Append(headJson);
-                        }
-                    });
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend?.Invoke();
+                            }
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("arrayValue");
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("values");
+                            writer.WriteStartArray();
+                        },
+                        () =>
+                        {
+                            writer.WriteEndArray();
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+                        });
                 }
             }
             else
@@ -841,21 +900,25 @@ public static class FirestoreDatabase
                         Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
                         Type[] dictionaryGenericCollectionArgsType = collectionInterfaceType.GetGenericArguments();
 
-                        parseDictionaryFields(
-                            dictionaryGenericCollectionArgsType[0],
-                            dictionaryGenericArgsType[0],
-                            dictionaryGenericArgsType[1],
-                            (IEnumerable)obj,
-                            $"{{\"mapValue\":{{\"fields\":{{",
-                            $"}}}}}}",
+                        parseDictionaryFields(dictionaryGenericCollectionArgsType[0], dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], (IEnumerable)obj,
                             () =>
                             {
                                 if (!hasAppended)
                                 {
                                     hasAppended = true;
-                                    onFirstAppend();
-                                    sb.Append(headJson);
+                                    onFirstAppend?.Invoke();
                                 }
+                                writer.WriteStartObject();
+                                writer.WritePropertyName("mapValue");
+                                writer.WriteStartObject();
+                                writer.WritePropertyName("fields");
+                                writer.WriteStartObject();
+                            },
+                            () =>
+                            {
+                                writer.WriteEndObject();
+                                writer.WriteEndObject();
+                                writer.WriteEndObject();
                             });
 
                         break;
@@ -865,33 +928,50 @@ public static class FirestoreDatabase
                     {
                         Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
 
-                        parseCollectionFields(
-                            collectionGenericArgsType[0],
-                            (IEnumerable)obj,
-                            $"{{\"arrayValue\":{{\"values\":[",
-                            $"]}}}}",
+                        parseCollectionFields(collectionGenericArgsType[0], (IEnumerable)obj,
                             () =>
                             {
                                 if (!hasAppended)
                                 {
                                     hasAppended = true;
-                                    onFirstAppend();
-                                    sb.Append(headJson);
+                                    onFirstAppend?.Invoke();
                                 }
+                                writer.WriteStartObject();
+                                writer.WritePropertyName("arrayValue");
+                                writer.WriteStartObject();
+                                writer.WritePropertyName("values");
+                                writer.WriteStartArray();
+                            },
+                            () =>
+                            {
+                                writer.WriteEndArray();
+                                writer.WriteEndObject();
+                                writer.WriteEndObject();
                             });
 
                         break;
                     }
 
-                    parseObjectFields(objType, obj, "{\"mapValue\":{\"fields\":{", "}}}", () =>
-                    {
-                        if (!hasAppended)
+                    parseObjectFields(objType, obj,
+                        () =>
                         {
-                            hasAppended = true;
-                            onFirstAppend();
-                            sb.Append(headJson);
-                        }
-                    });
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend?.Invoke();
+                            }
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("mapValue");
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fields");
+                            writer.WriteStartObject();
+                        },
+                        () =>
+                        {
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+                        });
 
                     break;
                 }
@@ -899,64 +979,64 @@ public static class FirestoreDatabase
 
             if (hasAppended)
             {
-                sb.Append(tailJson);
+                onPostAppend?.Invoke();
             }
         }
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseArrayFields(Type elementType, Array arrayObj, string headJson, string tailJson, Action onFirstAppend)
+        void parseArrayFields(Type elementType, Array arrayObj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
             foreach (var obj in arrayObj)
             {
-                parseObject(elementType, obj, "", ",", () =>
-                {
-                    if (!hasAppended)
+                parseObject(elementType, obj, 
+                    () =>
                     {
-                        hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
-                    }
-                });
+                        if (!hasAppended)
+                        {
+                            hasAppended = true;
+                            onFirstAppend?.Invoke();
+                        }
+                    },
+                    null);
             }
             if (hasAppended)
             {
-                sb.Remove(sb.Length - 1, 1);
-                sb.Append(tailJson);
+                onPostAppend?.Invoke();
             }
         }
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseCollectionFields(Type elementType, IEnumerable collectionObj, string headJson, string tailJson, Action onFirstAppend)
+        void parseCollectionFields(Type elementType, IEnumerable collectionObj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
             foreach (var obj in collectionObj)
             {
-                parseObject(elementType, obj, "", ",", () =>
-                {
-                    if (!hasAppended)
+                parseObject(elementType, obj,
+                    () =>
                     {
-                        hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
-                    }
-                });
+                        if (!hasAppended)
+                        {
+                            hasAppended = true;
+                            onFirstAppend?.Invoke();
+                        }
+                    },
+                    null);
             }
             if (hasAppended)
             {
-                sb.Remove(sb.Length - 1, 1);
-                sb.Append(tailJson);
+                onPostAppend?.Invoke();
             }
         }
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseDictionaryFields(Type keyValuePairType, Type keyType, Type valueType, IEnumerable dictionaryObj, string headJson, string tailJson, Action onFirstAppend)
+        void parseDictionaryFields(Type keyValuePairType, Type keyType, Type valueType, IEnumerable dictionaryObj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
             var keyProperty = keyValuePairType.GetProperty("Key");
@@ -968,28 +1048,29 @@ public static class FirestoreDatabase
                 object? value = valueProperty?.GetValue(obj);
                 if (key != null)
                 {
-                    parseObject(valueType, value, $"\"{key}\":", ",", () =>
-                    {
-                        if (!hasAppended)
+                    parseObject(valueType, value,
+                        () =>
                         {
-                            hasAppended = true;
-                            onFirstAppend();
-                            sb.Append(headJson);
-                        }
-                    });
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend?.Invoke();
+                            }
+                            writer.WritePropertyName(key);
+                        },
+                        null);
                 }
             }
             if (hasAppended)
             {
-                sb.Remove(sb.Length - 1, 1);
-                sb.Append(tailJson);
+                onPostAppend?.Invoke();
             }
         }
 
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObjectFields(Type objType, object obj, string headJson, string tailJson, Action onFirstAppend)
+        void parseObjectFields(Type objType, object obj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
             var properties = objType.GetProperties().Where(i => i.CanRead);
@@ -999,25 +1080,25 @@ public static class FirestoreDatabase
                 Type propertyType = property.PropertyType;
                 object? propertyObj = property.GetValue(obj);
                 string name = jsonNamingPolicy?.ConvertName(property.Name) ?? property.Name;
-                parseObject(propertyType, propertyObj, $"\"{name}\":", ",", () =>
-                {
-                    if (!hasAppended)
+                parseObject(propertyType, propertyObj,
+                    () =>
                     {
-                        hasAppended = true;
-                        onFirstAppend();
-                        sb.Append(headJson);
-                    }
-                });
+                        if (!hasAppended)
+                        {
+                            hasAppended = true;
+                            onFirstAppend?.Invoke();
+                        }
+                        writer.WritePropertyName(name);
+                    },
+                    null);
             }
             if (hasAppended)
             {
-                sb.Remove(sb.Length - 1, 1);
-                sb.Append(tailJson);
+                onPostAppend?.Invoke();
             }
         }
 
         Type objType = typeof(T);
-        bool hasAppended = false;
 
         var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
             i.IsGenericType &&
@@ -1037,13 +1118,16 @@ public static class FirestoreDatabase
                 dictionaryGenericArgsType[0],
                 dictionaryGenericArgsType[1],
                 (IEnumerable)obj,
-                "{\"fields\":{",
-                "}}", () =>
+                () =>
                 {
-                    if (!hasAppended)
-                    {
-                        hasAppended = true;
-                    }
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("fields");
+                    writer.WriteStartObject();
+                },
+                () =>
+                {
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
                 });
         }
         else
@@ -1051,26 +1135,22 @@ public static class FirestoreDatabase
             parseObjectFields(
                 objType,
                 obj,
-                "{\"fields\":{",
-                "}}", () =>
+                () =>
                 {
-                    if (!hasAppended)
-                    {
-                        hasAppended = true;
-                    }
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("fields");
+                    writer.WriteStartObject();
+                },
+                () =>
+                {
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
                 });
         }
 
-        string? content = sb.ToString();
+        await writer.FlushAsync();
 
-        if (hasAppended)
-        {
-            return content;
-        }
-        else
-        {
-            return null;
-        }
+        return stream;
     }
 
     internal static Exception GetException(string responseData, HttpStatusCode statusCode, Exception originalException)
@@ -1191,19 +1271,8 @@ public static class FirestoreDatabase
 
         jsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
-        string? content = PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
-
-        string? responseData;
-
-        if (content != null)
-        {
-            responseData = await ExecuteWithPatchContent(request, content);
-        }
-        else
-        {
-            responseData = await ExecuteWithGet(request);
-
-        }
+        using Stream stream = await PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
+        string? responseData = await ExecuteWithPatchContent(request, stream);
 
         return ParseDocument(request.Model, JsonDocument.Parse(responseData).RootElement.EnumerateObject(), jsonSerializerOptions);
     }
