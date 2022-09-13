@@ -234,76 +234,6 @@ public static partial class FirestoreDatabase
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
-        PropertyInfo? getEquivalentProperty(PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, string name, bool onlyWithAttribute)
-        {
-            foreach (var propertyInfo in propertyInfos)
-            {
-                if (!propertyInfo.CanWrite || !propertyInfo.CanRead)
-                {
-                    continue;
-                }
-
-                if (propertyInfo.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute &&
-                    firebaseValueAttribute.Name != null &&
-                    firebaseValueAttribute.Name.Equals(name))
-                {
-                    return propertyInfo;
-                }
-                else if (!onlyWithAttribute)
-                {
-                    if (propertyInfo.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute &&
-                        jsonPropertyNameAttribute.Name != null &&
-                        jsonPropertyNameAttribute.Name.Equals(name))
-                    {
-                        return propertyInfo;
-                    }
-                    else if ((jsonNamingPolicy?.ConvertName(propertyInfo.Name) ?? propertyInfo.Name).Equals(name))
-                    {
-                        return propertyInfo;
-                    }
-                }
-            }
-
-            foreach (var fieldInfo in fieldInfos)
-            {
-                if (fieldInfo.IsStatic)
-                {
-                    continue;
-                }
-
-                string propertyNameEquivalent = ClassFieldHelpers.GetPropertyName(fieldInfo);
-
-                PropertyInfo? propertyInfo = propertyInfos.FirstOrDefault(i => i.Name.Equals(propertyNameEquivalent));
-
-                if (propertyInfo == null || !propertyInfo.CanWrite || !propertyInfo.CanRead)
-                {
-                    continue;
-                }
-
-                if (propertyInfo.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute &&
-                    firebaseValueAttribute.Name != null &&
-                    firebaseValueAttribute.Name.Equals(name))
-                {
-                    return propertyInfo;
-                }
-                else if (!onlyWithAttribute)
-                {
-                    if (propertyInfo.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute &&
-                        jsonPropertyNameAttribute.Name != null &&
-                        jsonPropertyNameAttribute.Name.Equals(name))
-                    {
-                        return propertyInfo;
-                    }
-                    else if ((jsonNamingPolicy?.ConvertName(propertyInfo.Name) ?? propertyInfo.Name).Equals(name))
-                    {
-                        return propertyInfo;
-                    }
-                }
-            }
-
-            return null;
-        }
-
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
@@ -573,13 +503,85 @@ public static partial class FirestoreDatabase
             }
         }
 
+        bool checkProperty(PropertyInfo propertyInfo, MemberInfo memberToCheckAttribute, string name, bool onlyWithAttribute)
+        {
+            string? nameToCompare = null;
+            bool isValueIncluded = false;
+
+            if (!propertyInfo.CanWrite)
+            {
+                return false;
+            }
+
+            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
+            {
+                nameToCompare = firebaseValueAttribute.Name;
+                isValueIncluded = true;
+            }
+            else if (!onlyWithAttribute)
+            {
+                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                {
+                    nameToCompare = jsonPropertyNameAttribute.Name;
+                }
+                isValueIncluded = true;
+            }
+
+            if (!isValueIncluded)
+            {
+                return false;
+            }
+
+            if (nameToCompare == null || string.IsNullOrWhiteSpace(nameToCompare))
+            {
+                nameToCompare = jsonNamingPolicy?.ConvertName(propertyInfo.Name) ?? propertyInfo.Name;
+            }
+
+            return nameToCompare.Equals(name);
+        }
+
+        PropertyInfo? getEquivalentProperty(PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, string name, bool onlyWithAttribute)
+        {
+            foreach (var propertyInfo in propertyInfos)
+            {
+                if (checkProperty(propertyInfo, propertyInfo, name, onlyWithAttribute))
+                {
+                    return propertyInfo;
+                }
+            }
+
+            foreach (var fieldInfo in fieldInfos)
+            {
+                if (fieldInfo.IsStatic)
+                {
+                    continue;
+                }
+
+                string propertyNameEquivalent = ClassFieldHelpers.GetPropertyName(fieldInfo);
+
+                PropertyInfo? propertyInfo = propertyInfos.FirstOrDefault(i => i.Name.Equals(propertyNameEquivalent));
+
+                if (propertyInfo == null)
+                {
+                    continue;
+                }
+
+                if (checkProperty(propertyInfo, fieldInfo, name, onlyWithAttribute))
+                {
+                    return propertyInfo;
+                }
+            }
+
+            return null;
+        }
+
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
         void parseObjectFields(Type objType, object obj, ObjectEnumerator enumerator)
         {
-            PropertyInfo[] propertyInfos = objType.GetProperties();
-            FieldInfo[] fieldInfos = objType.GetFields();
+            PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
 
             foreach (var firebaseField in enumerator)
@@ -588,7 +590,7 @@ public static partial class FirestoreDatabase
 
                 if (property == null)
                 {
-                    return;
+                    continue;
                 }
 
                 var subObjType = property.PropertyType;
@@ -1167,31 +1169,115 @@ public static partial class FirestoreDatabase
             }
         }
 
+        bool tryIfIncluded(PropertyInfo propertyInfo, MemberInfo memberToCheckAttribute, bool onlyWithAttribute, [MaybeNullWhen(false)] out string name)
+        {
+            name = null;
+            bool returnValue = false;
+
+            if (!propertyInfo.CanWrite)
+            {
+                return false;
+            }
+
+            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
+            {
+                name = firebaseValueAttribute.Name;
+                returnValue = true;
+            }
+            else if (!onlyWithAttribute)
+            {
+                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                {
+                    name = jsonPropertyNameAttribute.Name;
+                }
+                returnValue = true;
+            }
+
+            if (returnValue && string.IsNullOrWhiteSpace(name))
+            {
+                name = jsonNamingPolicy?.ConvertName(propertyInfo.Name) ?? propertyInfo.Name;
+            }
+
+            return returnValue;
+        }
+
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
         void parseObjectFields(Type objType, object obj, Action? onFirstAppend, Action? onPostAppend)
         {
             bool hasAppended = false;
-            var properties = objType.GetProperties().Where(i => i.CanRead);
+            PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            bool onlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
+            List<string> includedNames = new();
 
-            foreach (var property in properties)
+            foreach (var propertyInfo in propertyInfos)
             {
-                Type propertyType = property.PropertyType;
-                object? propertyObj = property.GetValue(obj);
-                string name = jsonNamingPolicy?.ConvertName(property.Name) ?? property.Name;
-                parseObject(propertyType, propertyObj,
-                    () =>
+                if (tryIfIncluded(propertyInfo, propertyInfo, onlyWithAttribute, out string? name))
+                {
+                    if (includedNames.Contains(name))
                     {
-                        if (!hasAppended)
+                        continue;
+                    }
+
+                    includedNames.Add(name);
+
+                    object? propertyObj = propertyInfo.GetValue(obj);
+                    parseObject(propertyInfo.PropertyType, propertyObj,
+                        () =>
                         {
-                            hasAppended = true;
-                            onFirstAppend?.Invoke();
-                        }
-                        writer.WritePropertyName(name);
-                    },
-                    null);
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend?.Invoke();
+                            }
+                            writer.WritePropertyName(name);
+                        },
+                        null);
+                }
             }
+
+            foreach (var fieldInfo in fieldInfos)
+            {
+                if (fieldInfo.IsStatic)
+                {
+                    continue;
+                }
+
+                string propertyNameEquivalent = ClassFieldHelpers.GetPropertyName(fieldInfo);
+
+                PropertyInfo? propertyInfo = propertyInfos.FirstOrDefault(i => i.Name.Equals(propertyNameEquivalent));
+
+                if (propertyInfo == null)
+                {
+                    continue;
+                }
+
+                if (tryIfIncluded(propertyInfo, fieldInfo, onlyWithAttribute, out string? name))
+                {
+                    if (includedNames.Contains(name))
+                    {
+                        continue;
+                    }
+
+                    includedNames.Add(name);
+
+                    object? propertyObj = propertyInfo.GetValue(obj);
+                    parseObject(propertyInfo.PropertyType, propertyObj,
+                        () =>
+                        {
+                            if (!hasAppended)
+                            {
+                                hasAppended = true;
+                                onFirstAppend?.Invoke();
+                            }
+                            writer.WritePropertyName(name);
+                        },
+                        null);
+                }
+            }
+
             if (hasAppended)
             {
                 onPostAppend?.Invoke();
