@@ -36,7 +36,22 @@ public abstract class Reference : Query
 
     #region Methods
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is Reference reference &&
+               base.Equals(obj) &&
+               EqualityComparer<Database>.Default.Equals(Database, reference.Database);
+    }
 
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        int hashCode = 365298542;
+        hashCode = hashCode * -1521134295 + base.GetHashCode();
+        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
+        return hashCode;
+    }
 
     #endregion
 }

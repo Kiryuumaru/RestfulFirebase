@@ -47,6 +47,27 @@ public class DocumentReference : Reference
 
     #region Methods
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is DocumentReference reference &&
+               base.Equals(obj) &&
+               EqualityComparer<Database>.Default.Equals(Database, reference.Database) &&
+               Id == reference.Id &&
+               EqualityComparer<CollectionReference>.Default.Equals(Parent, reference.Parent);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        int hashCode = 1175519339;
+        hashCode = hashCode * -1521134295 + base.GetHashCode();
+        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
+        hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
+        hashCode = hashCode * -1521134295 + EqualityComparer<CollectionReference>.Default.GetHashCode(Parent);
+        return hashCode;
+    }
+
     /// <summary>
     /// Creates a collection reference <see cref="CollectionReference"/>.
     /// </summary>

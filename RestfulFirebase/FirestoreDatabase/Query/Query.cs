@@ -35,6 +35,19 @@ public abstract class Query
 
     #region Methods
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is Query query &&
+               EqualityComparer<Database>.Default.Equals(Database, query.Database);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return 732662424 + EqualityComparer<Database>.Default.GetHashCode(Database);
+    }
+
     internal string BuildUrl(string projectId)
     {
         return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}{BuildUrlCascade(projectId)}";
