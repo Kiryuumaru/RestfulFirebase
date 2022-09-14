@@ -9,7 +9,7 @@ namespace RestfulFirebase.Common.Responses;
 /// <summary>
 /// The responses for all API request.
 /// </summary>
-public abstract class CommonResponse
+public abstract class Response
 {
     /// <summary>
     /// Gets the exception of the operation.
@@ -22,7 +22,7 @@ public abstract class CommonResponse
     [MemberNotNullWhen(false, nameof(Error))]
     public bool IsSuccess { get => Error == null; }
 
-    internal CommonResponse(Exception? error)
+    internal Response(Exception? error)
     {
         Error = error;
     }
@@ -33,10 +33,10 @@ public abstract class CommonResponse
         return new CommonResponse<TRequest>(request, error);
     }
 
-    internal static CommonResponse<TRequest, TResponse> Create<TRequest, TResponse>(TRequest request, TResponse? response, Exception? error = null)
+    internal static Response<TRequest, TResponse> Create<TRequest, TResponse>(TRequest request, TResponse? response, Exception? error = null)
         where TRequest : CommonRequest
     {
-        return new CommonResponse<TRequest, TResponse>(request, response, error);
+        return new Response<TRequest, TResponse>(request, response, error);
     }
 
     /// <summary>
@@ -57,7 +57,7 @@ public abstract class CommonResponse
 /// <typeparam name="TRequest">
 /// The type of the operation request.
 /// </typeparam>
-public class CommonResponse<TRequest> : CommonResponse
+public class CommonResponse<TRequest> : Response
     where TRequest : CommonRequest
 {
     /// <summary>
@@ -81,7 +81,7 @@ public class CommonResponse<TRequest> : CommonResponse
 /// <typeparam name="TRequest">
 /// The type of the operation request.
 /// </typeparam>
-public class CommonResponse<TRequest, TResponse> : CommonResponse<TRequest>
+public class Response<TRequest, TResponse> : CommonResponse<TRequest>
     where TRequest : CommonRequest
 {
     /// <summary>
@@ -95,7 +95,7 @@ public class CommonResponse<TRequest, TResponse> : CommonResponse<TRequest>
     [MemberNotNullWhen(true, nameof(Response))]
     public bool HasResponse { get => Response != null; }
 
-    internal CommonResponse(TRequest request, TResponse? response, Exception? error)
+    internal Response(TRequest request, TResponse? response, Exception? error)
         : base(request, error)
     {
         Response = response;

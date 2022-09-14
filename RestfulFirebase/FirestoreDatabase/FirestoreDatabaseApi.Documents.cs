@@ -16,20 +16,6 @@ namespace RestfulFirebase.Api;
 public static partial class FirestoreDatabase
 {
     /// <summary>
-    /// Creates an instance of <see cref="Database"/> with the specified <paramref name="databaseId"/>
-    /// </summary>
-    /// <param name="databaseId">
-    /// The ID of the database to use. Set to <c>null</c> if the instance will use the default database.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="RestfulFirebase.FirestoreDatabase.Database"/>.
-    /// </returns>
-    public static Database Database(string? databaseId = default)
-    {
-        return RestfulFirebase.FirestoreDatabase.Database.Get(databaseId);
-    }
-
-    /// <summary>
     /// Gets the <see cref="Document{T}"/> of the specified request query.
     /// </summary>
     /// <typeparam name="T">
@@ -39,7 +25,7 @@ public static partial class FirestoreDatabase
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the created <see cref="Document{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the created <see cref="Document{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
@@ -48,7 +34,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    public static async Task<CommonResponse<GetDocumentRequest<T>, Document<T>>> GetDocument<T>(GetDocumentRequest<T> request)
+    public static async Task<Response<GetDocumentRequest<T>, Document<T>>> GetDocument<T>(GetDocumentRequest<T> request)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(request.Config);
@@ -61,11 +47,11 @@ public static partial class FirestoreDatabase
             using Stream contentStream = await ExecuteWithGet(request);
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-            return CommonResponse.Create(request, ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
+            return Response.Create(request, ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create<GetDocumentRequest<T>, Document<T>>(request, null, ex);
+            return Response.Create<GetDocumentRequest<T>, Document<T>>(request, null, ex);
         }
     }
 
@@ -79,7 +65,7 @@ public static partial class FirestoreDatabase
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the created <see cref="Document{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the created <see cref="Document{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -89,7 +75,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    public static async Task<CommonResponse<PatchDocumentRequest<T>, Document<T>>> PatchDocument<T>(PatchDocumentRequest<T> request)
+    public static async Task<Response<PatchDocumentRequest<T>, Document<T>>> PatchDocument<T>(PatchDocumentRequest<T> request)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(request.Config);
@@ -108,11 +94,11 @@ public static partial class FirestoreDatabase
             using Stream contentStream = await ExecuteWithPatchContent(request, stream);
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-            return CommonResponse.Create(request, ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
+            return Response.Create(request, ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create<PatchDocumentRequest<T>, Document<T>>(request, null, ex);
+            return Response.Create<PatchDocumentRequest<T>, Document<T>>(request, null, ex);
         }
     }
 
@@ -123,7 +109,7 @@ public static partial class FirestoreDatabase
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
@@ -138,11 +124,11 @@ public static partial class FirestoreDatabase
         {
             using Stream response = await ExecuteWithDelete(request);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 }

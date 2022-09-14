@@ -29,7 +29,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
@@ -53,11 +53,11 @@ public static partial class Authentication
 
             await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -68,7 +68,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -96,11 +96,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -111,7 +111,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -139,11 +139,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
 
     }
@@ -155,7 +155,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
@@ -203,11 +203,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -218,7 +218,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="AuthInvalidIDTokenException">
     /// The user's credential is no longer valid. The user must sign in again.
@@ -245,11 +245,11 @@ public static partial class Authentication
 
             await ExecuteWithPostContent(request, GoogleDeleteUserUrl, content);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -260,7 +260,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -290,11 +290,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -306,7 +306,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -337,11 +337,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -352,7 +352,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -395,11 +395,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, request.FirebaseUser);
 
-            return CommonResponse.Create(request);
+            return Response.Create(request);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create(request, ex);
+            return Response.Create(request, ex);
         }
     }
 
@@ -410,13 +410,13 @@ public static partial class Authentication
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with <see cref="ProviderQueryResult"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with <see cref="ProviderQueryResult"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    public static async Task<CommonResponse<AuthenticatedCommonRequest, ProviderQueryResult>> GetLinkedAccounts(AuthenticatedCommonRequest request)
+    public static async Task<Response<AuthenticatedCommonRequest, ProviderQueryResult>> GetLinkedAccounts(AuthenticatedCommonRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
@@ -434,11 +434,11 @@ public static partial class Authentication
 
             data.Email = request.FirebaseUser.Email;
 
-            return CommonResponse.Create(request, data);
+            return Response.Create(request, data);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create<AuthenticatedCommonRequest, ProviderQueryResult>(request, null, ex);
+            return Response.Create<AuthenticatedCommonRequest, ProviderQueryResult>(request, null, ex);
         }
     }
 
@@ -449,13 +449,13 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the fresh token.
+    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the fresh token.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    public static async Task<CommonResponse<AuthenticatedCommonRequest, string>> GetFreshToken(AuthenticatedCommonRequest request)
+    public static async Task<Response<AuthenticatedCommonRequest, string>> GetFreshToken(AuthenticatedCommonRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
@@ -473,11 +473,11 @@ public static partial class Authentication
                 await RefreshUserInfo(request, request.FirebaseUser);
             }
 
-            return CommonResponse.Create(request, request.FirebaseUser.IdToken);
+            return Response.Create(request, request.FirebaseUser.IdToken);
         }
         catch (Exception ex)
         {
-            return CommonResponse.Create<AuthenticatedCommonRequest, string>(request, null, ex);
+            return Response.Create<AuthenticatedCommonRequest, string>(request, null, ex);
         }
     }
 }
