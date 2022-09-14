@@ -29,12 +29,12 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with reCapcha site key.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with reCapcha site key.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> is a null reference.
     /// </exception>
-    public static async Task<Response<CommonRequest, string>> GetRecaptchaSiteKey(CommonRequest request)
+    public static async Task<CommonResponse<CommonRequest, string>> GetRecaptchaSiteKey(CommonRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
 
@@ -47,11 +47,11 @@ public static partial class Authentication
                 throw new AuthUndefinedException();
             }
 
-            return Response.Create(request, response.RecaptchaSiteKey);
+            return CommonResponse.Create(request, response.RecaptchaSiteKey);
         }
         catch (Exception ex)
         {
-            return Response.Create<CommonRequest, string>(request, null, ex);
+            return CommonResponse.Create<CommonRequest, string>(request, null, ex);
         }
     }
 
@@ -62,14 +62,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with sessioninfo of the verification sent.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with sessioninfo of the verification sent.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SendVerificationCodeRequest.PhoneNumber"/> and
     /// <see cref="SendVerificationCodeRequest.RecaptchaToken"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SendVerificationCodeRequest, string>> SendVerificationCode(SendVerificationCodeRequest request)
+    public static async Task<CommonResponse<SendVerificationCodeRequest, string>> SendVerificationCode(SendVerificationCodeRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.PhoneNumber);
@@ -86,11 +86,11 @@ public static partial class Authentication
                 throw new Exception();
             }
 
-            return Response.Create(request, response.SessionInfo);
+            return CommonResponse.Create(request, response.SessionInfo);
         }
         catch (Exception ex)
         {
-            return Response.Create<SendVerificationCodeRequest, string>(request, null, ex);
+            return CommonResponse.Create<SendVerificationCodeRequest, string>(request, null, ex);
         }
     }
 
@@ -101,14 +101,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="CreateUserWithEmailAndPasswordRequest.Email"/> and
     /// <see cref="CreateUserWithEmailAndPasswordRequest.Password"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<CreateUserWithEmailAndPasswordRequest, FirebaseUser>> CreateUserWithEmailAndPassword(CreateUserWithEmailAndPasswordRequest request)
+    public static async Task<CommonResponse<CreateUserWithEmailAndPasswordRequest, FirebaseUser>> CreateUserWithEmailAndPassword(CreateUserWithEmailAndPasswordRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Email);
@@ -133,11 +133,11 @@ public static partial class Authentication
                 });
             }
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<CreateUserWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<CreateUserWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -148,14 +148,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithEmailAndPasswordRequest.Email"/> and
     /// <see cref="SignInWithEmailAndPasswordRequest.Password"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SignInWithEmailAndPasswordRequest, FirebaseUser>> SignInWithEmailAndPassword(SignInWithEmailAndPasswordRequest request)
+    public static async Task<CommonResponse<SignInWithEmailAndPasswordRequest, FirebaseUser>> SignInWithEmailAndPassword(SignInWithEmailAndPasswordRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Email);
@@ -180,11 +180,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -195,14 +195,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithPhoneNumber.SessionInfo"/> and
     /// <see cref="SignInWithPhoneNumber.Code"/> are either a null reference.
     /// </exception>
-    public async static Task<Response<SignInWithPhoneNumber, FirebaseUser>> SignInWithPhoneNumber(SignInWithPhoneNumber request)
+    public async static Task<CommonResponse<SignInWithPhoneNumber, FirebaseUser>> SignInWithPhoneNumber(SignInWithPhoneNumber request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.SessionInfo);
@@ -218,11 +218,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithPhoneNumber, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithPhoneNumber, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -233,13 +233,13 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="SignInWithCustomTokenRequest.CustomToken"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SignInWithCustomTokenRequest, FirebaseUser>> SignInWithCustomToken(SignInWithCustomTokenRequest request)
+    public static async Task<CommonResponse<SignInWithCustomTokenRequest, FirebaseUser>> SignInWithCustomToken(SignInWithCustomTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.CustomToken);
@@ -254,11 +254,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithCustomTokenRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithCustomTokenRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -269,14 +269,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithOAuthRequest.AuthType"/> and
     /// <see cref="SignInWithOAuthRequest.OAuthToken"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SignInWithOAuthRequest, FirebaseUser>> SignInWithOAuth(SignInWithOAuthRequest request)
+    public static async Task<CommonResponse<SignInWithOAuthRequest, FirebaseUser>> SignInWithOAuth(SignInWithOAuthRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.AuthType);
@@ -298,11 +298,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithOAuthRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithOAuthRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -313,14 +313,14 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthAccessToken"/> and
     /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthTokenSecret"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SignInWithOAuthTwitterTokenRequest, FirebaseUser>> SignInWithOAuthTwitterToken(SignInWithOAuthTwitterTokenRequest request)
+    public static async Task<CommonResponse<SignInWithOAuthTwitterTokenRequest, FirebaseUser>> SignInWithOAuthTwitterToken(SignInWithOAuthTwitterTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.OAuthAccessToken);
@@ -337,11 +337,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithOAuthTwitterTokenRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithOAuthTwitterTokenRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -352,13 +352,13 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="SignInWithGoogleIdTokenRequest.IdToken"/> are either a null reference.
     /// </exception>
-    public static async Task<Response<SignInWithGoogleIdTokenRequest, FirebaseUser>> SignInWithGoogleIdToken(SignInWithGoogleIdTokenRequest request)
+    public static async Task<CommonResponse<SignInWithGoogleIdTokenRequest, FirebaseUser>> SignInWithGoogleIdToken(SignInWithGoogleIdTokenRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.IdToken);
@@ -374,11 +374,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<SignInWithGoogleIdTokenRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<SignInWithGoogleIdTokenRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -389,12 +389,12 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> is a null reference.
     /// </exception>
-    public static async Task<Response<CommonRequest, FirebaseUser>> SignInAnonymously(CommonRequest request)
+    public static async Task<CommonResponse<CommonRequest, FirebaseUser>> SignInAnonymously(CommonRequest request)
     {
         ArgumentNullException.ThrowIfNull(request.Config);
 
@@ -408,11 +408,11 @@ public static partial class Authentication
 
             await RefreshUserInfo(request, user);
 
-            return Response.Create(request, user);
+            return CommonResponse.Create(request, user);
         }
         catch (Exception ex)
         {
-            return Response.Create<CommonRequest, FirebaseUser>(request, null, ex);
+            return CommonResponse.Create<CommonRequest, FirebaseUser>(request, null, ex);
         }
     }
 
@@ -423,7 +423,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="Response"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
@@ -440,11 +440,11 @@ public static partial class Authentication
 
             await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
 
-            return Response.Create(request);
+            return CommonResponse.Create(request);
         }
         catch (Exception ex)
         {
-            return Response.Create(request, ex);
+            return CommonResponse.Create(request, ex);
         }
     }
 }
