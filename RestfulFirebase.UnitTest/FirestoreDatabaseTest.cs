@@ -181,7 +181,7 @@ public class FirestoreDatabaseTest
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMModelTest)}");
 
-        // Remove residual files from last test
+        // Remove residual files
         try
         {
             await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -199,13 +199,13 @@ public class FirestoreDatabaseTest
             Val3 = "test val 3",
         };
         MVVMModelWithIncludeOnlyAttribute patchTest1Model2 = new();
-        List<string?> propertyChangedNames = new();
+        List<string?> modelPropertyChangedNames = new();
         patchTest1Model2.PropertyChanged += (s, e) =>
         {
-            propertyChangedNames.Add(e.PropertyName);
+            modelPropertyChangedNames.Add(e.PropertyName);
         };
 
-        Document<MVVMModelWithIncludeOnlyAttribute>? patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -214,7 +214,7 @@ public class FirestoreDatabaseTest
         });
         Assert.NotNull(patchTest1);
 
-        Document<MVVMModelWithIncludeOnlyAttribute>? patchTest1Get1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var patchTest1Get1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -223,15 +223,99 @@ public class FirestoreDatabaseTest
         });
         Assert.NotNull(patchTest1Get1);
 
-        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), propertyChangedNames);
-        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), propertyChangedNames);
-        Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), propertyChangedNames);
+        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), modelPropertyChangedNames);
+        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), modelPropertyChangedNames);
+        Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), modelPropertyChangedNames);
         Assert.NotEqual(patchTest1.Model.Val3, patchTest1Get1.Model.Val3);
-
         patchTest1Get1.Model.Val3 = patchTest1.Model.Val3;
-
         Assert.Equivalent(patchTest1, patchTest1Get1);
 
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
+        {
+            Config = config,
+            Reference = documentReferenceTest1
+        });
+
+        await Assert.ThrowsAsync<FirestoreDatabaseNotFoundException>(async () => await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Reference = documentReferenceTest1
+        }));
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void PatchGetAndDeleteDocumentMVVMDocumentTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Database()
+            .Collection("public")
+            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMDocumentTest)}");
+
+        // Remove residual files
+        try
+        {
+            await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
+            {
+                Config = config,
+                Reference = documentReferenceTest1
+            });
+        }
+        catch { }
+
+        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Model = new()
+            {
+                Val1 = "test val 1",
+                Val2 = "test val 2",
+                Val3 = "test val 3",
+            },
+            Reference = documentReferenceTest1
+        });
+        Assert.NotNull(patchTest1);
+
+        List<string?> documentPropertyChangedNames = new();
+        patchTest1.PropertyChanged += (s, e) =>
+        {
+            documentPropertyChangedNames.Add(e.PropertyName);
+        };
+
+        await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Model = new()
+            {
+                Val1 = "another test val 1",
+                Val2 = "another test val 2",
+                Val3 = "another test val 3",
+            },
+            Reference = documentReferenceTest1
+        });
+
+        var patchTest1Get1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = patchTest1,
+            Reference = documentReferenceTest1
+        });
+        Assert.NotNull(patchTest1Get1);
+
+        Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Model), documentPropertyChangedNames);
+        Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Reference), documentPropertyChangedNames);
+        Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.CreateTime), documentPropertyChangedNames);
+        Assert.Contains(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.UpdateTime), documentPropertyChangedNames);
+        Assert.Equivalent(patchTest1, patchTest1Get1);
+
+        // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,

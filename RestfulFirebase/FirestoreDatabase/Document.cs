@@ -1,4 +1,6 @@
-﻿using RestfulFirebase.CloudFirestore.Query;
+﻿using ObservableHelpers.ComponentModel;
+using ObservableHelpers.ComponentModel.Enums;
+using RestfulFirebase.CloudFirestore.Query;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -11,7 +13,8 @@ namespace RestfulFirebase.FirestoreDatabase
     /// <summary>
     /// Represents a document node of the firebase cloud firestore.
     /// </summary>
-    public class Document<T>
+    [ObservableObject]
+    public partial class Document<T>
          where T : class
     {
         #region Properties
@@ -19,27 +22,32 @@ namespace RestfulFirebase.FirestoreDatabase
         /// <summary>
         /// Gets the name of the document node.
         /// </summary>
-        public string Name { get; internal set; }
+        [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+        string name;
 
         /// <summary>
         /// Gets the reference of the document node.
         /// </summary>
-        public DocumentReference Reference { get; internal set; }
+        [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+        DocumentReference reference;
 
         /// <summary>
         /// Gets the <typeparamref name="T"/> model of the document.
         /// </summary>
-        public T Model { get; internal set; }
+        [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+        T model;
 
         /// <summary>
         /// Gets the <see cref="DateTimeOffset"/> create time of the document node.
         /// </summary>
-        public DateTimeOffset CreateTime { get; internal set; }
+        [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+        DateTimeOffset createTime;
 
         /// <summary>
         /// Gets the <see cref="DateTimeOffset"/> update time of the document node.
         /// </summary>
-        public DateTimeOffset UpdateTime { get; internal set; }
+        [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+        DateTimeOffset updateTime;
 
         #endregion
 
@@ -47,11 +55,11 @@ namespace RestfulFirebase.FirestoreDatabase
 
         internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
         {
-            Name = name;
-            Reference = reference;
-            Model = model;
-            CreateTime = createTime;
-            UpdateTime = updateTime;
+            this.name = name;
+            this.reference = reference;
+            this.model = model;
+            this.createTime = createTime;
+            this.updateTime = updateTime;
         }
 
         #endregion

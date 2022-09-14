@@ -229,7 +229,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(DocumentReference reference, T? existingObj, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
+    internal static Document<T>? ParseDocument<T>(DocumentReference reference, T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
@@ -604,8 +604,14 @@ public static partial class FirestoreDatabase
         string? name = default;
         DateTimeOffset? createTime = default;
         DateTimeOffset? updateTime = default;
-        T obj = existingObj ?? Activator.CreateInstance<T>();
         Type objType = typeof(T);
+        obj ??= document?.Model ?? Activator.CreateInstance<T>();
+
+        if (document != null)
+        {
+            document.Reference = reference;
+            document.Model = obj;
+        }
 
         foreach (var documentProperty in jsonElementEnumerator)
         {
@@ -642,17 +648,20 @@ public static partial class FirestoreDatabase
             }
         }
 
-        Document<T>? document;
-
         if (name != null &&
             createTime.HasValue &&
             updateTime.HasValue)
         {
-            document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
-        }
-        else
-        {
-            document = null;
+            if (document == null)
+            {
+                document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
+            }
+            else
+            {
+                document.Name = name;
+                document.CreateTime = createTime.Value;
+                document.UpdateTime = updateTime.Value;
+            }
         }
 
         return document;
@@ -661,7 +670,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
 #endif
-    internal static async Task<Stream> PopulateDocument<T>(FirebaseConfig config, T obj, JsonSerializerOptions jsonSerializerOptions)
+    internal static async Task<Stream> PopulateDocument<T>(FirebaseConfig config, T? obj, Document<T>? document, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         MemoryStream stream = new();
@@ -1285,6 +1294,12 @@ public static partial class FirestoreDatabase
         }
 
         Type objType = typeof(T);
+        obj ??= document?.Model;
+
+        if (obj == null)
+        {
+            throw new ArgumentException($"Both {nameof(obj)} and {nameof(document)} is a null reference. Provide at least one to populate.");
+        }
 
         var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
             i.IsGenericType &&

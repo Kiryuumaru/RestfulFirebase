@@ -61,7 +61,7 @@ public static partial class FirestoreDatabase
         using Stream contentStream = await ExecuteWithGet(request);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        return ParseDocument(request.Reference, request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+        return ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>
@@ -78,8 +78,8 @@ public static partial class FirestoreDatabase
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
-    /// <see cref="GetDocumentRequest{T}.Model"/> and
-    /// <see cref="GetDocumentRequest{T}.Reference"/> are either a null reference.
+    /// <see cref="GetDocumentRequest{T}.Reference"/> and
+    /// (<see cref="GetDocumentRequest{T}.Document"/> or <see cref="GetDocumentRequest{T}.Model"/>) are either a null reference.
     /// </exception>
     /// <exception cref="OperationCanceledException">
     /// The operation was cancelled.
@@ -91,16 +91,19 @@ public static partial class FirestoreDatabase
         where T : class
     {
         ArgumentNullException.ThrowIfNull(request.Config);
-        ArgumentNullException.ThrowIfNull(request.Model);
         ArgumentNullException.ThrowIfNull(request.Reference);
+        if (request.Document == null && request.Model == null)
+        {
+            throw new ArgumentException($"Both {nameof(request.Document)} and {nameof(request.Model)} is a null reference. Provide at least one to patch.");
+        }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(request.JsonSerializerOptions);
 
-        using Stream stream = await PopulateDocument(request.Config, request.Model, jsonSerializerOptions);
+        using Stream stream = await PopulateDocument(request.Config, request.Model, request.Document, jsonSerializerOptions);
         using Stream contentStream = await ExecuteWithPatchContent(request, stream);
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        return ParseDocument(request.Reference, request.Model, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+        return ParseDocument(request.Reference, request.Model, request.Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
     }
 
     /// <summary>
