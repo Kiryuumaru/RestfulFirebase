@@ -219,8 +219,9 @@ public static partial class FirestoreDatabase
 
         if (request.FirebaseUser != null)
         {
-            string token = await Authentication.GetFreshToken(request);
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            var tokenRequest = await Authentication.GetFreshToken(request);
+            tokenRequest.ThrowIfErrorOrEmptyResponse();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenRequest.Response);
         }
 
         return client;
@@ -458,48 +459,51 @@ public static partial class FirestoreDatabase
             var removeMethod = dictionaryInterfaceType.GetMethod("Remove");
             var keyParameter = new object?[1];
 
-            object? keys = keysProperty.GetValue(dictionaryObj, emptyParameterPlaceholder);
-
-            IEnumerable? keysEnumerable = (IEnumerable?)keys;
-
-            if (itemProperty == null || removeMethod == null || keysEnumerable == null)
+            if (itemProperty != null && keysProperty != null && removeMethod != null)
             {
-                throw new Exception("Invalid dictionary type.");
-            }
+                object? keys = keysProperty.GetValue(dictionaryObj, emptyParameterPlaceholder);
 
-            List<object?> keysAdded = new();
-            List<object> keysToRemove = new();
+                IEnumerable? keysEnumerable = (IEnumerable?)keys;
 
-            foreach (var fieldProperty in enumerator)
-            {
-                string? documentFieldKey = $"\"{fieldProperty.Name}\"";
-
-                object? objKey = JsonSerializer.Deserialize(
-                    documentFieldKey,
-                    keyType,
-                    jsonSerializerOptions);
-
-                keyParameter[0] = objKey;
-
-                object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType);
-
-                itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
-
-                keysAdded.Add(objKey);
-            }
-
-            foreach (object key in keysEnumerable)
-            {
-                if (!keysAdded.Contains(key))
+                if (itemProperty == null || removeMethod == null || keysEnumerable == null)
                 {
-                    keysToRemove.Add(key);
+                    throw new Exception("Invalid dictionary type.");
                 }
-            }
 
-            foreach (object key in keysToRemove)
-            {
-                keyParameter[0] = key;
-                removeMethod.Invoke(dictionaryObj, keyParameter);
+                List<object?> keysAdded = new();
+                List<object> keysToRemove = new();
+
+                foreach (var fieldProperty in enumerator)
+                {
+                    string? documentFieldKey = $"\"{fieldProperty.Name}\"";
+
+                    object? objKey = JsonSerializer.Deserialize(
+                        documentFieldKey,
+                        keyType,
+                        jsonSerializerOptions);
+
+                    keyParameter[0] = objKey;
+
+                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType);
+
+                    itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
+
+                    keysAdded.Add(objKey);
+                }
+
+                foreach (object key in keysEnumerable)
+                {
+                    if (!keysAdded.Contains(key))
+                    {
+                        keysToRemove.Add(key);
+                    }
+                }
+
+                foreach (object key in keysToRemove)
+                {
+                    keyParameter[0] = key;
+                    removeMethod.Invoke(dictionaryObj, keyParameter);
+                }
             }
         }
 

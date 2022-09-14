@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using RestfulFirebase.Common.Requests;
 using System.Diagnostics.CodeAnalysis;
+using RestfulFirebase.Common.Responses;
 
 namespace RestfulFirebase.Api;
 
@@ -28,36 +29,36 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task SendEmailVerification(AuthenticatedCommonRequest request)
+    public static async Task<CommonResponse<AuthenticatedCommonRequest>> SendEmailVerification(AuthenticatedCommonRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{token}\"}}";
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+            var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{tokenRequest.Response}\"}}";
+
+            await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 
     /// <summary>
@@ -67,43 +68,40 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> and
     /// <see cref="ChangeUserEmailRequest.NewEmail"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthEmailExistsException">
-    /// The email address is already in use by another account.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task ChangeUserEmail(ChangeUserEmailRequest request)
+    public static async Task<CommonResponse<ChangeUserEmailRequest>> ChangeUserEmail(ChangeUserEmailRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.NewEmail);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.NewEmail}\",\"returnSecureToken\":true}}";
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content, CamelCaseJsonSerializerOption);
+            var content = $"{{\"idToken\":\"{tokenRequest.Response}\",\"email\":\"{request.NewEmail}\",\"returnSecureToken\":true}}";
 
-        await RefreshUserInfo(request, request.FirebaseUser);
+            await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 
     /// <summary>
@@ -113,43 +111,41 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> and
     /// <see cref="ChangeUserPasswordRequest.NewPassword"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthWeakPasswordException">
-    /// The password must be 6 characters long or more.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task ChangeUserPassword(ChangeUserPasswordRequest request)
+    public static async Task<CommonResponse<ChangeUserPasswordRequest>> ChangeUserPassword(ChangeUserPasswordRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.NewPassword);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var content = $"{{\"idToken\":\"{token}\",\"password\":\"{request.NewPassword}\",\"returnSecureToken\":true}}";
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content, CamelCaseJsonSerializerOption);
+            var content = $"{{\"idToken\":\"{tokenRequest.Response}\",\"password\":\"{request.NewPassword}\",\"returnSecureToken\":true}}";
 
-        await RefreshUserInfo(request, request.FirebaseUser);
+            await ExecuteAuthWithPostContent(request, GoogleUpdateUser, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
+
     }
 
     /// <summary>
@@ -159,56 +155,60 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="CommonRequest.Config"/> is a null reference.
+    /// <see cref="CommonRequest.Config"/> and
+    /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    public static async Task UpdateProfile(UpdateProfileRequest request)
+    public static async Task<CommonResponse<UpdateProfileRequest>> UpdateProfile(UpdateProfileRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        string token = await GetFreshToken(request);
-
-        StringBuilder sb = new($"{{\"idToken\":\"{token}\"");
-        if (!string.IsNullOrWhiteSpace(request.DisplayName) && !string.IsNullOrWhiteSpace(request.PhotoUrl))
+        try
         {
-            sb.Append($",\"displayName\":\"{request.DisplayName}\",\"photoUrl\":\"{request.PhotoUrl}\"");
+            var tokenRequest = await GetFreshToken(request);
+
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
+
+            StringBuilder sb = new($"{{\"idToken\":\"{tokenRequest.Response}\"");
+            if (!string.IsNullOrWhiteSpace(request.DisplayName) && !string.IsNullOrWhiteSpace(request.PhotoUrl))
+            {
+                sb.Append($",\"displayName\":\"{request.DisplayName}\",\"photoUrl\":\"{request.PhotoUrl}\"");
+            }
+            else if (!string.IsNullOrWhiteSpace(request.DisplayName))
+            {
+                sb.Append($",\"displayName\":\"{request.DisplayName}\"");
+                sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
+            }
+            else if (!string.IsNullOrWhiteSpace(request.PhotoUrl))
+            {
+                sb.Append($",\"photoUrl\":\"{request.PhotoUrl}\"");
+                sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
+            }
+            else
+            {
+                sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
+            }
+
+            sb.Append($",\"returnSecureToken\":true}}");
+
+            string content = sb.ToString();
+
+            await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
         }
-        else if (!string.IsNullOrWhiteSpace(request.DisplayName))
+        catch (Exception ex)
         {
-            sb.Append($",\"displayName\":\"{request.DisplayName}\"");
-            sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
+            return CommonResponse.Create(request, ex);
         }
-        else if (!string.IsNullOrWhiteSpace(request.PhotoUrl))
-        {
-            sb.Append($",\"photoUrl\":\"{request.PhotoUrl}\"");
-            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
-        }
-        else
-        {
-            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
-        }
-
-        sb.Append($",\"returnSecureToken\":true}}");
-
-        string content = sb.ToString();
-
-        await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
-
-        await RefreshUserInfo(request, request.FirebaseUser);
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="AuthInvalidIDTokenException">
     /// The user's credential is no longer valid. The user must sign in again.
@@ -227,27 +227,30 @@ public static partial class Authentication
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    public static async Task DeleteUser(AuthenticatedCommonRequest request)
+    public static async Task<CommonResponse<AuthenticatedCommonRequest>> DeleteUser(AuthenticatedCommonRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var content = $"{{ \"idToken\": \"{token}\" }}";
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await ExecuteWithPostContent(request, GoogleDeleteUserUrl, content);
+            var content = $"{{ \"idToken\": \"{tokenRequest.Response}\" }}";
+
+            await ExecuteWithPostContent(request, GoogleDeleteUserUrl, content);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 
     /// <summary>
@@ -257,7 +260,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -265,43 +268,34 @@ public static partial class Authentication
     /// <see cref="LinkAccountRequest.Email"/> and
     /// <see cref="LinkAccountRequest.Password"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthLoginCredentialsTooOldException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthTokenExpiredException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthWeakPasswordException">
-    /// The password must be 6 characters long or more.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task LinkAccount(LinkAccountRequest request)
+    public static async Task<CommonResponse<LinkAccountRequest>> LinkAccount(LinkAccountRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.Email);
         ArgumentNullException.ThrowIfNull(request.Password);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var content = $"{{\"idToken\":\"{token}\",\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
+            var content = $"{{\"idToken\":\"{tokenRequest.Response}\",\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
 
-        await RefreshUserInfo(request, request.FirebaseUser);
+            await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 
 
@@ -312,7 +306,7 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
@@ -320,47 +314,35 @@ public static partial class Authentication
     /// <see cref="LinkOAuthAccountRequest.AuthType"/> and
     /// <see cref="LinkOAuthAccountRequest.OAuthAccessToken"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// The corresponding provider is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDPResponseException">
-    /// The supplied auth credential is malformed or has expired.
-    /// </exception>
-    /// <exception cref="AuthEmailExistsException">
-    /// The email address is already in use by another account.
-    /// </exception>
-    /// <exception cref="AuthAlreadyLinkedException">
-    /// This credential is already associated with a different user account.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task LinkAccount(LinkOAuthAccountRequest request)
+    public static async Task<CommonResponse<LinkOAuthAccountRequest>> LinkAccount(LinkOAuthAccountRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.AuthType);
         ArgumentNullException.ThrowIfNull(request.OAuthAccessToken);
 
-        string token = await GetFreshToken(request);
+        try
+        {
+            var tokenRequest = await GetFreshToken(request);
 
-        var providerId = GetProviderId(request.AuthType.Value);
-        var content = $"{{\"idToken\":\"{token}\",\"postBody\":\"access_token={request.OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-        
-        await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
 
-        await RefreshUserInfo(request, request.FirebaseUser);
+            var providerId = GetProviderId(request.AuthType.Value);
+            var content = $"{{\"idToken\":\"{tokenRequest.Response}\",\"postBody\":\"access_token={request.OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+            await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 
     /// <summary>
@@ -370,55 +352,55 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> and
     /// <see cref="UnlinkAccountRequest.AuthType"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task UnlinkAccounts(UnlinkAccountRequest request)
+    public static async Task<CommonResponse<UnlinkAccountRequest>> UnlinkAccounts(UnlinkAccountRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
         ArgumentNullException.ThrowIfNull(request.AuthType);
 
-        string token = await GetFreshToken(request);
-
-        string? providerId;
-        if (request.AuthType.Value == FirebaseAuthType.EmailAndPassword)
+        try
         {
-            providerId = request.AuthType.Value.ToEnumString();
+            var tokenRequest = await GetFreshToken(request);
+
+            if (tokenRequest.Error != null)
+            {
+                throw tokenRequest.Error;
+            }
+
+            string? providerId;
+            if (request.AuthType.Value == FirebaseAuthType.EmailAndPassword)
+            {
+                providerId = request.AuthType.Value.ToEnumString();
+            }
+            else
+            {
+                providerId = GetProviderId(request.AuthType.Value);
+            }
+
+            if (string.IsNullOrEmpty(providerId))
+            {
+                throw new AuthUndefinedException();
+            }
+
+            var content = $"{{\"idToken\":\"{tokenRequest.Response}\",\"deleteProvider\":[\"{providerId}\"]}}";
+
+            await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
+
+            await RefreshUserInfo(request, request.FirebaseUser);
+
+            return CommonResponse.Create(request);
         }
-        else
+        catch (Exception ex)
         {
-            providerId = GetProviderId(request.AuthType.Value);
+            return CommonResponse.Create(request, ex);
         }
-
-        if (string.IsNullOrEmpty(providerId))
-        {
-            throw new AuthUndefinedException();
-        }
-
-        var content = $"{{\"idToken\":\"{token}\",\"deleteProvider\":[\"{providerId}\"]}}";
-
-        await ExecuteAuthWithPostContent(request, GoogleSetAccountUrl, content, CamelCaseJsonSerializerOption);
-
-        await RefreshUserInfo(request, request.FirebaseUser);
     }
 
     /// <summary>
@@ -428,40 +410,36 @@ public static partial class Authentication
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    /// The <see cref="Task"/>{<see cref="ProviderQueryResult"/>} proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with <see cref="ProviderQueryResult"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthInvalidEmailAddressException">
-    /// The email address is badly formatted.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<ProviderQueryResult> GetLinkedAccounts(AuthenticatedCommonRequest request)
+    public static async Task<CommonResponse<AuthenticatedCommonRequest, ProviderQueryResult>> GetLinkedAccounts(AuthenticatedCommonRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        string content = $"{{\"identifier\":\"{request.FirebaseUser.Email}\", \"continueUri\": \"http://localhost\"}}";
-
-        ProviderQueryResult? data = await ExecuteWithPostContent<ProviderQueryResult>(request, GoogleCreateAuthUrl, content, CamelCaseJsonSerializerOption);
-
-        if (data == null)
+        try
         {
-            throw new AuthUndefinedException();
+            string content = $"{{\"identifier\":\"{request.FirebaseUser.Email}\", \"continueUri\": \"http://localhost\"}}";
+
+            ProviderQueryResult? data = await ExecuteWithPostContent<ProviderQueryResult>(request, GoogleCreateAuthUrl, content, CamelCaseJsonSerializerOption);
+
+            if (data == null)
+            {
+                throw new AuthUndefinedException();
+            }
+
+            data.Email = request.FirebaseUser.Email;
+
+            return CommonResponse.Create(request, data);
         }
-
-        data.Email = request.FirebaseUser.Email;
-
-        return data;
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<AuthenticatedCommonRequest, ProviderQueryResult>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -471,57 +449,35 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the fresh token.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="AuthenticatedCommonRequest.FirebaseUser"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthTokenExpiredException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserDisabledException">
-    /// The user account has been disabled by an administrator.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// The user corresponding to the refresh token was not found. It is likely the user was deleted.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthInvalidRefreshTokenException">
-    /// An invalid refresh token is provided.
-    /// </exception>
-    /// <exception cref="AuthInvalidJSONReceivedException">
-    /// Invalid JSON payload received.
-    /// </exception>
-    /// <exception cref="AuthMissingRefreshTokenException">
-    /// No refresh token provided.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<string> GetFreshToken(AuthenticatedCommonRequest request)
+    public static async Task<CommonResponse<AuthenticatedCommonRequest, string>> GetFreshToken(AuthenticatedCommonRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.FirebaseUser);
 
-        if (request.FirebaseUser.IsExpired())
+        try
         {
-            var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{request.FirebaseUser.RefreshToken}\"}}";
+            if (request.FirebaseUser.IsExpired())
+            {
+                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{request.FirebaseUser.RefreshToken}\"}}";
 
-            FirebaseAuth? auth = await ExecuteAuthWithPostContent(request, GoogleRefreshAuth, content, SnakeCaseJsonSerializerOption);
+                FirebaseAuth? auth = await ExecuteAuthWithPostContent(request, GoogleRefreshAuth, content, SnakeCaseJsonSerializerOption);
 
-            request.FirebaseUser.UpdateAuth(auth);
+                request.FirebaseUser.UpdateAuth(auth);
 
-            await RefreshUserInfo(request, request.FirebaseUser);
+                await RefreshUserInfo(request, request.FirebaseUser);
+            }
+
+            return CommonResponse.Create(request, request.FirebaseUser.IdToken);
         }
-
-        return request.FirebaseUser.IdToken;
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<AuthenticatedCommonRequest, string>(request, null, ex);
+        }
     }
 }

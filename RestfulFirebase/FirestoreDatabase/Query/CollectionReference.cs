@@ -55,7 +55,7 @@ public class CollectionReference : Reference
         hashCode = hashCode * -1521134295 + base.GetHashCode();
         hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
         hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
-        hashCode = hashCode * -1521134295 + EqualityComparer<DocumentReference?>.Default.GetHashCode(Parent);
+        hashCode = hashCode * -1521134295 + (Parent == null ? 0 : EqualityComparer<DocumentReference?>.Default.GetHashCode(Parent));
         return hashCode;
     }
 

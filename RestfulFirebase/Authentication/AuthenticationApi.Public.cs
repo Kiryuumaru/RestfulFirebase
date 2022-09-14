@@ -12,6 +12,7 @@ using RestfulFirebase.Authentication.Requests;
 using System.Linq;
 using System.Text.Json.Serialization;
 using RestfulFirebase.Common.Requests;
+using RestfulFirebase.Common.Responses;
 using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.Api;
@@ -28,24 +29,30 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the reCapcha site key.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with reCapcha site key.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> is a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    public static async Task<string> GetRecaptchaSiteKey(CommonRequest request)
+    public static async Task<CommonResponse<CommonRequest, string>> GetRecaptchaSiteKey(CommonRequest request)
     {
-        RecaptchaSiteKeyDefinition? response = await ExecuteWithGet<RecaptchaSiteKeyDefinition>(request, GoogleRecaptchaParams, CamelCaseJsonSerializerOption);
+        ArgumentNullException.ThrowIfNull(request.Config);
 
-        if (response == null || response.RecaptchaSiteKey == null)
+        try
         {
-            throw new Exception();
-        }
+            RecaptchaSiteKeyDefinition? response = await ExecuteWithGet<RecaptchaSiteKeyDefinition>(request, GoogleRecaptchaParams, CamelCaseJsonSerializerOption);
 
-        return response.RecaptchaSiteKey;
+            if (response == null || response.RecaptchaSiteKey == null)
+            {
+                throw new AuthUndefinedException();
+            }
+
+            return CommonResponse.Create(request, response.RecaptchaSiteKey);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<CommonRequest, string>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -55,31 +62,36 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the sessioninfo of the verification sent.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with sessioninfo of the verification sent.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SendVerificationCodeRequest.PhoneNumber"/> and
     /// <see cref="SendVerificationCodeRequest.RecaptchaToken"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    public static async Task<string> SendVerificationCode(SendVerificationCodeRequest request)
+    public static async Task<CommonResponse<SendVerificationCodeRequest, string>> SendVerificationCode(SendVerificationCodeRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.PhoneNumber);
         ArgumentNullException.ThrowIfNull(request.RecaptchaToken);
 
-        string content = $"{{\"phoneNumber\":\"{request.PhoneNumber}\",\"recaptchaToken\":\"{request.RecaptchaToken}\"}}";
-
-        SessionInfoDefinition? response = await ExecuteWithPostContent<SessionInfoDefinition>(request, GoogleSendVerificationCode, content, CamelCaseJsonSerializerOption);
-
-        if (response == null || response.SessionInfo == null)
+        try
         {
-            throw new Exception();
-        }
+            string content = $"{{\"phoneNumber\":\"{request.PhoneNumber}\",\"recaptchaToken\":\"{request.RecaptchaToken}\"}}";
 
-        return response.SessionInfo;
+            SessionInfoDefinition? response = await ExecuteWithPostContent<SessionInfoDefinition>(request, GoogleSendVerificationCode, content, CamelCaseJsonSerializerOption);
+
+            if (response == null || response.SessionInfo == null)
+            {
+                throw new Exception();
+            }
+
+            return CommonResponse.Create(request, response.SessionInfo);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SendVerificationCodeRequest, string>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -89,63 +101,44 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="CreateUserWithEmailAndPasswordRequest.Email"/> and
     /// <see cref="CreateUserWithEmailAndPasswordRequest.Password"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthEmailExistsException">
-    /// The email address is already in use by another account.
-    /// </exception>
-    /// <exception cref="AuthWeakPasswordException">
-    /// The password must be 6 characters long or more.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// Password sign-in is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthTooManyAttemptsException">
-    /// There is an unusual activity on device.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> CreateUserWithEmailAndPassword(CreateUserWithEmailAndPasswordRequest request)
+    public static async Task<CommonResponse<CreateUserWithEmailAndPasswordRequest, FirebaseUser>> CreateUserWithEmailAndPassword(CreateUserWithEmailAndPasswordRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Email);
         ArgumentNullException.ThrowIfNull(request.Password);
 
-        var content = $"{{\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
-
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content, CamelCaseJsonSerializerOption);
-
-        FirebaseUser user = new(auth);
-
-        await RefreshUserInfo(request, user);
-
-        if (request.SendVerificationEmail)
+        try
         {
-            await SendEmailVerification(new AuthenticatedCommonRequest()
-            {
-                Config = request.Config,
-                FirebaseUser = user
-            });
-        }
+            var content = $"{{\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",\"returnSecureToken\":true}}";
 
-        return user;
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content, CamelCaseJsonSerializerOption);
+
+            FirebaseUser user = new(auth);
+
+            await RefreshUserInfo(request, user);
+
+            if (request.SendVerificationEmail)
+            {
+                await SendEmailVerification(new AuthenticatedCommonRequest()
+                {
+                    Config = request.Config,
+                    FirebaseUser = user
+                });
+            }
+
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<CreateUserWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -155,60 +148,44 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithEmailAndPasswordRequest.Email"/> and
     /// <see cref="SignInWithEmailAndPasswordRequest.Password"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthEmailNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthInvalidPasswordException">
-    /// The password is invalid or the user does not have a password.
-    /// </exception>
-    /// <exception cref="AuthUserDisabledException">
-    /// The user account has been disabled by an administrator.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInWithEmailAndPassword(SignInWithEmailAndPasswordRequest request)
+    public static async Task<CommonResponse<SignInWithEmailAndPasswordRequest, FirebaseUser>> SignInWithEmailAndPassword(SignInWithEmailAndPasswordRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Email);
         ArgumentNullException.ThrowIfNull(request.Password);
 
-        StringBuilder sb = new($"{{\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",");
-
-        if (request.TenantId != null)
+        try
         {
-            sb.Append($"\"tenantId\":\"{request.TenantId}\",");
+            StringBuilder sb = new($"{{\"email\":\"{request.Email}\",\"password\":\"{request.Password}\",");
+
+            if (request.TenantId != null)
+            {
+                sb.Append($"\"tenantId\":\"{request.TenantId}\",");
+            }
+
+            sb.Append("\"returnSecureToken\":true}");
+
+            string content = sb.ToString();
+
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GooglePasswordUrl, content, CamelCaseJsonSerializerOption);
+
+            FirebaseUser user = new(auth);
+
+            await RefreshUserInfo(request, user);
+
+            return CommonResponse.Create(request, user);
         }
-
-        sb.Append("\"returnSecureToken\":true}");
-
-        string content = sb.ToString();
-
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GooglePasswordUrl, content, CamelCaseJsonSerializerOption);
-
-        FirebaseUser user = new(auth);
-
-        await RefreshUserInfo(request, user);
-
-        return user;
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithEmailAndPasswordRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -218,30 +195,35 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithPhoneNumber.SessionInfo"/> and
     /// <see cref="SignInWithPhoneNumber.Code"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    public async static Task<FirebaseUser> SignInWithPhoneNumber(SignInWithPhoneNumber request)
+    public async static Task<CommonResponse<SignInWithPhoneNumber, FirebaseUser>> SignInWithPhoneNumber(SignInWithPhoneNumber request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.SessionInfo);
         ArgumentNullException.ThrowIfNull(request.Code);
 
-        string content = $"{{\"sessionInfo\":\"{request.SessionInfo}\",\"code\":\"{request.Code}\",\"returnSecureToken\":true}}";
+        try
+        {
+            string content = $"{{\"sessionInfo\":\"{request.SessionInfo}\",\"code\":\"{request.Code}\",\"returnSecureToken\":true}}";
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignInWithPhoneNumber, content, CamelCaseJsonSerializerOption);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignInWithPhoneNumber, content, CamelCaseJsonSerializerOption);
 
-        FirebaseUser user = new(auth);
+            FirebaseUser user = new(auth);
 
-        await RefreshUserInfo(request, user);
+            await RefreshUserInfo(request, user);
 
-        return user;
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithPhoneNumber, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -251,40 +233,33 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="SignInWithCustomTokenRequest.CustomToken"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthInvalidCustomTokenException">
-    /// The custom token format is incorrect or the token is invalid for some reason (e.g. expired, invalid signature etc.)
-    /// </exception>
-    /// <exception cref="AuthCredentialMismatchException">
-    /// The custom token corresponds to a different Firebase project.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInWithCustomToken(SignInWithCustomTokenRequest request)
+    public static async Task<CommonResponse<SignInWithCustomTokenRequest, FirebaseUser>> SignInWithCustomToken(SignInWithCustomTokenRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.CustomToken);
 
-        string content = $"{{\"token\":\"{request.CustomToken}\",\"returnSecureToken\":true}}";
+        try
+        {
+            string content = $"{{\"token\":\"{request.CustomToken}\",\"returnSecureToken\":true}}";
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleCustomAuthUrl, content, CamelCaseJsonSerializerOption);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleCustomAuthUrl, content, CamelCaseJsonSerializerOption);
 
-        FirebaseUser user = new(auth);
+            FirebaseUser user = new(auth);
 
-        await RefreshUserInfo(request, user);
+            await RefreshUserInfo(request, user);
 
-        return user;
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithCustomTokenRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -294,54 +269,41 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithOAuthRequest.AuthType"/> and
     /// <see cref="SignInWithOAuthRequest.OAuthToken"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// The corresponding provider is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDPResponseException">
-    /// The supplied auth credential is malformed or has expired.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInWithOAuth(SignInWithOAuthRequest request)
+    public static async Task<CommonResponse<SignInWithOAuthRequest, FirebaseUser>> SignInWithOAuth(SignInWithOAuthRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.AuthType);
         ArgumentNullException.ThrowIfNull(request.OAuthToken);
 
-        var providerId = GetProviderId(request.AuthType.Value);
-
-        string content = request.AuthType.Value switch
+        try
         {
-            FirebaseAuthType.Apple => $"{{\"postBody\":\"id_token={request.OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
-            _ => $"{{\"postBody\":\"access_token={request.OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
-        };
+            var providerId = GetProviderId(request.AuthType.Value);
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
+            string content = request.AuthType.Value switch
+            {
+                FirebaseAuthType.Apple => $"{{\"postBody\":\"id_token={request.OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+                _ => $"{{\"postBody\":\"access_token={request.OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+            };
 
-        FirebaseUser user = new(auth);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
 
-        await RefreshUserInfo(request, user);
+            FirebaseUser user = new(auth);
 
-        return user;
+            await RefreshUserInfo(request, user);
+
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithOAuthRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -351,49 +313,36 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/>,
     /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthAccessToken"/> and
     /// <see cref="SignInWithOAuthTwitterTokenRequest.OAuthTokenSecret"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// The corresponding provider is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDPResponseException">
-    /// The supplied auth credential is malformed or has expired.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInWithOAuthTwitterToken(SignInWithOAuthTwitterTokenRequest request)
+    public static async Task<CommonResponse<SignInWithOAuthTwitterTokenRequest, FirebaseUser>> SignInWithOAuthTwitterToken(SignInWithOAuthTwitterTokenRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.OAuthAccessToken);
         ArgumentNullException.ThrowIfNull(request.OAuthTokenSecret);
 
-        var providerId = GetProviderId(FirebaseAuthType.Twitter);
-        var content = $"{{\"postBody\":\"access_token={request.OAuthAccessToken}&oauth_token_secret={request.OAuthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+        try
+        {
+            var providerId = GetProviderId(FirebaseAuthType.Twitter);
+            var content = $"{{\"postBody\":\"access_token={request.OAuthAccessToken}&oauth_token_secret={request.OAuthTokenSecret}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
 
-        FirebaseUser user = new(auth);
+            FirebaseUser user = new(auth);
 
-        await RefreshUserInfo(request, user);
+            await RefreshUserInfo(request, user);
 
-        return user;
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithOAuthTwitterTokenRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -403,47 +352,34 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="SignInWithGoogleIdTokenRequest.IdToken"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// The corresponding provider is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDPResponseException">
-    /// The supplied auth credential is malformed or has expired.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInWithGoogleIdToken(SignInWithGoogleIdTokenRequest request)
+    public static async Task<CommonResponse<SignInWithGoogleIdTokenRequest, FirebaseUser>> SignInWithGoogleIdToken(SignInWithGoogleIdTokenRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.IdToken);
 
-        var providerId = GetProviderId(FirebaseAuthType.Google);
-        var content = $"{{\"postBody\":\"id_token={request.IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+        try
+        {
+            var providerId = GetProviderId(FirebaseAuthType.Google);
+            var content = $"{{\"postBody\":\"id_token={request.IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleIdentityUrl, content, CamelCaseJsonSerializerOption);
 
-        FirebaseUser user = new(auth);
+            FirebaseUser user = new(auth);
 
-        await RefreshUserInfo(request, user);
+            await RefreshUserInfo(request, user);
 
-        return user;
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<SignInWithGoogleIdTokenRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -453,40 +389,31 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> is a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthOperationNotAllowedException">
-    /// Anonymous user sign-in is disabled for this project.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthInvalidIDTokenException">
-    /// The user's credential is no longer valid. The user must sign in again.
-    /// </exception>
-    /// <exception cref="AuthUserNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task<FirebaseUser> SignInAnonymously(CommonRequest request)
+    public static async Task<CommonResponse<CommonRequest, FirebaseUser>> SignInAnonymously(CommonRequest request)
     {
-        var content = $"{{\"returnSecureToken\":true}}";
+        ArgumentNullException.ThrowIfNull(request.Config);
 
-        FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content, CamelCaseJsonSerializerOption);
+        try
+        {
+            var content = $"{{\"returnSecureToken\":true}}";
 
-        FirebaseUser user = new(auth);
+            FirebaseAuth auth = await ExecuteAuthWithPostContent(request, GoogleSignUpUrl, content, CamelCaseJsonSerializerOption);
 
-        await RefreshUserInfo(request, user);
+            FirebaseUser user = new(auth);
 
-        return user;
+            await RefreshUserInfo(request, user);
+
+            return CommonResponse.Create(request, user);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create<CommonRequest, FirebaseUser>(request, null, ex);
+        }
     }
 
     /// <summary>
@@ -496,30 +423,28 @@ public static partial class Authentication
     /// The request of the operation.
     /// </param>
     /// <returns>
-    /// The <see cref="Task"/> proxy of the specified task.
+    /// The <see cref="Task"/> proxy that represents the <see cref="CommonResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="CommonRequest.Config"/> and
     /// <see cref="SendPasswordResetEmailRequest.Email"/> are either a null reference.
     /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// The operation was cancelled.
-    /// </exception>
-    /// <exception cref="AuthEmailNotFoundException">
-    /// There is no user record corresponding to this identifier. The user may have been deleted.
-    /// </exception>
-    /// <exception cref="AuthAPIKeyNotValidException">
-    /// API key not valid. Please pass a valid API key.
-    /// </exception>
-    /// <exception cref="AuthUndefinedException">
-    /// The error occured is undefined.
-    /// </exception>
-    public static async Task SendPasswordResetEmail(SendPasswordResetEmailRequest request)
+    public static async Task<CommonResponse<SendPasswordResetEmailRequest>> SendPasswordResetEmail(SendPasswordResetEmailRequest request)
     {
+        ArgumentNullException.ThrowIfNull(request.Config);
         ArgumentNullException.ThrowIfNull(request.Email);
 
-        var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{request.Email}\"}}";
+        try
+        {
+            var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{request.Email}\"}}";
 
-        await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+            await ExecuteWithPostContent(request, GoogleGetConfirmationCodeUrl, content);
+
+            return CommonResponse.Create(request);
+        }
+        catch (Exception ex)
+        {
+            return CommonResponse.Create(request, ex);
+        }
     }
 }

@@ -18,11 +18,11 @@ namespace RestfulFirebase.UnitTest;
 public class MockTest
 {
     [Fact]
-    public async void Test1()
+    public void Test1()
     {
-        FirebaseConfig config = Helpers.GetFirebaseConfig();
+        //FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        FirebaseUser user;
+        //FirebaseUser user;
 
 
 
