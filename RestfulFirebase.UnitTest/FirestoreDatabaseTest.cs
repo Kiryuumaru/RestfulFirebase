@@ -116,15 +116,11 @@ public class FirestoreDatabaseTest
         };
 
         // Remove residual files from last test
-        try
+        await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
-            await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
-            {
-                Config = config,
-                Reference = documentReferenceTest1
-            });
-        }
-        catch { }
+            Config = config,
+            Reference = documentReferenceTest1
+        });
 
         var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Dictionary<string, NestedType>>()
         {
@@ -188,15 +184,11 @@ public class FirestoreDatabaseTest
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMModelTest)}");
 
         // Remove residual files
-        try
+        await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
-            await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
-            {
-                Config = config,
-                Reference = documentReferenceTest1
-            });
-        }
-        catch { }
+            Config = config,
+            Reference = documentReferenceTest1
+        });
 
         MVVMModelWithIncludeOnlyAttribute patchTest1Model1 = new()
         {
@@ -265,15 +257,11 @@ public class FirestoreDatabaseTest
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMDocumentTest)}");
 
         // Remove residual files
-        try
+        await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
-            await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
-            {
-                Config = config,
-                Reference = documentReferenceTest1
-            });
-        }
-        catch { }
+            Config = config,
+            Reference = documentReferenceTest1
+        });
 
         var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
