@@ -1,10 +1,9 @@
-﻿using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.FirestoreDatabase;
+﻿using RestfulFirebase.FirestoreDatabase;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.CloudFirestore.Query;
+namespace RestfulFirebase.FirestoreDatabase.Query;
 
 /// <summary>
 /// The reference for collections.
@@ -78,9 +77,28 @@ public class CollectionReference : Reference
         return new DocumentReference(Database, this, documentId);
     }
 
+    /// <summary>
+    /// Creates a multiple document reference <see cref="DocumentReference"/>.
+    /// </summary>
+    /// <param name="documentIds">
+    /// The ID of the document references.
+    /// </param>
+    /// <returns>
+    /// The <see cref="DocumentReference"/> of the specified <paramref name="documentIds"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documentIds"/> is a <c>null</c> reference.
+    /// </exception>
+    public MultipleDocumentReference Documents(params string[] documentIds)
+    {
+        ArgumentNullException.ThrowIfNull(documentIds);
+
+        return new MultipleDocumentReference(Database, this, documentIds);
+    }
+
     internal override string BuildUrlCascade(string projectId)
     {
-        var url = BuildUrlSegment(projectId);
+        var url = Id;
 
         if (Parent == null)
         {
@@ -88,7 +106,7 @@ public class CollectionReference : Reference
                 Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint,
                 projectId,
                 Database.DatabaseId,
-                url);
+                $"/{url}");
         }
         else
         {
@@ -101,11 +119,6 @@ public class CollectionReference : Reference
         }
 
         return url;
-    }
-
-    internal override string BuildUrlSegment(string projectId)
-    {
-        return Id;
     }
 
     #endregion

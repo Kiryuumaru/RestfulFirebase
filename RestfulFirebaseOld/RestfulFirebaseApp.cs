@@ -5,7 +5,7 @@ using RestfulFirebase.Storage;
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using RestfulFirebase.CloudFirestore;
+using RestfulFirebase.FirestoreDatabase;
 using DisposableHelpers;
 using DisposableHelpers.Attributes;
 

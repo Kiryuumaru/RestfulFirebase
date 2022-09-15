@@ -2,7 +2,7 @@
 using System;
 using System.Net;
 
-namespace RestfulFirebase.CloudFirestore;
+namespace RestfulFirebase.FirestoreDatabase;
 
 internal class ExceptionHelpers
 {

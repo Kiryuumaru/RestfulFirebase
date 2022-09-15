@@ -1,12 +1,4 @@
-﻿using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.FirestoreDatabase;
-using System;
-using System.Threading.Tasks;
-using System.Text.Json;
-using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.Common.Requests;
-using System.IO;
-using RestfulFirebase.Common.Responses;
+﻿using RestfulFirebase.FirestoreDatabase;
 
 namespace RestfulFirebase.Api;
 

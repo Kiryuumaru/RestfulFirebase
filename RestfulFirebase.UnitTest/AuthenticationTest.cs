@@ -2,9 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Requests;
-using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.Common.Requests;
+using RestfulFirebase.Authentication.Transactions;
 using Xunit;
 
 namespace RestfulFirebase.UnitTest
@@ -25,9 +23,9 @@ namespace RestfulFirebase.UnitTest
                 Password = "123123",
             });
 
-            if (loginRequest.HasResponse)
+            if (loginRequest.HasResult)
             {
-                user = loginRequest.Response;
+                user = loginRequest.Result;
             }
             else
             {
@@ -38,12 +36,12 @@ namespace RestfulFirebase.UnitTest
                     Password = "123123",
                 });
 
-                signupRequest.ThrowIfErrorOrEmptyResponse();
+                signupRequest.ThrowIfErrorOrEmptyResult();
 
-                user = signupRequest.Response;
+                user = signupRequest.Result;
             }
 
-            await Api.Authentication.DeleteUser(new AuthenticatedCommonRequest()
+            await Api.Authentication.DeleteUser(new DeleteUserRequest()
             {
                 Config = config,
                 FirebaseUser = user,

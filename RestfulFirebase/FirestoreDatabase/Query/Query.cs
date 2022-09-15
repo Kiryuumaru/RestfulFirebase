@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.FirestoreDatabase;
+﻿using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.FirestoreDatabase.Abstraction;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,12 +8,12 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.CloudFirestore.Query;
+namespace RestfulFirebase.FirestoreDatabase.Query;
 
 /// <summary>
 /// The base reference of the cloud firestore.
 /// </summary>
-public abstract class Query
+public abstract class Query : IQuery
 {
     #region Properties
 
@@ -48,14 +48,17 @@ public abstract class Query
         return 732662424 + EqualityComparer<Database>.Default.GetHashCode(Database);
     }
 
-    internal string BuildUrl(string projectId)
+    internal virtual string BuildUrl(string projectId, string? postSegment = null)
     {
-        return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}{BuildUrlCascade(projectId)}";
+        return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}";
+    }
+
+    internal virtual string[] BuildUrls(string projectId, string? postSegment = null)
+    {
+        return new string[] { $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}" };
     }
 
     internal abstract string BuildUrlCascade(string projectId);
-
-    internal abstract string BuildUrlSegment(string projectId);
 
     #endregion
 }

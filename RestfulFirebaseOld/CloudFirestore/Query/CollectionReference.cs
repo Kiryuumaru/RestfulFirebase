@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.CloudFirestore.Query;
+namespace RestfulFirebase.FirestoreDatabase.Query;
 
 /// <summary>
 /// The reference for collections.

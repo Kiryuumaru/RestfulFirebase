@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using RestfulFirebase.CloudFirestore.Models;
+using RestfulFirebase.FirestoreDatabase.Models;
 
-namespace RestfulFirebase.CloudFirestore.Models.Fields
+namespace RestfulFirebase.FirestoreDatabase.Models.Fields
 {
     public class IntegerField : Field<int>
     {

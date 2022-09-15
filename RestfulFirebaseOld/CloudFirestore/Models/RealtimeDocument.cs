@@ -1,11 +1,11 @@
-﻿using RestfulFirebase.CloudFirestore.Query;
+﻿using RestfulFirebase.FirestoreDatabase.Query;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.CloudFirestore.Models
+namespace RestfulFirebase.FirestoreDatabase.Models
 {
     /// <summary>
     /// Represents a document node of the firebase cloud firestore.

@@ -6,14 +6,14 @@ using System.Threading;
 using System.Linq;
 using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
-using RestfulFirebase.CloudFirestore.Query;
+using RestfulFirebase.FirestoreDatabase.Query;
 using DisposableHelpers;
 using LockerHelpers;
 using System.Text.Json;
 using System.Net.Http;
 using System.Net.Http.Headers;
 
-namespace RestfulFirebase.CloudFirestore;
+namespace RestfulFirebase.FirestoreDatabase;
 
 /// <summary>
 /// The database instance of the firestore.

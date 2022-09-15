@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.CloudFirestore.Models.Fields;
+using RestfulFirebase.FirestoreDatabase.Models.Fields;
 
-namespace RestfulFirebase.CloudFirestore.Models
+namespace RestfulFirebase.FirestoreDatabase.Models
 {
     public abstract class Field
     {

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace RestfulFirebase.CloudFirestore.Models
+namespace RestfulFirebase.FirestoreDatabase.Models
 {
     /// <summary>
     /// An immutable path of field names, used to identify parts of a document.

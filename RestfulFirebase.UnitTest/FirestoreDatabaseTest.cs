@@ -2,10 +2,9 @@
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Requests;
-using RestfulFirebase.CloudFirestore.Query;
-using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.Common.Requests;
+using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstraction;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
@@ -43,7 +42,7 @@ public class FirestoreDatabaseTest
             Model = NestedType.Filled1(),
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(patchTest1.Response);
+        Assert.NotNull(patchTest1.Result);
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
@@ -51,7 +50,7 @@ public class FirestoreDatabaseTest
             Config = config,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest1.Response);
+        Assert.NotNull(getTest1.Result);
 
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
@@ -60,7 +59,7 @@ public class FirestoreDatabaseTest
             Model = NestedType.Empty(),
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest2.Response);
+        Assert.NotNull(getTest2.Result);
 
         var getTest3 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
@@ -69,11 +68,11 @@ public class FirestoreDatabaseTest
             Model = NestedType.Filled2(),
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest3.Response);
+        Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(patchTest1.Response, getTest1.Response);
-        Assert.Equivalent(patchTest1.Response, getTest2.Response);
-        Assert.Equivalent(patchTest1.Response, getTest3.Response);
+        Assert.Equivalent(patchTest1.Result, getTest1.Result);
+        Assert.Equivalent(patchTest1.Result, getTest2.Result);
+        Assert.Equivalent(patchTest1.Result, getTest3.Result);
 
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
@@ -88,7 +87,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(patchTest1Get4.ThrowIfErrorOrEmptyResponse);
+        Assert.Throws<FirestoreDatabaseNotFoundException>(patchTest1Get4.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -128,14 +127,14 @@ public class FirestoreDatabaseTest
             Model = dictionary1,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(patchTest1.Response);
+        Assert.NotNull(patchTest1.Result);
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
             Config = config,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest1.Response);
+        Assert.NotNull(getTest1.Result);
 
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
@@ -143,7 +142,7 @@ public class FirestoreDatabaseTest
             Model = new Dictionary<string, NestedType>(),
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest2.Response);
+        Assert.NotNull(getTest2.Result);
 
         var getTest3 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
@@ -151,11 +150,11 @@ public class FirestoreDatabaseTest
             Model = dictionary2,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest3.Response);
+        Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(patchTest1.Response, getTest1.Response);
-        Assert.Equivalent(patchTest1.Response, getTest2.Response);
-        Assert.Equivalent(patchTest1.Response, getTest3.Response);
+        Assert.Equivalent(patchTest1.Result, getTest1.Result);
+        Assert.Equivalent(patchTest1.Result, getTest2.Result);
+        Assert.Equivalent(patchTest1.Result, getTest3.Result);
 
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
@@ -169,7 +168,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest4.ThrowIfErrorOrEmptyResponse);
+        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest4.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -210,7 +209,7 @@ public class FirestoreDatabaseTest
             Model = patchTest1Model1,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(patchTest1.Response);
+        Assert.NotNull(patchTest1.Result);
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
@@ -219,14 +218,14 @@ public class FirestoreDatabaseTest
             Model = patchTest1Model2,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest1.Response);
+        Assert.NotNull(getTest1.Result);
 
         Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), modelPropertyChangedNames);
         Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), modelPropertyChangedNames);
         Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), modelPropertyChangedNames);
-        Assert.NotEqual(patchTest1.Response.Model.Val3, getTest1.Response.Model.Val3);
-        getTest1.Response.Model.Val3 = patchTest1.Response.Model.Val3;
-        Assert.Equivalent(patchTest1.Response, getTest1.Response);
+        Assert.NotEqual(patchTest1.Result.Model.Val3, getTest1.Result.Model.Val3);
+        getTest1.Result.Model.Val3 = patchTest1.Result.Model.Val3;
+        Assert.Equivalent(patchTest1.Result, getTest1.Result);
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -242,7 +241,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResponse);
+        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -275,10 +274,10 @@ public class FirestoreDatabaseTest
             },
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(patchTest1.Response);
+        Assert.NotNull(patchTest1.Result);
 
         List<string?> documentPropertyChangedNames = new();
-        patchTest1.Response.PropertyChanged += (s, e) =>
+        patchTest1.Result.PropertyChanged += (s, e) =>
         {
             documentPropertyChangedNames.Add(e.PropertyName);
         };
@@ -300,16 +299,16 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = patchTest1.Response,
+            Document = patchTest1.Result,
             Reference = documentReferenceTest1
         });
-        Assert.NotNull(getTest1.Response);
+        Assert.NotNull(getTest1.Result);
 
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Model), documentPropertyChangedNames);
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Reference), documentPropertyChangedNames);
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.CreateTime), documentPropertyChangedNames);
         Assert.Contains(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.UpdateTime), documentPropertyChangedNames);
-        Assert.Equivalent(patchTest1.Response, getTest1.Response);
+        Assert.Equivalent(patchTest1.Result, getTest1.Result);
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -325,7 +324,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResponse);
+        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }

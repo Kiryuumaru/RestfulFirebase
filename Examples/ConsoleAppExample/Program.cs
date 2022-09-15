@@ -2,9 +2,8 @@
 using RestfulFirebase;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Requests;
-using RestfulFirebase.CloudFirestore.Requests;
-using RestfulFirebase.Common.Requests;
+using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
 
 FirebaseConfig config = Credentials.Config(); // Your config
@@ -18,9 +17,9 @@ var loginRequest = await RestfulFirebase.Api.Authentication.SignInWithEmailAndPa
     Password = "123123",
 });
 
-if (loginRequest.HasResponse)
+if (loginRequest.HasResult)
 {
-    user = loginRequest.Response;
+    user = loginRequest.Result;
 }
 else
 {
@@ -31,9 +30,9 @@ else
         Password = "123123",
     });
 
-    signupRequest.ThrowIfErrorOrEmptyResponse();
+    signupRequest.ThrowIfErrorOrEmptyResult();
 
-    user = signupRequest.Response;
+    user = signupRequest.Result;
 }
 
 var personResponse = await RestfulFirebase.Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Person>()
@@ -44,18 +43,18 @@ var personResponse = await RestfulFirebase.Api.FirestoreDatabase.GetDocument(new
         .Document("sample")
 });
 
-personResponse.ThrowIfErrorOrEmptyResponse();
+personResponse.ThrowIfErrorOrEmptyResult();
 
 await RestfulFirebase.Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Person>()
 {
     Config = config,
-    Model = personResponse.Response.Model,
+    Model = personResponse.Result.Model,
     Reference = RestfulFirebase.Api.FirestoreDatabase.Database()
         .Collection("public")
         .Document("sample1")
 });
 
-await RestfulFirebase.Api.Authentication.DeleteUser(new AuthenticatedCommonRequest()
+await RestfulFirebase.Api.Authentication.DeleteUser(new DeleteUserRequest()
 {
     Config = config,
     FirebaseUser = user,

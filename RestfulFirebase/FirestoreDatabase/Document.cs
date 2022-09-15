@@ -1,6 +1,6 @@
 ﻿using ObservableHelpers.ComponentModel;
 using ObservableHelpers.ComponentModel.Enums;
-using RestfulFirebase.CloudFirestore.Query;
+using RestfulFirebase.FirestoreDatabase.Query;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 
-namespace RestfulFirebase.CloudFirestore.Models
+namespace RestfulFirebase.FirestoreDatabase.Models
 {
     /// <summary>
     /// The supported value types.

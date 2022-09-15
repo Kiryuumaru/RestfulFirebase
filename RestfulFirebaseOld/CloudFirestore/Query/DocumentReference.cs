@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.CloudFirestore.Models;
+﻿using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 
-namespace RestfulFirebase.CloudFirestore.Query;
+namespace RestfulFirebase.FirestoreDatabase.Query;
 
 /// <summary>
 /// The reference for documents.

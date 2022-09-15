@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.CloudFirestore.Query;
+﻿using RestfulFirebase.FirestoreDatabase.Query;
 
 namespace RestfulFirebase.FirestoreDatabase;
 

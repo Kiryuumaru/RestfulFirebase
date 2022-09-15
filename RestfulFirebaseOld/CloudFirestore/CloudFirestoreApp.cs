@@ -6,7 +6,7 @@ using System.Threading;
 using System.Linq;
 using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
-using RestfulFirebase.CloudFirestore.Query;
+using RestfulFirebase.FirestoreDatabase.Query;
 using DisposableHelpers;
 using LockerHelpers;
 using System.Text.Json;
@@ -14,7 +14,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using DisposableHelpers.Attributes;
 
-namespace RestfulFirebase.CloudFirestore;
+namespace RestfulFirebase.FirestoreDatabase;
 
 /// <summary>
 /// App module that provides firebase cloud firestore database implementations.

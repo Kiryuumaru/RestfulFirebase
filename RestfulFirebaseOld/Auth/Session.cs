@@ -9,7 +9,7 @@ using RestfulFirebase.Local;
 using System.Text.Json;
 using DisposableHelpers;
 using DisposableHelpers.Attributes;
-using RestfulFirebase.CloudFirestore.Models;
+using RestfulFirebase.FirestoreDatabase.Models;
 using static System.Collections.Specialized.BitVector32;
 
 namespace RestfulFirebase.Auth;

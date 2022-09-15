@@ -9,16 +9,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.CloudFirestore.Requests;
 using RestfulFirebase.FirestoreDatabase.Abstraction;
 using System.Text.Json.Serialization;
 
-namespace RestfulFirebase.CloudFirestore.Query;
+namespace RestfulFirebase.FirestoreDatabase.Query;
 
 /// <summary>
 /// The reference for documents.
 /// </summary>
-public class DocumentReference : Reference
+public class DocumentReference : Reference, IDocumentReference
 {
     #region Properties
 
@@ -89,7 +88,7 @@ public class DocumentReference : Reference
 
     internal override string BuildUrlCascade(string projectId)
     {
-        var url = BuildUrlSegment(projectId);
+        var url = Id;
 
         string parentUrl = Parent.BuildUrlCascade(projectId);
         if (parentUrl != string.Empty && !parentUrl.EndsWith("/"))
@@ -99,11 +98,6 @@ public class DocumentReference : Reference
         url = parentUrl + url;
 
         return url;
-    }
-
-    internal override string BuildUrlSegment(string projectId)
-    {
-        return Id;
     }
 
     #endregion
