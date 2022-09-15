@@ -38,10 +38,7 @@ public class SendEmailVerificationRequest : AuthenticatedRequest, IAuthenticated
         {
             var tokenRequest = await Api.Authentication.GetFreshToken(this);
 
-            if (tokenRequest.Error != null)
-            {
-                throw tokenRequest.Error;
-            }
+            tokenRequest.ThrowIfErrorOrEmptyResult();
 
             var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{tokenRequest.Result}\"}}";
 

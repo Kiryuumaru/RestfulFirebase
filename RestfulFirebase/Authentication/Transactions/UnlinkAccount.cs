@@ -40,10 +40,7 @@ public class UnlinkAccountRequest : AuthenticatedRequest
         {
             var tokenRequest = await Api.Authentication.GetFreshToken(this);
 
-            if (tokenRequest.Error != null)
-            {
-                throw tokenRequest.Error;
-            }
+            tokenRequest.ThrowIfErrorOrEmptyResult();
 
             string? providerId;
             if (AuthType.Value == FirebaseAuthType.EmailAndPassword)

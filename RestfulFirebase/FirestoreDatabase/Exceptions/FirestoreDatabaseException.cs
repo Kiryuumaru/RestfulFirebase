@@ -3,12 +3,12 @@
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
 /// <summary>
-/// Occurs when there`s an error in realtime database.
+/// Occurs when there`s an error in firestore database.
 /// </summary>
 public class FirestoreDatabaseException : Exception
 {
     private const string ExceptionMessage =
-        "An realtime database error occured.";
+        "A firestore database error occured.";
 
     /// <summary>
     /// Creates an instance of <see cref="FirestoreDatabaseException"/>.

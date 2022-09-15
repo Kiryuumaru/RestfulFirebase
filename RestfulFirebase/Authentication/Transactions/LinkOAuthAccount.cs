@@ -45,10 +45,7 @@ public class LinkOAuthAccountRequest : AuthenticatedRequest
         {
             var tokenRequest = await Api.Authentication.GetFreshToken(this);
 
-            if (tokenRequest.Error != null)
-            {
-                throw tokenRequest.Error;
-            }
+            tokenRequest.ThrowIfErrorOrEmptyResult();
 
             var providerId = GetProviderId(AuthType.Value);
             var content = $"{{\"idToken\":\"{tokenRequest.Result}\",\"postBody\":\"access_token={OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";

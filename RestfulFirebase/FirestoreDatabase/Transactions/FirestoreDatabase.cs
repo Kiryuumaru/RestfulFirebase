@@ -82,7 +82,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             //503
             HttpStatusCode.ServiceUnavailable => new FirestoreDatabaseServiceUnavailableException(exception),
             //Unknown
-            _ => new FirestoreDatabaseUndefinedException(exception, null, httpStatusCode),
+            _ => new FirestoreDatabaseUndefinedException(exception, httpStatusCode),
         });
     }
 

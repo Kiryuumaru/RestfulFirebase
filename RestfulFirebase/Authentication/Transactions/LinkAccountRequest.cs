@@ -44,10 +44,7 @@ public class LinkAccountRequest : AuthenticatedRequest
         {
             var tokenRequest = await Api.Authentication.GetFreshToken(this);
 
-            if (tokenRequest.Error != null)
-            {
-                throw tokenRequest.Error;
-            }
+            tokenRequest.ThrowIfErrorOrEmptyResult();
 
             var content = $"{{\"idToken\":\"{tokenRequest.Result}\",\"email\":\"{Email}\",\"password\":\"{Password}\",\"returnSecureToken\":true}}";
 

@@ -25,8 +25,8 @@ public class FirestoreDatabaseUndefinedException : FirestoreDatabaseException
     /// <param name="statusCode">
     /// The <see cref="HttpStatusCode"/> of the exception.
     /// </param>
-    public FirestoreDatabaseUndefinedException(Exception innerException, string message, HttpStatusCode statusCode)
-        : base("An unidentified error occured: " + message, innerException)
+    public FirestoreDatabaseUndefinedException(Exception innerException, HttpStatusCode statusCode)
+        : base("An unidentified error occured.", innerException)
     {
         StatusCode = statusCode;
     }

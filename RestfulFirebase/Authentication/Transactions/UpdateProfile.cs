@@ -40,10 +40,7 @@ public class UpdateProfileRequest : AuthenticatedRequest
         {
             var tokenRequest = await Api.Authentication.GetFreshToken(this);
 
-            if (tokenRequest.Error != null)
-            {
-                throw tokenRequest.Error;
-            }
+            tokenRequest.ThrowIfErrorOrEmptyResult();
 
             StringBuilder sb = new($"{{\"idToken\":\"{tokenRequest.Result}\"");
             if (!string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(PhotoUrl))
