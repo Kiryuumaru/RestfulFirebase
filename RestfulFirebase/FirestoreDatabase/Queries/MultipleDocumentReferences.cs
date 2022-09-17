@@ -48,6 +48,27 @@ public class MultipleDocumentReferences : Query, IDocumentReference
 
     #region Methods
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is MultipleDocumentReferences references &&
+               base.Equals(obj) &&
+               EqualityComparer<Database>.Default.Equals(Database, references.Database) &&
+               EqualityComparer<List<DocumentReference>>.Default.Equals(DocumentReferences, references.DocumentReferences) &&
+               EqualityComparer<CollectionReference?>.Default.Equals(OriginCollectionReference, references.OriginCollectionReference);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        int hashCode = -387633752;
+        hashCode = hashCode * -1521134295 + base.GetHashCode();
+        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
+        hashCode = hashCode * -1521134295 + EqualityComparer<List<DocumentReference>>.Default.GetHashCode(DocumentReferences);
+        hashCode = hashCode * -1521134295 + (OriginCollectionReference == null ? 0 : EqualityComparer<CollectionReference?>.Default.GetHashCode(OriginCollectionReference));
+        return hashCode;
+    }
+
     /// <summary>
     /// Adds document reference to the list.
     /// </summary>
@@ -118,25 +139,6 @@ public class MultipleDocumentReferences : Query, IDocumentReference
         DocumentReferences.Add(documentReference);
 
         return this;
-    }
-
-    /// <inheritdoc/>
-    public override bool Equals(object? obj)
-    {
-        return obj is MultipleDocumentReferences reference &&
-               base.Equals(obj) &&
-               EqualityComparer<Database>.Default.Equals(Database, reference.Database) &&
-               EqualityComparer<IEnumerable<DocumentReference>>.Default.Equals(DocumentReferences, reference.DocumentReferences);
-    }
-
-    /// <inheritdoc/>
-    public override int GetHashCode()
-    {
-        int hashCode = 1943541580;
-        hashCode = hashCode * -1521134295 + base.GetHashCode();
-        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
-        hashCode = hashCode * -1521134295 + EqualityComparer<IEnumerable<DocumentReference>>.Default.GetHashCode(DocumentReferences);
-        return hashCode;
     }
 
     internal override string[] BuildUrls(string projectId, string? postSegment = null)

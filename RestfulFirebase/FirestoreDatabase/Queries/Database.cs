@@ -35,6 +35,19 @@ public class Database
 
     #region Methods
 
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is Database database &&
+               DatabaseId == database.DatabaseId;
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        return -417834451 + EqualityComparer<string>.Default.GetHashCode(DatabaseId);
+    }
+
     /// <summary>
     /// Creates an instance of <see cref="Database"/> with the specified <paramref name="databaseId"/>
     /// </summary>
