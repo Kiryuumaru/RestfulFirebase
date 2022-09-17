@@ -19,7 +19,8 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 /// <summary>
 /// The multiple reference for documents.
 /// </summary>
-public class MultipleDocumentReferences : Query, IDocumentReference
+public class MultipleDocumentReferences<T> : MultipleDocuments<T>
+     where T : class
 {
     #region Properties
 
@@ -28,20 +29,14 @@ public class MultipleDocumentReferences : Query, IDocumentReference
     /// </summary>
     public List<DocumentReference> DocumentReferences { get; }
 
-    /// <summary>
-    /// Gets the origin collection reference.
-    /// </summary>
-    public CollectionReference? OriginCollectionReference { get; }
-
     #endregion
 
     #region Initializers
 
-    internal MultipleDocumentReferences(Database database, CollectionReference? origin, List<DocumentReference>? documentReferences)
-        : base(database)
+    internal MultipleDocumentReferences(Database database, CollectionReference? origin, List<PartialDocument<T>>? partialDocuments, List<Document<T>>? documents, List<DocumentReference>? documentReferences)
+        : base(database, origin, partialDocuments, documents)
     {
         DocumentReferences = documentReferences ?? new();
-        OriginCollectionReference = origin;
     }
 
     #endregion
@@ -51,21 +46,17 @@ public class MultipleDocumentReferences : Query, IDocumentReference
     /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
-        return obj is MultipleDocumentReferences references &&
+        return obj is MultipleDocumentReferences<T> references &&
                base.Equals(obj) &&
-               EqualityComparer<Database>.Default.Equals(Database, references.Database) &&
-               EqualityComparer<List<DocumentReference>>.Default.Equals(DocumentReferences, references.DocumentReferences) &&
-               EqualityComparer<CollectionReference?>.Default.Equals(OriginCollectionReference, references.OriginCollectionReference);
+               EqualityComparer<List<DocumentReference>>.Default.Equals(DocumentReferences, references.DocumentReferences);
     }
 
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        int hashCode = -387633752;
+        int hashCode = 1403639620;
         hashCode = hashCode * -1521134295 + base.GetHashCode();
-        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
         hashCode = hashCode * -1521134295 + EqualityComparer<List<DocumentReference>>.Default.GetHashCode(DocumentReferences);
-        hashCode = hashCode * -1521134295 + (OriginCollectionReference == null ? 0 : EqualityComparer<CollectionReference?>.Default.GetHashCode(OriginCollectionReference));
         return hashCode;
     }
 
@@ -76,7 +67,7 @@ public class MultipleDocumentReferences : Query, IDocumentReference
     /// The path of the document reference to add.
     /// </param>
     /// <returns>
-    /// The same instance of <see cref="MultipleDocumentReferences"/>.
+    /// The same instance of <see cref="MultipleDocumentReferences{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentPath"/> is a <c>null</c> reference.
@@ -84,7 +75,7 @@ public class MultipleDocumentReferences : Query, IDocumentReference
     /// <exception cref="ArgumentException">
     /// <paramref name="documentPath"/> is either empty or it leads to a collection reference.
     /// </exception>
-    public MultipleDocumentReferences AddDocument(params string[] documentPath)
+    public MultipleDocumentReferences<T> AddDocument(params string[] documentPath)
     {
         ArgumentNullException.ThrowIfNull(documentPath);
 
@@ -127,12 +118,12 @@ public class MultipleDocumentReferences : Query, IDocumentReference
     /// The document reference to add.
     /// </param>
     /// <returns>
-    /// The same instance of <see cref="MultipleDocumentReferences"/>.
+    /// The same instance of <see cref="MultipleDocumentReferences{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentReference"/> is a <c>null</c> reference.
     /// </exception>
-    public MultipleDocumentReferences AddDocument(DocumentReference documentReference)
+    public MultipleDocumentReferences<T> AddDocument(DocumentReference documentReference)
     {
         ArgumentNullException.ThrowIfNull(documentReference);
 

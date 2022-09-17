@@ -51,7 +51,6 @@ public class DocumentReference : Reference, IDocumentReference
     {
         return obj is DocumentReference reference &&
                base.Equals(obj) &&
-               EqualityComparer<Database>.Default.Equals(Database, reference.Database) &&
                Id == reference.Id &&
                EqualityComparer<CollectionReference>.Default.Equals(Parent, reference.Parent);
     }
@@ -59,11 +58,10 @@ public class DocumentReference : Reference, IDocumentReference
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        int hashCode = 1175519339;
+        int hashCode = 1488852771;
         hashCode = hashCode * -1521134295 + base.GetHashCode();
-        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
         hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
-        hashCode = hashCode * -1521134295 + (Parent == null ? 0 : EqualityComparer<CollectionReference>.Default.GetHashCode(Parent));
+        hashCode = hashCode * -1521134295 + EqualityComparer<CollectionReference>.Default.GetHashCode(Parent);
         return hashCode;
     }
 

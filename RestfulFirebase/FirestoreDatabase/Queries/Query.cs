@@ -35,6 +35,18 @@ public abstract class Query : IQuery
 
     #region Methods
 
+    internal virtual string BuildUrl(string projectId, string? postSegment = null)
+    {
+        return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}";
+    }
+
+    internal virtual string[] BuildUrls(string projectId, string? postSegment = null)
+    {
+        return new string[] { $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}" };
+    }
+
+    internal abstract string BuildUrlCascade(string projectId);
+
     /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
@@ -48,17 +60,6 @@ public abstract class Query : IQuery
         return 732662424 + EqualityComparer<Database>.Default.GetHashCode(Database);
     }
 
-    internal virtual string BuildUrl(string projectId, string? postSegment = null)
-    {
-        return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}";
-    }
-
-    internal virtual string[] BuildUrls(string projectId, string? postSegment = null)
-    {
-        return new string[] { $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}" };
-    }
-
-    internal abstract string BuildUrlCascade(string projectId);
 
     #endregion
 }

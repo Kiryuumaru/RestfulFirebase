@@ -64,7 +64,6 @@ public class MultipleDocuments<T> : Query, IDocumentReference
     {
         return obj is MultipleDocuments<T> documents &&
                base.Equals(obj) &&
-               EqualityComparer<Database>.Default.Equals(Database, documents.Database) &&
                EqualityComparer<List<PartialDocument<T>>>.Default.Equals(PartialDocuments, documents.PartialDocuments) &&
                EqualityComparer<List<Document<T>>>.Default.Equals(Documents, documents.Documents) &&
                EqualityComparer<CollectionReference?>.Default.Equals(OriginCollectionReference, documents.OriginCollectionReference);
@@ -73,9 +72,8 @@ public class MultipleDocuments<T> : Query, IDocumentReference
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        int hashCode = -33024541;
+        int hashCode = -1755066021;
         hashCode = hashCode * -1521134295 + base.GetHashCode();
-        hashCode = hashCode * -1521134295 + EqualityComparer<Database>.Default.GetHashCode(Database);
         hashCode = hashCode * -1521134295 + EqualityComparer<List<PartialDocument<T>>>.Default.GetHashCode(PartialDocuments);
         hashCode = hashCode * -1521134295 + EqualityComparer<List<Document<T>>>.Default.GetHashCode(Documents);
         hashCode = hashCode * -1521134295 + (OriginCollectionReference == null ? 0 : EqualityComparer<CollectionReference?>.Default.GetHashCode(OriginCollectionReference));
