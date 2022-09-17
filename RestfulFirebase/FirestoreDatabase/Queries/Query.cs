@@ -17,19 +17,7 @@ public abstract class Query : IQuery
 {
     #region Properties
 
-    /// <summary>
-    /// Gets the <see cref="Database"/> used by this instance.
-    /// </summary>
-    public Database Database { get; }
 
-    #endregion
-
-    #region Initializers
-
-    internal Query(Database database)
-    {
-        Database = database;
-    }
 
     #endregion
 
@@ -46,20 +34,6 @@ public abstract class Query : IQuery
     }
 
     internal abstract string BuildUrlCascade(string projectId);
-
-    /// <inheritdoc/>
-    public override bool Equals(object? obj)
-    {
-        return obj is Query query &&
-               EqualityComparer<Database>.Default.Equals(Database, query.Database);
-    }
-
-    /// <inheritdoc/>
-    public override int GetHashCode()
-    {
-        return 732662424 + EqualityComparer<Database>.Default.GetHashCode(Database);
-    }
-
 
     #endregion
 }

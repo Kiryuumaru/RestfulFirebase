@@ -13,13 +13,16 @@ using RestfulFirebase.Common;
 using RestfulFirebase.Authentication.Internals;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Utilities;
+using System.Text.Json.Serialization;
+using RestfulFirebase.Authentication.Enums;
 
 namespace RestfulFirebase.Authentication.Transactions;
 
 /// <summary>
 /// Request to get all linked accounts of the user.
 /// </summary>
-public class GetLinkedAccountsRequest : AuthenticationRequest<GetLinkedAccountsResponse>
+public class GetLinkedAccountsRequest : AuthenticationRequest<TransactionResponse<GetLinkedAccountsRequest, ProviderQueryResult>>
 {
     /// <summary>
     /// Gets or sets the email of the user.
@@ -28,13 +31,13 @@ public class GetLinkedAccountsRequest : AuthenticationRequest<GetLinkedAccountsR
 
     /// <inheritdoc cref="GetLinkedAccountsRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="GetLinkedAccountsResponse"/> with the reCaptcha site key <see cref="string"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="ProviderQueryResult"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="Email"/> is a null reference.
     /// </exception>
-    internal override async Task<GetLinkedAccountsResponse> Execute()
+    internal override async Task<TransactionResponse<GetLinkedAccountsRequest, ProviderQueryResult>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
@@ -52,23 +55,59 @@ public class GetLinkedAccountsRequest : AuthenticationRequest<GetLinkedAccountsR
 
             data.Email = Email;
 
-            return new GetLinkedAccountsResponse(this, data, null);
+            return new(this, data, null);
         }
         catch (Exception ex)
         {
-            return new GetLinkedAccountsResponse(this, null, ex);
+            return new(this, null, ex);
         }
     }
 }
 
 /// <summary>
-/// The response of the <see cref="GetLinkedAccountsRequest"/> request.
+/// More info at <see href="https://developers.google.com/identity/toolkit/web/reference/relyingparty/createAuthUri"/>.
 /// </summary>
-public class GetLinkedAccountsResponse : TransactionResponse<GetLinkedAccountsRequest, ProviderQueryResult>
+public class ProviderQueryResult
 {
-    internal GetLinkedAccountsResponse(GetLinkedAccountsRequest request, ProviderQueryResult? result, Exception? error)
-        : base(request, result, error)
+    internal ProviderQueryResult()
     {
-
+        Providers = new List<FirebaseAuthType>();
     }
+
+    /// <summary>
+    /// The underlying email of the auth provider.
+    /// </summary>
+    public string? Email { get; set; }
+
+    /// <summary>
+    /// Gets or sets <c>true</c> whether the user is registered; otherwise <c>false</c>.
+    /// </summary>
+    [JsonPropertyName("registered")]
+    public bool IsRegistered { get; set; }
+
+    /// <summary>
+    /// Gets or sets <c>true</c> if the <see cref="AuthUri"/> is for user's existing provider; otherwise <c>false</c>.
+    /// </summary>
+    [JsonPropertyName("forExistingProvider")]
+    public bool IsForExistingProvider { get; set; }
+
+    /// <summary>
+    /// The URI used by the IDP to authenticate the user.
+    /// </summary>
+    [JsonPropertyName("authUri")]
+    public string? AuthUri { get; set; }
+
+    /// <summary>
+    /// The provider ID of the auth URI.
+    /// </summary>
+    [JsonPropertyName("providerId")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public FirebaseAuthType? ProviderId { get; set; }
+
+    /// <summary>
+    /// All provider ID of the auth URI.
+    /// </summary>
+    [JsonPropertyName("allProviders")]
+    [JsonConverter(typeof(ItemConverterDecorator<JsonStringEnumConverter>))]
+    public List<FirebaseAuthType> Providers { get; set; }
 }

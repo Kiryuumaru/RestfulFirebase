@@ -14,7 +14,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in with google id token.
 /// </summary>
-public class SignInWithGoogleIdTokenRequest : AuthenticationRequest<SignInWithGoogleIdTokenResponse>
+public class SignInWithGoogleIdTokenRequest : AuthenticationRequest<TransactionResponse<SignInWithGoogleIdTokenRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the id token provided by google.
@@ -23,13 +23,13 @@ public class SignInWithGoogleIdTokenRequest : AuthenticationRequest<SignInWithGo
 
     /// <inheritdoc cref="SignInWithGoogleIdTokenRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithGoogleIdTokenResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="IdToken"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithGoogleIdTokenResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithGoogleIdTokenRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(IdToken);
@@ -45,23 +45,11 @@ public class SignInWithGoogleIdTokenRequest : AuthenticationRequest<SignInWithGo
 
             await RefreshUserInfo(user);
 
-            return new SignInWithGoogleIdTokenResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithGoogleIdTokenResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithGoogleIdTokenRequest"/> 
-/// </summary>
-public class SignInWithGoogleIdTokenResponse: TransactionResponse<SignInWithGoogleIdTokenRequest, FirebaseUser>
-{
-    internal SignInWithGoogleIdTokenResponse(SignInWithGoogleIdTokenRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

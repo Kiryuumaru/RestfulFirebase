@@ -9,16 +9,21 @@ namespace RestfulFirebase.Api;
 public static partial class FirestoreDatabase
 {
     /// <summary>
-    /// Creates an instance of <see cref="Query"/> with the specified <paramref name="databaseId"/>
+    /// Creates a root collection reference <see cref="CollectionReference"/>.
     /// </summary>
-    /// <param name="databaseId">
-    /// The ID of the database to use. Set to <c>null</c> if the instance will use the default database.
+    /// <param name="collectionId">
+    /// The ID of the collection reference.
     /// </param>
     /// <returns>
-    /// The created <see cref="Database"/>.
+    /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionId"/>.
     /// </returns>
-    public static Database Query(string? databaseId = default)
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionId"/> is a <c>null</c> reference.
+    /// </exception>
+    public static CollectionReference Collection(string collectionId)
     {
-        return Database.Query(databaseId);
+        ArgumentNullException.ThrowIfNull(collectionId);
+
+        return new CollectionReference(null, collectionId);
     }
 }

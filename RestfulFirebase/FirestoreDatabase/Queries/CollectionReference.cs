@@ -27,8 +27,7 @@ public class CollectionReference : Reference
 
     #region Initializers
 
-    internal CollectionReference(Database database, DocumentReference? parent, string collectionId)
-        : base(database)
+    internal CollectionReference(DocumentReference? parent, string collectionId)
     {
         Id = collectionId;
         Parent = parent;
@@ -73,39 +72,7 @@ public class CollectionReference : Reference
     {
         ArgumentNullException.ThrowIfNull(documentId);
 
-        return new DocumentReference(Database, this, documentId);
-    }
-
-    /// <summary>
-    /// Creates a multiple document reference <see cref="Queries.MultipleDocumentReferences"/>.
-    /// </summary>
-    /// <param name="documentReferences">
-    /// The list of document references.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="Queries.MultipleDocumentReferences"/>.
-    /// </returns>
-    public MultipleDocumentReferences MultipleDocumentReferences(List<DocumentReference>? documentReferences = null)
-    {
-        return new MultipleDocumentReferences(Database, this, documentReferences);
-    }
-
-    /// <summary>
-    /// Creates a multiple documents <see cref="Queries.MultipleDocuments{T}"/>.
-    /// </summary>
-    /// <param name="partialDocuments">
-    /// The list of partial documents.
-    /// </param>
-    /// <param name="documents">
-    /// The list of documents.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="Queries.MultipleDocuments{T}"/>.
-    /// </returns>
-    public MultipleDocuments<T> MultipleDocuments<T>(List<PartialDocument<T>>? partialDocuments = null, List<Document<T>>? documents = null)
-        where T : class
-    {
-        return new MultipleDocuments<T>(Database, this, partialDocuments, documents);
+        return new DocumentReference(this, documentId);
     }
 
     internal override string BuildUrlCascade(string projectId)
@@ -117,7 +84,6 @@ public class CollectionReference : Reference
             url = string.Format(
                 Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint,
                 projectId,
-                Database.DatabaseId,
                 $"/{url}");
         }
         else

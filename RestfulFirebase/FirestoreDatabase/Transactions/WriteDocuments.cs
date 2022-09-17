@@ -33,13 +33,9 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the <see cref="MultipleDocuments{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> documents.
     /// </summary>
-    public MultipleDocuments<T>? MultipleDocuments
-    {
-        get => Query as MultipleDocuments<T>;
-        set => Query = value;
-    }
+    public IEnumerable<Document<T>>? Documents { get; set; }
 
     /// <inheritdoc cref="WriteDocumentsRequest{T}"/>
     /// <returns>
@@ -47,13 +43,13 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="MultipleDocuments"/> is a null reference.
+    /// <see cref="Documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<WriteDocumentsRequest<T>, PatchDocumentsResult<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(MultipleDocuments);
+        ArgumentNullException.ThrowIfNull(Documents);
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
@@ -65,21 +61,27 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
             writer.WriteStartObject();
             writer.WritePropertyName("writes");
             writer.WriteStartArray();
-            foreach (var document in MultipleDocuments.PartialDocuments)
+            foreach (var document in Documents)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("update");
-                writer.WriteStartObject();
-                writer.WritePropertyName("name");
-                writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
-                writer.WritePropertyName("fields");
-                PopulateDocument(Config, writer, document.Model, null, jsonSerializerOptions);
-                writer.WriteEndObject();
-                writer.WriteEndObject();
-            }
-            foreach (var document in MultipleDocuments.Documents)
-            {
-                PopulateDocument(Config, writer, document.Model, null, jsonSerializerOptions);
+                if (document.Model != null)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("update");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("name");
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WritePropertyName("fields");
+                    PopulateDocument(Config, writer, document.Model, null, jsonSerializerOptions);
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
             }
             writer.WriteEndArray();
             writer.WriteEndObject();
@@ -106,11 +108,13 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
         }
     }
 
-    internal override string BuildUrl()
+    internal string BuildUrl()
     {
         ArgumentNullException.ThrowIfNull(Config);
 
-        return GetQuery().BuildUrl(Config.ProjectId, ":commit");
+        return
+            $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":commit")}";
     }
 }
 

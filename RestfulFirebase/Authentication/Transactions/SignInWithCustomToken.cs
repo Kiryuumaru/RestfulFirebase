@@ -13,7 +13,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in with custom token provided by firebase.
 /// </summary>
-public class SignInWithCustomTokenRequest : AuthenticationRequest<SignInWithCustomTokenResponse>
+public class SignInWithCustomTokenRequest : AuthenticationRequest<TransactionResponse<SignInWithCustomTokenRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the token provided by firebase.
@@ -22,13 +22,13 @@ public class SignInWithCustomTokenRequest : AuthenticationRequest<SignInWithCust
 
     /// <inheritdoc cref="SignInWithCustomTokenRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithCustomTokenRequest"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="CustomToken"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithCustomTokenResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithCustomTokenRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(CustomToken);
@@ -43,23 +43,11 @@ public class SignInWithCustomTokenRequest : AuthenticationRequest<SignInWithCust
 
             await RefreshUserInfo(user);
 
-            return new SignInWithCustomTokenResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithCustomTokenResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithCustomTokenRequest"/> 
-/// </summary>
-public class SignInWithCustomTokenResponse : TransactionResponse<SignInWithCustomTokenRequest, FirebaseUser>
-{
-    internal SignInWithCustomTokenResponse(SignInWithCustomTokenRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

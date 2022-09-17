@@ -18,16 +18,16 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to get the reCaptcha site key to be used for sending verification code to a phone number.
 /// </summary>
-public class GetRecaptchaSiteKeyRequest : AuthenticationRequest<GetRecaptchaSiteKeyResponse>
+public class GetRecaptchaSiteKeyRequest : AuthenticationRequest<TransactionResponse<GetRecaptchaSiteKeyRequest, string>>
 {
     /// <inheritdoc cref="GetRecaptchaSiteKeyRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="GetRecaptchaSiteKeyResponse"/> with the reCaptcha site key <see cref="string"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the reCaptcha site key <see cref="string"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> is a null reference.
     /// </exception>
-    internal override async Task<GetRecaptchaSiteKeyResponse> Execute()
+    internal override async Task<TransactionResponse<GetRecaptchaSiteKeyRequest, string>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
 
@@ -40,23 +40,11 @@ public class GetRecaptchaSiteKeyRequest : AuthenticationRequest<GetRecaptchaSite
                 throw new AuthUndefinedException();
             }
 
-            return new GetRecaptchaSiteKeyResponse(this, response.RecaptchaSiteKey, null);
+            return new(this, response.RecaptchaSiteKey, null);
         }
         catch (Exception ex)
         {
-            return new GetRecaptchaSiteKeyResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="GetRecaptchaSiteKeyRequest"/> request.
-/// </summary>
-public class GetRecaptchaSiteKeyResponse : TransactionResponse<GetRecaptchaSiteKeyRequest, string>
-{
-    internal GetRecaptchaSiteKeyResponse(GetRecaptchaSiteKeyRequest request, string? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

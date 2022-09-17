@@ -29,23 +29,9 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the existing <typeparamref name="T"/> model to populate the document fields.
-    /// </summary>
-    public T? Model { get; set; }
-
-    /// <summary>
-    /// Gets or sets the existing <see cref="Document{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/>.
     /// </summary>
     public Document<T>? Document { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node.
-    /// </summary>
-    public DocumentReference? Reference
-    {
-        get => Query as DocumentReference;
-        set => Query = value;
-    }
 
     /// <inheritdoc cref="GetDocumentRequest{T}"/>
     /// <returns>
@@ -53,22 +39,22 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Reference"/> is a null reference.
+    /// <see cref="Document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentRequest<T>, Document<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Reference);
+        ArgumentNullException.ThrowIfNull(Document);
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         try
         {
-            var response = await Execute(HttpMethod.Get, BuildUrl());
+            var response = await Execute(HttpMethod.Get, Document.Reference.BuildUrl(Config.ProjectId));
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = ParseDocument(Document.Reference, Document.Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
             return new(this, parsedDocument, null);
         }

@@ -14,7 +14,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in with oauth provided with auth type and oauth token.
 /// </summary>
-public class SignInWithOAuthRequest : AuthenticationRequest<SignInWithOAuthResponse>
+public class SignInWithOAuthRequest : AuthenticationRequest<TransactionResponse<SignInWithOAuthRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the <see cref="FirebaseAuthType"/> of the oauth used.
@@ -28,14 +28,14 @@ public class SignInWithOAuthRequest : AuthenticationRequest<SignInWithOAuthRespo
 
     /// <inheritdoc cref="SignInWithOAuthRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithOAuthResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
     /// <see cref="AuthType"/> or
     /// <see cref="OAuthToken"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithOAuthResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithOAuthRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(AuthType);
@@ -57,23 +57,11 @@ public class SignInWithOAuthRequest : AuthenticationRequest<SignInWithOAuthRespo
 
             await RefreshUserInfo(user);
 
-            return new SignInWithOAuthResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithOAuthResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithOAuthRequest"/> 
-/// </summary>
-public class SignInWithOAuthResponse : TransactionResponse<SignInWithOAuthRequest, FirebaseUser>
-{
-    internal SignInWithOAuthResponse(SignInWithOAuthRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

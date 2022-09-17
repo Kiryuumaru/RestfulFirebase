@@ -32,37 +32,23 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the existing <see cref="Document{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> documents.
     /// </summary>
     public IEnumerable<Document<T>>? Documents { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node.
-    /// </summary>
-    public MultipleDocumentReferences? Reference
-    {
-        get => Query as MultipleDocumentReferences;
-        set => Query = value;
-    }
 
     /// <inheritdoc cref="GetDocumentsRequest{T}"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="BatchGetDocuments{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <see cref="Documents"/> and <see cref="Reference"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> or
+    /// <see cref="Documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        if (Documents == null && Reference == null)
-        {
-            throw new ArgumentException($"Both {nameof(Documents)} and {nameof(Reference)} is a null reference. Provide at least one to get.");
-        }
+        ArgumentNullException.ThrowIfNull(Documents);
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
@@ -74,19 +60,9 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
             writer.WriteStartObject();
             writer.WritePropertyName("documents");
             writer.WriteStartArray();
-            if (Documents != null)
+            foreach (var doc in Documents)
             {
-                foreach (var document in Documents)
-                {
-                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
-                }
-            }
-            else if (Reference != null)
-            {
-                foreach (var reference in Reference.DocumentReferences)
-                {
-                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
-                }
+                writer.WriteStringValue(doc.Reference.BuildUrlCascade(Config.ProjectId));
             }
             writer.WriteEndArray();
             writer.WriteEndObject();
@@ -105,20 +81,24 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
                 if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
                     readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
                 {
+                    DocumentReference? documentReference = null;
+                    T? model = null;
                     Document<T>? document = null;
                     if (doc.TryGetProperty("found", out JsonElement foundProperty))
                     {
-                        if (Documents != null &&
-                            Documents.Count() != 0 &&
-                            foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                            foundNameProperty.ValueKind == JsonValueKind.String &&
-                            foundNameProperty.GetString() is string foundName &&
-                            Documents.FirstOrDefault(i => i.Name == foundName) is Document<T> foundDocument)
+                        if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                            ParseDocumentReference(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
                         {
-                            document = foundDocument;
+                            documentReference = docRef;
+
+                            if (Documents.Count() != 0 &&
+                                Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                            {
+                                document = foundDocument;
+                            }
                         }
 
-                        if (ParseDocument(null, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                        if (ParseDocument(documentReference, model, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                         {
                             foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
                         }
@@ -139,11 +119,13 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
         }
     }
 
-    internal override string BuildUrl()
+    internal string BuildUrl()
     {
         ArgumentNullException.ThrowIfNull(Config);
 
-        return GetQuery().BuildUrl(Config.ProjectId, ":batchGet");
+        return
+            $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":batchGet")}";
     }
 }
 

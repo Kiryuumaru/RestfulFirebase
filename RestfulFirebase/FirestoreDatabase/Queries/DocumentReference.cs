@@ -11,13 +11,14 @@ using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System.Text.Json.Serialization;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// The reference for documents.
 /// </summary>
-public class DocumentReference : Reference, IDocumentReference
+public class DocumentReference : Reference
 {
     #region Properties
 
@@ -35,8 +36,7 @@ public class DocumentReference : Reference, IDocumentReference
 
     #region Initializers
 
-    internal DocumentReference(Database database, CollectionReference parent, string documentId)
-        : base(database)
+    internal DocumentReference(CollectionReference parent, string documentId)
     {
         Id = documentId;
         Parent = parent;
@@ -81,7 +81,22 @@ public class DocumentReference : Reference, IDocumentReference
     {
         ArgumentNullException.ThrowIfNull(collectionId);
 
-        return new CollectionReference(Database, this, collectionId);
+        return new CollectionReference(this, collectionId);
+    }
+
+    /// <summary>
+    /// Creates a document <see cref="Models.Document{T}"/>.
+    /// </summary>
+    /// <param name="model">
+    /// The model of the document
+    /// </param>
+    /// <returns>
+    /// The <see cref="Models.Document{T}"/>.
+    /// </returns>
+    public Document<T> Document<T>(T? model = null)
+        where T : class
+    {
+        return new Document<T>(this, model);
     }
 
     internal override string BuildUrlCascade(string projectId)

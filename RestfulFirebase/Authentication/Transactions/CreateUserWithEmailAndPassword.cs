@@ -13,7 +13,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to creates user with the provided email and password.
 /// </summary>
-public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<CreateUserWithEmailAndPasswordResponse>
+public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<TransactionResponse<CreateUserWithEmailAndPasswordRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the email of the user.
@@ -32,14 +32,14 @@ public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<Creat
 
     /// <inheritdoc cref="CreateUserWithEmailAndPasswordRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="CreateUserWithEmailAndPasswordResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
     /// <see cref="Email"/> or
     /// <see cref="Password"/> is a null reference.
     /// </exception>
-    internal override async Task<CreateUserWithEmailAndPasswordResponse> Execute()
+    internal override async Task<TransactionResponse<CreateUserWithEmailAndPasswordRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
@@ -66,23 +66,11 @@ public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<Creat
                 });
             }
 
-            return new CreateUserWithEmailAndPasswordResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new CreateUserWithEmailAndPasswordResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="GetRecaptchaSiteKeyRequest"/> request.
-/// </summary>
-public class CreateUserWithEmailAndPasswordResponse : TransactionResponse<CreateUserWithEmailAndPasswordRequest, FirebaseUser>
-{
-    internal CreateUserWithEmailAndPasswordResponse(CreateUserWithEmailAndPasswordRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

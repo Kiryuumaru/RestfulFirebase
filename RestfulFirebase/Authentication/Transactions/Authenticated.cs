@@ -20,20 +20,8 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Base class for all authenticated requests.
 /// </summary>
-public abstract class AuthenticatedRequest : AuthenticationRequest<AuthenticatedResponse>, IAuthenticatedTransactionRequest
+public abstract class AuthenticatedRequest : AuthenticationRequest<TransactionResponse<AuthenticatedRequest, FirebaseUser>>, IAuthenticatedTransactionRequest
 {
     /// <inheritdoc/>
     public FirebaseUser? FirebaseUser { get; set; }
-}
-
-/// <summary>
-/// The response of the <see cref="AuthenticatedRequest"/> request.
-/// </summary>
-public class AuthenticatedResponse : TransactionResponse<AuthenticatedRequest, FirebaseUser>
-{
-    internal AuthenticatedResponse(AuthenticatedRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
-    }
 }

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -16,7 +17,8 @@ namespace RestfulFirebase.FirestoreDatabase.Models;
 /// <typeparam name="T">
 /// The type of the model of the document.
 /// </typeparam>
-public partial class Document<T> : PartialDocument<T>
+[ObservableObject]
+public partial class Document<T>
      where T : class
 {
     #region Properties
@@ -25,7 +27,19 @@ public partial class Document<T> : PartialDocument<T>
     /// Gets the name of the document node.
     /// </summary>
     [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
-    string name;
+    string? name;
+
+    /// <summary>
+    /// Gets the reference of the document node.
+    /// </summary>
+    [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+    DocumentReference reference;
+
+    /// <summary>
+    /// Gets the <typeparamref name="T"/> model of the document.
+    /// </summary>
+    [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+    T? model;
 
     /// <summary>
     /// Gets the <see cref="DateTimeOffset"/> create time of the document node.
@@ -44,11 +58,27 @@ public partial class Document<T> : PartialDocument<T>
     #region Initializers
 
     internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
-        : base(reference, model)
     {
         this.name = name;
+        this.reference = reference;
+        this.model = model;
         this.createTime = createTime;
         this.updateTime = updateTime;
+    }
+
+    /// <summary>
+    /// Creates an instance of <see cref="Document{T}"/>.
+    /// </summary>
+    /// <param name="reference">
+    /// The <see cref="DocumentReference"/> of the document.
+    /// </param>
+    /// <param name="model">
+    /// The model of the document.
+    /// </param>
+    public Document(DocumentReference reference, T? model)
+    {
+        this.reference = reference;
+        this.model = model;
     }
 
     #endregion

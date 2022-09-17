@@ -13,7 +13,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in with provided email and password.
 /// </summary>
-public class SignInWithEmailAndPasswordRequest : AuthenticationRequest<SignInWithEmailAndPasswordResponse>
+public class SignInWithEmailAndPasswordRequest : AuthenticationRequest<TransactionResponse<SignInWithEmailAndPasswordRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the email of the user.
@@ -32,14 +32,14 @@ public class SignInWithEmailAndPasswordRequest : AuthenticationRequest<SignInWit
 
     /// <inheritdoc cref="SignInWithEmailAndPasswordRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithEmailAndPasswordResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
     /// <see cref="Email"/> or
     /// <see cref="Password"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithEmailAndPasswordResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithEmailAndPasswordRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
@@ -64,23 +64,11 @@ public class SignInWithEmailAndPasswordRequest : AuthenticationRequest<SignInWit
 
             await RefreshUserInfo(user);
 
-            return new SignInWithEmailAndPasswordResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithEmailAndPasswordResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithEmailAndPasswordRequest"/> 
-/// </summary>
-public class SignInWithEmailAndPasswordResponse : TransactionResponse<SignInWithEmailAndPasswordRequest, FirebaseUser>
-{
-    internal SignInWithEmailAndPasswordResponse(SignInWithEmailAndPasswordRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

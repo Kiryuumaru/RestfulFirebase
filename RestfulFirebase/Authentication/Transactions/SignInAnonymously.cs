@@ -14,16 +14,16 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in anonimously.
 /// </summary>
-public class SignInAnonymouslyRequest : AuthenticationRequest<SignInAnonymouslyResponse>
+public class SignInAnonymouslyRequest : AuthenticationRequest<TransactionResponse<SignInAnonymouslyRequest, FirebaseUser>>
 {
     /// <inheritdoc cref="SignInAnonymouslyRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInAnonymouslyResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInAnonymouslyResponse> Execute()
+    internal override async Task<TransactionResponse<SignInAnonymouslyRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
 
@@ -37,23 +37,11 @@ public class SignInAnonymouslyRequest : AuthenticationRequest<SignInAnonymouslyR
 
             await RefreshUserInfo(user);
 
-            return new SignInAnonymouslyResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInAnonymouslyResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInAnonymouslyRequest"/> 
-/// </summary>
-public class SignInAnonymouslyResponse : TransactionResponse<SignInAnonymouslyRequest, FirebaseUser>
-{
-    internal SignInAnonymouslyResponse(SignInAnonymouslyRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

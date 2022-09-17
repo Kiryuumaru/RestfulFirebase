@@ -372,9 +372,9 @@ public class AllType
             BytesValue1 = Array.Empty<byte>(),
             BytesValue1Null = Array.Empty<byte>(),
             BytesValue2Null = Array.Empty<byte>(),
-            ReferenceValue1 = Database.Query().Collection("a").Document("b"),
-            ReferenceValue1Null = Database.Query().Collection("a").Document("b"),
-            ReferenceValue2Null = Database.Query().Collection("a").Document("b"),
+            ReferenceValue1 = Api.FirestoreDatabase.Collection("a").Document("b"),
+            ReferenceValue1Null = Api.FirestoreDatabase.Collection("a").Document("b"),
+            ReferenceValue2Null = Api.FirestoreDatabase.Collection("a").Document("b"),
             GeoPointValue1 = new Coordinates(),
             GeoPointValue1Null = new Coordinates(),
             GeoPointValue2Null = new Coordinates(),
@@ -476,12 +476,12 @@ public class AllType
             BytesValue1 = new byte[4] { 9, 8, 7, 6 },
             BytesValue1Null = new byte[4] { 5, 4, 3, 2 },
             BytesValue2Null = null,
-            ReferenceValue1 = Api.FirestoreDatabase.Query()
+            ReferenceValue1 = Api.FirestoreDatabase
                 .Collection("collectionTest1")
                 .Document("documentTest1")
                 .Collection("collectionTest2")
                 .Document("documentTest2"),
-            ReferenceValue1Null = Api.FirestoreDatabase.Query()
+            ReferenceValue1Null = Api.FirestoreDatabase
                 .Collection("collectionTest3")
                 .Document("documentTest3")
                 .Collection("collectionTest4")
@@ -680,12 +680,12 @@ public class AllType
             BytesValue1 = new byte[6] { 4, 5, 6, 7, 8, 9 },
             BytesValue1Null = new byte[5] { 0, 9, 8, 7, 6 },
             BytesValue2Null = null,
-            ReferenceValue1 = Api.FirestoreDatabase.Query()
+            ReferenceValue1 = Api.FirestoreDatabase
                 .Collection("collectionTest5")
                 .Document("documentTest5")
                 .Collection("collectionTest6")
                 .Document("documentTest6"),
-            ReferenceValue1Null = Api.FirestoreDatabase.Query()
+            ReferenceValue1Null = Api.FirestoreDatabase
                 .Collection("collectionTest7")
                 .Document("documentTest7")
                 .Collection("collectionTest8")

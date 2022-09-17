@@ -18,7 +18,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to send password reset email to the existing account provided with the email.
 /// </summary>
-public class SendPasswordResetEmailRequest : AuthenticationRequest<SendPasswordResetEmailResponse>
+public class SendPasswordResetEmailRequest : AuthenticationRequest<TransactionResponse<SendPasswordResetEmailRequest>>
 {
     /// <summary>
     /// Gets or sets the email of the request.
@@ -27,13 +27,13 @@ public class SendPasswordResetEmailRequest : AuthenticationRequest<SendPasswordR
 
     /// <inheritdoc cref="SendPasswordResetEmailRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SendPasswordResetEmailResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>  or
     /// <see cref="Email"/> is a null reference.
     /// </exception>
-    internal override async Task<SendPasswordResetEmailResponse> Execute()
+    internal override async Task<TransactionResponse<SendPasswordResetEmailRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
@@ -44,23 +44,11 @@ public class SendPasswordResetEmailRequest : AuthenticationRequest<SendPasswordR
 
             await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
 
-            return new SendPasswordResetEmailResponse(this, null);
+            return new(this, null);
         }
         catch (Exception ex)
         {
-            return new SendPasswordResetEmailResponse(this, ex);
+            return new(this, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SendPasswordResetEmailRequest"/> request.
-/// </summary>
-public class SendPasswordResetEmailResponse : TransactionResponse<SendPasswordResetEmailRequest>
-{
-    internal SendPasswordResetEmailResponse(SendPasswordResetEmailRequest request, Exception? error)
-        : base(request, error)
-    {
-
     }
 }

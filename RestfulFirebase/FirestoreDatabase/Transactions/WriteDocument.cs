@@ -29,23 +29,9 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the existing <typeparamref name="T"/> model to populate the document fields.
-    /// </summary>
-    public T? Model { get; set; }
-
-    /// <summary>
     /// Gets or sets the existing <see cref="Document{T}"/> to populate the document fields.
     /// </summary>
     public Document<T>? Document { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node.
-    /// </summary>
-    public DocumentReference? Reference
-    {
-        get => Query as DocumentReference;
-        set => Query = value;
-    }
 
     /// <inheritdoc cref="TransactionResponse{T}"/>
     /// <returns>
@@ -53,20 +39,13 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Reference"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <see cref="Document"/> and <see cref="Model"/> is a null reference.
+    /// <see cref="Document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<WriteDocumentRequest<T>, Document<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Reference);
-        if (Document == null && Model == null)
-        {
-            throw new ArgumentException($"Both {nameof(Document)} and {nameof(Model)} is a null reference. Provide at least one to patch.");
-        }
+        ArgumentNullException.ThrowIfNull(Document);
 
         try
         {
@@ -77,15 +56,15 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
 
             writer.WriteStartObject();
             writer.WritePropertyName("fields");
-            PopulateDocument(Config, writer, Model, Document, jsonSerializerOptions);
+            PopulateDocument(Config, writer, Document.Model, Document, jsonSerializerOptions);
             writer.WriteEndObject();
 
             await writer.FlushAsync();
 
-            var response = await ExecuteWithContent(stream, new HttpMethod("PATCH"), BuildUrl());
+            var response = await ExecuteWithContent(stream, new HttpMethod("PATCH"), Document.Reference.BuildUrl(Config.ProjectId));
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = ParseDocument(Document.Reference, Document.Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
             return new(this, parsedDocument, null);
 

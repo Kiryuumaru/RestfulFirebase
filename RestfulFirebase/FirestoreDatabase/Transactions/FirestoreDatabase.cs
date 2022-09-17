@@ -46,8 +46,6 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 
     private static readonly object?[] emptyParameterPlaceholder = Array.Empty<object?>();
 
-    internal IQuery? Query { get; set; }
-
     internal override async Task<HttpClient> GetClient()
     {
         var client = HttpClient ?? new HttpClient();
@@ -87,20 +85,6 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         });
     }
 
-    internal virtual string BuildUrl()
-    {
-        ArgumentNullException.ThrowIfNull(Config);
-
-        return GetQuery().BuildUrl(Config.ProjectId);
-    }
-
-    internal Query GetQuery()
-    {
-        Query? query = Query as Query;
-        ArgumentNullException.ThrowIfNull(query);
-        return query;
-    }
-
     internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
     {
         if (jsonSerializerOptions == null)
@@ -125,15 +109,11 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         if (json != null && !string.IsNullOrEmpty(json))
         {
             string[] paths = json.Split('/');
-            object currentPath = Database.Query(paths[3]);
+            object currentPath = Api.FirestoreDatabase.Collection(paths[4]);
 
             for (int i = 5; i < paths.Length; i++)
             {
-                if (currentPath is Database database)
-                {
-                    currentPath = database.Collection(paths[i]);
-                }
-                else if (currentPath is CollectionReference colPath)
+                if (currentPath is CollectionReference colPath)
                 {
                     currentPath = colPath.Document(paths[i]);
                 }
@@ -163,7 +143,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
+    internal static Document<T>? ParseDocument<T>(DocumentReference? reference, T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
@@ -558,23 +538,23 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             }
         }
 
-        DocumentReference? reference = ParseDocumentReference(name);
+        reference ??= ParseDocumentReference(name);
 
         if (name != null &&
             reference != null &&
             createTime.HasValue &&
             updateTime.HasValue)
         {
-            if (document == null)
-            {
-                document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
-            }
-            else
+            if (document != null)
             {
                 document.Name = name;
                 document.Reference = reference;
                 document.CreateTime = createTime.Value;
                 document.UpdateTime = updateTime.Value;
+            }
+            else
+            {
+                document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
             }
         }
 

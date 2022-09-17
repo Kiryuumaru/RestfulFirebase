@@ -14,7 +14,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in with twitter oauth token provided with oauth access token and oauth access secret from twitter.
 /// </summary>
-public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest<SignInWithOAuthTwitterTokenResponse>
+public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest<TransactionResponse<SignInWithOAuthTwitterTokenRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the access token provided by twitter.
@@ -28,14 +28,14 @@ public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest<SignInWi
 
     /// <inheritdoc cref="SignInWithOAuthTwitterTokenRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithOAuthTwitterTokenResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
     /// <see cref="OAuthAccessToken"/> or
     /// <see cref="OAuthTokenSecret"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithOAuthTwitterTokenResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithOAuthTwitterTokenRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(OAuthAccessToken);
@@ -52,23 +52,11 @@ public class SignInWithOAuthTwitterTokenRequest : AuthenticationRequest<SignInWi
 
             await RefreshUserInfo(user);
 
-            return new SignInWithOAuthTwitterTokenResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithOAuthTwitterTokenResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithOAuthTwitterTokenRequest"/> 
-/// </summary>
-public class SignInWithOAuthTwitterTokenResponse : TransactionResponse<SignInWithOAuthTwitterTokenRequest, FirebaseUser>
-{
-    internal SignInWithOAuthTwitterTokenResponse(SignInWithOAuthTwitterTokenRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

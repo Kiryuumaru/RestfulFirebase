@@ -24,13 +24,13 @@ public class GetFreshTokenRequest : AuthenticatedRequest, IAuthenticatedTransact
 {
     /// <inheritdoc cref="GetFreshTokenRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="AuthenticatedResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="AuthenticatedRequest.FirebaseUser"/> or  is a null reference.
     /// </exception>
-    internal override async Task<AuthenticatedResponse> Execute()
+    internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(FirebaseUser);
@@ -48,11 +48,11 @@ public class GetFreshTokenRequest : AuthenticatedRequest, IAuthenticatedTransact
                 await RefreshUserInfo(FirebaseUser);
             }
 
-            return new AuthenticatedResponse(this, FirebaseUser, null);
+            return new(this, FirebaseUser, null);
         }
         catch (Exception ex)
         {
-            return new AuthenticatedResponse(this, null, ex);
+            return new(this, null, ex);
         }
     }
 }

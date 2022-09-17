@@ -13,7 +13,7 @@ namespace RestfulFirebase.Authentication.Transactions;
 /// <summary>
 /// Request to sign in a phone number with the provided sessionInfo and code from reCaptcha validation and sms OTP message.
 /// </summary>
-public class SignInWithPhoneNumberRequest : AuthenticationRequest<SignInWithPhoneNumberResponse>
+public class SignInWithPhoneNumberRequest : AuthenticationRequest<TransactionResponse<SignInWithPhoneNumberRequest, FirebaseUser>>
 {
     /// <summary>
     /// Gets or sets the session info token returned from <see cref="Api.Authentication.SendVerificationCode(SendVerificationCodeRequest)"/>.
@@ -27,14 +27,14 @@ public class SignInWithPhoneNumberRequest : AuthenticationRequest<SignInWithPhon
 
     /// <inheritdoc cref="SignInWithPhoneNumberRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="SignInWithPhoneNumberResponse"/> with the authenticated <see cref="FirebaseUser"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the authenticated <see cref="FirebaseUser"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
     /// <see cref="SessionInfo"/> or
     /// <see cref="Code"/> is a null reference.
     /// </exception>
-    internal override async Task<SignInWithPhoneNumberResponse> Execute()
+    internal override async Task<TransactionResponse<SignInWithPhoneNumberRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(SessionInfo);
@@ -50,23 +50,11 @@ public class SignInWithPhoneNumberRequest : AuthenticationRequest<SignInWithPhon
 
             await RefreshUserInfo(user);
 
-            return new SignInWithPhoneNumberResponse(this, user, null);
+            return new(this, user, null);
         }
         catch (Exception ex)
         {
-            return new SignInWithPhoneNumberResponse(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="SignInWithPhoneNumberRequest"/> 
-/// </summary>
-public class SignInWithPhoneNumberResponse : TransactionResponse<SignInWithPhoneNumberRequest, FirebaseUser>
-{
-    internal SignInWithPhoneNumberResponse(SignInWithPhoneNumberRequest request, FirebaseUser? result, Exception? error)
-        : base(request, result, error)
-    {
-
     }
 }

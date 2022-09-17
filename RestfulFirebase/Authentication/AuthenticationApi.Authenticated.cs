@@ -13,6 +13,8 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Transactions;
 
 namespace RestfulFirebase.Api;
 
@@ -25,70 +27,70 @@ public static partial class Authentication
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> SendEmailVerification(SendEmailVerificationRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> SendEmailVerification(SendEmailVerificationRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="ChangeUserEmailRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> ChangeUserEmail(ChangeUserEmailRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> ChangeUserEmail(ChangeUserEmailRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="ChangeUserPasswordRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> ChangeUserPassword(ChangeUserPasswordRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> ChangeUserPassword(ChangeUserPasswordRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="UpdateProfileRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> UpdateProfile(UpdateProfileRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> UpdateProfile(UpdateProfileRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="DeleteUserRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> DeleteUser(DeleteUserRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> DeleteUser(DeleteUserRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="LinkAccountRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> LinkAccount(LinkAccountRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> LinkAccount(LinkAccountRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="LinkOAuthAccountRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> LinkAccount(LinkOAuthAccountRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> LinkAccount(LinkOAuthAccountRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="UnlinkAccountRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> UnlinkAccounts(UnlinkAccountRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> UnlinkAccounts(UnlinkAccountRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="GetFreshTokenRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> GetFreshToken(GetFreshTokenRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> GetFreshToken(GetFreshTokenRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="GetFreshTokenRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<AuthenticatedResponse> GetFreshToken(IAuthenticatedTransactionRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> GetFreshToken(IAuthenticatedTransactionRequest request)
         => GetFreshToken(new GetFreshTokenRequest()
         {
             CancellationToken = request.CancellationToken,
