@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.Common;
+namespace RestfulFirebase.Common.Internals;
 
 internal class Message
 {

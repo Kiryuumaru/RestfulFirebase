@@ -12,7 +12,7 @@ using RestfulFirebase.Authentication.Transactions;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.Common.Abstraction;
+using RestfulFirebase.Common.Abstractions;
 
 namespace RestfulFirebase.Api;
 

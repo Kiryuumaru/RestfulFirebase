@@ -5,12 +5,15 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase;
 using System.Transactions;
 using RestfulFirebase.Common.Transactions;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
+using RestfulFirebase.FirestoreDatabase.Models;
+using System.Reflection;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -20,7 +23,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocumentResponse<T>>
+public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>>
     where T : class
 {
     /// <summary>
@@ -36,15 +39,15 @@ public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocum
     /// <summary>
     /// Gets or sets the requested <see cref="DocumentReference"/> of the document node.
     /// </summary>
-    public MultipleDocumentReference? Reference
+    public MultipleDocumentReferences? Reference
     {
-        get => Query as MultipleDocumentReference;
+        get => Query as MultipleDocumentReferences;
         set => Query = value;
     }
 
-    /// <inheritdoc cref="BatchGetDocumentRequest{T}"/>
+    /// <inheritdoc cref="GetDocumentsRequest{T}"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="BatchGetDocumentResponse{T}"/> with the batch get result <see cref="BatchGetDocuments{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="BatchGetDocuments{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> is a null reference.
@@ -52,13 +55,16 @@ public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocum
     /// <exception cref="ArgumentException">
     /// <see cref="Documents"/> and <see cref="Reference"/> is a null reference.
     /// </exception>
-    internal override async Task<BatchGetDocumentResponse<T>> Execute()
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal override async Task<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         if (Documents == null && Reference == null)
         {
             throw new ArgumentException($"Both {nameof(Documents)} and {nameof(Reference)} is a null reference. Provide at least one to get.");
         }
+
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         try
         {
@@ -77,7 +83,7 @@ public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocum
             }
             else if (Reference != null)
             {
-                foreach (var reference in Reference.GetDocumentReferences())
+                foreach (var reference in Reference.DocumentReferences)
                 {
                     writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
                 }
@@ -90,15 +96,46 @@ public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocum
             var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            IReadOnlyList<Document<T>> found = new List<Document<T>>();
-            IReadOnlyList<DocumentReference> missing = new List<DocumentReference>();
-            DateTimeOffset readTime = default;
 
-            return new BatchGetDocumentResponse<T>(this, new BatchGetDocuments<T>(found, missing, readTime), null);
+            List<DocumentTimestamp<T>> foundDocuments = new();
+            List<DocumentReferenceTimestamp> missingDocuments = new();
+
+            foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+            {
+                if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
+                    readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
+                {
+                    Document<T>? document = null;
+                    if (doc.TryGetProperty("found", out JsonElement foundProperty))
+                    {
+                        if (Documents != null &&
+                            Documents.Count() != 0 &&
+                            foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                            foundNameProperty.ValueKind == JsonValueKind.String &&
+                            foundNameProperty.GetString() is string foundName &&
+                            Documents.FirstOrDefault(i => i.Name == foundName) is Document<T> foundDocument)
+                        {
+                            document = foundDocument;
+                        }
+
+                        if (ParseDocument(null, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                        {
+                            foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
+                        }
+                    }
+                    else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
+                        ParseDocumentReference(missingProperty, jsonSerializerOptions) is DocumentReference missing)
+                    {
+                        missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                    }
+                }
+            }
+
+            return new(this, new BatchGetDocuments<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()), null);
         }
         catch (Exception ex)
         {
-            return new BatchGetDocumentResponse<T>(this, null, ex);
+            return new(this, null, ex);
         }
     }
 
@@ -111,23 +148,7 @@ public class BatchGetDocumentRequest<T> : FirestoreDatabaseRequest<BatchGetDocum
 }
 
 /// <summary>
-/// The response of the <see cref="BatchGetDocumentRequest{T}"/> request.
-/// </summary>
-/// <typeparam name="T">
-/// The type of the model of the document.
-/// </typeparam>
-public class BatchGetDocumentResponse<T> : TransactionResponse<BatchGetDocumentRequest<T>, BatchGetDocuments<T>>
-    where T : class
-{
-    internal BatchGetDocumentResponse(BatchGetDocumentRequest<T> request, BatchGetDocuments<T>? response, Exception? error)
-        : base(request, response, error)
-    {
-
-    }
-}
-
-/// <summary>
-/// The result of the <see cref="BatchGetDocumentRequest{T}"/> request.
+/// The result of the <see cref="GetDocumentsRequest{T}"/> request.
 /// </summary>
 /// <typeparam name="T">
 /// The type of the model of the document.
@@ -138,22 +159,16 @@ public class BatchGetDocuments<T>
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public IReadOnlyList<Document<T>> Found { get; }
+    public IReadOnlyList<DocumentTimestamp<T>> Found { get; }
 
     /// <summary>
     /// Gets the missing document.
     /// </summary>
-    public IReadOnlyList<DocumentReference> Missing { get; }
+    public IReadOnlyList<DocumentReferenceTimestamp> Missing { get; }
 
-    /// <summary>
-    /// Gets the <see cref="DateTimeOffset"/> time at which the document was read.
-    /// </summary>
-    public DateTimeOffset ReadTime { get; }
-
-    internal BatchGetDocuments(IReadOnlyList<Document<T>> found, IReadOnlyList<DocumentReference> missing, DateTimeOffset readTime)
+    internal BatchGetDocuments(IReadOnlyList<DocumentTimestamp<T>> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
     {
         Found = found;
         Missing = missing;
-        ReadTime = readTime;
     }
 }

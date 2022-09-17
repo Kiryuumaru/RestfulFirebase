@@ -1,9 +1,10 @@
 ﻿using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.FirestoreDatabase.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace RestfulFirebase.FirestoreDatabase.Query;
+namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// The reference for collections.
@@ -78,22 +79,35 @@ public class CollectionReference : Reference
     }
 
     /// <summary>
-    /// Creates a multiple document reference <see cref="DocumentReference"/>.
+    /// Creates a multiple document reference <see cref="Queries.MultipleDocumentReferences"/>.
     /// </summary>
-    /// <param name="documentIds">
-    /// The ID of the document references.
+    /// <param name="documentReferences">
+    /// The list of document references.
     /// </param>
     /// <returns>
-    /// The <see cref="DocumentReference"/> of the specified <paramref name="documentIds"/>.
+    /// The created <see cref="Queries.MultipleDocumentReferences"/>.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentIds"/> is a <c>null</c> reference.
-    /// </exception>
-    public MultipleDocumentReference Documents(params string[] documentIds)
+    public MultipleDocumentReferences MultipleDocumentReferences(List<DocumentReference>? documentReferences = null)
     {
-        ArgumentNullException.ThrowIfNull(documentIds);
+        return new MultipleDocumentReferences(Database, this, documentReferences);
+    }
 
-        return new MultipleDocumentReference(Database, this, documentIds);
+    /// <summary>
+    /// Creates a multiple documents <see cref="Queries.MultipleDocuments{T}"/>.
+    /// </summary>
+    /// <param name="partialDocuments">
+    /// The list of partial documents.
+    /// </param>
+    /// <param name="documents">
+    /// The list of documents.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="Queries.MultipleDocuments{T}"/>.
+    /// </returns>
+    public MultipleDocuments<T> MultipleDocuments<T>(List<PartialDocument<T>>? partialDocuments = null, List<Document<T>>? documents = null)
+        where T : class
+    {
+        return new MultipleDocuments<T>(Database, this, partialDocuments, documents);
     }
 
     internal override string BuildUrlCascade(string projectId)

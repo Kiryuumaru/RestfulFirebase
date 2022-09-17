@@ -3,10 +3,10 @@ using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Transactions;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -24,7 +25,7 @@ public class FirestoreDatabaseTest
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Database()
+        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Query()
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentModelTest)}");
 
@@ -35,7 +36,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NestedType>()
+        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NestedType>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -97,7 +98,7 @@ public class FirestoreDatabaseTest
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Database()
+        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Query()
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentDictionaryTest)}");
 
@@ -121,7 +122,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Dictionary<string, NestedType>>()
+        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Dictionary<string, NestedType>>()
         {
             Config = config,
             Model = dictionary1,
@@ -178,7 +179,7 @@ public class FirestoreDatabaseTest
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Database()
+        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Query()
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMModelTest)}");
 
@@ -202,7 +203,7 @@ public class FirestoreDatabaseTest
             modelPropertyChangedNames.Add(e.PropertyName);
         };
 
-        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -251,7 +252,7 @@ public class FirestoreDatabaseTest
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Database()
+        DocumentReference documentReferenceTest1 = Api.FirestoreDatabase.Query()
             .Collection("public")
             .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMDocumentTest)}");
 
@@ -262,7 +263,7 @@ public class FirestoreDatabaseTest
             Reference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -282,7 +283,7 @@ public class FirestoreDatabaseTest
             documentPropertyChangedNames.Add(e.PropertyName);
         };
 
-        await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -325,6 +326,94 @@ public class FirestoreDatabaseTest
         });
 
         Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResult);
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void BatchGetDeleteDocumentTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        //MultipleDocumentReference documentReferenceTest = Api.FirestoreDatabase.Query()
+        //    .Collection("public")
+        //    .Documents("mock1", "mock2", "mock3", "mock4", "mock5", "mock6");
+
+        //var references = documentReferenceTest.GetDocumentReferences();
+
+        //await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
+        //{
+        //    Config = config,
+        //    Reference = documentReferenceTest
+        //});
+
+        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = references[0],
+        //    Model = new NormalMVVMModel()
+        //    {
+        //        Val1 = "patch 1 val 1",
+        //        Val2 = "patch 1 val 2",
+        //    },
+        //});
+
+        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = references[1],
+        //    Model = new NormalMVVMModel()
+        //    {
+        //        Val1 = "patch 2 val 1",
+        //        Val2 = "patch 2 val 2",
+        //    },
+        //});
+
+        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = references[2],
+        //    Model = new NormalMVVMModel()
+        //    {
+        //        Val1 = "patch 3 val 1",
+        //        Val2 = "patch 3 val 2",
+        //    },
+        //});
+
+        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = references[3],
+        //    Model = new NormalMVVMModel()
+        //    {
+        //        Val1 = "patch 4 val 1",
+        //        Val2 = "patch 4 val 2",
+        //    },
+        //});
+
+        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = references[4],
+        //    Model = new NormalMVVMModel()
+        //    {
+        //        Val1 = "patch 5 val 1",
+        //        Val2 = "patch 5 val 2",
+        //    },
+        //});
+
+        //var batchGetResponse = await Api.FirestoreDatabase.BatchGet(new BatchGetDocumentRequest<NormalMVVMModel>
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = documentReferenceTest
+        //});
+
 
         Assert.True(true);
     }

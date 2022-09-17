@@ -8,7 +8,8 @@ using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using System.Transactions;
 using RestfulFirebase.Common.Transactions;
-using RestfulFirebase.Common;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.Api;
 
@@ -17,16 +18,6 @@ namespace RestfulFirebase.Api;
 /// </summary>
 public static partial class FirestoreDatabase
 {
-    /// <inheritdoc cref="BatchGetDocumentRequest{T}.Execute"/>
-    /// <param name="request">
-    /// The request of the operation.
-    /// </param>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
-    public static Task<BatchGetDocumentResponse<T>> BatchGet<T>(BatchGetDocumentRequest<T> request)
-        where T : class => request.Execute();
-
     /// <inheritdoc cref="GetDocumentRequest{T}.Execute"/>
     /// <param name="request">
     /// The request of the operation.
@@ -34,23 +25,43 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<GetDocumentResponse<T>> GetDocument<T>(GetDocumentRequest<T> request)
+    public static Task<TransactionResponse<GetDocumentRequest<T>, Document<T>>> GetDocument<T>(GetDocumentRequest<T> request)
         where T : class => request.Execute();
 
-    /// <inheritdoc cref="PatchDocumentRequest{T}.Execute"/>
+    /// <inheritdoc cref="GetDocumentsRequest{T}.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<PatchDocumentResponse<T>> PatchDocument<T>(PatchDocumentRequest<T> request)
+    public static Task<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>> GetDocuments<T>(GetDocumentsRequest<T> request)
+        where T : class => request.Execute();
+
+    /// <inheritdoc cref="WriteDocumentRequest{T}.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<WriteDocumentRequest<T>, Document<T>>> WriteDocument<T>(WriteDocumentRequest<T> request)
+        where T : class => request.Execute();
+
+    /// <inheritdoc cref="WriteDocumentsRequest{T}.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<WriteDocumentsRequest<T>, PatchDocumentsResult<T>>> WriteDocuments<T>(WriteDocumentsRequest<T> request)
         where T : class => request.Execute();
 
     /// <inheritdoc cref="DeleteDocumentRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<DeleteDocumentResponse> DeleteDocument(DeleteDocumentRequest request)
+    public static Task<TransactionResponse<DeleteDocumentRequest>> DeleteDocument(DeleteDocumentRequest request)
         => request.Execute();
 }

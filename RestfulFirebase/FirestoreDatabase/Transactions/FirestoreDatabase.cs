@@ -1,12 +1,13 @@
 ﻿using RestfulFirebase.Attributes;
-using RestfulFirebase.Authentication;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Abstraction;
+using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Utilities;
-using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -93,9 +94,9 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         return GetQuery().BuildUrl(Config.ProjectId);
     }
 
-    internal Query.Query GetQuery()
+    internal Query GetQuery()
     {
-        Query.Query? query = Query as Query.Query;
+        Query? query = Query as Query;
         ArgumentNullException.ThrowIfNull(query);
         return query;
     }
@@ -119,7 +120,50 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(DocumentReference reference, T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
+    internal static DocumentReference? ParseDocumentReference(string? json)
+    {
+        if (json != null && !string.IsNullOrEmpty(json))
+        {
+            string[] paths = json.Split('/');
+            object currentPath = Database.Query(paths[3]);
+
+            for (int i = 5; i < paths.Length; i++)
+            {
+                if (currentPath is Database database)
+                {
+                    currentPath = database.Collection(paths[i]);
+                }
+                else if (currentPath is CollectionReference colPath)
+                {
+                    currentPath = colPath.Document(paths[i]);
+                }
+                else if (currentPath is DocumentReference docPath)
+                {
+                    currentPath = docPath.Collection(paths[i]);
+                }
+            }
+
+            if (currentPath is DocumentReference documentReference)
+            {
+                return documentReference;
+            }
+        }
+
+        return null;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static DocumentReference? ParseDocumentReference(JsonElement jsonElement, JsonSerializerOptions jsonSerializerOptions)
+    {
+        return ParseDocumentReference(jsonElement.Deserialize<string>(jsonSerializerOptions));
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static Document<T>? ParseDocument<T>(T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
         where T : class
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
@@ -166,33 +210,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
                         if (documentFieldValue.ValueKind == JsonValueKind.String &&
                             objType == typeof(DocumentReference))
                         {
-                            string? reference = documentFieldValue.Deserialize<string>(jsonSerializerOptions);
-                            if (reference != null && !string.IsNullOrEmpty(reference))
-                            {
-                                string[] paths = reference.Split('/');
-                                object currentPath = Database.Get(paths[3]);
-
-                                for (int i = 5; i < paths.Length; i++)
-                                {
-                                    if (currentPath is Database database)
-                                    {
-                                        currentPath = database.Collection(paths[i]);
-                                    }
-                                    else if (currentPath is CollectionReference colPath)
-                                    {
-                                        currentPath = colPath.Document(paths[i]);
-                                    }
-                                    else if (currentPath is DocumentReference docPath)
-                                    {
-                                        currentPath = docPath.Collection(paths[i]);
-                                    }
-                                }
-
-                                if (currentPath is DocumentReference documentReference)
-                                {
-                                    obj = documentReference;
-                                }
-                            }
+                            obj = ParseDocumentReference(documentFieldValue, jsonSerializerOptions);
                         }
                         break;
                     case "geoPointValue":
@@ -502,7 +520,6 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 
         if (document != null)
         {
-            document.Reference = reference;
             document.Model = obj;
         }
 
@@ -541,7 +558,10 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             }
         }
 
+        DocumentReference? reference = ParseDocumentReference(name);
+
         if (name != null &&
+            reference != null &&
             createTime.HasValue &&
             updateTime.HasValue)
         {
@@ -552,6 +572,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             else
             {
                 document.Name = name;
+                document.Reference = reference;
                 document.CreateTime = createTime.Value;
                 document.UpdateTime = updateTime.Value;
             }

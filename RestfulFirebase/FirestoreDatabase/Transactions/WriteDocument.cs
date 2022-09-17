@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
@@ -10,6 +10,7 @@ using RestfulFirebase.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -19,7 +20,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class PatchDocumentRequest<T> : FirestoreDatabaseRequest<PatchDocumentResponse<T>>
+public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentRequest<T>, Document<T>>>
     where T : class
 {
     /// <summary>
@@ -46,9 +47,9 @@ public class PatchDocumentRequest<T> : FirestoreDatabaseRequest<PatchDocumentRes
         set => Query = value;
     }
 
-    /// <inheritdoc cref="PatchDocumentResponse{T}"/>
+    /// <inheritdoc cref="TransactionResponse{T}"/>
     /// <returns>
-    /// The <see cref="PatchDocumentResponse{T}"/> response of the request.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="Document{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
@@ -58,7 +59,7 @@ public class PatchDocumentRequest<T> : FirestoreDatabaseRequest<PatchDocumentRes
     /// <see cref="Document"/> and <see cref="Model"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<PatchDocumentResponse<T>> Execute()
+    internal override async Task<TransactionResponse<WriteDocumentRequest<T>, Document<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Reference);
@@ -84,30 +85,14 @@ public class PatchDocumentRequest<T> : FirestoreDatabaseRequest<PatchDocumentRes
             var response = await ExecuteWithContent(stream, new HttpMethod("PATCH"), BuildUrl());
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Reference, Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = ParseDocument(Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
-            return new PatchDocumentResponse<T>(this, parsedDocument, null);
+            return new(this, parsedDocument, null);
 
         }
         catch (Exception ex)
         {
-            return new PatchDocumentResponse<T>(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="PatchDocumentRequest{T}"/> request.
-/// </summary>
-/// <typeparam name="T">
-/// The type of the model of the document.
-/// </typeparam>
-public class PatchDocumentResponse<T> : TransactionResponse<PatchDocumentRequest<T>, Document<T>>
-    where T : class
-{
-    internal PatchDocumentResponse(PatchDocumentRequest<T> request, Document<T>? response, Exception? error)
-        : base(request, response, error)
-    {
-
     }
 }

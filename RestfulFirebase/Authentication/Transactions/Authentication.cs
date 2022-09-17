@@ -15,6 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common.Transactions;
 using System.Net;
 using System.Runtime.CompilerServices;
+using RestfulFirebase.Authentication.Models;
 
 namespace RestfulFirebase.Authentication.Transactions;
 

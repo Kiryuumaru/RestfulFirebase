@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Common.Abstraction;
+﻿using RestfulFirebase.Common.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;

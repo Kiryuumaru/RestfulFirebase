@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.FirestoreDatabase.Query;
+﻿using RestfulFirebase.FirestoreDatabase.Queries;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;

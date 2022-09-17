@@ -3,14 +3,15 @@ using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Transactions;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Xunit;
+using RestfulFirebase.Authentication.Models;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -23,12 +24,34 @@ public class MockTest
 
         FirebaseUser user;
 
-        MultipleDocumentReference documentReferenceTest = Api.FirestoreDatabase.Database()
-            .Collection("public")
-            .Documents("mock1", "mock2", "mock3", "mock4", "mock5", "mock6");
+        //MultipleDocumentReferences documentReferenceTest = Api.FirestoreDatabase.Query()
+        //    .Collection("public")
+        //    .MultipleDocuments;
 
-        var references = documentReferenceTest.GetDocumentReferences();
+        var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            MultipleDocuments = Database.Query()
+                .Collection("public")
+                .MultipleDocuments<NormalMVVMModel>()
+                .AddDocument(new NormalMVVMModel()
+                {
+                    Val1 = "1 try 1 aawd",
+                    Val2 = "1 try 2 dwd",
+                }, "model1")
+                .AddDocument(new NormalMVVMModel()
+                {
+                    Val1 = "2 try 1 ddw",
+                    Val2 = "2 try 2 wd",
+                }, "model2")
+                .AddDocument(new NormalMVVMModel()
+                {
+                    Val1 = "3 try 1 d",
+                    Val2 = "3 try 2  w",
+                }, "model3")
+        });
 
+        Assert.True(true);
         // Remove residual files
         //await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         //{
@@ -96,13 +119,12 @@ public class MockTest
         //    },
         //});
 
-        var batchGetResponse = await Api.FirestoreDatabase.BatchGet(new BatchGetDocumentRequest<NormalMVVMModel>
-        {
-            JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Config = config,
-            Reference = documentReferenceTest
-        });
-
+        //var batchGetResponse = await Api.FirestoreDatabase.BatchGet(new BatchGetDocumentRequest<NormalMVVMModel>
+        //{
+        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
+        //    Config = config,
+        //    Reference = documentReferenceTest
+        //});
 
         Assert.True(true);
     }

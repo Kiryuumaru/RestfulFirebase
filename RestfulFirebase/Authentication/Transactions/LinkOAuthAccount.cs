@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.Common.Transactions;
 using System;
 using System.Collections.Generic;

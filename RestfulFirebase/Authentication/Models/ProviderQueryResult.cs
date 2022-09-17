@@ -1,10 +1,9 @@
 ﻿using RestfulFirebase.Authentication.Enums;
 using RestfulFirebase.Common.Utilities;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace RestfulFirebase.Authentication;
+namespace RestfulFirebase.Authentication.Models;
 
 /// <summary>
 /// More info at <see href="https://developers.google.com/identity/toolkit/web/reference/relyingparty/createAuthUri"/>.

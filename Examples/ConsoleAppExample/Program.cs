@@ -5,6 +5,7 @@ using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Transactions;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.Authentication.Models;
 
 FirebaseConfig config = Credentials.Config(); // Your config
 
@@ -38,18 +39,18 @@ else
 var personResponse = await RestfulFirebase.Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Person>()
 {
     Config = config,
-    Reference = RestfulFirebase.Api.FirestoreDatabase.Database()
+    Reference = RestfulFirebase.Api.FirestoreDatabase.Query()
         .Collection("public")
         .Document("sample")
 });
 
 personResponse.ThrowIfErrorOrEmptyResult();
 
-await RestfulFirebase.Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<Person>()
+await RestfulFirebase.Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Person>()
 {
     Config = config,
     Model = personResponse.Result.Model,
-    Reference = RestfulFirebase.Api.FirestoreDatabase.Database()
+    Reference = RestfulFirebase.Api.FirestoreDatabase.Query()
         .Collection("public")
         .Document("sample1")
 });

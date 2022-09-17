@@ -6,7 +6,7 @@ using System.Threading;
 using System.Linq;
 using RestfulFirebase.Exceptions;
 using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using DisposableHelpers;
 using LockerHelpers;
 using System.Text.Json;

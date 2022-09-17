@@ -9,7 +9,7 @@ using DisposableHelpers;
 using DisposableHelpers.Attributes;
 using RestfulFirebase.Authentication.Internals;
 
-namespace RestfulFirebase.Authentication;
+namespace RestfulFirebase.Authentication.Models;
 
 /// <summary>
 /// Provides firebase user authentication implementations.

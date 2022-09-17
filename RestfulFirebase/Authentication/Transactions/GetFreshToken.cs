@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
@@ -12,7 +12,8 @@ using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
 using RestfulFirebase.Authentication.Internals;
 using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Common.Abstraction;
+using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.Authentication.Models;
 
 namespace RestfulFirebase.Authentication.Transactions;
 

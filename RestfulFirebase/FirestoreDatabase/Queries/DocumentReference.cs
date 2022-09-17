@@ -9,10 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System.Text.Json.Serialization;
 
-namespace RestfulFirebase.FirestoreDatabase.Query;
+namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// The reference for documents.

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -19,7 +20,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class GetDocumentRequest<T> : FirestoreDatabaseRequest<GetDocumentResponse<T>>
+public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResponse<GetDocumentRequest<T>, Document<T>>>
     where T : class
 {
     /// <summary>
@@ -46,16 +47,16 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<GetDocumentRespons
         set => Query = value;
     }
 
-    /// <inheritdoc cref="GetDocumentResponse{T}"/>
+    /// <inheritdoc cref="GetDocumentRequest{T}"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="GetDocumentResponse{T}"/> with the get result <typeparamref name="T"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="Document{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="Reference"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<GetDocumentResponse<T>> Execute()
+    internal override async Task<TransactionResponse<GetDocumentRequest<T>, Document<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Reference);
@@ -67,29 +68,13 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<GetDocumentRespons
             var response = await Execute(HttpMethod.Get, BuildUrl());
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Reference, Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = ParseDocument(Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
-            return new GetDocumentResponse<T>(this, parsedDocument, null);
+            return new(this, parsedDocument, null);
         }
         catch (Exception ex)
         {
-            return new GetDocumentResponse<T>(this, null, ex);
+            return new(this, null, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="GetDocumentRequest{T}"/> request.
-/// </summary>
-/// <typeparam name="T">
-/// The type of the model of the document.
-/// </typeparam>
-public class GetDocumentResponse<T> : TransactionResponse<GetDocumentRequest<T>, Document<T>>
-    where T : class
-{
-    internal GetDocumentResponse(GetDocumentRequest<T> request, Document<T>? response, Exception? error)
-        : base(request, response, error)
-    {
-
     }
 }

@@ -1,21 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using RestfulFirebase.FirestoreDatabase.Query;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstraction;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
 using System.Net.Http;
 using RestfulFirebase.Common;
 using System.Diagnostics.CodeAnalysis;
+using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
 /// <summary>
 /// Request to delete the <see cref="Document{T}"/> of the specified request query.
 /// </summary>
-public class DeleteDocumentRequest : FirestoreDatabaseRequest<DeleteDocumentResponse>
+public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse<DeleteDocumentRequest>>
 {
     /// <summary>
     /// Gets or sets the requested <see cref="IDocumentReference"/> of the document node.
@@ -28,13 +29,13 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<DeleteDocumentResp
 
     /// <inheritdoc cref="DeleteDocumentRequest"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="DeleteDocumentResponse"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="Reference"/> is a null reference.
     /// </exception>
-    internal override async Task<DeleteDocumentResponse> Execute()
+    internal override async Task<TransactionResponse<DeleteDocumentRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Reference);
@@ -43,23 +44,11 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<DeleteDocumentResp
         {
             await Execute(HttpMethod.Delete, BuildUrl());
 
-            return new DeleteDocumentResponse(this, null);
+            return new(this, null);
         }
         catch (Exception ex)
         {
-            return new DeleteDocumentResponse(this, ex);
+            return new(this, ex);
         }
-    }
-}
-
-/// <summary>
-/// The response of the <see cref="DeleteDocumentRequest"/> request.
-/// </summary>
-public class DeleteDocumentResponse : TransactionResponse<DeleteDocumentRequest>
-{
-    internal DeleteDocumentResponse(DeleteDocumentRequest request, Exception? error)
-        : base(request, error)
-    {
-
     }
 }

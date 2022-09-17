@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Common.Abstraction;
+namespace RestfulFirebase.Common.Abstractions;
 
 /// <summary>
 /// The base request for all firebase request.
