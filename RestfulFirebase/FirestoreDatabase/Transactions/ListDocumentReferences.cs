@@ -1,0 +1,168 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Text.Json;
+using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.Common.Transactions;
+using System.Threading.Tasks;
+using System.IO;
+using System.Net.Http;
+using System.Diagnostics.CodeAnalysis;
+using RestfulFirebase.Common;
+using RestfulFirebase.FirestoreDatabase.Models;
+using System.Xml.Linq;
+using System.Threading;
+
+namespace RestfulFirebase.FirestoreDatabase.Transactions;
+
+/// <summary>
+/// Request to list the <see cref="Document{T}"/> of the specified request query.
+/// </summary>
+/// <typeparam name="T">
+/// The type of the model to populate the document fields.
+/// </typeparam>
+public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<TransactionResponse<ListDocumentReferencesRequest<T>, ListDocumentReferencesResult<T>>>
+    where T : class
+{
+    /// <summary>
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </summary>
+    public JsonSerializerOptions? JsonSerializerOptions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="Queries.CollectionReference"/> of the collection node.
+    /// </summary>
+    public CollectionReference? CollectionReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested page size of the result <see cref="AsyncPager{T}"/>.
+    /// </summary>
+    public int? PageSize { get; set; }
+
+    /// <inheritdoc cref="ListDocumentReferencesRequest{T}"/>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="ListDocumentReferencesResult{T}"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <see cref="TransactionRequest.Config"/> or
+    /// <see cref="CollectionReference"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal override async Task<TransactionResponse<ListDocumentReferencesRequest<T>, ListDocumentReferencesResult<T>>> Execute()
+    {
+        ArgumentNullException.ThrowIfNull(Config);
+        ArgumentNullException.ThrowIfNull(CollectionReference);
+
+        try
+        {
+            var iterator = await ExecuteNextPage(null);
+
+            var firstIteration = new ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>(
+                new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, async (ct) => await iterator.NextPage!(ct)));
+            AsyncPager<Document<T>> pager = new(new(null!, (_) => firstIteration));
+            ListDocumentReferencesResult<T> result = new(iterator.Item, pager);
+
+            return new TransactionResponse<ListDocumentReferencesRequest<T>, ListDocumentReferencesResult<T>>(this, result, null);
+        }
+        catch (Exception ex)
+        {
+            return new TransactionResponse<ListDocumentReferencesRequest<T>, ListDocumentReferencesResult<T>>(this, null, ex);
+        }
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    private async Task<AsyncPager<Document<T>>.DocumentPagerIterator> ExecuteNextPage(string? pageToken)
+    {
+        ArgumentNullException.ThrowIfNull(Config);
+        ArgumentNullException.ThrowIfNull(CollectionReference);
+
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
+
+        string url = $"{CollectionReference.BuildUrl(Config.ProjectId)}?";
+        if (PageSize.HasValue)
+        {
+            url += $"pageSize={PageSize.Value}";
+        }
+        else
+        {
+            url += $"pageSize={20}";
+        }
+        if (pageToken != null)
+        {
+            url += $"&pageToken={pageToken}";
+        }
+
+        var response = await Execute(HttpMethod.Get, url);
+        using Stream contentStream = await response.Content.ReadAsStreamAsync();
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+
+        List<Document<T>> documents = new();
+        string? nextPageToken = null;
+        if (jsonDocument.RootElement.TryGetProperty("documents", out JsonElement documentsProperty))
+        {
+            foreach (var doc in documentsProperty.EnumerateArray())
+            {
+                DocumentReference? documentReference = null;
+                Document<T>? document = null;
+                T? model = null;
+                if (doc.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                    ParseDocumentReference(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
+                {
+                    documentReference = docRef;
+
+                    //if (Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                    //{
+                    //    document = foundDocument;
+                    //    model = foundDocument.Model;
+                    //}
+                }
+
+                if (ParseDocument(documentReference, model, document, doc.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                {
+                    documents.Add(found);
+                }
+            }
+        }
+
+        if (jsonDocument.RootElement.TryGetProperty("nextPageToken", out JsonElement nextPageTokenProperty))
+        {
+            nextPageToken = nextPageTokenProperty.Deserialize<string>(jsonSerializerOptions);
+        }
+
+        if (nextPageToken == null)
+        {
+            return new(documents.ToArray(), null);
+        }
+        else
+        {
+            return new(documents.ToArray(), async (ct) => await ExecuteNextPage(nextPageToken));
+        }
+    }
+}
+
+/// <summary>
+/// The result of the <see cref="ListDocumentReferencesRequest{T}"/> request.
+/// </summary>
+/// <typeparam name="T">
+/// The type of the model to populate the document fields.
+/// </typeparam>
+public class ListDocumentReferencesResult<T>
+    where T : class
+{
+    /// <summary>
+    /// Gets the first result of the list.
+    /// </summary>
+    public Document<T>[] FirstResult { get; }
+
+    /// <summary>
+    /// Gets the pager iterator <see cref="AsyncPager{T}"/> to iterate to next page result.
+    /// </summary>
+    public AsyncPager<Document<T>> DocumentPager { get; }
+
+    internal ListDocumentReferencesResult(Document<T>[] firstResult, AsyncPager<Document<T>> documentPager)
+    {
+        FirstResult = firstResult;
+        DocumentPager = documentPager;
+    }
+}

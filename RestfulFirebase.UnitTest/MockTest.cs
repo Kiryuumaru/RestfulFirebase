@@ -29,42 +29,41 @@ public class MockTest
         CollectionReference documentReferenceTest = Api.FirestoreDatabase
             .Collection("public");
 
-        Document<NormalMVVMModel>[] documents = new Document<NormalMVVMModel>[]
-        {
-            documentReferenceTest.Document("model1").Create(new NormalMVVMModel()
-            {
-                Val1 = "1 try 1 aawd",
-                Val2 = "1 try 2 dwd",
-            }),
-            documentReferenceTest.Document("model2").Create(new NormalMVVMModel()
-            {
-                Val1 = "2 try 1 ddw",
-                Val2 = "2 try 2 wd",
-            }),
-            documentReferenceTest.Document("model3").Create(new NormalMVVMModel()
-            {
-                Val1 = "3 try 1 d",
-                Val2 = "3 try 2  w",
-            }),
-        };
+        //List<Document<NormalMVVMModel>> documents = new();
+        //for (int i = 0; i < 100; i++)
+        //{
+        //    documents.Add(documentReferenceTest.Document($"model{i}").Create(new NormalMVVMModel()
+        //    {
+        //        Val1 = $"{i} try 1",
+        //        Val2 = $"{i} try 2",
+        //    }));
+        //}
 
-        var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        //{
+        //    Config = config,
+        //    Documents = documents
+        //});
+
+        var awdaw = await Api.FirestoreDatabase.ListDocumentReferences(new ListDocumentReferencesRequest<NormalMVVMModel>()
         {
             Config = config,
-            Documents = documents
+            CollectionReference = documentReferenceTest,
+            PageSize = 60
         });
+        Assert.NotNull(awdaw.Result);
 
-        var res2 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>
-        {
-            Config = config,
-            Documents = documents
-        });
+        List<Document<NormalMVVMModel>> documents = new();
 
-        var res1 = await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        int calls = 0;
+        await foreach (var page in awdaw.Result.DocumentPager)
         {
-            Config = config,
-            Documents = documents
-        });
+            calls++;
+            foreach (var doc in page)
+            {
+                documents.Add(doc);
+            }
+        }
 
         Assert.True(true);
         // Remove residual files
