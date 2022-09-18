@@ -49,7 +49,8 @@ public class MockTest
         {
             Config = config,
             CollectionReference = documentReferenceTest,
-            PageSize = 60
+            PageSize = 60,
+            OrderBy = new string[] { "val2 asc" }
         });
         Assert.NotNull(awdaw.Result);
 

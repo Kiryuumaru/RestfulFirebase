@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -7,26 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseNotFoundException : FirestoreDatabaseException
 {
-    private const string ExceptionMessage =
-        "The specified Realtime Database was not found.";
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseNotFoundException"/>.
-    /// </summary>
-    public FirestoreDatabaseNotFoundException()
-        : base(ExceptionMessage)
-    {
-
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseNotFoundException"/> with provided <paramref name="innerException"/>.
-    /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabaseNotFoundException(Exception innerException)
-        : base(ExceptionMessage, innerException)
+    internal FirestoreDatabaseNotFoundException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base("The specified Realtime Database was not found.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

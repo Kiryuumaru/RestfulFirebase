@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -7,26 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabasePreconditionFailedException : FirestoreDatabaseException
 {
-    private const string ExceptionMessage =
-        "The request's specified ETag value in the if-match header did not match the server's value.";
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabasePreconditionFailedException"/>.
-    /// </summary>
-    public FirestoreDatabasePreconditionFailedException()
-        : base(ExceptionMessage)
-    {
-
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabasePreconditionFailedException"/> with provided <paramref name="innerException"/>.
-    /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabasePreconditionFailedException(Exception innerException)
-        : base(ExceptionMessage, innerException)
+    internal FirestoreDatabasePreconditionFailedException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base("The request's specified ETag value in the if-match header did not match the server's value.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

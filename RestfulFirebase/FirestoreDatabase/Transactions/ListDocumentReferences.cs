@@ -13,6 +13,8 @@ using RestfulFirebase.Common;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Xml.Linq;
 using System.Threading;
+using RestfulFirebase.Common.Utilities;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -40,6 +42,16 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
     /// </summary>
     public int? PageSize { get; set; }
 
+    /// <summary>
+    /// Gets or sets <c>true</c> if the list should show missing documents; otherwise, <c>false</c>.
+    /// </summary>
+    public bool? ShowMissing { get; set; }
+
+    /// <summary>
+    /// Gets or sets the order to sort results by.
+    /// </summary>
+    public IEnumerable<string>? OrderBy { get; set; }
+
     /// <inheritdoc cref="ListDocumentReferencesRequest{T}"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="ListDocumentReferencesResult{T}"/>.
@@ -58,8 +70,14 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
         {
             var iterator = await ExecuteNextPage(null);
 
+            Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>? firstIterationIterator = null;
+            if (iterator.NextPage != null)
+            {
+                firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>(
+                    async (ct) => await iterator.NextPage!(ct));
+            }
             var firstIteration = new ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>(
-                new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, async (ct) => await iterator.NextPage!(ct)));
+                new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
             AsyncPager<Document<T>> pager = new(new(null!, (_) => firstIteration));
             ListDocumentReferencesResult<T> result = new(iterator.Item, pager);
 
@@ -79,19 +97,24 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
-        string url = $"{CollectionReference.BuildUrl(Config.ProjectId)}?";
-        if (PageSize.HasValue)
-        {
-            url += $"pageSize={PageSize.Value}";
-        }
-        else
-        {
-            url += $"pageSize={20}";
-        }
+        QueryBuilder qb = new();
         if (pageToken != null)
         {
-            url += $"&pageToken={pageToken}";
+            qb.Add("pageToken", pageToken);
         }
+        if (PageSize.HasValue)
+        {
+            qb.Add("pageSize", PageSize.Value.ToString());
+        }
+        if (ShowMissing.HasValue)
+        {
+            qb.Add("showMissing", ShowMissing.Value ? "true" : "false");
+        }
+        if (OrderBy != null && OrderBy.Count() != 0)
+        {
+            qb.Add("orderBy", string.Join(",", OrderBy));
+        }
+        string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
 
         var response = await Execute(HttpMethod.Get, url);
         using Stream contentStream = await response.Content.ReadAsStreamAsync();

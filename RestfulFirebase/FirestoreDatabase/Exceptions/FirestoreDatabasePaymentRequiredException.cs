@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -7,26 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabasePaymentRequiredException : FirestoreDatabaseException
 {
-    private const string ExceptionMessage =
-        "The request exceeds the database plan limits.";
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabasePaymentRequiredException"/>.
-    /// </summary>
-    public FirestoreDatabasePaymentRequiredException()
-        : base(ExceptionMessage)
-    {
-
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabasePaymentRequiredException"/> with provided <paramref name="innerException"/>.
-    /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabasePaymentRequiredException(Exception innerException)
-        : base(ExceptionMessage, innerException)
+    internal FirestoreDatabasePaymentRequiredException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base("The request exceeds the database plan limits.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

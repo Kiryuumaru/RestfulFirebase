@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -7,54 +8,32 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseException : Exception
 {
-    private const string ExceptionMessage =
-        "A firestore database error occured.";
+    /// <summary>
+    /// Gets the request URL of the http operation.
+    /// </summary>
+    public string? RequestUrl { get; }
 
     /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseException"/>.
+    /// Gets the content request of the http operation.
     /// </summary>
-    public FirestoreDatabaseException()
-        : base(ExceptionMessage)
-    {
-
-    }
+    public string? RequestContent { get; }
 
     /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseException"/> with provided <paramref name="innerException"/>.
+    /// Gets the content response of the http operation.
     /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabaseException(Exception innerException)
-        : base(ExceptionMessage, innerException)
-    {
-
-    }
+    public string? Response { get; }
 
     /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseException"/> with provided <paramref name="message"/>.
+    /// Gets the status code of the exception occured.
     /// </summary>
-    /// <param name="message">
-    /// The message of the exception.
-    /// </param>
-    public FirestoreDatabaseException(string message)
-        : base(message)
-    {
+    public HttpStatusCode StatusCode { get; }
 
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseException"/> with provided <paramref name="message"/> and <paramref name="innerException"/>.
-    /// </summary>
-    /// <param name="message">
-    /// The message of the exception.
-    /// </param>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabaseException(string message, Exception innerException)
+    internal FirestoreDatabaseException(string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception innerException)
         : base(message, innerException)
     {
-
+        RequestUrl = requestUrl;
+        RequestContent = requestContent;
+        Response = response;
+        StatusCode = httpStatusCode;
     }
 }

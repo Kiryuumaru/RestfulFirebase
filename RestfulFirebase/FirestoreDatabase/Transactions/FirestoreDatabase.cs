@@ -61,28 +61,44 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         return client;
     }
 
-    internal override Task<Exception> GetHttpException(HttpRequestMessage? request, HttpResponseMessage? response, HttpStatusCode httpStatusCode, Exception exception)
+    internal override async Task<Exception> GetHttpException(HttpRequestMessage? request, HttpResponseMessage? response, HttpStatusCode httpStatusCode, Exception exception)
     {
-        return Task.FromResult<Exception>(httpStatusCode switch
+        string? requestUrlStr = null;
+        string? requestContentStr = null;
+        string? responseStr = null;
+        if (request != null)
+        {
+            requestUrlStr = request.RequestUri.ToString();
+            if (request.Content != null)
+            {
+                requestContentStr = await request.Content.ReadAsStringAsync();
+            }
+        }
+        if (response != null)
+        {
+            responseStr = await response.Content.ReadAsStringAsync();
+        }
+
+        return await Task.FromResult<Exception>(httpStatusCode switch
         {
             //400
-            HttpStatusCode.BadRequest => new FirestoreDatabaseBadRequestException(exception),
+            HttpStatusCode.BadRequest => new FirestoreDatabaseBadRequestException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //401
-            HttpStatusCode.Unauthorized => new FirestoreDatabaseUnauthorizedException(exception),
+            HttpStatusCode.Unauthorized => new FirestoreDatabaseUnauthorizedException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //402
-            HttpStatusCode.PaymentRequired => new FirestoreDatabasePaymentRequiredException(exception),
+            HttpStatusCode.PaymentRequired => new FirestoreDatabasePaymentRequiredException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //403
-            HttpStatusCode.Forbidden => new FirestoreDatabaseUnauthorizedException(exception),
+            HttpStatusCode.Forbidden => new FirestoreDatabaseUnauthorizedException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //404
-            HttpStatusCode.NotFound => new FirestoreDatabaseNotFoundException(exception),
+            HttpStatusCode.NotFound => new FirestoreDatabaseNotFoundException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //412
-            HttpStatusCode.PreconditionFailed => new FirestoreDatabasePreconditionFailedException(exception),
+            HttpStatusCode.PreconditionFailed => new FirestoreDatabasePreconditionFailedException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //500
-            HttpStatusCode.InternalServerError => new FirestoreDatabaseInternalServerErrorException(exception),
+            HttpStatusCode.InternalServerError => new FirestoreDatabaseInternalServerErrorException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //503
-            HttpStatusCode.ServiceUnavailable => new FirestoreDatabaseServiceUnavailableException(exception),
+            HttpStatusCode.ServiceUnavailable => new FirestoreDatabaseServiceUnavailableException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //Unknown
-            _ => new FirestoreDatabaseUndefinedException(exception, httpStatusCode),
+            _ => new FirestoreDatabaseUndefinedException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
         });
     }
 

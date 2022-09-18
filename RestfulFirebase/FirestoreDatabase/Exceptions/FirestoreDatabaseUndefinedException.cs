@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -8,23 +9,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseUndefinedException : FirestoreDatabaseException
 {
-    /// <summary>
-    /// Gets the status code of the exception occured.
-    /// </summary>
-    public HttpStatusCode StatusCode { get; }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseUndefinedException"/> with provided <paramref name="innerException"/> and <paramref name="statusCode"/>.
-    /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    /// <param name="statusCode">
-    /// The <see cref="HttpStatusCode"/> of the exception.
-    /// </param>
-    public FirestoreDatabaseUndefinedException(Exception innerException, HttpStatusCode statusCode)
-        : base("An unidentified error occured.", innerException)
+    internal FirestoreDatabaseUndefinedException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base("An unidentified error occured.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
-        StatusCode = statusCode;
     }
 }

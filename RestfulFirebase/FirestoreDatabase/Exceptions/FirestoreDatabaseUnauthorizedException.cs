@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 
@@ -7,26 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseUnauthorizedException : FirestoreDatabaseException
 {
-    private const string ExceptionMessage =
-        "The request is not authorized by database rules.";
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseUnauthorizedException"/>.
-    /// </summary>
-    public FirestoreDatabaseUnauthorizedException()
-        : base(ExceptionMessage)
-    {
-
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FirestoreDatabaseUnauthorizedException"/> with provided <paramref name="innerException"/>.
-    /// </summary>
-    /// <param name="innerException">
-    /// The inner exception occured.
-    /// </param>
-    public FirestoreDatabaseUnauthorizedException(Exception innerException)
-        : base(ExceptionMessage, innerException)
+    internal FirestoreDatabaseUnauthorizedException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base("The request is not authorized by database rules.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }
