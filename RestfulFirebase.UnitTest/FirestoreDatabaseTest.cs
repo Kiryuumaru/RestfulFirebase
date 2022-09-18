@@ -15,19 +15,20 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
 using RestfulFirebase.FirestoreDatabase.Models;
+using System.Linq;
 
 namespace RestfulFirebase.UnitTest;
 
 public class FirestoreDatabaseTest
 {
     [Fact]
-    public async void PatchGetAndDeleteDocumentModelTest()
+    public async void WriteGetAndDeleteDocumentModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         DocumentReference documentReferenceTest1 = Api.FirestoreDatabase
             .Collection("public")
-            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentModelTest)}");
+            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(WriteGetAndDeleteDocumentModelTest)}");
 
         // Remove residual files from last test
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -36,13 +37,18 @@ public class FirestoreDatabaseTest
             DocumentReference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NestedType>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NestedType>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create(NestedType.Filled1()),
         });
-        Assert.NotNull(patchTest1.Result);
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1.Request.Document,
+        });
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
@@ -68,9 +74,9 @@ public class FirestoreDatabaseTest
         });
         Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(patchTest1.Result, getTest1.Result);
-        Assert.Equivalent(patchTest1.Result, getTest2.Result);
-        Assert.Equivalent(patchTest1.Result, getTest3.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest1.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest2.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest3.Result);
 
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
@@ -78,26 +84,26 @@ public class FirestoreDatabaseTest
             DocumentReference = documentReferenceTest1
         });
 
-        var patchTest1Get4 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        var writeTest1Get4 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create<NestedType>(),
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(patchTest1Get4.ThrowIfErrorOrEmptyResult);
+        Assert.Throws<FirestoreDatabaseNotFoundException>(writeTest1Get4.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
 
     [Fact]
-    public async void PatchGetAndDeleteDocumentDictionaryTest()
+    public async void WriteGetAndDeleteDocumentDictionaryTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         DocumentReference documentReferenceTest1 = Api.FirestoreDatabase
             .Collection("public")
-            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentDictionaryTest)}");
+            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(WriteGetAndDeleteDocumentDictionaryTest)}");
 
         Dictionary<string, NestedType> dictionary1 = new()
         {
@@ -119,15 +125,22 @@ public class FirestoreDatabaseTest
             DocumentReference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Dictionary<string, NestedType>>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Dictionary<string, NestedType>>()
         {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create(dictionary1),
         });
-        Assert.NotNull(patchTest1.Result);
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1.Request.Document,
+        });
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create<Dictionary<string, NestedType>>(),
         });
@@ -135,6 +148,7 @@ public class FirestoreDatabaseTest
 
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create(new Dictionary<string, NestedType>()),
         });
@@ -142,14 +156,15 @@ public class FirestoreDatabaseTest
 
         var getTest3 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
             Document = documentReferenceTest1.Create(dictionary2),
         });
         Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(patchTest1.Result, getTest1.Result);
-        Assert.Equivalent(patchTest1.Result, getTest2.Result);
-        Assert.Equivalent(patchTest1.Result, getTest3.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest1.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest2.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest3.Result);
 
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
@@ -169,13 +184,13 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void PatchGetAndDeleteDocumentMVVMModelTest()
+    public async void WriteGetAndDeleteDocumentMVVMModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         DocumentReference documentReferenceTest1 = Api.FirestoreDatabase
             .Collection("public")
-            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMModelTest)}");
+            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(WriteGetAndDeleteDocumentMVVMModelTest)}");
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -184,42 +199,47 @@ public class FirestoreDatabaseTest
             DocumentReference = documentReferenceTest1
         });
 
-        MVVMModelWithIncludeOnlyAttribute patchTest1Model1 = new()
+        MVVMModelWithIncludeOnlyAttribute writeTest1Model1 = new()
         {
             Val1 = "test val 1",
             Val2 = "test val 2",
             Val3 = "test val 3",
         };
-        MVVMModelWithIncludeOnlyAttribute patchTest1Model2 = new();
+        MVVMModelWithIncludeOnlyAttribute writeTest1Model2 = new();
         List<string?> modelPropertyChangedNames = new();
-        patchTest1Model2.PropertyChanged += (s, e) =>
+        writeTest1Model2.PropertyChanged += (s, e) =>
         {
             modelPropertyChangedNames.Add(e.PropertyName);
         };
 
-        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = documentReferenceTest1.Create(patchTest1Model1),
+            Document = documentReferenceTest1.Create(writeTest1Model1),
         });
-        Assert.NotNull(patchTest1.Result);
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1.Request.Document,
+        });
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = documentReferenceTest1.Create(patchTest1Model2),
+            Document = documentReferenceTest1.Create(writeTest1Model2),
         });
         Assert.NotNull(getTest1.Result);
 
         Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), modelPropertyChangedNames);
         Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), modelPropertyChangedNames);
         Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), modelPropertyChangedNames);
-        Assert.NotEqual(patchTest1.Result.Model?.Val3, getTest1.Result.Model?.Val3);
+        Assert.NotEqual(writeTest1.Request.Document?.Model?.Val3, getTest1.Result.Model?.Val3);
         Assert.NotNull(getTest1.Result.Model);
-        getTest1.Result.Model.Val3 = patchTest1.Result.Model?.Val3;
-        Assert.Equivalent(patchTest1.Result, getTest1.Result);
+        getTest1.Result.Model.Val3 = writeTest1.Request.Document?.Model?.Val3;
+        Assert.Equivalent(writeTest1.Request.Document, getTest1.Result);
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -241,13 +261,13 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void PatchGetAndDeleteDocumentMVVMDocumentTest()
+    public async void WriteGetAndDeleteDocumentMVVMDocumentTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         DocumentReference documentReferenceTest1 = Api.FirestoreDatabase
             .Collection("public")
-            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(PatchGetAndDeleteDocumentMVVMDocumentTest)}");
+            .Document($"{nameof(FirestoreDatabaseTest)}{nameof(WriteGetAndDeleteDocumentMVVMDocumentTest)}");
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -256,7 +276,7 @@ public class FirestoreDatabaseTest
             DocumentReference = documentReferenceTest1
         });
 
-        var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -267,10 +287,16 @@ public class FirestoreDatabaseTest
                 Val3 = "test val 3",
             }),
         });
-        Assert.NotNull(patchTest1.Result);
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1.Request.Document,
+        });
+        Assert.NotNull(writeTest1.Request.Document);
 
         List<string?> documentPropertyChangedNames = new();
-        patchTest1.Result.PropertyChanged += (s, e) =>
+        writeTest1.Request.Document.PropertyChanged += (s, e) =>
         {
             documentPropertyChangedNames.Add(e.PropertyName);
         };
@@ -291,7 +317,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = patchTest1.Result,
+            Document = writeTest1.Request.Document,
         });
         Assert.NotNull(getTest1.Result);
 
@@ -299,7 +325,7 @@ public class FirestoreDatabaseTest
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Reference), documentPropertyChangedNames);
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.CreateTime), documentPropertyChangedNames);
         Assert.Contains(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.UpdateTime), documentPropertyChangedNames);
-        Assert.Equivalent(patchTest1.Result, getTest1.Result);
+        Assert.Equivalent(writeTest1.Request.Document, getTest1.Result);
 
         // Remove residual files
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
@@ -337,63 +363,63 @@ public class FirestoreDatabaseTest
         //    Reference = documentReferenceTest
         //});
 
-        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
         //{
         //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
         //    Config = config,
         //    Reference = references[0],
         //    Model = new NormalMVVMModel()
         //    {
-        //        Val1 = "patch 1 val 1",
-        //        Val2 = "patch 1 val 2",
+        //        Val1 = "write 1 val 1",
+        //        Val2 = "write 1 val 2",
         //    },
         //});
 
-        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
         //{
         //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
         //    Config = config,
         //    Reference = references[1],
         //    Model = new NormalMVVMModel()
         //    {
-        //        Val1 = "patch 2 val 1",
-        //        Val2 = "patch 2 val 2",
+        //        Val1 = "write 2 val 1",
+        //        Val2 = "write 2 val 2",
         //    },
         //});
 
-        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
         //{
         //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
         //    Config = config,
         //    Reference = references[2],
         //    Model = new NormalMVVMModel()
         //    {
-        //        Val1 = "patch 3 val 1",
-        //        Val2 = "patch 3 val 2",
+        //        Val1 = "write 3 val 1",
+        //        Val2 = "write 3 val 2",
         //    },
         //});
 
-        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
         //{
         //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
         //    Config = config,
         //    Reference = references[3],
         //    Model = new NormalMVVMModel()
         //    {
-        //        Val1 = "patch 4 val 1",
-        //        Val2 = "patch 4 val 2",
+        //        Val1 = "write 4 val 1",
+        //        Val2 = "write 4 val 2",
         //    },
         //});
 
-        //await Api.FirestoreDatabase.PatchDocument(new PatchDocumentRequest<NormalMVVMModel>()
+        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
         //{
         //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
         //    Config = config,
         //    Reference = references[4],
         //    Model = new NormalMVVMModel()
         //    {
-        //        Val1 = "patch 5 val 1",
-        //        Val2 = "patch 5 val 2",
+        //        Val1 = "write 5 val 1",
+        //        Val2 = "write 5 val 2",
         //    },
         //});
 

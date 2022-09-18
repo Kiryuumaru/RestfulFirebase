@@ -33,28 +33,61 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// </summary>
     public Document<T>? Document { get; set; }
 
+    /// <summary>
+    /// Gets or sets the requested <see cref="Queries.DocumentReference"/> of the document node.
+    /// </summary>
+    public DocumentReference? DocumentReference { get; set; }
+
     /// <inheritdoc cref="GetDocumentRequest{T}"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="Document{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Document"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="Document"/> and
+    /// <see cref="DocumentReference"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentRequest<T>, Document<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Document);
+
+        DocumentReference? documentReference;
+        Document<T>? document;
+        T? model;
+        if (Document != null && DocumentReference != null)
+        {
+            documentReference = DocumentReference;
+            document = Document;
+            model = Document.Model;
+        }
+        else if (Document != null && DocumentReference == null)
+        {
+            documentReference = Document.Reference;
+            document = Document;
+            model = Document.Model;
+        }
+        else if (Document == null && DocumentReference != null)
+        {
+            documentReference = DocumentReference;
+            document = null;
+            model = null;
+        }
+        else
+        {
+            throw new ArgumentException($"Both {nameof(Document)} and {nameof(DocumentReference)} is a null reference. Provide at least one argument.");
+        }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         try
         {
-            var response = await Execute(HttpMethod.Get, Document.Reference.BuildUrl(Config.ProjectId));
+            var response = await Execute(HttpMethod.Get, documentReference.BuildUrl(Config.ProjectId));
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Document.Reference, Document.Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = ParseDocument(documentReference, model, document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
             return new(this, parsedDocument, null);
         }

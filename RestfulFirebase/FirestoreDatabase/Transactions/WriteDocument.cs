@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -20,7 +21,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentRequest<T>, Document<T>>>
+public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentRequest<T>>>
     where T : class
 {
     /// <summary>
@@ -35,43 +36,69 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
 
     /// <inheritdoc cref="TransactionResponse{T}"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="Document{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="Document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<TransactionResponse<WriteDocumentRequest<T>, Document<T>>> Execute()
+    internal override async Task<TransactionResponse<WriteDocumentRequest<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Document);
 
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
+
         try
         {
-            JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
-
             using MemoryStream stream = new();
             Utf8JsonWriter writer = new(stream);
 
             writer.WriteStartObject();
-            writer.WritePropertyName("fields");
-            PopulateDocument(Config, writer, Document.Model, Document, jsonSerializerOptions);
+            writer.WritePropertyName("writes");
+            writer.WriteStartArray();
+            if (Document.Model != null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("update");
+                writer.WriteStartObject();
+                writer.WritePropertyName("name");
+                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                writer.WritePropertyName("fields");
+                PopulateDocument(Config, writer, Document.Model, null, jsonSerializerOptions);
+                writer.WriteEndObject();
+                writer.WriteEndObject();
+            }
+            else
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("delete");
+                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
             writer.WriteEndObject();
 
             await writer.FlushAsync();
 
-            var response = await ExecuteWithContent(stream, new HttpMethod("PATCH"), Document.Reference.BuildUrl(Config.ProjectId));
-            using Stream contentStream = await response.Content.ReadAsStreamAsync();
-            JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(Document.Reference, Document.Model, Document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
 
-            return new(this, parsedDocument, null);
+            return new(this, null);
 
         }
         catch (Exception ex)
         {
-            return new(this, null, ex);
+            return new(this, ex);
         }
+    }
+
+    internal string BuildUrl()
+    {
+        ArgumentNullException.ThrowIfNull(Config);
+
+        return
+            $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":commit")}";
     }
 }

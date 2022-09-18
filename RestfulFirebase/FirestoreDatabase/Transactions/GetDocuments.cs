@@ -36,19 +36,30 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
     /// </summary>
     public IEnumerable<Document<T>>? Documents { get; set; }
 
+    /// <summary>
+    /// Gets or sets the requested <see cref="DocumentReference"/> documents.
+    /// </summary>
+    public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
+
     /// <inheritdoc cref="GetDocumentsRequest{T}"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="BatchGetDocuments{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Documents"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="Documents"/> and
+    /// <see cref="DocumentReferences"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Documents);
+        if (Documents == null && DocumentReferences == null)
+        {
+            throw new ArgumentException($"Both {nameof(Documents)} and {nameof(DocumentReferences)} is a null reference. Provide at least one argument.");
+        }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
@@ -60,9 +71,19 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
             writer.WriteStartObject();
             writer.WritePropertyName("documents");
             writer.WriteStartArray();
-            foreach (var doc in Documents)
+            if (Documents != null)
             {
-                writer.WriteStringValue(doc.Reference.BuildUrlCascade(Config.ProjectId));
+                foreach (var document in Documents)
+                {
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                }
+            }
+            if (DocumentReferences != null)
+            {
+                foreach (var reference in DocumentReferences)
+                {
+                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
+                }
             }
             writer.WriteEndArray();
             writer.WriteEndObject();
