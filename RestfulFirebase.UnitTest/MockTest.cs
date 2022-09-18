@@ -33,20 +33,26 @@ public class MockTest
         {
             documentReferenceTest.Document("model1").Create(new NormalMVVMModel()
             {
+                Val1 = "1 try 1 aawd",
+                Val2 = "1 try 2 dwd",
             }),
             documentReferenceTest.Document("model2").Create(new NormalMVVMModel()
             {
+                Val1 = "2 try 1 ddw",
+                Val2 = "2 try 2 wd",
             }),
             documentReferenceTest.Document("model3").Create(new NormalMVVMModel()
             {
+                Val1 = "3 try 1 d",
+                Val2 = "3 try 2  w",
             }),
         };
 
-        //var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
-        //{
-        //    Config = config,
-        //    Documents = documents
-        //});
+        var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            Documents = documents
+        });
 
         var res2 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>
         {
@@ -54,16 +60,11 @@ public class MockTest
             Documents = documents
         });
 
-        //var res1 = await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
-        //{
-        //    Config = config,
-        //    DocumentReferences = new DocumentReference[]
-        //    {
-        //        documentReferenceTest.Document("model1"),
-        //        documentReferenceTest.Document("model2"),
-        //        documentReferenceTest.Document("model3"),
-        //    }
-        //});
+        var res1 = await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = documents
+        });
 
         Assert.True(true);
         // Remove residual files

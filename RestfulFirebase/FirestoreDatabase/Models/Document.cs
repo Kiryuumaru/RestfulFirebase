@@ -1,5 +1,6 @@
 ﻿using ObservableHelpers.ComponentModel;
 using ObservableHelpers.ComponentModel.Enums;
+using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System;
 using System.Collections;
@@ -18,7 +19,7 @@ namespace RestfulFirebase.FirestoreDatabase.Models;
 /// The type of the model of the document.
 /// </typeparam>
 [ObservableObject]
-public partial class Document<T>
+public partial class Document<T> : IDocumentReference
      where T : class
 {
     #region Properties

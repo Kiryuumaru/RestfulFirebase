@@ -24,7 +24,7 @@ public class DeleteDocumentsRequest : FirestoreDatabaseRequest<TransactionRespon
     /// <summary>
     /// Gets or sets the requested <see cref="DocumentReference"/> documents.
     /// </summary>
-    public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
+    public IEnumerable<IDocumentReference>? Documents { get; set; }
 
     /// <inheritdoc cref="DeleteDocumentsRequest"/>
     /// <returns>
@@ -32,12 +32,12 @@ public class DeleteDocumentsRequest : FirestoreDatabaseRequest<TransactionRespon
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="DocumentReferences"/> is a null reference.
+    /// <see cref="Documents"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<DeleteDocumentsRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(DocumentReferences);
+        ArgumentNullException.ThrowIfNull(Documents);
 
         try
         {
@@ -47,11 +47,11 @@ public class DeleteDocumentsRequest : FirestoreDatabaseRequest<TransactionRespon
             writer.WriteStartObject();
             writer.WritePropertyName("writes");
             writer.WriteStartArray();
-            foreach (var reference in DocumentReferences)
+            foreach (var reference in Documents)
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("delete");
-                writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteStringValue(reference.Reference.BuildUrlCascade(Config.ProjectId));
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();

@@ -33,7 +33,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NestedType>()
@@ -75,7 +75,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var patchTest1Get4 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
@@ -116,7 +116,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Dictionary<string, NestedType>>()
@@ -154,7 +154,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var getTest4 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
@@ -181,7 +181,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         MVVMModelWithIncludeOnlyAttribute patchTest1Model1 = new()
@@ -225,7 +225,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
@@ -253,7 +253,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var patchTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
@@ -305,7 +305,7 @@ public class FirestoreDatabaseTest
         await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
         {
             Config = config,
-            DocumentReference = documentReferenceTest1
+            Document = documentReferenceTest1
         });
 
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()

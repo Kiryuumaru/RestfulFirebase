@@ -24,6 +24,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.Text.Json.JsonElement;
+using ObservableHelpers.ComponentModel;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -1073,6 +1074,14 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         {
             name = null;
             bool returnValue = false;
+
+            // Special exclude
+            if (propertyInfo.Name == nameof(ObservableObject.SyncOperation) ||
+                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangedEvent) ||
+                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangingEvent))
+            {
+                return false;
+            }
 
             if (!propertyInfo.CanWrite)
             {
