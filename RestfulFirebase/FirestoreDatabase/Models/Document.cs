@@ -1,6 +1,5 @@
 ﻿using ObservableHelpers.ComponentModel;
 using ObservableHelpers.ComponentModel.Enums;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System;
 using System.Collections;
@@ -11,16 +10,11 @@ using System.Text;
 using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
-
 /// <summary>
 /// Represents a document node of the firebase cloud firestore.
 /// </summary>
-/// <typeparam name="T">
-/// The type of the model of the document.
-/// </typeparam>
 [ObservableObject]
-public partial class Document<T> : IDocumentReference
-     where T : class
+public partial class Document
 {
     #region Properties
 
@@ -35,12 +29,6 @@ public partial class Document<T> : IDocumentReference
     /// </summary>
     [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
     DocumentReference reference;
-
-    /// <summary>
-    /// Gets the <typeparamref name="T"/> model of the document.
-    /// </summary>
-    [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
-    T? model;
 
     /// <summary>
     /// Gets the <see cref="DateTimeOffset"/> create time of the document node.
@@ -58,13 +46,59 @@ public partial class Document<T> : IDocumentReference
 
     #region Initializers
 
-    internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
+    internal Document(string name, DocumentReference reference, DateTimeOffset createTime, DateTimeOffset updateTime)
     {
         this.name = name;
         this.reference = reference;
-        this.model = model;
         this.createTime = createTime;
         this.updateTime = updateTime;
+    }
+
+    /// <summary>
+    /// Creates an instance of <see cref="Document{T}"/>.
+    /// </summary>
+    /// <param name="reference">
+    /// The <see cref="DocumentReference"/> of the document.
+    /// </param>
+    public Document(DocumentReference reference)
+    {
+        this.reference = reference;
+    }
+
+    #endregion
+
+    #region Methods
+
+
+
+    #endregion
+}
+
+/// <summary>
+/// Represents a document node of the firebase cloud firestore.
+/// </summary>
+/// <typeparam name="T">
+/// The type of the model of the document.
+/// </typeparam>
+public partial class Document<T> : Document
+     where T : class
+{
+    #region Properties
+
+    /// <summary>
+    /// Gets the <typeparamref name="T"/> model of the document.
+    /// </summary>
+    [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
+    T? model;
+
+    #endregion
+
+    #region Initializers
+
+    internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
+        : base(name, reference, createTime, updateTime)
+    {
+        this.model = model;
     }
 
     /// <summary>
@@ -77,8 +111,8 @@ public partial class Document<T> : IDocumentReference
     /// The model of the document.
     /// </param>
     public Document(DocumentReference reference, T? model)
+        : base (reference)
     {
-        this.reference = reference;
         this.model = model;
     }
 

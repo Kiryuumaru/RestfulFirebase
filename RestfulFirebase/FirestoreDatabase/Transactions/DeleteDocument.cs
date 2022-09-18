@@ -11,6 +11,8 @@ using RestfulFirebase.Common;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Xml.Linq;
+using System.IO;
+using System.Text.Json;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -20,26 +22,62 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse<DeleteDocumentRequest>>
 {
     /// <summary>
-    /// Gets or sets the requested <see cref="IDocumentReference"/> of the document node.
+    /// Gets or sets the requested <see cref="Models.Document"/> of the document node.
     /// </summary>
-    public IDocumentReference? Document { get; set; }
+    public Document? Document { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="Queries.DocumentReference"/> of the document node.
+    /// </summary>
+    public DocumentReference? DocumentReference { get; set; }
 
     /// <inheritdoc cref="DeleteDocumentRequest"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Document"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="Document"/> and
+    /// <see cref="DocumentReference"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<DeleteDocumentRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Document);
+        if (Document == null && DocumentReference == null)
+        {
+            throw new ArgumentException($"Both {nameof(Document)} and {nameof(DocumentReference)} is a null reference. Provide at least one argument.");
+        }
 
         try
         {
-            await Execute(HttpMethod.Delete, Document.Reference.BuildUrl(Config.ProjectId));
+            using MemoryStream stream = new();
+            Utf8JsonWriter writer = new(stream);
+
+            writer.WriteStartObject();
+            writer.WritePropertyName("writes");
+            writer.WriteStartArray();
+            if (Document != null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("delete");
+                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteEndObject();
+            }
+            if (DocumentReference != null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("delete");
+                writer.WriteStringValue(DocumentReference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteEndObject();
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+
+            await writer.FlushAsync();
+
+            await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
 
             return new(this, null);
         }
@@ -47,5 +85,14 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
         {
             return new(this, ex);
         }
+    }
+
+    internal string BuildUrl()
+    {
+        ArgumentNullException.ThrowIfNull(Config);
+
+        return
+            $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":commit")}";
     }
 }

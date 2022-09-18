@@ -18,7 +18,7 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 /// <summary>
 /// The reference for documents.
 /// </summary>
-public class DocumentReference : Reference, IDocumentReference
+public class DocumentReference : Reference
 {
     #region Properties
 
@@ -31,8 +31,6 @@ public class DocumentReference : Reference, IDocumentReference
     /// Gets the parent of the document reference.
     /// </summary>
     public CollectionReference Parent { get; }
-
-    DocumentReference IDocumentReference.Reference => this;
 
     #endregion
 

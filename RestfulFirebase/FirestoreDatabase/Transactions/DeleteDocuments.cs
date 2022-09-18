@@ -22,22 +22,33 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 public class DeleteDocumentsRequest : FirestoreDatabaseRequest<TransactionResponse<DeleteDocumentsRequest>>
 {
     /// <summary>
+    /// Gets or sets the requested <see cref="Document"/> documents.
+    /// </summary>
+    public IEnumerable<Document>? Documents { get; set; }
+
+    /// <summary>
     /// Gets or sets the requested <see cref="DocumentReference"/> documents.
     /// </summary>
-    public IEnumerable<IDocumentReference>? Documents { get; set; }
+    public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
 
     /// <inheritdoc cref="DeleteDocumentsRequest"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Documents"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="Documents"/> and
+    /// <see cref="DocumentReferences"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<DeleteDocumentsRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Documents);
+        if (Documents == null && DocumentReferences == null)
+        {
+            throw new ArgumentException($"Both {nameof(Documents)} and {nameof(DocumentReferences)} is a null reference. Provide at least one argument.");
+        }
 
         try
         {
@@ -47,12 +58,25 @@ public class DeleteDocumentsRequest : FirestoreDatabaseRequest<TransactionRespon
             writer.WriteStartObject();
             writer.WritePropertyName("writes");
             writer.WriteStartArray();
-            foreach (var reference in Documents)
+            if (Documents != null)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("delete");
-                writer.WriteStringValue(reference.Reference.BuildUrlCascade(Config.ProjectId));
-                writer.WriteEndObject();
+                foreach (var document in Documents)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
+            }
+            if (DocumentReferences != null)
+            {
+                foreach (var reference in DocumentReferences)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
             }
             writer.WriteEndArray();
             writer.WriteEndObject();
