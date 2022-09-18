@@ -29,28 +29,41 @@ public class MockTest
         CollectionReference documentReferenceTest = Api.FirestoreDatabase
             .Collection("public");
 
-        var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        Document<NormalMVVMModel>[] documents = new Document<NormalMVVMModel>[]
+        {
+            documentReferenceTest.Document("model1").Create(new NormalMVVMModel()
+            {
+            }),
+            documentReferenceTest.Document("model2").Create(new NormalMVVMModel()
+            {
+            }),
+            documentReferenceTest.Document("model3").Create(new NormalMVVMModel()
+            {
+            }),
+        };
+
+        //var res = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        //{
+        //    Config = config,
+        //    Documents = documents
+        //});
+
+        var res2 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>
         {
             Config = config,
-            Documents = new Document<NormalMVVMModel>[]
-            {
-                documentReferenceTest.Document("model1").Document(new NormalMVVMModel()
-                {
-                    Val1 = "1 try 1 aawd",
-                    Val2 = "1 try 2 dwd",
-                }),
-                documentReferenceTest.Document("model2").Document(new NormalMVVMModel()
-                {
-                    Val1 = "2 try 1 ddw",
-                    Val2 = "2 try 2 wd",
-                }),
-                documentReferenceTest.Document("model3").Document(new NormalMVVMModel()
-                {
-                    Val1 = "3 try 1 d",
-                    Val2 = "3 try 2  w",
-                }),
-            }
-        });;
+            Documents = documents
+        });
+
+        //var res1 = await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        //{
+        //    Config = config,
+        //    DocumentReferences = new DocumentReference[]
+        //    {
+        //        documentReferenceTest.Document("model1"),
+        //        documentReferenceTest.Document("model2"),
+        //        documentReferenceTest.Document("model3"),
+        //    }
+        //});
 
         Assert.True(true);
         // Remove residual files

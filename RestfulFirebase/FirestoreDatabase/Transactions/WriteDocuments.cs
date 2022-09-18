@@ -24,7 +24,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentsRequest<T>, PatchDocumentsResult<T>>>
+public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentsRequest<T>>>
     where T : class
 {
     /// <summary>
@@ -39,14 +39,14 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
 
     /// <inheritdoc cref="WriteDocumentsRequest{T}"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="PatchDocumentsResult{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="Documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<TransactionResponse<WriteDocumentsRequest<T>, PatchDocumentsResult<T>>> Execute()
+    internal override async Task<TransactionResponse<WriteDocumentsRequest<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Documents);
@@ -87,24 +87,14 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
             writer.WriteEndObject();
 
             await writer.FlushAsync();
-            stream.Seek(0, SeekOrigin.Begin);
-            StreamReader reader = new StreamReader(stream);
-            string dasd = reader.ReadToEnd();
 
-            var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
-            using Stream contentStream = await response.Content.ReadAsStreamAsync();
-            JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+            await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
 
-            string asda = jsonDocument.RootElement.ToString();
-
-            List<DocumentTimestamp<T>> foundDocuments = new();
-            List<DocumentReferenceTimestamp> missingDocuments = new();
-
-            return new(this, new PatchDocumentsResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()), null);
+            return new(this, null);
         }
         catch (Exception ex)
         {
-            return new(this, null, ex);
+            return new(this, ex);
         }
     }
 
@@ -115,31 +105,5 @@ public class WriteDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResp
         return
             $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
             $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":commit")}";
-    }
-}
-
-/// <summary>
-/// The result of the <see cref="GetDocumentsRequest{T}"/> request.
-/// </summary>
-/// <typeparam name="T">
-/// The type of the model of the document.
-/// </typeparam>
-public class PatchDocumentsResult<T>
-    where T : class
-{
-    /// <summary>
-    /// Gets the found document.
-    /// </summary>
-    public IReadOnlyList<DocumentTimestamp<T>> Found { get; }
-
-    /// <summary>
-    /// Gets the missing document.
-    /// </summary>
-    public IReadOnlyList<DocumentReferenceTimestamp> Missing { get; }
-
-    internal PatchDocumentsResult(IReadOnlyList<DocumentTimestamp<T>> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
-    {
-        Found = found;
-        Missing = missing;
     }
 }

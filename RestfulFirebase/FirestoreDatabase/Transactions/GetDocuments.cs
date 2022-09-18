@@ -82,8 +82,8 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
                     readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
                 {
                     DocumentReference? documentReference = null;
-                    T? model = null;
                     Document<T>? document = null;
+                    T? model = null;
                     if (doc.TryGetProperty("found", out JsonElement foundProperty))
                     {
                         if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
@@ -91,10 +91,10 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
                         {
                             documentReference = docRef;
 
-                            if (Documents.Count() != 0 &&
-                                Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                            if (Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
                             {
                                 document = foundDocument;
+                                model = foundDocument.Model;
                             }
                         }
 

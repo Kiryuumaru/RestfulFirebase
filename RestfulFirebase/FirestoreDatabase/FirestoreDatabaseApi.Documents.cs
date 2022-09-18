@@ -55,7 +55,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<TransactionResponse<WriteDocumentsRequest<T>, PatchDocumentsResult<T>>> WriteDocuments<T>(WriteDocumentsRequest<T> request)
+    public static Task<TransactionResponse<WriteDocumentsRequest<T>>> WriteDocuments<T>(WriteDocumentsRequest<T> request)
         where T : class => request.Execute();
 
     /// <inheritdoc cref="DeleteDocumentRequest.Execute"/>
@@ -63,5 +63,12 @@ public static partial class FirestoreDatabase
     /// The request of the operation.
     /// </param>
     public static Task<TransactionResponse<DeleteDocumentRequest>> DeleteDocument(DeleteDocumentRequest request)
+        => request.Execute();
+
+    /// <inheritdoc cref="DeleteDocumentsRequest.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    public static Task<TransactionResponse<DeleteDocumentsRequest>> DeleteDocuments(DeleteDocumentsRequest request)
         => request.Execute();
 }

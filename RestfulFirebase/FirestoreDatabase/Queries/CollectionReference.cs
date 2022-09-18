@@ -41,7 +41,6 @@ public class CollectionReference : Reference
     public override bool Equals(object? obj)
     {
         return obj is CollectionReference reference &&
-               base.Equals(obj) &&
                Id == reference.Id &&
                EqualityComparer<DocumentReference?>.Default.Equals(Parent, reference.Parent);
     }
@@ -50,7 +49,6 @@ public class CollectionReference : Reference
     public override int GetHashCode()
     {
         int hashCode = 1488852771;
-        hashCode = hashCode * -1521134295 + base.GetHashCode();
         hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
         hashCode = hashCode * -1521134295 + (Parent == null ? 0 : EqualityComparer<DocumentReference?>.Default.GetHashCode(Parent));
         return hashCode;

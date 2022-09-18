@@ -50,7 +50,6 @@ public class DocumentReference : Reference
     public override bool Equals(object? obj)
     {
         return obj is DocumentReference reference &&
-               base.Equals(obj) &&
                Id == reference.Id &&
                EqualityComparer<CollectionReference>.Default.Equals(Parent, reference.Parent);
     }
@@ -58,8 +57,7 @@ public class DocumentReference : Reference
     /// <inheritdoc/>
     public override int GetHashCode()
     {
-        int hashCode = 1488852771;
-        hashCode = hashCode * -1521134295 + base.GetHashCode();
+        int hashCode = 1057591069;
         hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
         hashCode = hashCode * -1521134295 + EqualityComparer<CollectionReference>.Default.GetHashCode(Parent);
         return hashCode;
@@ -93,7 +91,7 @@ public class DocumentReference : Reference
     /// <returns>
     /// The <see cref="Models.Document{T}"/>.
     /// </returns>
-    public Document<T> Document<T>(T? model = null)
+    public Document<T> Create<T>(T? model = null)
         where T : class
     {
         return new Document<T>(this, model);

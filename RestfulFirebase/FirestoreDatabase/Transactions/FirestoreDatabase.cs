@@ -109,9 +109,9 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         if (json != null && !string.IsNullOrEmpty(json))
         {
             string[] paths = json.Split('/');
-            object currentPath = Api.FirestoreDatabase.Collection(paths[4]);
+            object currentPath = Api.FirestoreDatabase.Collection(paths[5]);
 
-            for (int i = 5; i < paths.Length; i++)
+            for (int i = 6; i < paths.Length; i++)
             {
                 if (currentPath is CollectionReference colPath)
                 {

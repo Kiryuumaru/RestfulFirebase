@@ -20,9 +20,9 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse<DeleteDocumentRequest>>
 {
     /// <summary>
-    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node.
+    /// Gets or sets the requested <see cref="Queries.DocumentReference"/> of the document node.
     /// </summary>
-    public DocumentReference? Reference { get; set; }
+    public DocumentReference? DocumentReference { get; set; }
 
     /// <inheritdoc cref="DeleteDocumentRequest"/>
     /// <returns>
@@ -30,16 +30,16 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Reference"/> is a null reference.
+    /// <see cref="DocumentReference"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<DeleteDocumentRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Reference);
+        ArgumentNullException.ThrowIfNull(DocumentReference);
 
         try
         {
-            await Execute(HttpMethod.Delete, Reference.BuildUrl(Config.ProjectId));
+            await Execute(HttpMethod.Delete, DocumentReference.BuildUrl(Config.ProjectId));
 
             return new(this, null);
         }
