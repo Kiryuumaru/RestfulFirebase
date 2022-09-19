@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
@@ -15,6 +15,9 @@ using System.Xml.Linq;
 using System.Threading;
 using RestfulFirebase.Common.Utilities;
 using System.Linq;
+using System.Data;
+using System.Reflection;
+using RestfulFirebase.Attributes;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -33,7 +36,7 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Queries.CollectionReference"/> of the collection node.
+    /// Gets or sets the requested <see cref="References.CollectionReference"/> of the collection node.
     /// </summary>
     public CollectionReference? CollectionReference { get; set; }
 
@@ -50,7 +53,7 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
     /// <summary>
     /// Gets or sets the order to sort results by.
     /// </summary>
-    public IEnumerable<string>? OrderBy { get; set; }
+    public IEnumerable<OrderBy>? OrderBy { get; set; }
 
     /// <inheritdoc cref="ListDocumentReferencesRequest{T}"/>
     /// <returns>
@@ -60,15 +63,29 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
     /// <see cref="TransactionRequest.Config"/> or
     /// <see cref="CollectionReference"/> is a null reference.
     /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="OrderBy"/> has parameter that does not exists in the model as firebase value.
+    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<ListDocumentReferencesRequest<T>, ListDocumentReferencesResult<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(CollectionReference);
 
+        PropertyInfo[] propertyInfos = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        FieldInfo[] fieldInfos = typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        bool includeOnlyWithAttribute = typeof(T).GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
+
+        string? orderBy = null;
+        if (OrderBy != null && OrderBy.Count() != 0)
+        {
+            orderBy = Models.OrderBy.Build(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
+        }
+
         try
         {
-            var iterator = await ExecuteNextPage(null);
+            var iterator = await ExecuteNextPage(null, orderBy, jsonSerializerOptions);
 
             Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>? firstIterationIterator = null;
             if (iterator.NextPage != null)
@@ -90,12 +107,10 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    private async Task<AsyncPager<Document<T>>.DocumentPagerIterator> ExecuteNextPage(string? pageToken)
+    private async Task<AsyncPager<Document<T>>.DocumentPagerIterator> ExecuteNextPage(string? pageToken, string? orderBy, JsonSerializerOptions jsonSerializerOptions)
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(CollectionReference);
-
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         QueryBuilder qb = new();
         if (pageToken != null)
@@ -110,9 +125,9 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
         {
             qb.Add("showMissing", ShowMissing.Value ? "true" : "false");
         }
-        if (OrderBy != null && OrderBy.Count() != 0)
+        if (orderBy != null)
         {
-            qb.Add("orderBy", string.Join(",", OrderBy));
+            qb.Add("orderBy", orderBy);
         }
         string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
 
@@ -159,7 +174,7 @@ public class ListDocumentReferencesRequest<T> : FirestoreDatabaseRequest<Transac
         }
         else
         {
-            return new(documents.ToArray(), async (ct) => await ExecuteNextPage(nextPageToken));
+            return new(documents.ToArray(), async (ct) => await ExecuteNextPage(nextPageToken, orderBy, jsonSerializerOptions));
         }
     }
 }

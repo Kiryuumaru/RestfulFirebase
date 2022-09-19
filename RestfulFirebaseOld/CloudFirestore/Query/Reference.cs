@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.FirestoreDatabase.Queries;
+namespace RestfulFirebase.FirestoreDatabase.References;
 
 /// <summary>
 /// The base reference of the cloud firestore.

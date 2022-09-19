@@ -13,7 +13,7 @@ using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System.Text.Json.Serialization;
 using RestfulFirebase.FirestoreDatabase.Models;
 
-namespace RestfulFirebase.FirestoreDatabase.Queries;
+namespace RestfulFirebase.FirestoreDatabase.References;
 
 /// <summary>
 /// The reference for documents.

@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.Json;
 
-namespace RestfulFirebase.FirestoreDatabase.Queries;
+namespace RestfulFirebase.FirestoreDatabase.References;
 
 /// <summary>
 /// The reference for documents.

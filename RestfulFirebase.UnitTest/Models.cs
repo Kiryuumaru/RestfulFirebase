@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Attributes;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstractions;

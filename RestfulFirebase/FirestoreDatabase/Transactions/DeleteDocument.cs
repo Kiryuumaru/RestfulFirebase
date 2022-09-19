@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.Common.Transactions;
@@ -27,7 +27,7 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
     public Document? Document { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Queries.DocumentReference"/> of the document node.
+    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
 

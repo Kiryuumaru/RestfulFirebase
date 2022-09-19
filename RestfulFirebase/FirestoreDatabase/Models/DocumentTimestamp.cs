@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase;
 using System.Transactions;
 using RestfulFirebase.Common.Transactions;

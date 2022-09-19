@@ -6,7 +6,7 @@ using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System;
 using System.Collections;
@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Text.Json.JsonElement;
 using ObservableHelpers.ComponentModel;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -414,78 +415,6 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             }
         }
 
-        bool checkProperty(PropertyInfo propertyInfo, MemberInfo memberToCheckAttribute, string name, bool onlyWithAttribute)
-        {
-            string? nameToCompare = null;
-            bool isValueIncluded = false;
-
-            if (!propertyInfo.CanWrite)
-            {
-                return false;
-            }
-
-            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
-            {
-                nameToCompare = firebaseValueAttribute.Name;
-                isValueIncluded = true;
-            }
-            else if (!onlyWithAttribute)
-            {
-                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
-                {
-                    nameToCompare = jsonPropertyNameAttribute.Name;
-                }
-                isValueIncluded = true;
-            }
-
-            if (!isValueIncluded)
-            {
-                return false;
-            }
-
-            if (nameToCompare == null || string.IsNullOrWhiteSpace(nameToCompare))
-            {
-                nameToCompare = jsonNamingPolicy?.ConvertName(propertyInfo.Name) ?? propertyInfo.Name;
-            }
-
-            return nameToCompare.Equals(name);
-        }
-
-        PropertyInfo? getEquivalentProperty(PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, string name, bool onlyWithAttribute)
-        {
-            foreach (var propertyInfo in propertyInfos)
-            {
-                if (checkProperty(propertyInfo, propertyInfo, name, onlyWithAttribute))
-                {
-                    return propertyInfo;
-                }
-            }
-
-            foreach (var fieldInfo in fieldInfos)
-            {
-                if (fieldInfo.IsStatic)
-                {
-                    continue;
-                }
-
-                string propertyNameEquivalent = ClassFieldHelpers.GetPropertyName(fieldInfo);
-
-                PropertyInfo? propertyInfo = propertyInfos.FirstOrDefault(i => i.Name.Equals(propertyNameEquivalent));
-
-                if (propertyInfo == null)
-                {
-                    continue;
-                }
-
-                if (checkProperty(propertyInfo, fieldInfo, name, onlyWithAttribute))
-                {
-                    return propertyInfo;
-                }
-            }
-
-            return null;
-        }
-
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
@@ -497,18 +426,18 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 
             foreach (var firebaseField in enumerator)
             {
-                var property = getEquivalentProperty(propertyInfos, fieldInfos, firebaseField.Name, includeOnlyWithAttribute);
+                var propertyInfo = ClassMemberHelpers.GetPropertyInfo(propertyInfos, fieldInfos, includeOnlyWithAttribute, firebaseField.Name, jsonNamingPolicy);
 
-                if (property == null)
+                if (propertyInfo == null)
                 {
                     continue;
                 }
 
-                var subObjType = property.PropertyType;
+                var subObjType = propertyInfo.PropertyType;
 
                 object? parsedSubObj = parseJsonElement(firebaseField.Value, subObjType);
 
-                property.SetValue(obj, parsedSubObj);
+                propertyInfo.SetValue(obj, parsedSubObj);
             }
         }
 
@@ -1173,7 +1102,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
                     continue;
                 }
 
-                string propertyNameEquivalent = ClassFieldHelpers.GetPropertyName(fieldInfo);
+                string propertyNameEquivalent = ClassMemberHelpers.GetPropertyName(fieldInfo);
 
                 PropertyInfo? propertyInfo = propertyInfos.FirstOrDefault(i => i.Name.Equals(propertyNameEquivalent));
 

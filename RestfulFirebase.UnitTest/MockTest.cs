@@ -3,7 +3,7 @@ using Microsoft.VisualStudio.TestPlatform.TestHost;
 using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Transactions;
-using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
@@ -14,6 +14,7 @@ using Xunit;
 using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Reflection;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -50,7 +51,9 @@ public class MockTest
             Config = config,
             CollectionReference = documentReferenceTest,
             PageSize = 60,
-            OrderBy = new string[] { "val2 asc" }
+            OrderBy = OrderBy.Create(
+                (nameof(NormalMVVMModel.Val1), OrderDirection.Ascending),
+                (nameof(NormalMVVMModel.Val2), OrderDirection.Descending))
         });
         Assert.NotNull(awdaw.Result);
 

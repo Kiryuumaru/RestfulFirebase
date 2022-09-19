@@ -1,19 +1,17 @@
 ﻿using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.FirestoreDatabase.Queries;
+namespace RestfulFirebase.FirestoreDatabase.References;
 
 /// <summary>
 /// The base reference of the cloud firestore.
 /// </summary>
-public abstract class Query : IQuery
+public abstract class Reference
 {
     #region Properties
 
@@ -34,6 +32,7 @@ public abstract class Query : IQuery
     }
 
     internal abstract string BuildUrlCascade(string projectId);
+
 
     #endregion
 }
