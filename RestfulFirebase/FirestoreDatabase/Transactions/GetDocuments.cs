@@ -2,17 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.FirestoreDatabase;
-using System.Transactions;
 using RestfulFirebase.Common.Transactions;
 using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.Common;
 using RestfulFirebase.FirestoreDatabase.Models;
-using System.Reflection;
 using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
@@ -112,7 +107,8 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
                         {
                             documentReference = docRef;
 
-                            if (Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                            if (Documents != null &&
+                                Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
                             {
                                 document = foundDocument;
                                 model = foundDocument.Model;

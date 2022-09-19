@@ -1,8 +1,5 @@
-﻿using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Models;
-using System;
+﻿using RestfulFirebase.FirestoreDatabase.Models;
 using System.Collections.Generic;
-using System.Text;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 

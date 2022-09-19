@@ -1,12 +1,7 @@
 ﻿using RestfulFirebase.Common.Enums;
 using RestfulFirebase.Common.Exceptions;
-using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Models;
 

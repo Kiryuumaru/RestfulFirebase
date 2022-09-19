@@ -1,14 +1,4 @@
-﻿using RestfulFirebase.Local;
-using RestfulFirebase.Utilities;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace RestfulFirebase.UnitTest.Utilities
+﻿namespace RestfulFirebase.UnitTest.Utilities
 {
     public class EncryptTest : ILocalEncryption
     {

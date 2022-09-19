@@ -1,8 +1,5 @@
 ﻿using DisposableHelpers;
 using DisposableHelpers.Attributes;
-using System;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace RestfulFirebase.Storage;
 

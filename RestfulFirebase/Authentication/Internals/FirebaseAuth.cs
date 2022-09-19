@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
-
-namespace RestfulFirebase.Common.Internals;
+﻿namespace RestfulFirebase.Common.Internals;
 
 internal class FirebaseAuth
 {

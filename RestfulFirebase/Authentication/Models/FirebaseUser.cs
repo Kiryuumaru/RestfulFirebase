@@ -1,12 +1,5 @@
 ﻿using RestfulFirebase.Common.Utilities;
 using System;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.Json;
-using DisposableHelpers;
-using DisposableHelpers.Attributes;
 using RestfulFirebase.Common.Internals;
 
 namespace RestfulFirebase.Common.Models;

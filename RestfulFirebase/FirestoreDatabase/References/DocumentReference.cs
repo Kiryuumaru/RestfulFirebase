@@ -1,16 +1,4 @@
-﻿using RestfulFirebase.Common.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
-using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.References;

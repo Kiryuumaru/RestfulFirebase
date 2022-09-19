@@ -2,12 +2,10 @@
 using RestfulFirebase.FirestoreDatabase.Enums;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 
-namespace RestfulFirebase.FirestoreDatabase.Models;
+namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// The orderBy parameter for query.

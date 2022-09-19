@@ -6,7 +6,6 @@ using RestfulFirebase.Local;
 using RestfulFirebase.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 
 /// <summary>

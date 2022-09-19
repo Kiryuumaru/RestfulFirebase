@@ -2,7 +2,6 @@
 using RestfulFirebase.RealtimeDatabase;
 using RestfulFirebase.Local;
 using RestfulFirebase.Storage;
-using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using RestfulFirebase.FirestoreDatabase;

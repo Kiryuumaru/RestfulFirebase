@@ -1,7 +1,6 @@
 namespace RestfulFirebase.RealtimeDatabase.Query;
 
 using RestfulFirebase.Exceptions;
-using System;
 using System.Threading.Tasks;
 
 internal class AuthQuery : ParameterQuery

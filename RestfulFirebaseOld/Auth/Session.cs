@@ -5,12 +5,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Local;
 using System.Text.Json;
 using DisposableHelpers;
 using DisposableHelpers.Attributes;
-using RestfulFirebase.FirestoreDatabase.Models;
-using static System.Collections.Specialized.BitVector32;
 
 namespace RestfulFirebase.Auth;
 

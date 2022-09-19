@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.References;
+﻿using RestfulFirebase.FirestoreDatabase.References;
 
 namespace RestfulFirebase.Api;
 

@@ -12,20 +12,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Threading.Tasks;
 using static System.Text.Json.JsonElement;
 using ObservableHelpers.ComponentModel;
-using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -62,6 +58,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         return client;
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<Exception> GetHttpException(HttpRequestMessage? request, HttpResponseMessage? response, HttpStatusCode httpStatusCode, Exception exception)
     {
         string? requestUrlStr = null;

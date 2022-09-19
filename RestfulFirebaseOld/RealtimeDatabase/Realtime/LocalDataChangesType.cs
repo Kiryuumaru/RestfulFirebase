@@ -1,6 +1,4 @@
-﻿using RestfulFirebase.Utilities;
-
-namespace RestfulFirebase.RealtimeDatabase.Realtime;
+﻿namespace RestfulFirebase.RealtimeDatabase.Realtime;
 
 /// <summary>
 /// Enumeration of types of local data changes.

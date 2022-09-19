@@ -1,14 +1,4 @@
-﻿using RestfulFirebase;
-using RestfulFirebase.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using ObservableHelpers.ComponentModel;
-using System.ComponentModel;
+﻿using ObservableHelpers.ComponentModel;
 using DisposableHelpers.Attributes;
 using SynchronizationContextHelpers;
 

@@ -1,21 +1,10 @@
-﻿using RestfulFirebase;
-using RestfulFirebase.RealtimeDatabase.Models;
-using RestfulFirebase.UnitTest.Utilities;
-using RestfulFirebase.UnitTest;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using RestfulFirebase.RealtimeDatabase.Realtime;
-using RestfulFirebase.Local;
 using System.ComponentModel;
-using RestfulFirebase;
 using System.Collections.Specialized;
-using RestfulFirebase.Utilities;
-using System.Diagnostics;
-using SerializerHelpers;
 
 namespace DatabaseTest.ModelsTest
 {

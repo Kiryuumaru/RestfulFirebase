@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using RestfulFirebase.Attributes;
-using System.Data;
-using System.Xml.Linq;
 
 namespace RestfulFirebase.Common.Utilities
 {
@@ -186,7 +182,14 @@ namespace RestfulFirebase.Common.Utilities
                 string equivalentFieldName = GetFieldName(propertyInfo);
                 FieldInfo? fieldInfo = fieldInfos.FirstOrDefault(i => i.Name.Equals(equivalentFieldName));
 
-                return getDocumentFieldName(propertyInfo, fieldInfo);
+                if (fieldInfo != null)
+                {
+                    return getDocumentFieldName(propertyInfo, fieldInfo);
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             return fromProperty;

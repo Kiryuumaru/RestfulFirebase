@@ -2,12 +2,6 @@
 using ObservableHelpers.ComponentModel.Enums;
 using RestfulFirebase.FirestoreDatabase.References;
 using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
-using System.Text;
-using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 /// <summary>

@@ -1,23 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Common.Transactions;
 using System.Threading.Tasks;
 using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.Common;
 using RestfulFirebase.FirestoreDatabase.Models;
-using System.Xml.Linq;
 using System.Threading;
 using RestfulFirebase.Common.Utilities;
 using System.Linq;
-using System.Data;
 using System.Reflection;
 using RestfulFirebase.Attributes;
+using RestfulFirebase.FirestoreDatabase.Queries;
 
 namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -80,7 +76,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
         string? orderBy = null;
         if (OrderBy != null && OrderBy.Count() != 0)
         {
-            orderBy = Models.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
+            orderBy = Queries.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
         }
 
         try

@@ -1,6 +1,4 @@
-﻿using RestfulFirebase.Utilities;
-
-namespace RestfulFirebase.Local;
+﻿namespace RestfulFirebase.Local;
 
 /// <summary>
 /// Enumeration of types of local data.

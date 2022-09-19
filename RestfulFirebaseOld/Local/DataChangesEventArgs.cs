@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Utilities;
-using System;
+﻿using System;
 
 namespace RestfulFirebase.Local;
 

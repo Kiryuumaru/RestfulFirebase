@@ -1,7 +1,4 @@
-using RestfulFirebase;
-using RestfulFirebase.Exceptions;
 using RestfulFirebase.TestCore;
-using RestfulFirebase.UnitTest;
 using Xunit;
 
 namespace AuthenticationTest

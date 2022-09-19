@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.FirestoreDatabase.Enums;
+﻿namespace RestfulFirebase.FirestoreDatabase.Enums;
 
 /// <summary>
 /// The order direction for order query.

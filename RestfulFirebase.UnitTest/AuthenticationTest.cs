@@ -1,7 +1,3 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Exceptions;
 using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Models;
 using Xunit;

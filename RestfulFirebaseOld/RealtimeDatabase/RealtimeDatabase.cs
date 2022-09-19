@@ -1,15 +1,6 @@
 ﻿using RestfulFirebase.RealtimeDatabase.Query;
-using RestfulFirebase.Utilities;
-using RestfulFirebase.Local;
 using System;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Linq;
-using RestfulFirebase.Exceptions;
-using System.Threading.Tasks;
-using RestfulFirebase.RealtimeDatabase.Realtime;
 using DisposableHelpers;
-using System.Text.Json;
 
 namespace RestfulFirebase.RealtimeDatabase;
 

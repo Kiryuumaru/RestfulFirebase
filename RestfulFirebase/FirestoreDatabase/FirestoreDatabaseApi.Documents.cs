@@ -1,12 +1,6 @@
-﻿using RestfulFirebase.FirestoreDatabase;
-using System;
-using System.Threading.Tasks;
-using System.Text.Json;
+﻿using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using System.Transactions;
 using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;

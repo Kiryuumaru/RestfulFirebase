@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Abstraction;
+﻿namespace RestfulFirebase.Abstraction;
 
 /// <summary>
 /// Generic interface for a deeply cloneable type.

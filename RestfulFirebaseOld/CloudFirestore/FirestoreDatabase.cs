@@ -1,17 +1,6 @@
-﻿using RestfulFirebase.Utilities;
-using RestfulFirebase.Local;
-using System;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Linq;
-using RestfulFirebase.Exceptions;
-using System.Threading.Tasks;
+﻿using System;
 using RestfulFirebase.FirestoreDatabase.References;
 using DisposableHelpers;
-using LockerHelpers;
-using System.Text.Json;
-using System.Net.Http;
-using System.Net.Http.Headers;
 
 namespace RestfulFirebase.FirestoreDatabase;
 

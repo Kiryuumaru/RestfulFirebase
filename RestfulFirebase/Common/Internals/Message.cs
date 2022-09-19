@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestfulFirebase.Common.Internals;
+﻿namespace RestfulFirebase.Common.Internals;
 
 internal class Message
 {

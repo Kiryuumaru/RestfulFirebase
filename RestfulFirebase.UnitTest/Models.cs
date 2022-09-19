@@ -1,17 +1,12 @@
-﻿using Newtonsoft.Json.Linq;
-using ObservableHelpers.ComponentModel;
+﻿using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Attributes;
 using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.Common.Utilities;
-using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.UnitTest;
 

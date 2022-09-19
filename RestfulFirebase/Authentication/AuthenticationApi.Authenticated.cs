@@ -1,20 +1,7 @@
-﻿using System;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using RestfulFirebase.Common.Utilities;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Enums;
-using RestfulFirebase.Common.Exceptions;
-using RestfulFirebase.Common.Internals;
+﻿using System.Threading.Tasks;
 using RestfulFirebase.Common.Transactions;
-using System.Linq;
-using System.Text.Json.Serialization;
-using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Models;
-using RestfulFirebase.Common.Transactions;
 
 namespace RestfulFirebase.Api;
 

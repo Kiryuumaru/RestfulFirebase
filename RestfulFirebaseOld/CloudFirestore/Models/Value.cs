@@ -1,10 +1,4 @@
-﻿using RestfulFirebase.Abstraction;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
-namespace RestfulFirebase.FirestoreDatabase.Models
+﻿namespace RestfulFirebase.FirestoreDatabase.Models
 {
     /// <summary>
     /// The supported value types.

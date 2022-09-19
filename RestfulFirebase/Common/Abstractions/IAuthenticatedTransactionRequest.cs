@@ -1,9 +1,4 @@
-﻿using RestfulFirebase.Common;
-using RestfulFirebase.Common.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RestfulFirebase.Common.Models;
 
 namespace RestfulFirebase.Common.Abstractions;
 

@@ -1,11 +1,6 @@
 ﻿using RestfulFirebase.Common.Enums;
 using RestfulFirebase.Common.Models;
-using RestfulFirebase.Common.Transactions;
 using System;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Transactions;

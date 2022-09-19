@@ -1,22 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
-using RestfulFirebase.Common;
-using RestfulFirebase.Common.Exceptions;
-using RestfulFirebase.Common.Transactions;
-using RestfulFirebase.FirestoreDatabase.References;
+﻿using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
-using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Xunit;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.Queries;
 
 namespace RestfulFirebase.UnitTest;
 

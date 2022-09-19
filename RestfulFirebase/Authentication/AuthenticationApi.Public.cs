@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Transactions;
-using RestfulFirebase.Common.Transactions;
 
 namespace RestfulFirebase.Api;
 

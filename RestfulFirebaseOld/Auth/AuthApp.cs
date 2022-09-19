@@ -5,11 +5,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Http;
 using RestfulFirebase.Exceptions;
-using System.Net;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using DisposableHelpers.Attributes;
 
 namespace RestfulFirebase.Auth;

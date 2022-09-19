@@ -1,15 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using DisposableHelpers.Attributes;
-using ObservableConcurrentCollections;
-using RestfulFirebase;
-using RestfulFirebase.Exceptions;
-using RestfulFirebase.RealtimeDatabase.Realtime;
+﻿using DisposableHelpers.Attributes;
 
 namespace RestfulFirebase.Models
 {
