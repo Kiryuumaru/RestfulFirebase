@@ -57,7 +57,7 @@ public class OrderBy
         return orders.AsReadOnly();
     }
 
-    internal static string Build(Type objType, IEnumerable<OrderBy> orderBy, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonNamingPolicy? jsonNamingPolicy)
+    internal static string BuildAsQueryParameter(Type objType, IEnumerable<OrderBy> orderBy, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonNamingPolicy? jsonNamingPolicy)
     {
         List<string> orderByQuery = new();
 

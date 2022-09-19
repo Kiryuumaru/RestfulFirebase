@@ -80,7 +80,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
         string? orderBy = null;
         if (OrderBy != null && OrderBy.Count() != 0)
         {
-            orderBy = Models.OrderBy.Build(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
+            orderBy = Models.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
         }
 
         try
