@@ -82,7 +82,7 @@ public class FirestoreDatabaseTest
             Document = documentReferenceTest1.Create<NestedType>(),
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(writeTest1Get4.ThrowIfErrorOrEmptyResult);
+        Assert.Throws<FirestoreDatabaseException>(writeTest1Get4.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -169,7 +169,7 @@ public class FirestoreDatabaseTest
             Document = documentReferenceTest1.Create<Dictionary<string, NestedType>>(),
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest4.ThrowIfErrorOrEmptyResult);
+        Assert.Throws<FirestoreDatabaseException>(getTest4.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -246,7 +246,7 @@ public class FirestoreDatabaseTest
             Document = documentReferenceTest1.Create<NestedType>(),
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResult);
+        Assert.Throws<FirestoreDatabaseException>(getTest2.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
@@ -332,7 +332,7 @@ public class FirestoreDatabaseTest
             Document = documentReferenceTest1.Create<MVVMModelWithIncludeOnlyAttribute>(),
         });
 
-        Assert.Throws<FirestoreDatabaseNotFoundException>(getTest2.ThrowIfErrorOrEmptyResult);
+        Assert.Throws<FirestoreDatabaseException>(getTest2.ThrowIfErrorOrEmptyResult);
 
         Assert.True(true);
     }
