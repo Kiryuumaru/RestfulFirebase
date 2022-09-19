@@ -68,7 +68,10 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         string? responseStr = null;
         if (request != null)
         {
-            requestUrlStr = request.RequestUri.ToString();
+            if (request.RequestUri != null)
+            {
+                requestUrlStr = request.RequestUri.ToString();
+            }
             if (request.Content != null)
             {
                 requestContentStr = await request.Content.ReadAsStringAsync();
@@ -79,7 +82,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             responseStr = await response.Content.ReadAsStringAsync();
         }
 
-        return await Task.FromResult<Exception>(httpStatusCode switch
+        return httpStatusCode switch
         {
             //400
             HttpStatusCode.BadRequest => new FirestoreDatabaseBadRequestException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
@@ -99,7 +102,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             HttpStatusCode.ServiceUnavailable => new FirestoreDatabaseServiceUnavailableException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
             //Unknown
             _ => new FirestoreDatabaseUndefinedException(requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
-        });
+        };
     }
 
     internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
