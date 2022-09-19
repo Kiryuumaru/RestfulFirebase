@@ -1,4 +1,6 @@
-﻿using System;
+﻿using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.FirestoreDatabase.Enums;
+using System;
 using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase.Exceptions;
@@ -6,34 +8,16 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// <summary>
 /// Occurs when there`s an error in firestore database.
 /// </summary>
-public class FirestoreDatabaseException : Exception
+public class FirestoreDatabaseException : FirebaseException
 {
     /// <summary>
-    /// Gets the request URL of the http operation.
+    /// Gets the <see cref="FirestoreErrorType"/> of the exception.
     /// </summary>
-    public string? RequestUrl { get; }
+    public FirestoreErrorType ErrorType { get; }
 
-    /// <summary>
-    /// Gets the content request of the http operation.
-    /// </summary>
-    public string? RequestContent { get; }
-
-    /// <summary>
-    /// Gets the content response of the http operation.
-    /// </summary>
-    public string? Response { get; }
-
-    /// <summary>
-    /// Gets the status code of the exception occured.
-    /// </summary>
-    public HttpStatusCode StatusCode { get; }
-
-    internal FirestoreDatabaseException(string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception innerException)
-        : base(message, innerException)
+    internal FirestoreDatabaseException(FirestoreErrorType errorType, string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception innerException)
+        : base(message, requestUrl, requestContent, response, httpStatusCode, innerException)
     {
-        RequestUrl = requestUrl;
-        RequestContent = requestContent;
-        Response = response;
-        StatusCode = httpStatusCode;
+        ErrorType = errorType;
     }
 }

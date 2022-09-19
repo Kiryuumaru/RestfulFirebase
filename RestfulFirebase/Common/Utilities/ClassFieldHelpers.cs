@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json;
-using RestfulFirebase.Attributes;
+using RestfulFirebase.Common.Attributes;
 
 namespace RestfulFirebase.Common.Utilities
 {

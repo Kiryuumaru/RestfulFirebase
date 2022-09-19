@@ -1,6 +1,6 @@
-using RestfulFirebase.Common.Transactions;
-using RestfulFirebase.Common.Models;
 using Xunit;
+using RestfulFirebase.Authentication.Requests;
+using RestfulFirebase.Authentication.Models;
 
 namespace RestfulFirebase.UnitTest
 {

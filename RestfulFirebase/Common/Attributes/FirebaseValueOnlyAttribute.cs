@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Attributes
+namespace RestfulFirebase.Common.Attributes
 {
     /// <summary>
     /// Attribute to mark the class to include only properties and fields with <see cref="FirebaseValueAttribute"/> attribute.

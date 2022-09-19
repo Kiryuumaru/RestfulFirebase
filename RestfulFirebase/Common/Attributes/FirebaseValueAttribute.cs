@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Attributes
+namespace RestfulFirebase.Common.Attributes
 {
     /// <summary>
     /// Attribute to mark the field or property as a firebase value.

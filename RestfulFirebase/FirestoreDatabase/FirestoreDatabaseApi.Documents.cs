@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.FirestoreDatabase.Transactions;
-using RestfulFirebase.Common.Transactions;
+using RestfulFirebase.FirestoreDatabase.Requests;
+using RestfulFirebase.Common.Requests;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;
 

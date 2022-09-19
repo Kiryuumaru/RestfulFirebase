@@ -1,4 +1,4 @@
-﻿namespace RestfulFirebase.Common.Internals;
+﻿namespace RestfulFirebase.Authentication.Internals;
 
 internal class FirebaseAuth
 {

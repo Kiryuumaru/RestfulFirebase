@@ -1,6 +1,6 @@
 ﻿using System.Runtime.Serialization;
 
-namespace RestfulFirebase.Common.Enums;
+namespace RestfulFirebase.Authentication.Enums;
 
 /// <summary>
 /// The type of authentication. 

@@ -1,7 +1,7 @@
 ﻿using System;
 using RestfulFirebase.FirestoreDatabase.References;
 
-namespace RestfulFirebase.FirestoreDatabase.Transactions;
+namespace RestfulFirebase.FirestoreDatabase.Requests;
 
 /// <summary>
 /// The reference timestamp of the document.

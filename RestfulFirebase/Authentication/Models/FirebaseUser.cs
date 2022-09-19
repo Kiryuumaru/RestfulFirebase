@@ -1,8 +1,8 @@
 ﻿using RestfulFirebase.Common.Utilities;
 using System;
-using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Authentication.Internals;
 
-namespace RestfulFirebase.Common.Models;
+namespace RestfulFirebase.Authentication.Models;
 
 /// <summary>
 /// Provides firebase user authentication implementations.
