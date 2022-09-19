@@ -9,7 +9,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Request to send an email verification to the authenticated user`s email.
 /// </summary>
-public class SendEmailVerificationRequest : AuthenticatedRequest, IAuthenticatedTransactionRequest
+public class SendEmailVerificationRequest : AuthenticatedRequest
 {
     /// <inheritdoc cref="SendEmailVerificationRequest"/>
     /// <returns>
@@ -17,12 +17,12 @@ public class SendEmailVerificationRequest : AuthenticatedRequest, IAuthenticated
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="AuthenticatedRequest.FirebaseUser"/> or  is a null reference.
+    /// <see cref="AuthenticatedRequest.Authorization"/> or  is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(FirebaseUser);
+        ArgumentNullException.ThrowIfNull(Authorization);
 
         try
         {
@@ -34,7 +34,7 @@ public class SendEmailVerificationRequest : AuthenticatedRequest, IAuthenticated
 
             await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
 
-            return new(this, FirebaseUser, null);
+            return new(this, Authorization, null);
         }
         catch (Exception ex)
         {

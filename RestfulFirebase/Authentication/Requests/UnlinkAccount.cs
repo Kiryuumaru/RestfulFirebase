@@ -24,13 +24,13 @@ public class UnlinkAccountRequest : AuthenticatedRequest
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
-    /// <see cref="AuthenticatedRequest.FirebaseUser"/> or
+    /// <see cref="AuthenticatedRequest.Authorization"/> or
     /// <see cref="AuthType"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(FirebaseUser);
+        ArgumentNullException.ThrowIfNull(Authorization);
         ArgumentNullException.ThrowIfNull(AuthType);
 
         try
@@ -58,9 +58,9 @@ public class UnlinkAccountRequest : AuthenticatedRequest
 
             await ExecuteAuthWithPostContent(content, GoogleSetAccountUrl, CamelCaseJsonSerializerOption);
 
-            await RefreshUserInfo(FirebaseUser);
+            await RefreshUserInfo(Authorization);
 
-            return new(this, FirebaseUser, null);
+            return new(this, Authorization, null);
         }
         catch (Exception ex)
         {

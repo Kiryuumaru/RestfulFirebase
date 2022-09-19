@@ -78,12 +78,12 @@ public static partial class Authentication
     /// <param name="request">
     /// The request of the operation.
     /// </param>
-    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> GetFreshToken(IAuthenticatedTransactionRequest request)
+    public static Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> GetFreshToken(AuthenticatedRequest request)
         => GetFreshToken(new GetFreshTokenRequest()
         {
             CancellationToken = request.CancellationToken,
             HttpClient = request.HttpClient,
             Config = request.Config,
-            FirebaseUser = request.FirebaseUser
+            Authorization = request.Authorization,
         });
 }

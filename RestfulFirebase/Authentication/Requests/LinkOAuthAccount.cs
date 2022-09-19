@@ -27,14 +27,14 @@ public class LinkOAuthAccountRequest : AuthenticatedRequest
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/>,
-    /// <see cref="AuthenticatedRequest.FirebaseUser"/>,
+    /// <see cref="AuthenticatedRequest.Authorization"/>,
     /// <see cref="AuthType"/> or
     /// <see cref="OAuthAccessToken"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(FirebaseUser);
+        ArgumentNullException.ThrowIfNull(Authorization);
         ArgumentNullException.ThrowIfNull(AuthType);
         ArgumentNullException.ThrowIfNull(OAuthAccessToken);
 
@@ -49,9 +49,9 @@ public class LinkOAuthAccountRequest : AuthenticatedRequest
 
             await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
 
-            await RefreshUserInfo(FirebaseUser);
+            await RefreshUserInfo(Authorization);
 
-            return new(this, FirebaseUser, null);
+            return new(this, Authorization, null);
         }
         catch (Exception ex)
         {

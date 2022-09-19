@@ -41,7 +41,7 @@ namespace RestfulFirebase.UnitTest
             await Api.Authentication.DeleteUser(new DeleteUserRequest()
             {
                 Config = config,
-                FirebaseUser = user,
+                Authorization = user,
             });
 
             Assert.True(true);

@@ -10,7 +10,7 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Gets the fresh token of the authenticated account.
 /// </summary>
-public class GetFreshTokenRequest : AuthenticatedRequest, IAuthenticatedTransactionRequest
+public class GetFreshTokenRequest : AuthenticatedRequest
 {
     /// <inheritdoc cref="GetFreshTokenRequest"/>
     /// <returns>
@@ -18,27 +18,27 @@ public class GetFreshTokenRequest : AuthenticatedRequest, IAuthenticatedTransact
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="AuthenticatedRequest.FirebaseUser"/> or  is a null reference.
+    /// <see cref="AuthenticatedRequest.Authorization"/> or  is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(FirebaseUser);
+        ArgumentNullException.ThrowIfNull(Authorization);
 
         try
         {
-            if (FirebaseUser.IsExpired())
+            if (Authorization.IsExpired())
             {
-                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{FirebaseUser.RefreshToken}\"}}";
+                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{Authorization.RefreshToken}\"}}";
 
                 FirebaseAuth? auth = await ExecuteAuthWithPostContent(content, GoogleRefreshAuth, SnakeCaseJsonSerializerOption);
 
-                FirebaseUser.UpdateAuth(auth);
+                Authorization.UpdateAuth(auth);
 
-                await RefreshUserInfo(FirebaseUser);
+                await RefreshUserInfo(Authorization);
             }
 
-            return new(this, FirebaseUser, null);
+            return new(this, Authorization, null);
         }
         catch (Exception ex)
         {

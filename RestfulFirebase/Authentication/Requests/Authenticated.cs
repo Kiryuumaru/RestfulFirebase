@@ -7,8 +7,8 @@ namespace RestfulFirebase.Authentication.Requests;
 /// <summary>
 /// Base class for all authenticated requests.
 /// </summary>
-public abstract class AuthenticatedRequest : AuthenticationRequest<TransactionResponse<AuthenticatedRequest, FirebaseUser>>, IAuthenticatedTransactionRequest
+public abstract class AuthenticatedRequest : AuthenticationRequest<TransactionResponse<AuthenticatedRequest, FirebaseUser>>, IAuthenticatedRequest<FirebaseUser>
 {
     /// <inheritdoc/>
-    public FirebaseUser? FirebaseUser { get; set; }
+    public FirebaseUser? Authorization { get; set; }
 }

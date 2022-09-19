@@ -1,13 +1,14 @@
 ﻿using RestfulFirebase.Common.Utilities;
 using System;
 using RestfulFirebase.Authentication.Internals;
+using RestfulFirebase.Common.Abstractions;
 
 namespace RestfulFirebase.Authentication.Models;
 
 /// <summary>
 /// Provides firebase user authentication implementations.
 /// </summary>
-public class FirebaseUser
+public class FirebaseUser : IAuthorization
 {
     #region Properties
 
@@ -75,6 +76,12 @@ public class FirebaseUser
     /// Gets or sets the phone number of the user.
     /// </summary>
     public string? PhoneNumber { get; private set; }
+
+    /// <inheritdoc/>
+    public string Token => IdToken;
+
+    /// <inheritdoc/>
+    public bool IsAccessToken => false;
 
     /// <summary>
     /// Event raised on the current context when the authentication is refreshed.

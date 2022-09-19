@@ -4,6 +4,7 @@ using RestfulFirebase.FirestoreDatabase.Requests;
 using RestfulFirebase.Common.Requests;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.Api;
 
@@ -12,6 +13,13 @@ namespace RestfulFirebase.Api;
 /// </summary>
 public static partial class FirestoreDatabase
 {
+    /// <inheritdoc cref="BeginTransactionRequest.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+    public static Task<TransactionResponse<BeginTransactionRequest, Transaction>> BeginTransaction(BeginTransactionRequest request)
+        => request.Execute();
+
     /// <inheritdoc cref="DeleteDocumentRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.

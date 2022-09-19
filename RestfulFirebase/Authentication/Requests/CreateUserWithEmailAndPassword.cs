@@ -56,7 +56,7 @@ public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<Trans
                 await Api.Authentication.SendEmailVerification(new SendEmailVerificationRequest()
                 {
                     Config = Config,
-                    FirebaseUser = user,
+                    Authorization = user,
                     CancellationToken = CancellationToken,
                     HttpClient = HttpClient
                 });

@@ -23,17 +23,19 @@ using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Authentication.Models;
 using static System.Text.Json.JsonElement;
 using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.Common.Models;
+using RestfulFirebase.Authentication.Requests;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
 /// <summary>
 /// The base implementation for all firebase cloud firestore request.
 /// </summary>
-public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<TResponse>, IAuthenticatedTransactionRequest
+public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<TResponse>, IAuthenticatedRequest<IAuthorization>
     where TResponse : TransactionResponse
 {
     /// <inheritdoc/>
-    public FirebaseUser? FirebaseUser { get; set; }
+    public IAuthorization? Authorization { get; set; }
 
     internal static readonly JsonSerializerOptions DefaultJsonSerializerOption = new()
     {
@@ -49,9 +51,19 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
     {
         var client = HttpClient ?? new HttpClient();
 
-        if (FirebaseUser != null)
+        if (Authorization is Common.Models.Authorization accessTokenType)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenType.Token);
+        }
+        else if (Authorization is FirebaseUser firebaseUser)
+        {
+            var tokenRequest = await Api.Authentication.GetFreshToken(new GetFreshTokenRequest()
+            {
+                Config = Config,
+                HttpClient = HttpClient,
+                CancellationToken = CancellationToken,
+                Authorization = firebaseUser,
+            });
             tokenRequest.ThrowIfErrorOrEmptyResult();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenRequest.Result.IdToken);
         }

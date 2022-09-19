@@ -6,7 +6,7 @@ namespace RestfulFirebase.Common.Abstractions;
 /// <summary>
 /// The base request for all firebase request.
 /// </summary>
-public interface ITransactionRequest
+public interface IRequest
 {
     /// <summary>
     /// Gets or sets the config of the request.

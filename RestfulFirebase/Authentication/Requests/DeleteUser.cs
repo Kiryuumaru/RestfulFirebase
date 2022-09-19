@@ -16,12 +16,12 @@ public class DeleteUserRequest : AuthenticatedRequest
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="AuthenticatedRequest.FirebaseUser"/> is a null reference.
+    /// <see cref="AuthenticatedRequest.Authorization"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<AuthenticatedRequest, FirebaseUser>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(FirebaseUser);
+        ArgumentNullException.ThrowIfNull(Authorization);
 
         try
         {
@@ -33,7 +33,7 @@ public class DeleteUserRequest : AuthenticatedRequest
 
             await ExecuteWithPostContent(content, GoogleDeleteUserUrl);
 
-            return new(this, FirebaseUser, null);
+            return new(this, Authorization, null);
         }
         catch (Exception ex)
         {

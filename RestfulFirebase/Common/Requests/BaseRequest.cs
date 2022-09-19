@@ -13,7 +13,7 @@ namespace RestfulFirebase.Common.Requests;
 /// <summary>
 /// The base implementation for all firebase request.
 /// </summary>
-public abstract class TransactionRequest : ITransactionRequest
+public abstract class TransactionRequest : IRequest
 {
     /// <summary>
     /// Gets or sets the config of the request.
