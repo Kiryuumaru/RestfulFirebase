@@ -83,13 +83,13 @@ public class DocumentReference : Reference
     }
 
     /// <summary>
-    /// Creates a document <see cref="Models.Document{T}"/>.
+    /// Creates a document <see cref="Document{T}"/>.
     /// </summary>
     /// <param name="model">
     /// The model of the document
     /// </param>
     /// <returns>
-    /// The <see cref="Models.Document{T}"/>.
+    /// The <see cref="Document{T}"/>.
     /// </returns>
     public Document<T> Create<T>(T? model = null)
         where T : class

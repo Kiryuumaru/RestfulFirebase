@@ -16,6 +16,7 @@ using System.Text.Json.Serialization;
 using Xunit;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -347,90 +348,211 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void BatchGetDeleteDocumentTest()
+    public async void BatchWriteGetDeleteTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
-        //MultipleDocumentReference documentReferenceTest = Api.FirestoreDatabase.Query()
-        //    .Collection("public")
-        //    .Documents("mock1", "mock2", "mock3", "mock4", "mock5", "mock6");
+        CollectionReference documentReferenceTest = Api.FirestoreDatabase
+            .Collection("public");
 
-        //var references = documentReferenceTest.GetDocumentReferences();
+        IEnumerable<Document<NormalMVVMModel>> writeDocuments = documentReferenceTest.CreateDocuments<NormalMVVMModel>(
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test1", new()
+            {
+                Val1 = "1 test 1",
+                Val2 = "1 test 2"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test2", new()
+            {
+                Val1 = "2 test 1",
+                Val2 = "2 test 2"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test3", new()
+            {
+                Val1 = "3 test 1",
+                Val2 = "3 test 2"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test4", new()
+            {
+                Val1 = "4 test 1",
+                Val2 = "4 test 2"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test5", new()
+            {
+                Val1 = "5 test 1",
+                Val2 = "5 test 2"
+            }));
 
-        //await Api.FirestoreDatabase.DeleteDocument(new DeleteDocumentRequest()
-        //{
-        //    Config = config,
-        //    Reference = documentReferenceTest
-        //});
+        IEnumerable<Document<NormalMVVMModel>> emptyPropsDocuments = documentReferenceTest.CreateDocuments<NormalMVVMModel>(
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test1", null),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test2", null),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test3", null),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test4", null),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(BatchWriteGetDeleteTest)}test5", null));
 
-        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = references[0],
-        //    Model = new NormalMVVMModel()
-        //    {
-        //        Val1 = "write 1 val 1",
-        //        Val2 = "write 1 val 2",
-        //    },
-        //});
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = emptyPropsDocuments
+        });
 
-        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = references[1],
-        //    Model = new NormalMVVMModel()
-        //    {
-        //        Val1 = "write 2 val 1",
-        //        Val2 = "write 2 val 2",
-        //    },
-        //});
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments
+        });
+        var getTest1 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments
+        });
+        var getTest2 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = emptyPropsDocuments
+        });
 
-        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = references[2],
-        //    Model = new NormalMVVMModel()
-        //    {
-        //        Val1 = "write 3 val 1",
-        //        Val2 = "write 3 val 2",
-        //    },
-        //});
+        Assert.NotNull(getTest1.Result);
+        Assert.NotNull(getTest2.Result);
+        Assert.Equivalent(writeDocuments, emptyPropsDocuments);
+        Assert.Equivalent(writeDocuments, getTest1.Result.Found.Select(i => i.Document));
+        Assert.Equivalent(writeDocuments, getTest2.Result.Found.Select(i => i.Document));
 
-        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = references[3],
-        //    Model = new NormalMVVMModel()
-        //    {
-        //        Val1 = "write 4 val 1",
-        //        Val2 = "write 4 val 2",
-        //    },
-        //});
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = writeDocuments
+        });
 
-        //await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = references[4],
-        //    Model = new NormalMVVMModel()
-        //    {
-        //        Val1 = "write 5 val 1",
-        //        Val2 = "write 5 val 2",
-        //    },
-        //});
+        var getTest3 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments,
+        });
 
-        //var batchGetResponse = await Api.FirestoreDatabase.BatchGet(new BatchGetDocumentRequest<NormalMVVMModel>
-        //{
-        //    JsonSerializerOptions = Helpers.JsonSerializerOptions,
-        //    Config = config,
-        //    Reference = documentReferenceTest
-        //});
-
+        Assert.NotNull(getTest3.Result);
+        Assert.Empty(getTest3.Result.Found.Select(i => i.Document));
+        Assert.NotEmpty(getTest3.Result.Missing);
+        Assert.Equivalent(emptyPropsDocuments.Select(i => i.Reference), getTest3.Result.Missing.Select(i => i.Reference));
 
         Assert.True(true);
+    }
+
+
+    [Fact]
+    public async void ListDocumentsTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference documentReferenceTest = Api.FirestoreDatabase
+            .Collection("public");
+
+        IEnumerable<Document<NormalMVVMModel>> writeDocuments = documentReferenceTest.CreateDocuments<NormalMVVMModel>(
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test1", new() // a_c
+            {
+                Val1 = "a",
+                Val2 = "c"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test2", new() // a_d
+            {
+                Val1 = "a",
+                Val2 = "d"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test3", new() // b_e
+            {
+                Val1 = "b",
+                Val2 = "e"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test4", new() // b_f
+            {
+                Val1 = "b",
+                Val2 = "f"
+            }),
+            ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test5", new() // b_g
+            {
+                Val1 = "b",
+                Val2 = "g"
+            }));
+
+        // Order for query
+        // a_d
+        // a_c
+        // b_g
+        // b_f
+        // b_e
+
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = writeDocuments
+        });
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments
+        });
+        await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments
+        });
+        var listDocumentTest1 = await Api.FirestoreDatabase.ListDocuments(new ListDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            CollectionReference = documentReferenceTest,
+            PageSize = 2,
+            OrderBy = OrderBy.Create(
+                (nameof(NormalMVVMModel.Val1), OrderDirection.Ascending),
+                (nameof(NormalMVVMModel.Val2), OrderDirection.Descending))
+        });
+        Assert.NotNull(listDocumentTest1.Result);
+
+        List<Document<NormalMVVMModel>> ordered = new();
+        int pages = 0;
+        await foreach (var page in listDocumentTest1.Result.DocumentPager)
+        {
+            pages++;
+            foreach (var doc in page)
+            {
+                ordered.Add(doc);
+            }
+        }
+
+        Assert.Equal(3, pages);
+        Assert.Equal(5, ordered.Count);
+        Assert.Equivalent(writeDocuments.ElementAt(0), ordered[1]);
+        Assert.Equivalent(writeDocuments.ElementAt(1), ordered[0]);
+        Assert.Equivalent(writeDocuments.ElementAt(2), ordered[4]);
+        Assert.Equivalent(writeDocuments.ElementAt(3), ordered[3]);
+        Assert.Equivalent(writeDocuments.ElementAt(4), ordered[2]);
+
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = writeDocuments
+        });
+
+        var getTest3 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = writeDocuments,
+        });
+
+        Assert.NotNull(getTest3.Result);
+        Assert.Empty(getTest3.Result.Found.Select(i => i.Document));
+        Assert.NotEmpty(getTest3.Result.Missing);
+        Assert.Equivalent(writeDocuments.Select(i => i.Reference), getTest3.Result.Missing.Select(i => i.Reference));
     }
 }

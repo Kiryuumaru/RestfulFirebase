@@ -9,8 +9,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseUndefinedException : FirestoreDatabaseException
 {
-    internal FirestoreDatabaseUndefinedException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("An unidentified error occured.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabaseUndefinedException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "An unidentified error occured.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
     }
 }

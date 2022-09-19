@@ -8,8 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseInternalServerErrorException : FirestoreDatabaseException
 {
-    internal FirestoreDatabaseInternalServerErrorException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("An internal server error occured.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabaseInternalServerErrorException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "An internal server error occured.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

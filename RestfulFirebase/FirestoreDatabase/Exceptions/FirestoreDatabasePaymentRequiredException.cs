@@ -8,8 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabasePaymentRequiredException : FirestoreDatabaseException
 {
-    internal FirestoreDatabasePaymentRequiredException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("The request exceeds the database plan limits.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabasePaymentRequiredException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "The request exceeds the database plan limits.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

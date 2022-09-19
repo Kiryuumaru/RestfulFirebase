@@ -8,8 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseNotFoundException : FirestoreDatabaseException
 {
-    internal FirestoreDatabaseNotFoundException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("The specified Realtime Database was not found.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabaseNotFoundException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "The specified Realtime Database was not found.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

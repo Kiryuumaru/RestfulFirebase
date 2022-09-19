@@ -8,8 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseBadRequestException : FirestoreDatabaseException
 {
-    internal FirestoreDatabaseBadRequestException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("Bad request.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabaseBadRequestException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "Bad request.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

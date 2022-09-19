@@ -8,8 +8,8 @@ namespace RestfulFirebase.FirestoreDatabase.Exceptions;
 /// </summary>
 public class FirestoreDatabaseServiceUnavailableException : FirestoreDatabaseException
 {
-    internal FirestoreDatabaseServiceUnavailableException(string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
-        : base("The specified Firebase Realtime Database is temporarily unavailable, which means the request was not attempted.", requestUrl, requestContent, response, httpStatusCode, exception)
+    internal FirestoreDatabaseServiceUnavailableException(string? message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception exception)
+        : base(message ?? "The specified Firebase Realtime Database is temporarily unavailable, which means the request was not attempted.", requestUrl, requestContent, response, httpStatusCode, exception)
     {
 
     }

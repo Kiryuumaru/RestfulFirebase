@@ -73,6 +73,28 @@ public class CollectionReference : Reference
         return new DocumentReference(this, documentId);
     }
 
+    /// <summary>
+    /// Creates a multiple document <see cref="Document{T}"/>.
+    /// </summary>
+    /// <param name="documents">
+    /// The documents to create
+    /// </param>
+    /// <returns>
+    /// The <see cref="Document{T}"/>.
+    /// </returns>
+    public IEnumerable<Document<T>> CreateDocuments<T>(params (string documentName, T? model)[] documents)
+        where T : class
+    {
+        List<Document<T>> docs = new();
+
+        foreach (var (documentName, model) in documents)
+        {
+            docs.Add(Document(documentName).Create(model));
+        }
+
+        return docs.AsReadOnly();
+    }
+
     internal override string BuildUrlCascade(string projectId)
     {
         var url = Id;

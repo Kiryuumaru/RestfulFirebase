@@ -30,23 +30,33 @@ public class MockTest
         CollectionReference documentReferenceTest = Api.FirestoreDatabase
             .Collection("public");
 
-        //List<Document<NormalMVVMModel>> documents = new();
-        //for (int i = 0; i < 100; i++)
+        //List<Document<NormalMVVMModel>> orderedDocuments = new();
+
+        //for (int i = 0; i < 300; i++)
         //{
-        //    documents.Add(documentReferenceTest.Document($"model{i}").Create(new NormalMVVMModel()
+        //    orderedDocuments.Add(documentReferenceTest.Document($"model{i}").Create(new NormalMVVMModel()
         //    {
-        //        Val1 = $"{i} try 1",
-        //        Val2 = $"{i} try 2",
+        //        Val1 = $"{i.ToString("0000")} try 1",
+        //        Val2 = $"{i.ToString("0000")} try 2",
         //    }));
+        //}
+
+        //List<Document<NormalMVVMModel>> writeDocuments = new();
+        //Random random = new();
+        //while (orderedDocuments.Count > 0)
+        //{
+        //    int index = random.Next(0, orderedDocuments.Count - 1);
+        //    writeDocuments.Add(orderedDocuments[index]);
+        //    orderedDocuments.RemoveAt(index);
         //}
 
         //await Api.FirestoreDatabase.WriteDocuments(new WriteDocumentsRequest<NormalMVVMModel>()
         //{
         //    Config = config,
-        //    Documents = documents
+        //    Documents = writeDocuments
         //});
 
-        var awdaw = await Api.FirestoreDatabase.ListDocumentReferences(new ListDocumentReferencesRequest<NormalMVVMModel>()
+        var awdaw = await Api.FirestoreDatabase.ListDocuments(new ListDocumentsRequest<NormalMVVMModel>()
         {
             Config = config,
             CollectionReference = documentReferenceTest,
@@ -57,7 +67,7 @@ public class MockTest
         });
         Assert.NotNull(awdaw.Result);
 
-        List<Document<NormalMVVMModel>> documents = new();
+        List<Document<NormalMVVMModel>> readDocuments = new();
 
         int calls = 0;
         await foreach (var page in awdaw.Result.DocumentPager)
@@ -65,7 +75,7 @@ public class MockTest
             calls++;
             foreach (var doc in page)
             {
-                documents.Add(doc);
+                readDocuments.Add(doc);
             }
         }
 
