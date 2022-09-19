@@ -143,6 +143,45 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
+    internal static CollectionReference? ParseCollectionReference(string? json)
+    {
+        if (json != null && !string.IsNullOrEmpty(json))
+        {
+            string[] paths = json.Split('/');
+            object currentPath = Api.FirestoreDatabase.Collection(paths[5]);
+
+            for (int i = 6; i < paths.Length; i++)
+            {
+                if (currentPath is CollectionReference colPath)
+                {
+                    currentPath = colPath.Document(paths[i]);
+                }
+                else if (currentPath is DocumentReference docPath)
+                {
+                    currentPath = docPath.Collection(paths[i]);
+                }
+            }
+
+            if (currentPath is CollectionReference collectionReference)
+            {
+                return collectionReference;
+            }
+        }
+
+        return null;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static CollectionReference? ParseCollectionReference(JsonElement jsonElement, JsonSerializerOptions jsonSerializerOptions)
+    {
+        return ParseCollectionReference(jsonElement.Deserialize<string>(jsonSerializerOptions));
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
     internal static DocumentReference? ParseDocumentReference(string? json)
     {
         if (json != null && !string.IsNullOrEmpty(json))
