@@ -10,12 +10,12 @@ using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
-using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Authentication.Exceptions;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Exceptions;
 using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Gets the fresh token of the authenticated account.

@@ -4,20 +4,20 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Utilities;
-using RestfulFirebase.Authentication;
-using RestfulFirebase.Authentication.Enums;
-using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.Common;
+using RestfulFirebase.Common.Enums;
+using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Transactions;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common.Transactions;
 using System.Net;
 using System.Runtime.CompilerServices;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Base class for all authentication requests.

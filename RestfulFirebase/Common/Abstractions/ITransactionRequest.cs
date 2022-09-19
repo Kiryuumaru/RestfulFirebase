@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Authentication;
+﻿using RestfulFirebase.Common;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;

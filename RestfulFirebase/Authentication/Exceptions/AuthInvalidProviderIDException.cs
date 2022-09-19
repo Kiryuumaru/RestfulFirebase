@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Authentication.Exceptions;
+namespace RestfulFirebase.Common.Exceptions;
 
 /// <summary>
 /// Occurs when the supported provider identifier string is not a valid providerId.

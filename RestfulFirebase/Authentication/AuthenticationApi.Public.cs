@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
-using RestfulFirebase.Authentication.Models;
-using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.Common.Models;
+using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Transactions;
 
 namespace RestfulFirebase.Api;

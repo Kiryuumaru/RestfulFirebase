@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.Authentication.Enums;
-using RestfulFirebase.Authentication.Exceptions;
+﻿using RestfulFirebase.Common.Enums;
+using RestfulFirebase.Common.Exceptions;
 using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.Common.Utilities;
 using System;
@@ -8,9 +8,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to unlink the account with oauth provided with auth type.

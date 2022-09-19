@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
-using RestfulFirebase.Authentication;
-using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Transactions;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common;
+using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.Common.Transactions;
+using RestfulFirebase.Common.Models;
 using Xunit;
 
 namespace RestfulFirebase.UnitTest

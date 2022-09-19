@@ -10,10 +10,10 @@ using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
-using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Authentication.Exceptions;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Exceptions;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to get the reCaptcha site key to be used for sending verification code to a phone number.

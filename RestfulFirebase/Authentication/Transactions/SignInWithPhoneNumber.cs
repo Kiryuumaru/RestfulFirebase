@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Authentication.Internals;
+﻿using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Transactions;
 using System;
 using System.Collections.Generic;
@@ -6,9 +6,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to sign in a phone number with the provided sessionInfo and code from reCaptcha validation and sms OTP message.

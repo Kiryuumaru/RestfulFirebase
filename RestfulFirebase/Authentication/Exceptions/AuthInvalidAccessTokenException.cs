@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Authentication.Exceptions;
+namespace RestfulFirebase.Common.Exceptions;
 
 /// <summary>
 /// Occurs when either the user or API keys are incorrect, or the API key has expired.

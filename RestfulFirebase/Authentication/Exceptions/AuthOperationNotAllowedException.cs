@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Authentication.Exceptions;
+namespace RestfulFirebase.Common.Exceptions;
 
 /// <summary>
 /// Occurs when an specified operation is disabled for this project.

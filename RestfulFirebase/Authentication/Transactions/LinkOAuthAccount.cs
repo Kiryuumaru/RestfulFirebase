@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.Authentication.Enums;
-using RestfulFirebase.Authentication.Models;
+﻿using RestfulFirebase.Common.Enums;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Transactions;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to link the account with oauth provided with auth type and oauth access token.

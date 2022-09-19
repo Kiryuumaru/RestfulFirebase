@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace RestfulFirebase.Authentication.Internals;
+namespace RestfulFirebase.Common.Internals;
 
 internal class FirebaseAuth
 {

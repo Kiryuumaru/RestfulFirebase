@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Authentication.Exceptions;
+namespace RestfulFirebase.Common.Exceptions;
 
 /// <summary>
 /// Occurs when the user account has been disabled by an administrator.

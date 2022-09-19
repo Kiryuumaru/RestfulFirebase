@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.Authentication.Exceptions;
+namespace RestfulFirebase.Common.Exceptions;
 
 /// <summary>
 /// Occurs when the password is less than 6 characters long.

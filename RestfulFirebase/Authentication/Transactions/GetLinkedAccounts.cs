@@ -10,14 +10,14 @@ using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common;
-using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Utilities;
 using System.Text.Json.Serialization;
-using RestfulFirebase.Authentication.Enums;
+using RestfulFirebase.Common.Enums;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to get all linked accounts of the user.

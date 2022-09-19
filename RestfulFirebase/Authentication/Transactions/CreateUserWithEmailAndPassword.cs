@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Authentication.Models;
+﻿using RestfulFirebase.Common.Internals;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Transactions;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to creates user with the provided email and password.

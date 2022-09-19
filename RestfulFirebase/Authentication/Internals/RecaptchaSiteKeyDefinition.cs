@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 
-namespace RestfulFirebase.Authentication.Internals;
+namespace RestfulFirebase.Common.Internals;
 
 internal class RecaptchaSiteKeyDefinition
 {

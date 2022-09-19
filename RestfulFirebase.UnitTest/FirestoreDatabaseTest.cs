@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
-using RestfulFirebase.Authentication;
-using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.Common;
+using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;

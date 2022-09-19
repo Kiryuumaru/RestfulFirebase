@@ -1,11 +1,11 @@
 ﻿using ConsoleAppExample;
 using RestfulFirebase;
-using RestfulFirebase.Authentication;
-using RestfulFirebase.Authentication.Exceptions;
-using RestfulFirebase.Authentication.Transactions;
+using RestfulFirebase.Common;
+using RestfulFirebase.Common.Exceptions;
+using RestfulFirebase.Common.Transactions;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
 FirebaseConfig config = Credentials.Config(); // Your config
 

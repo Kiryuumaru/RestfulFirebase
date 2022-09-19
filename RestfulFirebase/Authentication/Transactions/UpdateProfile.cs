@@ -5,9 +5,9 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 
-namespace RestfulFirebase.Authentication.Transactions;
+namespace RestfulFirebase.Common.Transactions;
 
 /// <summary>
 /// Request to update the accounts profile provided with display name and photo URL.

@@ -1,5 +1,5 @@
-﻿using RestfulFirebase.Authentication;
-using RestfulFirebase.Authentication.Models;
+﻿using RestfulFirebase.Common;
+using RestfulFirebase.Common.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,7 +13,7 @@ namespace RestfulFirebase.Common.Abstractions;
 public interface IAuthenticatedTransactionRequest : ITransactionRequest
 {
     /// <summary>
-    /// Gets or sets the authenticated <see cref="Authentication.Models.FirebaseUser"/> to authenticate the request.
+    /// Gets or sets the authenticated <see cref="Common.Models.FirebaseUser"/> to authenticate the request.
     /// </summary>
     public FirebaseUser? FirebaseUser { get; set; }
 }

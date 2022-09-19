@@ -1,6 +1,6 @@
 ﻿namespace RestfulFirebase.Common.Utilities;
 
-using RestfulFirebase.Authentication.Internals;
+using RestfulFirebase.Common.Internals;
 using System;
 using System.Collections;
 using System.Collections.Generic;

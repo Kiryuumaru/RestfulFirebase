@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using DisposableHelpers;
 using DisposableHelpers.Attributes;
-using RestfulFirebase.Authentication.Internals;
+using RestfulFirebase.Common.Internals;
 
-namespace RestfulFirebase.Authentication.Models;
+namespace RestfulFirebase.Common.Models;
 
 /// <summary>
 /// Provides firebase user authentication implementations.

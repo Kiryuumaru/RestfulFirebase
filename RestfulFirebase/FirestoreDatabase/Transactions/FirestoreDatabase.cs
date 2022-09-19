@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Attributes;
-using RestfulFirebase.Authentication.Models;
+using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Transactions;
