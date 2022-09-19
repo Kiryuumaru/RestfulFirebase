@@ -27,7 +27,7 @@ namespace RestfulFirebase.FirestoreDatabase.Transactions;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<ListDocumentsRequest<T>, ListDocumentReferencesResult<T>>>
+public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>>
     where T : class
 {
     /// <summary>
@@ -57,7 +57,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
 
     /// <inheritdoc cref="ListDocumentsRequest{T}"/>
     /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="ListDocumentReferencesResult{T}"/>.
+    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="ListDocumentsResult{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
@@ -67,7 +67,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// <see cref="OrderBy"/> has parameter that does not exists in the model as firebase value.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<TransactionResponse<ListDocumentsRequest<T>, ListDocumentReferencesResult<T>>> Execute()
+    internal override async Task<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(CollectionReference);
@@ -96,13 +96,13 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
             var firstIteration = new ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>(
                 new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
             AsyncPager<Document<T>> pager = new(new(null!, (_) => firstIteration));
-            ListDocumentReferencesResult<T> result = new(iterator.Item, pager);
+            ListDocumentsResult<T> result = new(iterator.Item, pager);
 
-            return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentReferencesResult<T>>(this, result, null);
+            return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>(this, result, null);
         }
         catch (Exception ex)
         {
-            return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentReferencesResult<T>>(this, null, ex);
+            return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>(this, null, ex);
         }
     }
 
@@ -185,7 +185,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class ListDocumentReferencesResult<T>
+public class ListDocumentsResult<T>
     where T : class
 {
     /// <summary>
@@ -198,7 +198,7 @@ public class ListDocumentReferencesResult<T>
     /// </summary>
     public AsyncPager<Document<T>> DocumentPager { get; }
 
-    internal ListDocumentReferencesResult(Document<T>[] firstResult, AsyncPager<Document<T>> documentPager)
+    internal ListDocumentsResult(Document<T>[] firstResult, AsyncPager<Document<T>> documentPager)
     {
         FirstResult = firstResult;
         DocumentPager = documentPager;

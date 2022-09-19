@@ -59,7 +59,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<TransactionResponse<ListDocumentsRequest<T>, ListDocumentReferencesResult<T>>> ListDocuments<T>(ListDocumentsRequest<T> request)
+    public static Task<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>> ListDocuments<T>(ListDocumentsRequest<T> request)
         where T : class => request.Execute();
 
     /// <inheritdoc cref="WriteDocumentRequest{T}.Execute"/>
