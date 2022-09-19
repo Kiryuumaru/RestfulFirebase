@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Authentication.Models;
 using static System.Text.Json.JsonElement;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -98,27 +99,29 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             return ex;
         }
 
-        return httpStatusCode switch
+        FirestoreErrorType errorType = httpStatusCode switch
         {
             //400
-            HttpStatusCode.BadRequest => new FirestoreDatabaseBadRequestException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.BadRequest => FirestoreErrorType.BadRequestException,
             //401
-            HttpStatusCode.Unauthorized => new FirestoreDatabaseUnauthorizedException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.Unauthorized => FirestoreErrorType.UnauthorizedException,
             //402
-            HttpStatusCode.PaymentRequired => new FirestoreDatabasePaymentRequiredException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.PaymentRequired => FirestoreErrorType.PaymentRequiredException,
             //403
-            HttpStatusCode.Forbidden => new FirestoreDatabaseUnauthorizedException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.Forbidden => FirestoreErrorType.UnauthorizedException,
             //404
-            HttpStatusCode.NotFound => new FirestoreDatabaseNotFoundException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.NotFound => FirestoreErrorType.NotFoundException,
             //412
-            HttpStatusCode.PreconditionFailed => new FirestoreDatabasePreconditionFailedException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.PreconditionFailed => FirestoreErrorType.PreconditionFailedException,
             //500
-            HttpStatusCode.InternalServerError => new FirestoreDatabaseInternalServerErrorException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.InternalServerError => FirestoreErrorType.InternalServerErrorException,
             //503
-            HttpStatusCode.ServiceUnavailable => new FirestoreDatabaseServiceUnavailableException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            HttpStatusCode.ServiceUnavailable => FirestoreErrorType.ServiceUnavailableException,
             //Unknown
-            _ => new FirestoreDatabaseUndefinedException(message, requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception),
+            _ => FirestoreErrorType.UndefinedException,
         };
+
+        return new FirestoreDatabaseException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseStr, httpStatusCode, exception);
     }
 
     internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
