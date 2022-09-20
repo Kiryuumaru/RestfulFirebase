@@ -20,6 +20,16 @@ public static partial class FirestoreDatabase
     public static Task<TransactionResponse<BeginTransactionRequest, Transaction>> BeginTransaction(BeginTransactionRequest request)
         => request.Execute();
 
+    /// <inheritdoc cref="CreateDocumentRequest{T}.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<CreateDocumentRequest<T>, Document<T>>> CreateDocument<T>(CreateDocumentRequest<T> request)
+        where T : class => request.Execute();
+
     /// <inheritdoc cref="DeleteDocumentRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.

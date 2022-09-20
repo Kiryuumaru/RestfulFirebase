@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using RestfulFirebase.Common.Attributes;
 using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -50,6 +51,11 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// Gets or sets the order to sort results by.
     /// </summary>
     public IEnumerable<OrderBy>? OrderBy { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
+    /// </summary>
+    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="ListDocumentsRequest{T}"/>
     /// <returns>
@@ -124,6 +130,10 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
         if (orderBy != null)
         {
             qb.Add("orderBy", orderBy);
+        }
+        if (Transaction != null)
+        {
+            qb.Add("transaction", Transaction.Token);
         }
         string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
 

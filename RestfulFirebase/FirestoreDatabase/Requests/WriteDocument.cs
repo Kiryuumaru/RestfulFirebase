@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -27,6 +28,11 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// Gets or sets the existing <see cref="Document{T}"/> to populate the document fields.
     /// </summary>
     public Document<T>? Document { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
+    /// </summary>
+    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="TransactionResponse{T}"/>
     /// <returns>
@@ -72,6 +78,11 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
+            if (Transaction != null)
+            {
+                writer.WritePropertyName("transaction");
+                writer.WriteStringValue(Transaction.Token);
+            }
             writer.WriteEndObject();
 
             await writer.FlushAsync();

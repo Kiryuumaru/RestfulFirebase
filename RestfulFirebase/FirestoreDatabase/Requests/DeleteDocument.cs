@@ -6,6 +6,7 @@ using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.IO;
 using System.Text.Json;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -23,6 +24,11 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
     /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
+    /// </summary>
+    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="DeleteDocumentRequest"/>
     /// <returns>
@@ -66,6 +72,11 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
+            if (Transaction != null)
+            {
+                writer.WritePropertyName("transaction");
+                writer.WriteStringValue(Transaction.Token);
+            }
             writer.WriteEndObject();
 
             await writer.FlushAsync();

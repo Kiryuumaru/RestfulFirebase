@@ -7,6 +7,8 @@ using System.IO;
 using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.Common.Utilities;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -33,6 +35,11 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
+    /// </summary>
+    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="GetDocumentRequest{T}"/>
     /// <returns>
@@ -76,11 +83,18 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
             throw new ArgumentException($"Both {nameof(Document)} and {nameof(DocumentReference)} is a null reference. Provide at least one argument.");
         }
 
+        QueryBuilder qb = new();
+        if (Transaction != null)
+        {
+            qb.Add("transaction", Transaction.Token);
+        }
+        string url = documentReference.BuildUrl(Config.ProjectId, qb.Build());
+
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         try
         {
-            var response = await Execute(HttpMethod.Get, documentReference.BuildUrl(Config.ProjectId));
+            var response = await Execute(HttpMethod.Get, url);
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
             var parsedDocument = ParseDocument(documentReference, model, document, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);

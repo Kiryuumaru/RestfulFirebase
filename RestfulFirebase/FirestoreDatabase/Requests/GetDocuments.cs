@@ -9,6 +9,7 @@ using RestfulFirebase.Common.Requests;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -35,6 +36,11 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
     /// Gets or sets the requested <see cref="DocumentReference"/> documents.
     /// </summary>
     public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
+    /// </summary>
+    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="GetDocumentsRequest{T}"/>
     /// <returns>
@@ -81,6 +87,11 @@ public class GetDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespon
                 }
             }
             writer.WriteEndArray();
+            if (Transaction != null)
+            {
+                writer.WritePropertyName("transaction");
+                writer.WriteStringValue(Transaction.Token);
+            }
             writer.WriteEndObject();
 
             await writer.FlushAsync();

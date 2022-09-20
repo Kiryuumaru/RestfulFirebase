@@ -338,6 +338,87 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
+    public async void CreateGetDeleteTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference collectionReferenceTest = Api.FirestoreDatabase
+            .Collection("public");
+
+        NormalMVVMModel model1 = new()
+        {
+            Val1 = "1test1",
+            Val2 = "1test2"
+        };
+
+        NormalMVVMModel model2 = new()
+        {
+            Val1 = "2test1",
+            Val2 = "2test2"
+        };
+
+        var createTest1 = await Api.FirestoreDatabase.CreateDocument(new CreateDocumentRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            CollectionReference = collectionReferenceTest,
+            Model = model1
+        });
+        Assert.NotNull(createTest1.Result);
+
+        var createTest2 = await Api.FirestoreDatabase.CreateDocument(new CreateDocumentRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            CollectionReference = collectionReferenceTest,
+            Model = model2,
+            DocumentId = "documentIdSample"
+        });
+        Assert.NotNull(createTest2.Result);
+
+        var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            DocumentReference = createTest1.Result.Reference
+        });
+        Assert.NotNull(getTest1.Result);
+
+        var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            DocumentReference = createTest2.Result.Reference
+        });
+        Assert.NotNull(getTest2.Result);
+
+        Assert.Equal(model1, createTest1.Result.Model);
+        Assert.Equal(model2, createTest2.Result.Model);
+        Assert.Equivalent(createTest1.Result, getTest1.Result);
+        Assert.Equivalent(createTest2.Result, getTest2.Result);
+
+        // Remove residual files
+        await Api.FirestoreDatabase.DeleteDocuments(new DeleteDocumentsRequest()
+        {
+            Config = config,
+            Documents = new Document<NormalMVVMModel>[]{ getTest1.Result, getTest2.Result }
+        });
+
+        var getTest3 = await Api.FirestoreDatabase.GetDocuments(new GetDocumentsRequest<NormalMVVMModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Documents = new Document<NormalMVVMModel>[] { getTest1.Result, getTest2.Result }
+        });
+
+        Assert.NotNull(getTest3.Result);
+        Assert.Empty(getTest3.Result.Found.Select(i => i.Document));
+        Assert.NotEmpty(getTest3.Result.Missing);
+
+        Assert.True(true);
+    }
+
+    [Fact]
     public async void BatchWriteGetDeleteTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
@@ -432,7 +513,6 @@ public class FirestoreDatabaseTest
 
         Assert.True(true);
     }
-
 
     [Fact]
     public async void ListDocumentsTest()
