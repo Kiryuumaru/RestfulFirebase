@@ -80,7 +80,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         string? orderBy = null;
-        if (OrderBy != null && OrderBy.Count() != 0)
+        if (OrderBy != null && OrderBy.Any())
         {
             orderBy = Queries.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
         }
