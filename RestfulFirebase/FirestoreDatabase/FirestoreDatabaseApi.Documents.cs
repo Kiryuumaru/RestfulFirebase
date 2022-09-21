@@ -37,13 +37,6 @@ public static partial class FirestoreDatabase
     public static Task<TransactionResponse<DeleteDocumentRequest>> DeleteDocument(DeleteDocumentRequest request)
         => request.Execute();
 
-    /// <inheritdoc cref="DeleteDocumentsRequest.Execute"/>
-    /// <param name="request">
-    /// The request of the operation.
-    /// </param>
-    public static Task<TransactionResponse<DeleteDocumentsRequest>> DeleteDocuments(DeleteDocumentsRequest request)
-        => request.Execute();
-
     /// <inheritdoc cref="GetDocumentRequest{T}.Execute"/>
     /// <param name="request">
     /// The request of the operation.
@@ -51,17 +44,7 @@ public static partial class FirestoreDatabase
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<TransactionResponse<GetDocumentRequest<T>, Document<T>>> GetDocument<T>(GetDocumentRequest<T> request)
-        where T : class => request.Execute();
-
-    /// <inheritdoc cref="GetDocumentsRequest{T}.Execute"/>
-    /// <param name="request">
-    /// The request of the operation.
-    /// </param>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
-    public static Task<TransactionResponse<GetDocumentsRequest<T>, BatchGetDocuments<T>>> GetDocuments<T>(GetDocumentsRequest<T> request)
+    public static Task<TransactionResponse<GetDocumentRequest<T>, GetDocumentResult<T>>> GetDocument<T>(GetDocumentRequest<T> request)
         where T : class => request.Execute();
 
     /// <inheritdoc cref="ListCollectionsRequest.Execute"/>
@@ -92,15 +75,5 @@ public static partial class FirestoreDatabase
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
     public static Task<TransactionResponse<WriteDocumentRequest<T>>> WriteDocument<T>(WriteDocumentRequest<T> request)
-        where T : class => request.Execute();
-
-    /// <inheritdoc cref="WriteDocumentsRequest{T}.Execute"/>
-    /// <param name="request">
-    /// The request of the operation.
-    /// </param>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
-    public static Task<TransactionResponse<WriteDocumentsRequest<T>>> WriteDocuments<T>(WriteDocumentsRequest<T> request)
         where T : class => request.Execute();
 }

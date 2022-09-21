@@ -7,6 +7,7 @@ using RestfulFirebase.FirestoreDatabase.Models;
 using System.IO;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System.Collections.Generic;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -21,9 +22,19 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
     public Document? Document { get; set; }
 
     /// <summary>
+    /// Gets or sets the requested <see cref="Models.Document"/> of the document node.
+    /// </summary>
+    public IEnumerable<Document>? Documents { get; set; }
+
+    /// <summary>
     /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
+    /// </summary>
+    public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -38,15 +49,17 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
     /// <see cref="TransactionRequest.Config"/> is a null reference.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// <see cref="Document"/> and
-    /// <see cref="DocumentReference"/> is a null reference.
+    /// <see cref="Document"/>
+    /// <see cref="Documents"/>
+    /// <see cref="DocumentReference"/> and
+    /// <see cref="DocumentReferences"/> is a null reference.
     /// </exception>
     internal override async Task<TransactionResponse<DeleteDocumentRequest>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        if (Document == null && DocumentReference == null)
+        if (Document == null && Documents == null && DocumentReference == null && DocumentReferences == null)
         {
-            throw new ArgumentException($"Both {nameof(Document)} and {nameof(DocumentReference)} is a null reference. Provide at least one argument.");
+            throw new ArgumentException($"{nameof(Document)}, {nameof(Documents)}, {nameof(DocumentReference)} and {nameof(DocumentReferences)} are null references. Provide at least one argument.");
         }
 
         try
@@ -64,12 +77,32 @@ public class DeleteDocumentRequest : FirestoreDatabaseRequest<TransactionRespons
                 writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
                 writer.WriteEndObject();
             }
+            if (Documents != null)
+            {
+                foreach (var document in Documents)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
+            }
             if (DocumentReference != null)
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("delete");
                 writer.WriteStringValue(DocumentReference.BuildUrlCascade(Config.ProjectId));
                 writer.WriteEndObject();
+            }
+            if (DocumentReferences != null)
+            {
+                foreach (var reference in DocumentReferences)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
             }
             writer.WriteEndArray();
             if (Transaction != null)

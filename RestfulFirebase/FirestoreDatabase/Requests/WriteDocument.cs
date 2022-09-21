@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System.Collections.Generic;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -25,9 +26,14 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the existing <see cref="Document{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> to populate the document fields.
     /// </summary>
     public Document<T>? Document { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="Document{T}"/> to populate the document fields.
+    /// </summary>
+    public IEnumerable<Document<T>>? Documents { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -39,14 +45,20 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Document"/> is a null reference.
+    /// <see cref="TransactionRequest.Config"/> is a null reference.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <see cref="Document"/> and
+    /// <see cref="Documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<WriteDocumentRequest<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Document);
+        if (Document == null && Documents == null)
+        {
+            throw new ArgumentException($"Both {nameof(Document)} and {nameof(Documents)} is a null reference. Provide at least one argument.");
+        }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
@@ -58,24 +70,52 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
             writer.WriteStartObject();
             writer.WritePropertyName("writes");
             writer.WriteStartArray();
-            if (Document.Model != null)
+            if (Document != null)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("update");
-                writer.WriteStartObject();
-                writer.WritePropertyName("name");
-                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
-                writer.WritePropertyName("fields");
-                PopulateDocument(Config, writer, Document.Model, null, jsonSerializerOptions);
-                writer.WriteEndObject();
-                writer.WriteEndObject();
+                if (Document.Model != null)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("update");
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("name");
+                    writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WritePropertyName("fields");
+                    PopulateDocument(Config, writer, Document.Model, null, jsonSerializerOptions);
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
             }
-            else
+            if (Documents != null)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("delete");
-                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
-                writer.WriteEndObject();
+                foreach (var document in Documents)
+                {
+                    if (document.Model != null)
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("update");
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("name");
+                        writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                        writer.WritePropertyName("fields");
+                        PopulateDocument(Config, writer, document.Model, null, jsonSerializerOptions);
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+                    }
+                    else
+                    {
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("delete");
+                        writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                        writer.WriteEndObject();
+                    }
+                }
             }
             writer.WriteEndArray();
             if (Transaction != null)
@@ -90,7 +130,6 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
             await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
 
             return new(this, null);
-
         }
         catch (Exception ex)
         {
