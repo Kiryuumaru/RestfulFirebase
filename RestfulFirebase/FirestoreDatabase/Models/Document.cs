@@ -2,6 +2,7 @@
 using ObservableHelpers.ComponentModel.Enums;
 using RestfulFirebase.FirestoreDatabase.References;
 using System;
+using System.Reflection;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 /// <summary>
@@ -40,14 +41,6 @@ public partial class Document
 
     #region Initializers
 
-    internal Document(string name, DocumentReference reference, DateTimeOffset createTime, DateTimeOffset updateTime)
-    {
-        this.name = name;
-        this.reference = reference;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-    }
-
     /// <summary>
     /// Creates an instance of <see cref="Document{T}"/>.
     /// </summary>
@@ -63,7 +56,15 @@ public partial class Document
 
     #region Methods
 
+    internal virtual object? GetModel()
+    {
+        return null;
+    }
 
+    internal virtual void SetModel(object? obj)
+    {
+        return;
+    }
 
     #endregion
 }
@@ -89,12 +90,6 @@ public partial class Document<T> : Document
 
     #region Initializers
 
-    internal Document(string name, DocumentReference reference, T model, DateTimeOffset createTime, DateTimeOffset updateTime)
-        : base(name, reference, createTime, updateTime)
-    {
-        this.model = model;
-    }
-
     /// <summary>
     /// Creates an instance of <see cref="Document{T}"/>.
     /// </summary>
@@ -114,7 +109,26 @@ public partial class Document<T> : Document
 
     #region Methods
 
+    internal override object? GetModel()
+    {
+        return Model;
+    }
 
+    internal override void SetModel(object? obj)
+    {
+        if (obj == null)
+        {
+            Model = null;
+        }
+        else if (obj is T typedObj)
+        {
+            Model = typedObj;
+        }
+        else
+        {
+            throw new ArgumentException($"Mismatch type of {nameof(obj)} and {typeof(T)}");
+        }
+    }
 
     #endregion
 }

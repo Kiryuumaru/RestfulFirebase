@@ -28,22 +28,22 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> documents.
+    /// Gets or sets the requested <see cref="Document{T}"/> documents to get and patch.
     /// </summary>
     public Document<T>? Document { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> documents.
+    /// Gets or sets the requested <see cref="Document{T}"/> documents to get and patch.
     /// </summary>
     public IEnumerable<Document<T>>? Documents { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
+    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node to get.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
+    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node to get.
     /// </summary>
     public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
 
@@ -63,7 +63,7 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// <see cref="Document"/>
     /// <see cref="Documents"/>
     /// <see cref="DocumentReference"/> and
-    /// <see cref="DocumentReferences"/> is a null reference.
+    /// <see cref="DocumentReferences"/> are a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentRequest<T>, GetDocumentResult<T>>> Execute()

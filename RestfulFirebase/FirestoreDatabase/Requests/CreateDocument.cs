@@ -73,7 +73,7 @@ public class CreateDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResp
 
             writer.WriteStartObject();
             writer.WritePropertyName("fields");
-            PopulateDocument(Config, writer, Model, null, jsonSerializerOptions);
+            PopulateDocument<T>(Config, writer, Model, null, jsonSerializerOptions);
             writer.WriteEndObject();
 
             await writer.FlushAsync();

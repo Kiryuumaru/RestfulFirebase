@@ -233,8 +233,13 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? ParseDocument<T>(DocumentReference? reference, T? obj, Document<T>? document, ObjectEnumerator jsonElementEnumerator, JsonSerializerOptions jsonSerializerOptions)
-        where T : class
+    internal static Document? ParseDocument(
+        DocumentReference? reference,
+        Type objType,
+        object? obj,
+        Document? document,
+        ObjectEnumerator jsonElementEnumerator,
+        JsonSerializerOptions jsonSerializerOptions)
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
@@ -513,13 +518,14 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         string? name = default;
         DateTimeOffset? createTime = default;
         DateTimeOffset? updateTime = default;
-        Type objType = typeof(T);
-        obj ??= document?.Model ?? Activator.CreateInstance<T>();
+        obj ??= document?.GetModel() ?? Activator.CreateInstance(objType);
 
-        if (document != null)
+        if (obj == null)
         {
-            document.Model = obj;
+            throw new Exception($"Failed to create instance of {nameof(objType)}");
         }
+
+        document?.SetModel(obj);
 
         foreach (var documentProperty in jsonElementEnumerator)
         {
@@ -563,17 +569,24 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             createTime.HasValue &&
             updateTime.HasValue)
         {
-            if (document != null)
+            if (document == null)
             {
-                document.Name = name;
-                document.Reference = reference;
-                document.CreateTime = createTime.Value;
-                document.UpdateTime = updateTime.Value;
+                Type genericDefinition = typeof(Document<>);
+                Type genericType = genericDefinition.MakeGenericType(objType);
+                document = (Document?)Activator.CreateInstance(genericType, new object[] { reference, obj });
+
+                if (document == null)
+                {
+                    throw new Exception($"Failed to create instance of {nameof(genericType)}");
+                }
+
+                document.SetModel(obj);
             }
-            else
-            {
-                document = new Document<T>(name, reference, obj, createTime.Value, updateTime.Value);
-            }
+
+            document.Name = name;
+            document.Reference = reference;
+            document.CreateTime = createTime.Value;
+            document.UpdateTime = updateTime.Value;
         }
 
         return document;
@@ -582,8 +595,13 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    internal static void PopulateDocument<T>(FirebaseConfig config, Utf8JsonWriter writer, T? obj, Document<T>? document, JsonSerializerOptions jsonSerializerOptions)
-        where T : class
+    internal static void PopulateDocument(
+        FirebaseConfig config,
+        Utf8JsonWriter writer,
+        Type objType,
+        object? obj,
+        Document? document,
+        JsonSerializerOptions jsonSerializerOptions)
     {
         JsonNamingPolicy? jsonNamingPolicy = jsonSerializerOptions.PropertyNamingPolicy ?? DefaultJsonSerializerOption.PropertyNamingPolicy;
 
@@ -1210,8 +1228,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
             }
         }
 
-        Type objType = typeof(T);
-        obj ??= document?.Model;
+        obj ??= document?.GetModel();
 
         if (obj == null)
         {
@@ -1259,5 +1276,37 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
                     writer.WriteEndObject();
                 });
         }
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static Document<T>? ParseDocument<T>(
+        DocumentReference? reference,
+        T? obj,
+        Document? document,
+        ObjectEnumerator jsonElementEnumerator,
+        JsonSerializerOptions jsonSerializerOptions)
+        where T : class
+    {
+        Document? newDocument = ParseDocument(reference, typeof(T), obj, document, jsonElementEnumerator, jsonSerializerOptions);
+        if (newDocument is Document<T> typedDocument)
+        {
+            return typedDocument;
+        }
+        return null;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static void PopulateDocument<T>(
+        FirebaseConfig config,
+        Utf8JsonWriter writer,
+        object? obj,
+        Document? document,
+        JsonSerializerOptions jsonSerializerOptions)
+    {
+        PopulateDocument(config, writer, typeof(T), obj, document, jsonSerializerOptions);
     }
 }

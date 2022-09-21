@@ -8,17 +8,15 @@ using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using System.Collections.Generic;
+using RestfulFirebase.FirestoreDatabase.References;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
 /// <summary>
 /// Request to patch the <see cref="Document{T}"/> of the specified request query.
 /// </summary>
-/// <typeparam name="T">
-/// The type of the model to populate the document fields.
-/// </typeparam>
-public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResponse<WriteDocumentRequest<T>>>
-    where T : class
+public abstract class BaseWriteDocumentRequest<TDocument> : FirestoreDatabaseRequest<TransactionResponse<BaseWriteDocumentRequest<TDocument>>>
+    where TDocument : Document
 {
     /// <summary>
     /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
@@ -26,14 +24,34 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
     /// </summary>
-    public Document<T>? Document { get; set; }
+    public TDocument? PatchDocument { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> to populate the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
     /// </summary>
-    public IEnumerable<Document<T>>? Documents { get; set; }
+    public IEnumerable<TDocument>? PatchDocuments { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document fields.
+    /// </summary>
+    public TDocument? DeleteDocument { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document fields.
+    /// </summary>
+    public IEnumerable<TDocument>? DeleteDocuments { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node to delete.
+    /// </summary>
+    public DocumentReference? DeleteDocumentReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the requested <see cref="DocumentReference"/> of the document node to delete.
+    /// </summary>
+    public IEnumerable<DocumentReference>? DeleteDocumentReferences { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -48,16 +66,25 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
     /// <see cref="TransactionRequest.Config"/> is a null reference.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// <see cref="Document"/> and
-    /// <see cref="Documents"/> is a null reference.
+    /// <see cref="PatchDocument"/>,
+    /// <see cref="PatchDocuments"/>,
+    /// <see cref="DeleteDocument"/>,
+    /// <see cref="DeleteDocuments"/>,
+    /// <see cref="DeleteDocumentReference"/> and
+    /// <see cref="DeleteDocumentReferences"/> are a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<TransactionResponse<WriteDocumentRequest<T>>> Execute()
+    internal override async Task<TransactionResponse<BaseWriteDocumentRequest<TDocument>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        if (Document == null && Documents == null)
+        if (PatchDocument == null &&
+            PatchDocuments == null &&
+            DeleteDocument == null &&
+            DeleteDocuments == null &&
+            DeleteDocumentReference == null &&
+            DeleteDocumentReferences == null)
         {
-            throw new ArgumentException($"Both {nameof(Document)} and {nameof(Documents)} is a null reference. Provide at least one argument.");
+            throw new ArgumentException($"All {nameof(PatchDocument)}, {nameof(PatchDocuments)}, {nameof(DeleteDocument)}, {nameof(DeleteDocuments)}, {nameof(DeleteDocumentReference)} and {nameof(DeleteDocumentReferences)} are a null reference. Provide at least one argument.");
         }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
@@ -70,17 +97,17 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
             writer.WriteStartObject();
             writer.WritePropertyName("writes");
             writer.WriteStartArray();
-            if (Document != null)
+            if (PatchDocument != null)
             {
-                if (Document.Model != null)
+                if (PatchDocument.GetModel() is object obj)
                 {
                     writer.WriteStartObject();
                     writer.WritePropertyName("update");
                     writer.WriteStartObject();
                     writer.WritePropertyName("name");
-                    writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteStringValue(PatchDocument.Reference.BuildUrlCascade(Config.ProjectId));
                     writer.WritePropertyName("fields");
-                    PopulateDocument(Config, writer, Document.Model, null, jsonSerializerOptions);
+                    PopulateDocument(Config, writer, obj.GetType(), obj, PatchDocument, jsonSerializerOptions);
                     writer.WriteEndObject();
                     writer.WriteEndObject();
                 }
@@ -88,15 +115,15 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                 {
                     writer.WriteStartObject();
                     writer.WritePropertyName("delete");
-                    writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteStringValue(PatchDocument.Reference.BuildUrlCascade(Config.ProjectId));
                     writer.WriteEndObject();
                 }
             }
-            if (Documents != null)
+            if (PatchDocuments != null)
             {
-                foreach (var document in Documents)
+                foreach (var document in PatchDocuments)
                 {
-                    if (document.Model != null)
+                    if (document.GetModel() is object obj)
                     {
                         writer.WriteStartObject();
                         writer.WritePropertyName("update");
@@ -104,7 +131,7 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                         writer.WritePropertyName("name");
                         writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
                         writer.WritePropertyName("fields");
-                        PopulateDocument(Config, writer, document.Model, null, jsonSerializerOptions);
+                        PopulateDocument(Config, writer, obj.GetType(), obj, document, jsonSerializerOptions);
                         writer.WriteEndObject();
                         writer.WriteEndObject();
                     }
@@ -115,6 +142,40 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                         writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
                         writer.WriteEndObject();
                     }
+                }
+            }
+            if (DeleteDocument != null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("delete");
+                writer.WriteStringValue(DeleteDocument.Reference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteEndObject();
+            }
+            if (DeleteDocuments != null)
+            {
+                foreach (var document in DeleteDocuments)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
+                }
+            }
+            if (DeleteDocumentReference != null)
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName("delete");
+                writer.WriteStringValue(DeleteDocumentReference.BuildUrlCascade(Config.ProjectId));
+                writer.WriteEndObject();
+            }
+            if (DeleteDocumentReferences != null)
+            {
+                foreach (var reference in DeleteDocumentReferences)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("delete");
+                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
+                    writer.WriteEndObject();
                 }
             }
             writer.WriteEndArray();
@@ -145,4 +206,21 @@ public class WriteDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespo
             $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
             $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":commit")}";
     }
+}
+
+/// <summary>
+/// Request to patch the <see cref="Document{T}"/> of the specified request query.
+/// </summary>
+public class WriteDocumentRequest : BaseWriteDocumentRequest<Document>
+{
+
+}
+
+/// <summary>
+/// Request to patch the <see cref="Document{T}"/> of the specified request query.
+/// </summary>
+public class WriteDocumentRequest<T> : BaseWriteDocumentRequest<Document<T>>
+    where T : class
+{
+
 }
