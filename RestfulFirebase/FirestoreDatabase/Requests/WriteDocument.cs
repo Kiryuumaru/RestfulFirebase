@@ -34,12 +34,12 @@ public abstract class BaseWriteDocumentRequest<TDocument> : FirestoreDatabaseReq
     public IEnumerable<TDocument>? PatchDocuments { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document.
     /// </summary>
     public TDocument? DeleteDocument { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document fields.
+    /// Gets or sets the requested <see cref="Document{T}"/> to delete the document.
     /// </summary>
     public IEnumerable<TDocument>? DeleteDocuments { get; set; }
 
