@@ -51,7 +51,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
     {
         var client = HttpClient ?? new HttpClient();
 
-        if (Authorization is Common.Models.Authorization accessTokenType)
+        if (Authorization is Common.Models.AccessTokenAuthorization accessTokenType)
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenType.Token);
         }
