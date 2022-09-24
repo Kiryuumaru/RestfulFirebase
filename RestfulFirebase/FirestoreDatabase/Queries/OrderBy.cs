@@ -57,20 +57,12 @@ public class OrderBy
         return orders.AsReadOnly();
     }
 
-    internal static string BuildAsQueryParameter<[DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.NonPublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] T>(IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
+    internal static string BuildAsQueryParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
     {
         return BuildAsQueryParameter(typeof(T), orderBy, jsonSerializerOptions);
     }
 
-    internal static string BuildAsQueryParameter([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.NonPublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] Type objType, IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
+    internal static string BuildAsQueryParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
     {
         PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);

@@ -23,9 +23,7 @@ public static class EnumExtensions
     /// <returns>
     /// The converted string of <paramref name="value"/>.
     /// </returns>
-    public static string? ToEnumString<[DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] T>(this T value)
+    public static string? ToEnumString<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this T value)
     {
         if (value == null)
         {

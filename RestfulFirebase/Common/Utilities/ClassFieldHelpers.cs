@@ -47,11 +47,7 @@ internal class ClassMemberHelpers
         return $"{char.ToLower(propertyName[0], CultureInfo.InvariantCulture)}{propertyName[1..]}";
     }
 
-    public static PropertyInfo? GetPropertyInfo([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.NonPublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] Type objType, string documentFieldName, JsonSerializerOptions? jsonSerializerOptions)
+    public static PropertyInfo? GetPropertyInfo([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, string documentFieldName, JsonSerializerOptions? jsonSerializerOptions)
     {
         PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -132,12 +128,7 @@ internal class ClassMemberHelpers
         return null;
     }
 
-    public static TypedDocumentFieldPair? GetDocumentField(
-        [DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.NonPublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] Type objType, Type? propertyType, string propertyName, JsonSerializerOptions? jsonSerializerOptions)
+    public static TypedDocumentFieldPair? GetDocumentField([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, Type? propertyType, string propertyName, JsonSerializerOptions? jsonSerializerOptions)
     {
         PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -218,13 +209,25 @@ internal class ClassMemberHelpers
         return fromProperty;
     }
 
-    public static TypedDocumentFieldPair[] GetDocumentFieldPath(
-        [DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.NonPublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields |
-        DynamicallyAccessedMemberTypes.NonPublicFields)] Type objType, Type? propertyType, string[] propertyNamePath, JsonSerializerOptions? jsonSerializerOptions)
+    public static TypedDocumentFieldPair[] GetDocumentFieldPath([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, Type? propertyType, string[] propertyNamePath, JsonSerializerOptions? jsonSerializerOptions)
     {
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] static Type? getDictionaryValueType(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
+        {
+            var dictionaryInterfaceType = type.GetInterfaces().FirstOrDefault(i =>
+                i.IsGenericType &&
+                i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
+
+            if (dictionaryInterfaceType != null)
+            {
+                Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
+
+                return dictionaryGenericArgsType[1];
+            }
+
+            return null;
+        }
+
         if (!propertyNamePath.Any())
         {
             throw new ArgumentException($"{propertyNamePath} is empty.");
@@ -235,25 +238,33 @@ internal class ClassMemberHelpers
         Type currentType = objType;
         for (int i = 0; i < propertyNamePath.Length; i++)
         {
-            if (i >= propertyNamePath.Length - 1)
+            if (getDictionaryValueType(currentType) is Type dictionaryValueType)
             {
-                var documentField = GetDocumentField(currentType, propertyType, propertyNamePath[i], jsonSerializerOptions);
-                if (documentField == null)
-                {
-                    throw new ArgumentException($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
-                }
-                documentFields.Add(documentField);
-                currentType = documentField.Type;
+                documentFields.Add(new TypedDocumentFieldPair(dictionaryValueType, propertyNamePath[i]));
+                currentType = dictionaryValueType;
             }
             else
             {
-                var documentField = GetDocumentField(currentType, null, propertyNamePath[i], jsonSerializerOptions);
-                if (documentField == null)
+                if (i >= propertyNamePath.Length - 1)
                 {
-                    throw new ArgumentException($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
+                    var documentField = GetDocumentField(currentType, propertyType, propertyNamePath[i], jsonSerializerOptions);
+                    if (documentField == null)
+                    {
+                        throw new ArgumentException($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
+                    }
+                    documentFields.Add(documentField);
+                    currentType = documentField.Type;
                 }
-                documentFields.Add(documentField);
-                currentType = documentField.Type;
+                else
+                {
+                    var documentField = GetDocumentField(currentType, null, propertyNamePath[i], jsonSerializerOptions);
+                    if (documentField == null)
+                    {
+                        throw new ArgumentException($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
+                    }
+                    documentFields.Add(documentField);
+                    currentType = documentField.Type;
+                }
             }
         }
 

@@ -13,8 +13,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
 {
     readonly TItemConverter itemConverter = new();
 
-    public override bool CanConvert([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.Interfaces)] Type typeToConvert)
+    public override bool CanConvert([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert)
     {
         var (itemType, _, _) = GetItemType(typeToConvert);
 
@@ -26,9 +25,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
         return itemConverter.CanConvert(itemType);
     }
 
-    public override JsonConverter? CreateConverter([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.Interfaces |
-        DynamicallyAccessedMemberTypes.PublicConstructors)] Type typeToConvert, JsonSerializerOptions options)
+    public override JsonConverter? CreateConverter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type typeToConvert, JsonSerializerOptions options)
     {
         var (itemType, isArray, isSet) = GetItemType(typeToConvert);
         if (itemType == null)
@@ -64,8 +61,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
         return (JsonConverter?)Activator.CreateInstance(typeof(EnumerableItemConverterDecorator<,>).MakeGenericType(typeof(TItemConverter), typeToConvert, itemType), new object[] { options, itemConverter });
     }
 
-    static (Type? Type, bool IsArray, bool isSet) GetItemType([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.Interfaces)] Type type)
+    static (Type? Type, bool IsArray, bool isSet) GetItemType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
         // Quick reject for performance
         // Dictionary is not implemented. 
@@ -190,8 +186,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
 
 internal static class TypeExtensions
 {
-    public static IEnumerable<Type> GetInterfacesAndSelf([DynamicallyAccessedMembers(
-        DynamicallyAccessedMemberTypes.Interfaces)] this Type type)
+    public static IEnumerable<Type> GetInterfacesAndSelf([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] this Type type)
     {
         return (type ?? throw new ArgumentNullException(nameof(type))).IsInterface ?
             new[] { type }.Concat(type.GetInterfaces()) :

@@ -7,11 +7,7 @@ namespace RestfulFirebase.Common.Internals;
 
 internal class TypedDocumentFieldPair
 {
-    [DynamicallyAccessedMembers(
-            DynamicallyAccessedMemberTypes.PublicProperties |
-            DynamicallyAccessedMemberTypes.NonPublicProperties |
-            DynamicallyAccessedMemberTypes.PublicFields |
-            DynamicallyAccessedMemberTypes.NonPublicFields)]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public Type Type { get; }
 
     public string DocumentFieldName { get; }
