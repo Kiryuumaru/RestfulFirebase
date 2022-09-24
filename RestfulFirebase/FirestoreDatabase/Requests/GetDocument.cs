@@ -30,22 +30,7 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// <summary>
     /// Gets or sets the requested <see cref="Document{T}"/> documents to get and patch.
     /// </summary>
-    public Document<T>? Document { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="Document{T}"/> documents to get and patch.
-    /// </summary>
-    public IEnumerable<Document<T>>? Documents { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node to get.
-    /// </summary>
-    public DocumentReference? DocumentReference { get; set; }
-
-    /// <summary>
-    /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node to get.
-    /// </summary>
-    public IEnumerable<DocumentReference>? DocumentReferences { get; set; }
+    public Document<T>.Builder? Document { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -57,65 +42,42 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="GetDocumentResult{T}"/>.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <see cref="TransactionRequest.Config"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <see cref="Document"/>
-    /// <see cref="Documents"/>
-    /// <see cref="DocumentReference"/> and
-    /// <see cref="DocumentReferences"/> are a null reference.
+    /// <see cref="TransactionRequest.Config"/> and
+    /// <see cref="Document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<GetDocumentRequest<T>, GetDocumentResult<T>>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        if (Document == null && Documents == null && DocumentReference == null && DocumentReferences == null)
-        {
-            throw new ArgumentException($"{nameof(Document)}, {nameof(Documents)}, {nameof(DocumentReference)} and {nameof(DocumentReferences)} are null references. Provide at least one argument.");
-        }
+        ArgumentNullException.ThrowIfNull(Document);
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("documents");
+        writer.WriteStartArray();
+        if (Document != null)
+        {
+            foreach (var document in Document.Documents)
+            {
+                writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
+            }
+        }
+        writer.WriteEndArray();
+        if (Transaction != null)
+        {
+            writer.WritePropertyName("transaction");
+            writer.WriteStringValue(Transaction.Token);
+        }
+        writer.WriteEndObject();
+
+        await writer.FlushAsync();
+
         try
         {
-            using MemoryStream stream = new();
-            Utf8JsonWriter writer = new(stream);
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("documents");
-            writer.WriteStartArray();
-            if (Document != null)
-            {
-                writer.WriteStringValue(Document.Reference.BuildUrlCascade(Config.ProjectId));
-            }
-            if (DocumentReference != null)
-            {
-                writer.WriteStringValue(DocumentReference.BuildUrlCascade(Config.ProjectId));
-            }
-            if (Documents != null)
-            {
-                foreach (var document in Documents)
-                {
-                    writer.WriteStringValue(document.Reference.BuildUrlCascade(Config.ProjectId));
-                }
-            }
-            if (DocumentReferences != null)
-            {
-                foreach (var reference in DocumentReferences)
-                {
-                    writer.WriteStringValue(reference.BuildUrlCascade(Config.ProjectId));
-                }
-            }
-            writer.WriteEndArray();
-            if (Transaction != null)
-            {
-                writer.WritePropertyName("transaction");
-                writer.WriteStringValue(Transaction.Token);
-            }
-            writer.WriteEndObject();
-
-            await writer.FlushAsync();
-
             var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
@@ -134,31 +96,25 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
                     if (doc.TryGetProperty("found", out JsonElement foundProperty))
                     {
                         if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                            ParseDocumentReference(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
+                            DocumentReference.Parse(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
                         {
                             documentReference = docRef;
 
                             if (Document != null &&
-                                Document.Reference.Equals(docRef))
-                            {
-                                document = Document;
-                                model = Document.Model;
-                            }
-                            else if (Documents != null &&
-                                Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                                Document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
                             {
                                 document = foundDocument;
                                 model = foundDocument.Model;
                             }
                         }
 
-                        if (ParseDocument(documentReference, model, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                        if (Document<T>.Parse(documentReference, model, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                         {
                             foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
                         }
                     }
                     else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
-                        ParseDocumentReference(missingProperty, jsonSerializerOptions) is DocumentReference missing)
+                        DocumentReference.Parse(missingProperty, jsonSerializerOptions) is DocumentReference missing)
                     {
                         missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
                     }

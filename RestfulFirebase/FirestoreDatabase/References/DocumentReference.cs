@@ -1,4 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
@@ -23,6 +26,45 @@ public class DocumentReference : Reference
     #endregion
 
     #region Initializers
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static DocumentReference? Parse(string? json)
+    {
+        if (json != null && !string.IsNullOrEmpty(json))
+        {
+            string[] paths = json.Split('/');
+            object currentPath = Api.FirestoreDatabase.Collection(paths[5]);
+
+            for (int i = 6; i < paths.Length; i++)
+            {
+                if (currentPath is CollectionReference colPath)
+                {
+                    currentPath = colPath.Document(paths[i]);
+                }
+                else if (currentPath is DocumentReference docPath)
+                {
+                    currentPath = docPath.Collection(paths[i]);
+                }
+            }
+
+            if (currentPath is DocumentReference documentReference)
+            {
+                return documentReference;
+            }
+        }
+
+        return null;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static DocumentReference? Parse(JsonElement jsonElement, JsonSerializerOptions jsonSerializerOptions)
+    {
+        return Parse(jsonElement.Deserialize<string>(jsonSerializerOptions));
+    }
 
     internal DocumentReference(CollectionReference parent, string documentId)
     {

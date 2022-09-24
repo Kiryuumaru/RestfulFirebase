@@ -1,7 +1,9 @@
-﻿using RestfulFirebase.Common.Utilities;
+﻿using RestfulFirebase.Common.Attributes;
+using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 
@@ -55,27 +57,49 @@ public class OrderBy
         return orders.AsReadOnly();
     }
 
-    internal static string BuildAsQueryParameter(Type objType, IEnumerable<OrderBy> orderBy, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonNamingPolicy? jsonNamingPolicy)
+    internal static string BuildAsQueryParameter<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicProperties |
+        DynamicallyAccessedMemberTypes.NonPublicProperties |
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.NonPublicFields)] T>(IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
+    {
+        return BuildAsQueryParameter(typeof(T), orderBy, jsonSerializerOptions);
+    }
+
+    internal static string BuildAsQueryParameter([DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicProperties |
+        DynamicallyAccessedMemberTypes.NonPublicProperties |
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.NonPublicFields)] Type objType, IEnumerable<OrderBy> orderBy, JsonSerializerOptions? jsonSerializerOptions)
+    {
+        PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
+
+        return BuildAsQueryParameter(objType, orderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions);
+    }
+
+    internal static string BuildAsQueryParameter(Type objType, IEnumerable<OrderBy> orderBy, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonSerializerOptions? jsonSerializerOptions)
     {
         List<string> orderByQuery = new();
 
         foreach (var order in orderBy)
         {
-            orderByQuery.Add($"{order.GetDocumentFieldName(objType, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonNamingPolicy)} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");
+            orderByQuery.Add($"{order.GetDocumentFieldName(objType, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions)} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");
         }
 
         return string.Join(",", orderByQuery);
     }
 
-    internal string GetDocumentFieldName(Type objType, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonNamingPolicy? jsonNamingPolicy)
+    internal string GetDocumentFieldName(Type objType, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonSerializerOptions? jsonSerializerOptions)
     {
-        string? documentFieldName = ClassMemberHelpers.GetDocumentFieldName(propertyInfos, fieldInfos, includeOnlyWithAttribute, PropertyName, jsonNamingPolicy);
+        var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, PropertyName, jsonSerializerOptions);
 
-        if (documentFieldName == null)
+        if (documentField == null)
         {
             throw new ArgumentException($"OrderBy property name {PropertyName} does not exist in the model {objType.Name}.");
         }
 
-        return documentFieldName;
+        return documentField.DocumentFieldName;
     }
 }

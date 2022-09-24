@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -22,15 +23,16 @@ public static class EnumExtensions
     /// <returns>
     /// The converted string of <paramref name="value"/>.
     /// </returns>
-    public static string? ToEnumString<T>(this T value)
+    public static string? ToEnumString<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.NonPublicFields)] T>(this T value)
     {
         if (value == null)
         {
             ArgumentNullException.ThrowIfNull(value);
         }
-        var enumType = typeof(T);
-        var name = Enum.GetName(enumType, value);
-        var enumMemberAttribute = ((EnumMemberAttribute[])enumType.GetTypeInfo().DeclaredFields.First(f => f.Name == name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).Single();
+        var name = Enum.GetName(typeof(T), value);
+        var enumMemberAttribute = ((EnumMemberAttribute[])typeof(T).GetTypeInfo().DeclaredFields.First(f => f.Name == name).GetCustomAttributes(typeof(EnumMemberAttribute), true)).Single();
 
         return enumMemberAttribute.Value;
     }

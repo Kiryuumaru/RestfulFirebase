@@ -59,29 +59,29 @@ public class CreateDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResp
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
+        QueryBuilder qb = new();
+        if (DocumentId != null)
+        {
+            qb.Add("documentId", DocumentId);
+        }
+        string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
+
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("fields");
+        ModelHelpers.BuildUtf8JsonWriter(Config, writer, Model, null, jsonSerializerOptions);
+        writer.WriteEndObject();
+
+        await writer.FlushAsync();
+
         try
         {
-            QueryBuilder qb = new();
-            if (DocumentId != null)
-            {
-                qb.Add("documentId", DocumentId);
-            }
-            string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
-
-            using MemoryStream stream = new();
-            Utf8JsonWriter writer = new(stream);
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("fields");
-            PopulateDocument<T>(Config, writer, Model, null, jsonSerializerOptions);
-            writer.WriteEndObject();
-
-            await writer.FlushAsync();
-
             var response = await ExecuteWithContent(stream, HttpMethod.Post, url);
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = ParseDocument(null, Model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            var parsedDocument = Document<T>.Parse(null, Model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
 
             return new(this, parsedDocument, null);
         }

@@ -8,12 +8,13 @@ using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System.Threading.Tasks;
+using RestfulFirebase.FirestoreDatabase.Transform;
 
 namespace RestfulFirebase.UnitTest;
 
 public class FirestoreDatabaseTest
 {
-    private async Task Cleanup(FirebaseConfig config, CollectionReference collectionReference)
+    private static async Task Cleanup(FirebaseConfig config, CollectionReference collectionReference)
     {
         var oldDataList = await Api.FirestoreDatabase.ListDocuments(new ListDocumentsRequest<NormalMVVMModel>()
         {
@@ -36,69 +37,101 @@ public class FirestoreDatabaseTest
         var cleanups = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             Config = config,
-            DeleteDocuments = oldDocs
+            DeleteDocument = oldDocs
         });
         cleanups.ThrowIfError();
     }
 
     [Fact]
-    public async void WriteGetAndDeleteDocumentMVVMModelTest()
+    public async void TransformGetAndDeleteModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         CollectionReference testCollectionReference = Api.FirestoreDatabase
             .Collection("public")
             .Document(nameof(FirestoreDatabaseTest))
-            .Collection(nameof(WriteGetAndDeleteDocumentMVVMModelTest));
+            .Collection(nameof(TransformGetAndDeleteModelTest));
 
         await Cleanup(config, testCollectionReference);
 
         DocumentReference model1Reference = testCollectionReference.Document("model1");
 
-        MVVMModelWithIncludeOnlyAttribute writeTest1Model1 = new()
+        Document<IncrementableModel> writeTest1Model1 = model1Reference.Create(new IncrementableModel()
         {
-            Val1 = "test val 1",
-            Val2 = "test val 2",
-            Val3 = "test val 3",
-        };
-        MVVMModelWithIncludeOnlyAttribute writeTest1Model2 = new();
-        List<string?> modelPropertyChangedNames = new();
-        writeTest1Model2.PropertyChanged += (s, e) =>
-        {
-            modelPropertyChangedNames.Add(e.PropertyName);
-        };
+            Val1 = 1,
+            Val2 = 1,
+        });
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        Assert.NotNull(writeTest1Model1.Model);
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            PatchDocument = model1Reference.Create(writeTest1Model1),
+            PatchDocument = writeTest1Model1,
         });
-        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = writeTest1.Request.PatchDocument,
+            Document = writeTest1Model1,
         });
 
-        var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        var transformTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create(writeTest1Model2),
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Increment<IncrementableModel>(1, nameof(IncrementableModel.Val1)))
         });
-        Assert.NotNull(getTest1.Result);
-
-        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), modelPropertyChangedNames);
-        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), modelPropertyChangedNames);
-        Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), modelPropertyChangedNames);
-        Assert.NotEqual(writeTest1.Request.PatchDocument?.Model?.Val3, getTest1.Result.Found[0].Document.Model?.Val3);
-        Assert.NotNull(getTest1.Result.Found[0].Document.Model);
-        if (getTest1.Result.Found[0].Document.Model is MVVMModelWithIncludeOnlyAttribute model)
+        transformTest1.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
         {
-            model.Val3 = writeTest1.Request.PatchDocument?.Model?.Val3;
-        }
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest1.Result.Found[0].Document);
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(2, writeTest1Model1.Model.Val1);
+
+        var transformTest2 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Increment<IncrementableModel>(1.5, nameof(IncrementableModel.Val2)))
+        });
+        transformTest2.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(2.5, writeTest1Model1.Model.Val2);
+
+        var transformTest3 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Increment<IncrementableModel>(1, nameof(IncrementableModel.Val1))
+                    .Increment<IncrementableModel>(0.5, nameof(IncrementableModel.Val2)))
+        });
+        transformTest3.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(3, writeTest1Model1.Model.Val1);
+        Assert.Equal(3, writeTest1Model1.Model.Val2);
 
         await Cleanup(config, testCollectionReference);
 
@@ -117,52 +150,133 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void WriteGetAndDeleteDocumentMVVMDocumentTest()
+    public async void PatchGetAndDeleteDocumentMVVMModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         CollectionReference testCollectionReference = Api.FirestoreDatabase
             .Collection("public")
             .Document(nameof(FirestoreDatabaseTest))
-            .Collection(nameof(WriteGetAndDeleteDocumentMVVMDocumentTest));
+            .Collection(nameof(PatchGetAndDeleteDocumentMVVMModelTest));
 
         await Cleanup(config, testCollectionReference);
 
         DocumentReference model1Reference = testCollectionReference.Document("model1");
 
-        // Remove residual files
-        await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        Document<MVVMModelWithIncludeOnlyAttribute> writeTest1Model1 = model1Reference.Create(new MVVMModelWithIncludeOnlyAttribute()
         {
-            Config = config,
-            DeleteDocumentReference = model1Reference
+            Val1 = "test val 1",
+            Val2 = "test val 2",
+            Val3 = "test val 3",
         });
+        Document<MVVMModelWithIncludeOnlyAttribute> writeTest1Model2 = model1Reference.Create(new MVVMModelWithIncludeOnlyAttribute());
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        Assert.NotNull(writeTest1Model1.Model);
+        Assert.NotNull(writeTest1Model2.Model);
+
+        List<string?> modelPropertyChangedNames = new();
+        writeTest1Model2.Model.PropertyChanged += (s, e) =>
+        {
+            modelPropertyChangedNames.Add(e.PropertyName);
+        };
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            PatchDocument = model1Reference.Create(new MVVMModelWithIncludeOnlyAttribute()
-            {
-                Val1 = "test val 1",
-                Val2 = "test val 2",
-                Val3 = "test val 3",
-            }),
+            PatchDocument = writeTest1Model1,
         });
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = writeTest1.Request.PatchDocument,
+            Document = writeTest1Model1,
+        });
+
+        var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model2,
+        });
+        Assert.NotNull(getTest1.Result);
+
+        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val1), modelPropertyChangedNames);
+        Assert.Contains(nameof(MVVMModelWithIncludeOnlyAttribute.Val2), modelPropertyChangedNames);
+        Assert.DoesNotContain(nameof(MVVMModelWithIncludeOnlyAttribute.Val3), modelPropertyChangedNames);
+        Assert.NotEqual(writeTest1Model1.Model.Val3, getTest1.Result.Found[0].Document.Model?.Val3);
+        Assert.NotNull(getTest1.Result.Found[0].Document.Model);
+        if (getTest1.Result.Found[0].Document.Model is MVVMModelWithIncludeOnlyAttribute model)
+        {
+            model.Val3 = writeTest1Model1.Model.Val3;
+        }
+        Assert.Equivalent(writeTest1.Request.PatchDocument?.Documents[0], getTest1.Result.Found[0].Document);
+
+        await Cleanup(config, testCollectionReference);
+
+        var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = model1Reference.Create<NestedType>(),
+        });
+        Assert.NotNull(getTest2.Result);
+
+        Assert.Empty(getTest2.Result.Found);
+        Assert.NotEmpty(getTest2.Result.Missing);
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void PatchGetAndDeleteDocumentMVVMDocumentTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference testCollectionReference = Api.FirestoreDatabase
+            .Collection("public")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(PatchGetAndDeleteDocumentMVVMDocumentTest));
+
+        await Cleanup(config, testCollectionReference);
+
+        DocumentReference model1Reference = testCollectionReference.Document("model1");
+
+        Document<MVVMModelWithIncludeOnlyAttribute> writeTest1Model1 = model1Reference.Create(new MVVMModelWithIncludeOnlyAttribute()
+        {
+            Val1 = "test val 1",
+            Val2 = "test val 2",
+            Val3 = "test val 3",
+        });
+
+        // Remove residual files
+        await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            Config = config,
+            DeleteDocument = model1Reference
+        });
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            PatchDocument = writeTest1Model1,
+        });
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
         });
         Assert.NotNull(writeTest1.Request.PatchDocument);
 
         List<string?> documentPropertyChangedNames = new();
-        writeTest1.Request.PatchDocument.PropertyChanged += (s, e) =>
+        writeTest1Model1.PropertyChanged += (s, e) =>
         {
             documentPropertyChangedNames.Add(e.PropertyName);
         };
 
-        await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<MVVMModelWithIncludeOnlyAttribute>()
+        await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -178,7 +292,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = writeTest1.Request.PatchDocument,
+            Document = writeTest1Model1,
         });
         Assert.NotNull(getTest1.Result);
 
@@ -186,7 +300,7 @@ public class FirestoreDatabaseTest
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.Reference), documentPropertyChangedNames);
         Assert.DoesNotContain(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.CreateTime), documentPropertyChangedNames);
         Assert.Contains(nameof(Document<MVVMModelWithIncludeOnlyAttribute>.UpdateTime), documentPropertyChangedNames);
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest1.Result.Found[0].Document);
+        Assert.Equivalent(writeTest1.Request.PatchDocument?.Documents[0], getTest1.Result.Found[0].Document);
 
         await Cleanup(config, testCollectionReference);
 
@@ -205,37 +319,42 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void WriteGetAndDeleteDocumentModelTest()
+    public async void PatchGetAndDeleteDocumentModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         CollectionReference testCollectionReference = Api.FirestoreDatabase
             .Collection("public")
             .Document(nameof(FirestoreDatabaseTest))
-            .Collection(nameof(WriteGetAndDeleteDocumentModelTest));
+            .Collection(nameof(PatchGetAndDeleteDocumentModelTest));
 
         await Cleanup(config, testCollectionReference);
 
         DocumentReference model1Reference = testCollectionReference.Document("model1");
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NestedType>()
+        Document<NestedType> writeTest1ModelNull = model1Reference.Create<NestedType>();
+        Document<NestedType> writeTest1ModelEmpty = model1Reference.Create(NestedType.Empty());
+        Document<NestedType> writeTest1ModelFilled1 = model1Reference.Create(NestedType.Filled1());
+        Document<NestedType> writeTest1ModelFilled2 = model1Reference.Create(NestedType.Filled2());
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            PatchDocument = model1Reference.Create(NestedType.Filled1()),
+            PatchDocument = writeTest1ModelFilled1,
         });
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = writeTest1.Request.PatchDocument,
+            Document = writeTest1ModelEmpty,
         });
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create<NestedType>(),
+            Document = writeTest1ModelNull,
         });
         Assert.NotNull(getTest1.Result);
 
@@ -243,7 +362,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create(NestedType.Empty()),
+            Document = writeTest1ModelEmpty,
         });
         Assert.NotNull(getTest2.Result);
 
@@ -251,13 +370,13 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create(NestedType.Filled2()),
+            Document = writeTest1ModelFilled2,
         });
         Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest1.Result.Found[0].Document);
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest2.Result.Found[0].Document);
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest3.Result.Found[0].Document);
+        Assert.Equivalent(writeTest1ModelEmpty, getTest1.Result.Found[0].Document);
+        Assert.Equivalent(writeTest1ModelEmpty, getTest2.Result.Found[0].Document);
+        Assert.Equivalent(writeTest1ModelEmpty, getTest3.Result.Found[0].Document);
 
         await Cleanup(config, testCollectionReference);
 
@@ -276,57 +395,58 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void WriteGetAndDeleteDocumentDictionaryTest()
+    public async void PatchGetAndDeleteDocumentDictionaryTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         CollectionReference testCollectionReference = Api.FirestoreDatabase
             .Collection("public")
             .Document(nameof(FirestoreDatabaseTest))
-            .Collection(nameof(WriteGetAndDeleteDocumentDictionaryTest));
+            .Collection(nameof(PatchGetAndDeleteDocumentDictionaryTest));
 
         await Cleanup(config, testCollectionReference);
 
         DocumentReference model1Reference = testCollectionReference.Document("model1");
 
-        Dictionary<string, NestedType> dictionary1 = new()
+        Document<Dictionary<string, NestedType>> dictionaryNull = model1Reference.Create<Dictionary<string, NestedType>>();
+        Document<Dictionary<string, NestedType>> dictionaryEmpty = model1Reference.Create(new Dictionary<string, NestedType>());
+        Document<Dictionary<string, NestedType>> dictionary1 = model1Reference.Create(new Dictionary<string, NestedType>()
         {
             { "item1", NestedType.Filled1() },
             { "item2", NestedType.Filled2() },
             { "item3", NestedType.Empty() },
-        };
-
-        Dictionary<string, NestedType> dictionary2 = new()
+        });
+        Document<Dictionary<string, NestedType>> dictionary2 = model1Reference.Create(new Dictionary<string, NestedType>()
         {
             { "anotherItem1", NestedType.Filled2() },
             { "anotherItem2", NestedType.Filled1() },
-        };
+        });
 
         // Remove residual files from last test
         await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             Config = config,
-            DeleteDocumentReference = model1Reference
+            DeleteDocument = model1Reference
         });
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<Dictionary<string, NestedType>>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            PatchDocument = model1Reference.Create(dictionary1),
+            PatchDocument = dictionary1,
         });
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = writeTest1.Request.PatchDocument,
+            Document = dictionary1,
         });
 
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<Dictionary<string, NestedType>>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create<Dictionary<string, NestedType>>(),
+            Document = dictionaryNull,
         });
         Assert.NotNull(getTest1.Result);
 
@@ -334,7 +454,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create(new Dictionary<string, NestedType>()),
+            Document = dictionaryEmpty,
         });
         Assert.NotNull(getTest2.Result);
 
@@ -342,13 +462,13 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = model1Reference.Create(dictionary2),
+            Document = dictionary2,
         });
         Assert.NotNull(getTest3.Result);
 
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest1.Result.Found[0].Document);
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest2.Result.Found[0].Document);
-        Assert.Equivalent(writeTest1.Request.PatchDocument, getTest3.Result.Found[0].Document);
+        Assert.Equivalent(dictionary1, getTest1.Result.Found[0].Document);
+        Assert.Equivalent(dictionary1, getTest2.Result.Found[0].Document);
+        Assert.Equivalent(dictionary1, getTest3.Result.Found[0].Document);
 
         await Cleanup(config, testCollectionReference);
 
@@ -377,7 +497,7 @@ public class FirestoreDatabaseTest
 
         await Cleanup(config, testCollectionReference);
 
-        IEnumerable<Document<NormalMVVMModel>> writeDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
+        Document<NormalMVVMModel>[] writeDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
             ($"{nameof(FirestoreDatabaseTest)}{nameof(ListDocumentsTest)}test1", new() // a_c
             {
                 Val1 = "a",
@@ -411,17 +531,17 @@ public class FirestoreDatabaseTest
         // b_f
         // b_e
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            PatchDocuments = writeDocuments
+            PatchDocument = writeDocuments
         });
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NormalMVVMModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = writeDocuments
+            Document = writeDocuments
         });
         var listDocumentTest1 = await Api.FirestoreDatabase.ListDocuments(new ListDocumentsRequest<NormalMVVMModel>()
         {
@@ -460,7 +580,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = writeDocuments,
+            Document = writeDocuments,
         });
 
         Assert.NotNull(getTest3.Result);
@@ -516,7 +636,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            DocumentReference = createTest1.Result.Reference
+            Document = createTest1.Result.Reference
         });
         Assert.NotNull(getTest1.Result);
 
@@ -524,7 +644,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            DocumentReference = createTest2.Result.Reference
+            Document = createTest2.Result.Reference
         });
         Assert.NotNull(getTest2.Result);
 
@@ -539,7 +659,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = new Document<NormalMVVMModel>[] { getTest1.Result.Found[0].Document, getTest2.Result.Found[0].Document }
+            Document = new Document<NormalMVVMModel>[] { getTest1.Result.Found[0].Document, getTest2.Result.Found[0].Document }
         });
 
         Assert.NotNull(getTest3.Result);
@@ -561,7 +681,7 @@ public class FirestoreDatabaseTest
 
         await Cleanup(config, testCollectionReference);
 
-        IEnumerable<Document<NormalMVVMModel>> writeDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
+        Document<NormalMVVMModel>[] writeDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
             ("test1", new()
             {
                 Val1 = "1 test 1",
@@ -588,30 +708,30 @@ public class FirestoreDatabaseTest
                 Val2 = "5 test 2"
             }));
 
-        IEnumerable<Document<NormalMVVMModel>> emptyPropsDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
+        Document<NormalMVVMModel>[] emptyPropsDocuments = testCollectionReference.CreateDocuments<NormalMVVMModel>(
             ("test1", null),
             ("test2", null),
             ("test3", null),
             ("test4", null),
             ("test5", null));
 
-        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest<NormalMVVMModel>()
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            PatchDocuments = writeDocuments
+            PatchDocument = writeDocuments
         });
         var getTest1 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NormalMVVMModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = writeDocuments
+            Document = writeDocuments
         });
         var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NormalMVVMModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = emptyPropsDocuments
+            Document = emptyPropsDocuments
         });
 
         Assert.NotNull(getTest1.Result);
@@ -626,7 +746,7 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
-            Documents = writeDocuments,
+            Document = writeDocuments,
         });
 
         Assert.NotNull(getTest3.Result);

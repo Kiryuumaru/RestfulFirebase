@@ -113,7 +113,7 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
         {
             foreach (var doc in documentsProperty.EnumerateArray())
             {
-                CollectionReference? collectionReference = ParseCollectionReference(doc, jsonSerializerOptions);
+                CollectionReference? collectionReference = CollectionReference.Parse(doc, jsonSerializerOptions);
                 if (collectionReference != null)
                 {
                     collectionReferences.Add(collectionReference);

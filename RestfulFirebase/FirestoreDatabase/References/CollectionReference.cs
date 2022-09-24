@@ -1,5 +1,8 @@
-﻿using RestfulFirebase.FirestoreDatabase.Models;
+﻿using RestfulFirebase.Common.Internals;
+using RestfulFirebase.FirestoreDatabase.Models;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 
@@ -23,6 +26,45 @@ public class CollectionReference : Reference
     #endregion
 
     #region Initializers
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static CollectionReference? Parse(string? json)
+    {
+        if (json != null && !string.IsNullOrEmpty(json))
+        {
+            string[] paths = json.Split('/');
+            object currentPath = Api.FirestoreDatabase.Collection(paths[5]);
+
+            for (int i = 6; i < paths.Length; i++)
+            {
+                if (currentPath is CollectionReference colPath)
+                {
+                    currentPath = colPath.Document(paths[i]);
+                }
+                else if (currentPath is DocumentReference docPath)
+                {
+                    currentPath = docPath.Collection(paths[i]);
+                }
+            }
+
+            if (currentPath is CollectionReference collectionReference)
+            {
+                return collectionReference;
+            }
+        }
+
+        return null;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    internal static CollectionReference? Parse(JsonElement jsonElement, JsonSerializerOptions jsonSerializerOptions)
+    {
+        return Parse(jsonElement.Deserialize<string>(jsonSerializerOptions));
+    }
 
     internal CollectionReference(DocumentReference? parent, string collectionId)
     {
@@ -79,7 +121,7 @@ public class CollectionReference : Reference
     /// <returns>
     /// The <see cref="Document{T}"/>.
     /// </returns>
-    public IEnumerable<Document<T>> CreateDocuments<T>(params (string documentName, T? model)[] documents)
+    public Document<T>[] CreateDocuments<T>(params (string documentName, T? model)[] documents)
         where T : class
     {
         List<Document<T>> docs = new();
@@ -89,7 +131,7 @@ public class CollectionReference : Reference
             docs.Add(Document(documentName).Create(model));
         }
 
-        return docs.AsReadOnly();
+        return docs.ToArray();
     }
 
     internal override string BuildUrlCascade(string projectId)

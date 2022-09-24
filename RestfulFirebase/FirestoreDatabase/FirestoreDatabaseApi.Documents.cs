@@ -60,23 +60,13 @@ public static partial class FirestoreDatabase
     public static Task<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>> ListDocuments<T>(ListDocumentsRequest<T> request)
         where T : class => request.Execute();
 
-    /// <inheritdoc cref="BaseWriteDocumentRequest{TDocument}.Execute"/>
+    /// <inheritdoc cref="WriteDocumentRequest.Execute"/>
     /// <param name="request">
     /// The request of the operation.
     /// </param>
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    public static Task<TransactionResponse<BaseWriteDocumentRequest<Document>>> WriteDocument(WriteDocumentRequest request)
+    public static Task<TransactionResponse<WriteDocumentRequest>> WriteDocument(WriteDocumentRequest request)
         => request.Execute();
-
-    /// <inheritdoc cref="BaseWriteDocumentRequest{TDocument}.Execute"/>
-    /// <param name="request">
-    /// The request of the operation.
-    /// </param>
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
-    public static Task<TransactionResponse<BaseWriteDocumentRequest<Document<T>>>> WriteDocument<T>(WriteDocumentRequest<T> request)
-        where T : class => request.Execute();
 }

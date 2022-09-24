@@ -17,6 +17,13 @@ public class NormalModel
     public string? Val2 { get; set; }
 }
 
+public class IncrementableModel
+{
+    public int Val1 { get; set; }
+
+    public double Val2 { get; set; }
+}
+
 [ObservableObject]
 public partial class NormalMVVMModel
 {

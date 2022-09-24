@@ -24,7 +24,11 @@ namespace RestfulFirebase.FirestoreDatabase.Requests;
 /// <typeparam name="T">
 /// The type of the model to populate the document fields.
 /// </typeparam>
-public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>>
+public class ListDocumentsRequest<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicProperties |
+        DynamicallyAccessedMemberTypes.NonPublicProperties |
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.NonPublicFields)] T> : FirestoreDatabaseRequest<TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>>
     where T : class
 {
     /// <summary>
@@ -74,15 +78,12 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(CollectionReference);
 
-        PropertyInfo[] propertyInfos = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        FieldInfo[] fieldInfos = typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        bool includeOnlyWithAttribute = typeof(T).GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         string? orderBy = null;
         if (OrderBy != null && OrderBy.Any())
         {
-            orderBy = Queries.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions.PropertyNamingPolicy);
+            orderBy = Queries.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, jsonSerializerOptions);
         }
 
         try
@@ -151,7 +152,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                 Document<T>? document = null;
                 T? model = null;
                 if (doc.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                    ParseDocumentReference(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
+                    DocumentReference.Parse(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
                 {
                     documentReference = docRef;
 
@@ -162,7 +163,7 @@ public class ListDocumentsRequest<T> : FirestoreDatabaseRequest<TransactionRespo
                     //}
                 }
 
-                if (ParseDocument(documentReference, model, document, doc.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                if (Document<T>.Parse(documentReference, model, document, doc.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                 {
                     documents.Add(found);
                 }

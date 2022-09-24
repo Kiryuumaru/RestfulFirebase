@@ -33,41 +33,41 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Option);
 
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("options");
+        writer.WriteStartObject();
+        if (Option is ReadOnlyOption readOnlyOption)
+        {
+            writer.WritePropertyName("readOnly");
+            writer.WriteStartObject();
+            if (readOnlyOption.ReadTime.HasValue)
+            {
+                writer.WritePropertyName("readTime");
+                writer.WriteStringValue(readOnlyOption.ReadTime.Value.ToUniversalTime());
+            }
+            writer.WriteEndObject();
+        }
+        if (Option is ReadWriteOption readWriteOption)
+        {
+            writer.WritePropertyName("readWrite");
+            writer.WriteStartObject();
+            if (readWriteOption.RetryTransaction != null)
+            {
+                writer.WritePropertyName("retryTransaction");
+                writer.WriteStringValue(readWriteOption.RetryTransaction);
+            }
+            writer.WriteEndObject();
+        }
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+
+        await writer.FlushAsync();
+
         try
         {
-            using MemoryStream stream = new();
-            Utf8JsonWriter writer = new(stream);
-
-            writer.WriteStartObject();
-            writer.WritePropertyName("options");
-            writer.WriteStartObject();
-            if (Option is ReadOnlyOption readOnlyOption)
-            {
-                writer.WritePropertyName("readOnly");
-                writer.WriteStartObject();
-                if (readOnlyOption.ReadTime.HasValue)
-                {
-                    writer.WritePropertyName("readTime");
-                    writer.WriteStringValue(readOnlyOption.ReadTime.Value.ToUniversalTime());
-                }
-                writer.WriteEndObject();
-            }
-            if (Option is ReadWriteOption readWriteOption)
-            {
-                writer.WritePropertyName("readWrite");
-                writer.WriteStartObject();
-                if (readWriteOption.RetryTransaction != null)
-                {
-                    writer.WritePropertyName("retryTransaction");
-                    writer.WriteStringValue(readWriteOption.RetryTransaction);
-                }
-                writer.WriteEndObject();
-            }
-            writer.WriteEndObject();
-            writer.WriteEndObject();
-
-            await writer.FlushAsync();
-
             var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
             using Stream contentStream = await response.Content.ReadAsStreamAsync();
             JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
