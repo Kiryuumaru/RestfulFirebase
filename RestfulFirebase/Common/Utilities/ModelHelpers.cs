@@ -17,7 +17,7 @@ using RestfulFirebase.FirestoreDatabase.Models;
 
 namespace RestfulFirebase.Common.Utilities;
 
-internal class ModelHelpers
+internal static class ModelHelpers
 {
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
