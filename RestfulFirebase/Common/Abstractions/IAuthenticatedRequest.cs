@@ -1,6 +1,4 @@
-﻿using RestfulFirebase.Authentication.Models;
-
-namespace RestfulFirebase.Common.Abstractions;
+﻿namespace RestfulFirebase.Common.Abstractions;
 
 /// <summary>
 /// The base request for all authenticated firebase request.

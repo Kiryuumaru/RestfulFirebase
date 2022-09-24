@@ -1,5 +1,4 @@
-﻿using RestfulFirebase.Authentication.Models;
-using RestfulFirebase.Common.Abstractions;
+﻿using RestfulFirebase.Common.Abstractions;
 
 namespace RestfulFirebase.Common.Models;
 

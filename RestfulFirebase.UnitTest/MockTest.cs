@@ -1,12 +1,4 @@
 using Xunit;
-using RestfulFirebase.FirestoreDatabase.Requests;
-using RestfulFirebase.FirestoreDatabase.Transactions;
-using System;
-using RestfulFirebase.Authentication.Models;
-using RestfulFirebase.Authentication.Requests;
-using RestfulFirebase.FirestoreDatabase.Models;
-using System.Text.Json.Serialization;
-using RestfulFirebase.FirestoreDatabase.Transform;
 using RestfulFirebase.FirestoreDatabase.References;
 
 namespace RestfulFirebase.UnitTest;

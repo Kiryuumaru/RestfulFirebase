@@ -1,11 +1,9 @@
 ﻿using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Requests;
-using RestfulFirebase.FirestoreDatabase.Exceptions;
 using System.Collections.Generic;
 using Xunit;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
-using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System.Threading.Tasks;
 using RestfulFirebase.FirestoreDatabase.Transform;
@@ -549,9 +547,9 @@ public class FirestoreDatabaseTest
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             CollectionReference = testCollectionReference,
             PageSize = 2,
-            OrderBy = OrderBy.Create(
-                (nameof(NormalMVVMModel.Val1), OrderDirection.Ascending),
-                (nameof(NormalMVVMModel.Val2), OrderDirection.Descending))
+            OrderBy = OrderBy.Builder.Create()
+                .Ascending(nameof(NormalMVVMModel.Val1))
+                .Descending(nameof(NormalMVVMModel.Val2))
         });
         Assert.NotNull(listDocumentTest1.Result);
 

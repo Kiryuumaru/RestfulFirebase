@@ -7,11 +7,7 @@ using System.IO;
 using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.References;
-using System.Linq;
-using RestfulFirebase.FirestoreDatabase.Enums;
-using System.Xml.Linq;
 using RestfulFirebase.FirestoreDatabase.Transform;
 using RestfulFirebase.Common.Utilities;
 

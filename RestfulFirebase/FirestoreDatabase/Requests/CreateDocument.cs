@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
-using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.Common.Utilities;
 

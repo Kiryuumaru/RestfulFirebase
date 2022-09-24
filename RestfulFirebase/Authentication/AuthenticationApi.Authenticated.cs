@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Common.Requests;
-using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Authentication.Requests;
 using RestfulFirebase.Authentication.Models;
 

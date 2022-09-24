@@ -13,7 +13,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
 using static System.Text.Json.JsonElement;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
@@ -47,7 +46,7 @@ public partial class Document
         }
 
         /// <summary>
-        /// Gets the list of documents.
+        /// Gets the list of <see cref="Document"/>.
         /// </summary>
         public List<Document> Documents { get; } = new();
 
@@ -647,7 +646,7 @@ public partial class Document<T> : Document
         }
 
         /// <summary>
-        /// Gets the list of documents.
+        /// Gets the list of <see cref="Document{T}"/>.
         /// </summary>
         public List<Document<T>> Documents { get; } = new();
 

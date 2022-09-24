@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -7,7 +6,6 @@ using System.Text.Json;
 using RestfulFirebase.Common.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
-using System.Data;
 using RestfulFirebase.Common.Internals;
 using ObservableHelpers.ComponentModel;
 using System.Collections;

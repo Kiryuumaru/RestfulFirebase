@@ -7,12 +7,7 @@ using System.Text.Json;
 using RestfulFirebase.Common.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
-using System.Data;
 using RestfulFirebase.Common.Internals;
-using ObservableHelpers.ComponentModel;
-using System.Collections;
-using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
 
 namespace RestfulFirebase.Common.Utilities;
 

@@ -11,8 +11,6 @@ using RestfulFirebase.FirestoreDatabase.Models;
 using System.Threading;
 using RestfulFirebase.Common.Utilities;
 using System.Linq;
-using System.Reflection;
-using RestfulFirebase.Common.Attributes;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 
@@ -50,7 +48,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
     /// <summary>
     /// Gets or sets the order to sort results by.
     /// </summary>
-    public IEnumerable<OrderBy>? OrderBy { get; set; }
+    public OrderBy.Builder? OrderBy { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -77,9 +75,9 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         string? orderBy = null;
-        if (OrderBy != null && OrderBy.Any())
+        if (OrderBy != null && OrderBy.OrderBy.Any())
         {
-            orderBy = Queries.OrderBy.BuildAsQueryParameter(typeof(T), OrderBy, jsonSerializerOptions);
+            orderBy = OrderBy.BuildAsQueryParameter<T>(jsonSerializerOptions);
         }
 
         try
