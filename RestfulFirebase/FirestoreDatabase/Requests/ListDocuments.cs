@@ -26,7 +26,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
     where T : class
 {
     /// <summary>
-    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </summary>
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
@@ -34,6 +34,11 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
     /// Gets or sets the requested <see cref="References.CollectionReference"/> of the collection node.
     /// </summary>
     public CollectionReference? CollectionReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the cache <see cref="Document{T}"/> documents to get and patch.
+    /// </summary>
+    public Document<T>.Builder? Document { get; set; }
 
     /// <summary>
     /// Gets or sets the requested page size of the result <see cref="AsyncPager{T}"/>.
@@ -127,7 +132,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
         {
             qb.Add("orderBy", orderBy);
         }
-        if (Transaction != null)
+        if (Transaction?.Token != null)
         {
             qb.Add("transaction", Transaction.Token);
         }
@@ -157,11 +162,12 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
                 {
                     documentReference = docRef;
 
-                    //if (Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
-                    //{
-                    //    document = foundDocument;
-                    //    model = foundDocument.Model;
-                    //}
+                    if (Document != null &&
+                        Document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                    {
+                        document = foundDocument;
+                        model = foundDocument.Model;
+                    }
                 }
 
                 if (Document<T>.Parse(documentReference, model, document, doc.EnumerateObject(), jsonSerializerOptions) is Document<T> found)

@@ -18,7 +18,7 @@ namespace RestfulFirebase.FirestoreDatabase.Requests;
 public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>>
 {
     /// <summary>
-    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </summary>
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 

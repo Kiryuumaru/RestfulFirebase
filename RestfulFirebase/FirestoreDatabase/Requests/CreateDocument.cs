@@ -21,7 +21,7 @@ public class CreateDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResp
     where T : class
 {
     /// <summary>
-    /// Gets or sets the <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </summary>
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 

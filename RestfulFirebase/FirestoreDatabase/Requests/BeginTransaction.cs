@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.IO;
 using System.Text.Json;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -14,9 +15,14 @@ namespace RestfulFirebase.FirestoreDatabase.Requests;
 public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionResponse<BeginTransactionRequest, Transaction>>
 {
     /// <summary>
-    /// Gets or sets the <see cref="TransactionOption"/> of the transaction.
+    /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </summary>
-    public TransactionOption? Option { get; set; }
+    public JsonSerializerOptions? JsonSerializerOptions { get; set; }
+
+    /// <summary>
+    /// Gets or sets the <see cref="Transaction.Builder"/> of the transaction.
+    /// </summary>
+    public Transaction.Builder? Transaction { get; set; }
 
     /// <inheritdoc cref="BeginTransactionRequest"/>
     /// <returns>
@@ -24,42 +30,22 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <see cref="TransactionRequest.Config"/> or
-    /// <see cref="Option"/> is a null reference.
+    /// <see cref="Transaction"/> is a null reference.
     /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal override async Task<TransactionResponse<BeginTransactionRequest, Transaction>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
-        ArgumentNullException.ThrowIfNull(Option);
+        ArgumentNullException.ThrowIfNull(Transaction);
+
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         using MemoryStream stream = new();
         Utf8JsonWriter writer = new(stream);
 
         writer.WriteStartObject();
         writer.WritePropertyName("options");
-        writer.WriteStartObject();
-        if (Option is ReadOnlyOption readOnlyOption)
-        {
-            writer.WritePropertyName("readOnly");
-            writer.WriteStartObject();
-            if (readOnlyOption.ReadTime.HasValue)
-            {
-                writer.WritePropertyName("readTime");
-                writer.WriteStringValue(readOnlyOption.ReadTime.Value.ToUniversalTime());
-            }
-            writer.WriteEndObject();
-        }
-        if (Option is ReadWriteOption readWriteOption)
-        {
-            writer.WritePropertyName("readWrite");
-            writer.WriteStartObject();
-            if (readWriteOption.RetryTransaction != null)
-            {
-                writer.WritePropertyName("retryTransaction");
-                writer.WriteStringValue(readWriteOption.RetryTransaction);
-            }
-            writer.WriteEndObject();
-        }
-        writer.WriteEndObject();
+        Transaction.Transaction.BuildUtf8JsonWriter(writer, Config, jsonSerializerOptions);
         writer.WriteEndObject();
 
         await writer.FlushAsync();
@@ -73,15 +59,13 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
         using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-        Transaction? transaction = null;
-
         if (jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
             transactionElement.GetString() is string transactionToken)
         {
-            transaction = new(transactionToken);
+            Transaction.Transaction.Token = transactionToken;
         }
 
-        return new(this, transaction, null);
+        return new(this, Transaction.Transaction, null);
     }
 
     internal string BuildUrl()
