@@ -9,21 +9,21 @@ using System.Text.Json;
 namespace RestfulFirebase.FirestoreDatabase.Transform;
 
 /// <summary>
-/// The field increment transformation parameter for increment transform commit writes.
+/// The field maximum transformation parameter for maximum transform commit writes.
 /// </summary>
-public class FieldTransformIncrement : FieldTransform
+public class FieldTransformMaximum : FieldTransform
 {
     /// <summary>
-    /// Gets the object to increment to the given property path.
+    /// Gets the object to maximum to the given property path.
     /// </summary>
-    public object IncrementValue { get; }
+    public object MaximumValue { get; }
 
-    internal FieldTransformIncrement(object incrementValue, Type modelType, string[] propertyNamePath)
+    internal FieldTransformMaximum(object maximumValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(incrementValue);
+        ArgumentNullException.ThrowIfNull(maximumValue);
 
-        IncrementValue = incrementValue;
+        MaximumValue = maximumValue;
     }
 
     [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
@@ -32,18 +32,18 @@ public class FieldTransformIncrement : FieldTransform
         var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(ModelType, null, PropertyNamePath, jsonSerializerOptions);
         var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
 
-        NumberType paramNumberType = GetNumberType(IncrementValue.GetType());
+        NumberType paramNumberType = GetNumberType(MaximumValue.GetType());
         NumberType propertyNumberType = GetNumberType(lastDocumentFieldPath.Type);
 
         if (paramNumberType == NumberType.Double && propertyNumberType != NumberType.Double)
         {
-            throw new ArgumentException($"Increment type mismatch. \"{lastDocumentFieldPath.Type}\" cannot increment with \"{IncrementValue.GetType()}\"");
+            throw new ArgumentException($"Maximum type mismatch. \"{lastDocumentFieldPath.Type}\" cannot maximum with \"{MaximumValue.GetType()}\"");
         }
 
         writer.WriteStartObject();
         writer.WritePropertyName("fieldPath");
         writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
-        writer.WritePropertyName("increment");
+        writer.WritePropertyName("maximum");
         writer.WriteStartObject();
         if (propertyNumberType == NumberType.Integer)
         {
@@ -55,9 +55,9 @@ public class FieldTransformIncrement : FieldTransform
         }
         else
         {
-            throw new Exception("Increment type is not supported.");
+            throw new Exception("Maximum type is not supported.");
         }
-        writer.WriteRawValue(JsonSerializer.Serialize(IncrementValue, jsonSerializerOptions));
+        writer.WriteRawValue(JsonSerializer.Serialize(MaximumValue, jsonSerializerOptions));
         writer.WriteEndObject();
         writer.WriteEndObject();
     }

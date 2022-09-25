@@ -41,20 +41,20 @@ public class FirestoreDatabaseTest
     }
 
     [Fact]
-    public async void TransformGetAndDeleteModelTest()
+    public async void TransformIncrementGetAndDeleteModelTest()
     {
         FirebaseConfig config = Helpers.GetFirebaseConfig();
 
         CollectionReference testCollectionReference = Api.FirestoreDatabase
             .Collection("public")
             .Document(nameof(FirestoreDatabaseTest))
-            .Collection(nameof(TransformGetAndDeleteModelTest));
+            .Collection(nameof(TransformIncrementGetAndDeleteModelTest));
 
         await Cleanup(config, testCollectionReference);
 
         DocumentReference model1Reference = testCollectionReference.Document("model1");
 
-        Document<IncrementableModel> writeTest1Model1 = model1Reference.Create(new IncrementableModel()
+        Document<NumberModel> writeTest1Model1 = model1Reference.Create(new NumberModel()
         {
             Val1 = 1,
             Val2 = 1,
@@ -68,7 +68,7 @@ public class FirestoreDatabaseTest
             Config = config,
             PatchDocument = writeTest1Model1,
         });
-        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -81,10 +81,10 @@ public class FirestoreDatabaseTest
             Config = config,
             TransformDocument = DocumentTransform.Builder.Create()
                 .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<IncrementableModel>(1, nameof(IncrementableModel.Val1)))
+                    .Increment<NumberModel>(1, nameof(NumberModel.Val1)))
         });
         transformTest1.ThrowIfError();
-        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -99,10 +99,10 @@ public class FirestoreDatabaseTest
             Config = config,
             TransformDocument = DocumentTransform.Builder.Create()
                 .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<IncrementableModel>(1.5, nameof(IncrementableModel.Val2)))
+                    .Increment<NumberModel>(1.5, nameof(NumberModel.Val2)))
         });
         transformTest2.ThrowIfError();
-        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -117,11 +117,11 @@ public class FirestoreDatabaseTest
             Config = config,
             TransformDocument = DocumentTransform.Builder.Create()
                 .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<IncrementableModel>(1, nameof(IncrementableModel.Val1))
-                    .Increment<IncrementableModel>(0.5, nameof(IncrementableModel.Val2)))
+                    .Increment<NumberModel>(1, nameof(NumberModel.Val1))
+                    .Increment<NumberModel>(0.5, nameof(NumberModel.Val2)))
         });
         transformTest3.ThrowIfError();
-        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<IncrementableModel>()
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
@@ -130,6 +130,274 @@ public class FirestoreDatabaseTest
 
         Assert.Equal(3, writeTest1Model1.Model.Val1);
         Assert.Equal(3, writeTest1Model1.Model.Val2);
+
+        var transformTest4 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Increment<NumberModel>(-0.5, nameof(NumberModel.Val2)))
+        });
+        transformTest4.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(2.5, writeTest1Model1.Model.Val2);
+
+        await Cleanup(config, testCollectionReference);
+
+        var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = model1Reference.Create<NestedType>(),
+        });
+        Assert.NotNull(getTest2.Result);
+
+        Assert.Empty(getTest2.Result.Found);
+        Assert.NotEmpty(getTest2.Result.Missing);
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void TransformMaximumGetAndDeleteModelTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference testCollectionReference = Api.FirestoreDatabase
+            .Collection("public")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(TransformMaximumGetAndDeleteModelTest));
+
+        await Cleanup(config, testCollectionReference);
+
+        DocumentReference model1Reference = testCollectionReference.Document("model1");
+
+        Document<NumberModel> writeTest1Model1 = model1Reference.Create(new NumberModel()
+        {
+            Val1 = 1,
+            Val2 = 1,
+        });
+
+        Assert.NotNull(writeTest1Model1.Model);
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            PatchDocument = writeTest1Model1,
+        });
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        var transformTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Maximum<NumberModel>(2, nameof(NumberModel.Val1)))
+        });
+        transformTest1.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(2, writeTest1Model1.Model.Val1);
+
+        var transformTest2 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Maximum<NumberModel>(1.5, nameof(NumberModel.Val2)))
+        });
+        transformTest2.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(1.5, writeTest1Model1.Model.Val2);
+
+        var transformTest3 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Maximum<NumberModel>(3, nameof(NumberModel.Val1))
+                    .Maximum<NumberModel>(3, nameof(NumberModel.Val2)))
+        });
+        transformTest3.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(3, writeTest1Model1.Model.Val1);
+        Assert.Equal(3, writeTest1Model1.Model.Val2);
+
+        var transformTest4 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Maximum<NumberModel>(2, nameof(NumberModel.Val1)))
+        });
+        transformTest4.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(3, writeTest1Model1.Model.Val1);
+
+        await Cleanup(config, testCollectionReference);
+
+        var getTest2 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NestedType>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = model1Reference.Create<NestedType>(),
+        });
+        Assert.NotNull(getTest2.Result);
+
+        Assert.Empty(getTest2.Result.Found);
+        Assert.NotEmpty(getTest2.Result.Missing);
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void TransformMinimumGetAndDeleteModelTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference testCollectionReference = Api.FirestoreDatabase
+            .Collection("public")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(TransformMinimumGetAndDeleteModelTest));
+
+        await Cleanup(config, testCollectionReference);
+
+        DocumentReference model1Reference = testCollectionReference.Document("model1");
+
+        Document<NumberModel> writeTest1Model1 = model1Reference.Create(new NumberModel()
+        {
+            Val1 = 3,
+            Val2 = 3,
+        });
+
+        Assert.NotNull(writeTest1Model1.Model);
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            PatchDocument = writeTest1Model1,
+        });
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        var transformTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Minimum<NumberModel>(2, nameof(NumberModel.Val1)))
+        });
+        transformTest1.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(2, writeTest1Model1.Model.Val1);
+
+        var transformTest2 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Minimum<NumberModel>(1.5, nameof(NumberModel.Val2)))
+        });
+        transformTest2.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(1.5, writeTest1Model1.Model.Val2);
+
+        var transformTest3 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Minimum<NumberModel>(1, nameof(NumberModel.Val1))
+                    .Minimum<NumberModel>(1, nameof(NumberModel.Val2)))
+        });
+        transformTest3.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(1, writeTest1Model1.Model.Val1);
+        Assert.Equal(1, writeTest1Model1.Model.Val2);
+
+        var transformTest4 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            TransformDocument = DocumentTransform.Builder.Create()
+                .Add(model1Reference, FieldTransform.Builder.Create()
+                    .Minimum<NumberModel>(3, nameof(NumberModel.Val1)))
+        });
+        transformTest4.ThrowIfError();
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Config = config,
+            Document = writeTest1Model1,
+        });
+
+        Assert.Equal(1, writeTest1Model1.Model.Val1);
 
         await Cleanup(config, testCollectionReference);
 

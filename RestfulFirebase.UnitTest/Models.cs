@@ -17,7 +17,7 @@ public class NormalModel
     public string? Val2 { get; set; }
 }
 
-public class IncrementableModel
+public class NumberModel
 {
     public int Val1 { get; set; }
 

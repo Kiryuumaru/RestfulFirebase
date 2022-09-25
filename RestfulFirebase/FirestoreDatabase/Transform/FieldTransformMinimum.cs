@@ -9,21 +9,21 @@ using System.Text.Json;
 namespace RestfulFirebase.FirestoreDatabase.Transform;
 
 /// <summary>
-/// The field increment transformation parameter for increment transform commit writes.
+/// The field minimum transformation parameter for minimum transform commit writes.
 /// </summary>
-public class FieldTransformIncrement : FieldTransform
+public class FieldTransformMinimum : FieldTransform
 {
     /// <summary>
-    /// Gets the object to increment to the given property path.
+    /// Gets the object to minimum to the given property path.
     /// </summary>
-    public object IncrementValue { get; }
+    public object MinimumValue { get; }
 
-    internal FieldTransformIncrement(object incrementValue, Type modelType, string[] propertyNamePath)
+    internal FieldTransformMinimum(object minimumValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(incrementValue);
+        ArgumentNullException.ThrowIfNull(minimumValue);
 
-        IncrementValue = incrementValue;
+        MinimumValue = minimumValue;
     }
 
     [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
@@ -32,18 +32,18 @@ public class FieldTransformIncrement : FieldTransform
         var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(ModelType, null, PropertyNamePath, jsonSerializerOptions);
         var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
 
-        NumberType paramNumberType = GetNumberType(IncrementValue.GetType());
+        NumberType paramNumberType = GetNumberType(MinimumValue.GetType());
         NumberType propertyNumberType = GetNumberType(lastDocumentFieldPath.Type);
 
         if (paramNumberType == NumberType.Double && propertyNumberType != NumberType.Double)
         {
-            throw new ArgumentException($"Increment type mismatch. \"{lastDocumentFieldPath.Type}\" cannot increment with \"{IncrementValue.GetType()}\"");
+            throw new ArgumentException($"Minimum type mismatch. \"{lastDocumentFieldPath.Type}\" cannot minimum with \"{MinimumValue.GetType()}\"");
         }
 
         writer.WriteStartObject();
         writer.WritePropertyName("fieldPath");
         writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
-        writer.WritePropertyName("increment");
+        writer.WritePropertyName("minimum");
         writer.WriteStartObject();
         if (propertyNumberType == NumberType.Integer)
         {
@@ -55,9 +55,9 @@ public class FieldTransformIncrement : FieldTransform
         }
         else
         {
-            throw new Exception("Increment type is not supported.");
+            throw new Exception("Minimum type is not supported.");
         }
-        writer.WriteRawValue(JsonSerializer.Serialize(IncrementValue, jsonSerializerOptions));
+        writer.WriteRawValue(JsonSerializer.Serialize(MinimumValue, jsonSerializerOptions));
         writer.WriteEndObject();
         writer.WriteEndObject();
     }
