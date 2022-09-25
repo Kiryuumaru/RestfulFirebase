@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace RestfulFirebase.Common.Utilities;
 
@@ -19,9 +20,16 @@ public static class Cryptography
     /// <returns>
     /// The encrypted representation of the <paramref name="value"/> parameter.
     /// </returns>
-    public static string? VigenereCipherEncrypt(string? value, params int[] pattern)
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="value"/> or
+    /// <paramref name="pattern"/> is a null reference.
+    /// </exception>
+    public static string VigenereCipherEncrypt(string value, params int[] pattern)
     {
-        if (value == null || pattern == null || pattern.Length == 0)
+        ArgumentNullException.ThrowIfNull(value);
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        if (value.Length == 0 || pattern.Length == 0)
         {
             return value;
         }
@@ -48,9 +56,16 @@ public static class Cryptography
     /// <returns>
     /// The decrypted representation of the <paramref name="encrypted"/> parameter.
     /// </returns>
-    public static string? VigenereCipherDecrypt(string? encrypted, params int[] pattern)
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="encrypted"/> or
+    /// <paramref name="pattern"/> is a null reference.
+    /// </exception>
+    public static string VigenereCipherDecrypt(string encrypted, params int[] pattern)
     {
-        if (encrypted == null || pattern == null || pattern.Length == 0)
+        ArgumentNullException.ThrowIfNull(encrypted);
+        ArgumentNullException.ThrowIfNull(pattern);
+
+        if (encrypted.Length == 0 || pattern.Length == 0)
         {
             return encrypted;
         }

@@ -116,27 +116,40 @@ public class FirebaseUser : IAuthorization
     }
 
     /// <summary>
-    /// Deserializes the <see cref="FirebaseUser"/> using the serialized <paramref name="data"/>.
+    /// Decrypt the <see cref="FirebaseUser"/> using a series of interwoven Caesar ciphers <paramref name="data"/>.
     /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static FirebaseUser Deserialize(string data)
+    /// <param name="pattern">
+    /// The pattern to use for decryption.
+    /// </param>
+    /// <param name="data">
+    /// The encrypted data.
+    /// </param>
+    /// <returns>
+    /// The decrypted <see cref="FirebaseAuth"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="data"/> or
+    /// <paramref name="pattern"/> is a null reference.
+    /// </exception>
+    public static FirebaseUser Decrypt(string data, params int[] pattern)
     {
-        string? idToken = BlobSerializer.GetValue(data, "tok");
-        string? refreshToken = BlobSerializer.GetValue(data, "ref");
-        var exp = BlobSerializer.GetValue(data, "exp");
+        string decrypted = Cryptography.VigenereCipherDecrypt(data, pattern);
+
+        string? idToken = BlobSerializer.GetValue(decrypted, "tok");
+        string? refreshToken = BlobSerializer.GetValue(decrypted, "ref");
+        var exp = BlobSerializer.GetValue(decrypted, "exp");
         int expiresIn = string.IsNullOrEmpty(exp) ? default : (int)StringSerializer.ExtractNumber(exp!);
-        var ctd = BlobSerializer.GetValue(data, "ctd");
+        var ctd = BlobSerializer.GetValue(decrypted, "ctd");
         DateTimeOffset created = string.IsNullOrEmpty(ctd) ? default : new DateTimeOffset(StringSerializer.ExtractNumber(ctd!), DateTimeOffset.Now.Offset);
-        string? localId = BlobSerializer.GetValue(data, "lid");
-        string? federatedId = BlobSerializer.GetValue(data, "fid");
-        string? firstName = BlobSerializer.GetValue(data, "fname");
-        string? lastName = BlobSerializer.GetValue(data, "lname");
-        string? displayName = BlobSerializer.GetValue(data, "dname");
-        string? email = BlobSerializer.GetValue(data, "email");
-        bool isEmailVerified = BlobSerializer.GetValue(data, "vmail") == "1";
-        string? photoUrl = BlobSerializer.GetValue(data, "purl");
-        string? phoneNumber = BlobSerializer.GetValue(data, "pnum");
+        string? localId = BlobSerializer.GetValue(decrypted, "lid");
+        string? federatedId = BlobSerializer.GetValue(decrypted, "fid");
+        string? firstName = BlobSerializer.GetValue(decrypted, "fname");
+        string? lastName = BlobSerializer.GetValue(decrypted, "lname");
+        string? displayName = BlobSerializer.GetValue(decrypted, "dname");
+        string? email = BlobSerializer.GetValue(decrypted, "email");
+        bool isEmailVerified = BlobSerializer.GetValue(decrypted, "vmail") == "1";
+        string? photoUrl = BlobSerializer.GetValue(decrypted, "purl");
+        string? phoneNumber = BlobSerializer.GetValue(decrypted, "pnum");
 
         FirebaseAuth auth = new()
         {
@@ -181,11 +194,18 @@ public class FirebaseUser : IAuthorization
     }
 
     /// <summary>
-    /// Serializes the <see cref="FirebaseUser"/> to <see cref="string"/>.
+    /// Encrypt the <see cref="FirebaseUser"/> to <see cref="string"/> using a series of interwoven Caesar ciphers.
     /// </summary>
+    /// <param name="pattern">
+    /// The pattern to use for encryption.
+    /// </param>
     /// <returns>
+    /// The encrypted data.
     /// </returns>
-    public string Serialize()
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="pattern"/> is a null reference.
+    /// </exception>
+    public string Encrypt(params int[] pattern)
     {
         var auth = "";
 
@@ -203,7 +223,7 @@ public class FirebaseUser : IAuthorization
         auth = BlobSerializer.SetValue(auth, "purl", PhotoUrl);
         auth = BlobSerializer.SetValue(auth, "pnum", PhoneNumber);
 
-        return auth;
+        return Cryptography.VigenereCipherEncrypt(auth, pattern);
     }
 
     internal void UpdateAuth(FirebaseAuth auth)
