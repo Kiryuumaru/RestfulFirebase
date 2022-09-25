@@ -15,7 +15,8 @@ public abstract class Transaction
     public class Builder
     {
         /// <summary>
-        /// Gets the <see cref="Transactions.Transaction"/> of the builder.
+        /// Gets the <see cref="Transactions.Transaction"/> of the builder. Has implicit conversion from
+        /// <para><see cref="Transactions.Transaction"/></para>
         /// </summary>
         public Transaction Transaction { get; }
 
