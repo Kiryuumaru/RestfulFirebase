@@ -24,6 +24,18 @@ public class NumberModel
     public double Val2 { get; set; }
 }
 
+public class ArrayModel
+{
+    public int[]? Val1 { get; set; }
+}
+
+public class TimestampModel
+{
+    public DateTime Val1 { get; set; }
+
+    public DateTimeOffset Val2 { get; set; }
+}
+
 [ObservableObject]
 public partial class NormalMVVMModel
 {

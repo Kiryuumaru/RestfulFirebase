@@ -32,159 +32,168 @@ public abstract class FieldTransform
         /// </summary>
         public List<FieldTransform> FieldTransforms { get; } = new();
 
-        /// <summary>
-        /// Adds field increment transformation parameter for increment transform commit writes.
-        /// </summary>
-        /// <typeparam name="TModel">
-        /// The type of the model to increment.
-        /// </typeparam>
-        /// <param name="incrementValue">
-        /// The value to increment to the model <typeparamref name="TModel"/>.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to increment.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="incrementValue"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="AppendMissingElementsTransform.Create{TModel}(IEnumerable{object}, string[])"/>
+        public Builder AppendMissingElements<TModel>(IEnumerable<object> appendMissingElementsValue, params string[] propertyNamePath)
+            where TModel : class
+        {
+            FieldTransforms.Add(AppendMissingElementsTransform.Create<TModel>(appendMissingElementsValue, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="AppendMissingElementsTransform.Create(IEnumerable{object}, Type, string[])"/>
+        public Builder AppendMissingElements(IEnumerable<object> appendMissingElementsValue, Type modelType, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(AppendMissingElementsTransform.Create(appendMissingElementsValue, modelType, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="IncrementTransform.Create{TModel}(object, string[])"/>
         public Builder Increment<TModel>(object incrementValue, params string[] propertyNamePath)
             where TModel : class
         {
-            FieldTransforms.Add(new FieldTransformIncrement(incrementValue, typeof(TModel), propertyNamePath));
+            FieldTransforms.Add(IncrementTransform.Create<TModel>(incrementValue, propertyNamePath));
             return this;
         }
 
-        /// <summary>
-        /// Adds field increment transformation parameter for increment transform commit writes.
-        /// </summary>
-        /// <param name="incrementValue">
-        /// The value to increment to the model <paramref name="modelType"/>.
-        /// </param>
-        /// <param name="modelType">
-        /// The type of the model to increment.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to increment.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="incrementValue"/>,
-        /// <paramref name="modelType"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="IncrementTransform.Create(object, Type, string[])"/>
         public Builder Increment(object incrementValue, Type modelType, params string[] propertyNamePath)
         {
-            FieldTransforms.Add(new FieldTransformIncrement(incrementValue, modelType, propertyNamePath));
+            FieldTransforms.Add(IncrementTransform.Create(incrementValue, modelType, propertyNamePath));
             return this;
         }
 
-        /// <summary>
-        /// Adds field maximum transformation parameter for maximum transform commit writes.
-        /// </summary>
-        /// <typeparam name="TModel">
-        /// The type of the model to maximum.
-        /// </typeparam>
-        /// <param name="maximumValue">
-        /// The value to maximum to the model <typeparamref name="TModel"/>.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to maximum.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="maximumValue"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="MaximumTransform.Create{TModel}(object, string[])"/>
         public Builder Maximum<TModel>(object maximumValue, params string[] propertyNamePath)
             where TModel : class
         {
-            FieldTransforms.Add(new FieldTransformMaximum(maximumValue, typeof(TModel), propertyNamePath));
+            FieldTransforms.Add(MaximumTransform.Create<TModel>(maximumValue, propertyNamePath));
             return this;
         }
 
-        /// <summary>
-        /// Adds field maximum transformation parameter for maximum transform commit writes.
-        /// </summary>
-        /// <param name="maximumValue">
-        /// The value to maximum to the model <paramref name="modelType"/>.
-        /// </param>
-        /// <param name="modelType">
-        /// The type of the model to maximum.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to maximum.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="maximumValue"/>,
-        /// <paramref name="modelType"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="MaximumTransform.Create(object, Type, string[])"/>
         public Builder Maximum(object maximumValue, Type modelType, params string[] propertyNamePath)
         {
-            FieldTransforms.Add(new FieldTransformMaximum(maximumValue, modelType, propertyNamePath));
+            FieldTransforms.Add(MaximumTransform.Create(maximumValue, modelType, propertyNamePath));
             return this;
         }
 
-        /// <summary>
-        /// Adds field minimum transformation parameter for minimum transform commit writes.
-        /// </summary>
-        /// <typeparam name="TModel">
-        /// The type of the model to minimum.
-        /// </typeparam>
-        /// <param name="minimumValue">
-        /// The value to minimum to the model <typeparamref name="TModel"/>.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to minimum.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="minimumValue"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="MinimumTransform.Create{TModel}(object, string[])"/>
         public Builder Minimum<TModel>(object minimumValue, params string[] propertyNamePath)
             where TModel : class
         {
-            FieldTransforms.Add(new FieldTransformMinimum(minimumValue, typeof(TModel), propertyNamePath));
+            FieldTransforms.Add(MinimumTransform.Create<TModel>(minimumValue, propertyNamePath));
             return this;
         }
 
-        /// <summary>
-        /// Adds field minimum transformation parameter for minimum transform commit writes.
-        /// </summary>
-        /// <param name="minimumValue">
-        /// The value to minimum to the model <paramref name="modelType"/>.
-        /// </param>
-        /// <param name="modelType">
-        /// The type of the model to minimum.
-        /// </param>
-        /// <param name="propertyNamePath">
-        /// The property path of the model to minimum.
-        /// </param>
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// <paramref name="minimumValue"/>,
-        /// <paramref name="modelType"/> and
-        /// <paramref name="propertyNamePath"/> is a null reference.
-        /// </exception>
+        /// <inheritdoc cref="MinimumTransform.Create(object, Type, string[])"/>
         public Builder Minimum(object minimumValue, Type modelType, params string[] propertyNamePath)
         {
-            FieldTransforms.Add(new FieldTransformMinimum(minimumValue, modelType, propertyNamePath));
+            FieldTransforms.Add(MinimumTransform.Create(minimumValue, modelType, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="RemoveAllFromArrayTransform.Create{TModel}(IEnumerable{object}, string[])"/>
+        public Builder RemoveAllFromArray<TModel>(IEnumerable<object> removeAllFromArrayValue, params string[] propertyNamePath)
+            where TModel : class
+        {
+            FieldTransforms.Add(RemoveAllFromArrayTransform.Create<TModel>(removeAllFromArrayValue, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="RemoveAllFromArrayTransform.Create(IEnumerable{object}, Type, string[])"/>
+        public Builder RemoveAllFromArray(IEnumerable<object> removeAllFromArrayValue, Type modelType, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(RemoveAllFromArrayTransform.Create(removeAllFromArrayValue, modelType, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.Create{TModel}(ServerValue, string[])"/>
+        public Builder SetToServerValue<TModel>(ServerValue serverValue, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.Create<TModel>(serverValue, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.Create(ServerValue, Type, string[])"/>
+        public Builder SetToServerValue(ServerValue serverValue, Type modelType, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.Create(serverValue, modelType, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.RequestTime{TModel}(string[])"/>
+        public Builder SetToServerRequestTime<TModel>(params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.RequestTime<TModel>(propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.RequestTime(Type, string[])"/>
+        public Builder SetToServerRequestTime(Type modelType, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.RequestTime(modelType, propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.ServerValueUnspecified{TModel}(string[])"/>
+        public Builder SetToServerValueUnspecified<TModel>(params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.ServerValueUnspecified<TModel>(propertyNamePath));
+            return this;
+        }
+
+        /// <returns>
+        /// The <see cref="Builder"/> added with new field transform.
+        /// </returns>
+        /// <inheritdoc cref="SetToServerValueTransform.ServerValueUnspecified(Type, string[])"/>
+        public Builder SetToServerValueUnspecified(Type modelType, params string[] propertyNamePath)
+        {
+            FieldTransforms.Add(SetToServerValueTransform.ServerValueUnspecified(modelType, propertyNamePath));
             return this;
         }
     }
