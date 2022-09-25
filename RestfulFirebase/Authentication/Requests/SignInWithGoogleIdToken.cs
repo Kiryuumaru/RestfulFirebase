@@ -30,22 +30,23 @@ public class SignInWithGoogleIdTokenRequest : AuthenticationRequest<TransactionR
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(IdToken);
 
-        try
+        var providerId = GetProviderId(FirebaseAuthType.Google);
+        var content = $"{{\"postBody\":\"id_token={IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            var providerId = GetProviderId(FirebaseAuthType.Google);
-            var content = $"{{\"postBody\":\"id_token={IdToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
-
-            FirebaseUser user = new(auth);
-
-            await RefreshUserInfo(user);
-
-            return new(this, user, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
+
+        FirebaseUser user = new(executeResult);
+
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
         {
-            return new(this, null, ex);
+            return new(this, null, refreshException);
         }
+
+        return new(this, user, null);
     }
 }

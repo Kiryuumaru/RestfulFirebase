@@ -30,23 +30,26 @@ public class ChangeUserPasswordRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Authorization);
         ArgumentNullException.ThrowIfNull(NewPassword);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            var content = $"{{\"idToken\":\"{tokenRequest.Result}\",\"password\":\"{NewPassword}\",\"returnSecureToken\":true}}";
-
-            await ExecuteAuthWithPostContent(content, GoogleUpdateUser, CamelCaseJsonSerializerOption);
-
-            await RefreshUserInfo(Authorization);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        var content = $"{{\"idToken\":\"{tokenResponse.Result.IdToken}\",\"password\":\"{NewPassword}\",\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleUpdateUser, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        var refreshException = await RefreshUserInfo(Authorization);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, Authorization, null);
     }
 }

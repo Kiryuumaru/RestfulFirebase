@@ -24,24 +24,27 @@ public class GetFreshTokenRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Authorization);
 
-        try
+        if (!Authorization.IsExpired())
         {
-            if (Authorization.IsExpired())
-            {
-                var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{Authorization.RefreshToken}\"}}";
-
-                FirebaseAuth? auth = await ExecuteAuthWithPostContent(content, GoogleRefreshAuth, SnakeCaseJsonSerializerOption);
-
-                Authorization.UpdateAuth(auth);
-
-                await RefreshUserInfo(Authorization);
-            }
-
             return new(this, Authorization, null);
         }
-        catch (Exception ex)
+
+        var content = $"{{\"grant_type\":\"refresh_token\", \"refresh_token\":\"{Authorization.RefreshToken}\"}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleRefreshAuth, SnakeCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        Authorization.UpdateAuth(executeResult);
+
+        var refreshException = await RefreshUserInfo(Authorization);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, Authorization, null);
     }
 }

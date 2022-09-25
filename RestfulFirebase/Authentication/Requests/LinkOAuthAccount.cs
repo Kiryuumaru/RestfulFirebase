@@ -38,24 +38,27 @@ public class LinkOAuthAccountRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(AuthType);
         ArgumentNullException.ThrowIfNull(OAuthAccessToken);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            var providerId = GetProviderId(AuthType.Value);
-            var content = $"{{\"idToken\":\"{tokenRequest.Result}\",\"postBody\":\"access_token={OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
-
-            await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
-
-            await RefreshUserInfo(Authorization);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        var providerId = GetProviderId(AuthType.Value);
+        var content = $"{{\"idToken\":\"{tokenResponse.Result.IdToken}\",\"postBody\":\"access_token={OAuthAccessToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        var refreshException = await RefreshUserInfo(Authorization);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, Authorization, null);
     }
 }

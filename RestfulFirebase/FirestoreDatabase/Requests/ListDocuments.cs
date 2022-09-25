@@ -80,27 +80,28 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
             orderBy = OrderBy.BuildAsQueryParameter<T>(jsonSerializerOptions);
         }
 
+        AsyncPager<Document<T>>.DocumentPagerIterator iterator;
         try
         {
-            var iterator = await ExecuteNextPage(null, orderBy, jsonSerializerOptions);
-
-            Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>? firstIterationIterator = null;
-            if (iterator.NextPage != null)
-            {
-                firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>(
-                    async (ct) => await iterator.NextPage!(ct));
-            }
-            var firstIteration = new ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>(
-                new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
-            AsyncPager<Document<T>> pager = new(new(null!, (_) => firstIteration));
-            ListDocumentsResult<T> result = new(iterator.Item, pager);
-
-            return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>(this, result, null);
+            iterator = await ExecuteNextPage(null, orderBy, jsonSerializerOptions);
         }
         catch (Exception ex)
         {
             return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>(this, null, ex);
         }
+
+        Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>? firstIterationIterator = null;
+        if (iterator.NextPage != null)
+        {
+            firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>>(
+                async (ct) => await iterator.NextPage!(ct));
+        }
+        var firstIteration = new ValueTask<AsyncPager<Document<T>>.DocumentPagerIterator>(
+            new AsyncPager<Document<T>>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
+        AsyncPager<Document<T>> pager = new(new(null!, (_) => firstIteration));
+        ListDocumentsResult<T> result = new(iterator.Item, pager);
+
+        return new TransactionResponse<ListDocumentsRequest<T>, ListDocumentsResult<T>>(this, result, null);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -132,8 +133,14 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
         }
         string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
 
-        var response = await Execute(HttpMethod.Get, url);
-        using Stream contentStream = await response.Content.ReadAsStreamAsync();
+
+        var (executeResult, executeException) = await Execute(HttpMethod.Get, url);
+        if (executeResult == null)
+        {
+            throw executeException ?? new Exception("Unknown exception occured");
+        }
+
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
         List<Document<T>> documents = new();

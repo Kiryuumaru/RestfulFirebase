@@ -131,16 +131,13 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
 
         await writer.FlushAsync();
 
-        try
+        var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
+        if (executeResult == null)
         {
-            await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
+            return new(this, executeException);
+        }
 
-            return new(this, null);
-        }
-        catch (Exception ex)
-        {
-            return new(this, ex);
-        }
+        return new(this, null);
     }
 
     internal string BuildUrl()

@@ -75,18 +75,17 @@ public class CreateDocumentRequest<T> : FirestoreDatabaseRequest<TransactionResp
 
         await writer.FlushAsync();
 
-        try
+        var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, url);
+        if (executeResult == null)
         {
-            var response = await ExecuteWithContent(stream, HttpMethod.Post, url);
-            using Stream contentStream = await response.Content.ReadAsStreamAsync();
-            JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-            var parsedDocument = Document<T>.Parse(null, Model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+            return new(this, null, executeException);
+        }
 
-            return new(this, parsedDocument, null);
-        }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+
+        var parsedDocument = Document<T>.Parse(null, Model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions);
+
+        return new(this, parsedDocument, null);
     }
 }

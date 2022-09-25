@@ -43,15 +43,15 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         }
         else if (Authorization is FirebaseUser firebaseUser)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(new GetFreshTokenRequest()
+            var tokenResponse = await Api.Authentication.GetFreshToken(new GetFreshTokenRequest()
             {
                 Config = Config,
                 HttpClient = HttpClient,
                 CancellationToken = CancellationToken,
                 Authorization = firebaseUser,
             });
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenRequest.Result.IdToken);
+            tokenResponse.ThrowIfErrorOrEmptyResult();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.Result.IdToken);
         }
 
         return client;

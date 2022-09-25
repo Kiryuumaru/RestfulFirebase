@@ -23,21 +23,20 @@ public class SendEmailVerificationRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Authorization);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{tokenRequest.Result}\"}}";
-
-            await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        var content = $"{{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":\"{tokenResponse.Result.IdToken}\"}}";
+
+        var (executeResult, executeException) = await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        return new(this, Authorization, null);
     }
 }

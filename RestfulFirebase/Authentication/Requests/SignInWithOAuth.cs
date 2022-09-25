@@ -37,27 +37,27 @@ public class SignInWithOAuthRequest : AuthenticationRequest<TransactionResponse<
         ArgumentNullException.ThrowIfNull(AuthType);
         ArgumentNullException.ThrowIfNull(OAuthToken);
 
-        try
+        var providerId = GetProviderId(AuthType.Value);
+        string content = AuthType.Value switch
         {
-            var providerId = GetProviderId(AuthType.Value);
+            FirebaseAuthType.Apple => $"{{\"postBody\":\"id_token={OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+            _ => $"{{\"postBody\":\"access_token={OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
+        };
 
-            string content = AuthType.Value switch
-            {
-                FirebaseAuthType.Apple => $"{{\"postBody\":\"id_token={OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
-                _ => $"{{\"postBody\":\"access_token={OAuthToken}&providerId={providerId}\",\"requestUri\":\"http://localhost\",\"returnSecureToken\":true}}",
-            };
-
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
-
-            FirebaseUser user = new(auth);
-
-            await RefreshUserInfo(user);
-
-            return new(this, user, null);
-        }
-        catch (Exception ex)
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleIdentityUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        FirebaseUser user = new(executeResult);
+
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, user, null);
     }
 }

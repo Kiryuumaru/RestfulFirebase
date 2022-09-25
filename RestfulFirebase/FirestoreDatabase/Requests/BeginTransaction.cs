@@ -64,25 +64,24 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
 
         await writer.FlushAsync();
 
-        try
+        var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
+        if (executeResult == null)
         {
-            var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
-            using Stream contentStream = await response.Content.ReadAsStreamAsync();
-            JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-
-            Transaction? transaction = null;
-            if (jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
-                transactionElement.GetString() is string transactionToken)
-            {
-                transaction = new(transactionToken);
-            }
-
-            return new(this, transaction, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
+
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+
+        Transaction? transaction = null;
+
+        if (jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
+            transactionElement.GetString() is string transactionToken)
         {
-            return new(this, null, ex);
+            transaction = new(transactionToken);
         }
+
+        return new(this, transaction, null);
     }
 
     internal string BuildUrl()

@@ -34,45 +34,48 @@ public class UpdateProfileRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Authorization);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            StringBuilder sb = new($"{{\"idToken\":\"{tokenRequest.Result}\"");
-            if (!string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(PhotoUrl))
-            {
-                sb.Append($",\"displayName\":\"{DisplayName}\",\"photoUrl\":\"{PhotoUrl}\"");
-            }
-            else if (!string.IsNullOrWhiteSpace(DisplayName))
-            {
-                sb.Append($",\"displayName\":\"{DisplayName}\"");
-                sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
-            }
-            else if (!string.IsNullOrWhiteSpace(PhotoUrl))
-            {
-                sb.Append($",\"photoUrl\":\"{PhotoUrl}\"");
-                sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
-            }
-            else
-            {
-                sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
-            }
-
-            sb.Append($",\"returnSecureToken\":true}}");
-
-            string content = sb.ToString();
-
-            await ExecuteAuthWithPostContent(content, GoogleSetAccountUrl, CamelCaseJsonSerializerOption);
-
-            await RefreshUserInfo(Authorization);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        StringBuilder sb = new($"{{\"idToken\":\"{tokenResponse.Result.IdToken}\"");
+        if (!string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(PhotoUrl))
         {
-            return new(this, null, ex);
+            sb.Append($",\"displayName\":\"{DisplayName}\",\"photoUrl\":\"{PhotoUrl}\"");
         }
+        else if (!string.IsNullOrWhiteSpace(DisplayName))
+        {
+            sb.Append($",\"displayName\":\"{DisplayName}\"");
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeletePhotoUrl}\"]");
+        }
+        else if (!string.IsNullOrWhiteSpace(PhotoUrl))
+        {
+            sb.Append($",\"photoUrl\":\"{PhotoUrl}\"");
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\"]");
+        }
+        else
+        {
+            sb.Append($",\"deleteAttribute\":[\"{ProfileDeleteDisplayName}\",\"{ProfileDeletePhotoUrl}\"]");
+        }
+
+        sb.Append($",\"returnSecureToken\":true}}");
+
+        string content = sb.ToString();
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleSetAccountUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
+        {
+            return new(this, null, executeException);
+        }
+
+        var refreshException = await RefreshUserInfo(Authorization);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, Authorization, null);
     }
 }

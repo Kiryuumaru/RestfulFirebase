@@ -45,7 +45,7 @@ public abstract class TransactionRequest<TResponse> : TransactionRequest
 {
     internal abstract Task<TResponse> Execute();
 
-    internal async Task<HttpResponseMessage> Execute(HttpMethod httpMethod, string uri)
+    internal async Task<(HttpResponseMessage? response, Exception? exception)> Execute(HttpMethod httpMethod, string uri)
     {
         ArgumentNullException.ThrowIfNull(Config);
 
@@ -63,19 +63,19 @@ public abstract class TransactionRequest<TResponse> : TransactionRequest
 
             response.EnsureSuccessStatusCode();
 
-            return response;
+            return (response, null);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            throw;
+            return (null, ex);
         }
         catch (Exception ex)
         {
-            throw await GetHttpException(request, response, statusCode, ex);
+            return (null, await GetHttpException(request, response, statusCode, ex));
         }
     }
 
-    internal async Task<HttpResponseMessage> ExecuteWithContent(Stream contentStream, HttpMethod httpMethod, string uri)
+    internal async Task<(HttpResponseMessage? response, Exception? exception)> ExecuteWithContent(Stream contentStream, HttpMethod httpMethod, string uri)
     {
         ArgumentNullException.ThrowIfNull(Config);
 
@@ -103,19 +103,19 @@ public abstract class TransactionRequest<TResponse> : TransactionRequest
 
             response.EnsureSuccessStatusCode();
 
-            return response;
+            return (response, null);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            throw;
+            return (null, ex);
         }
         catch (Exception ex)
         {
-            throw await GetHttpException(request, response, statusCode, ex);
+            return (null, await GetHttpException(request, response, statusCode, ex));
         }
     }
 
-    internal async Task<HttpResponseMessage> ExecuteWithContent(string content, HttpMethod httpMethod, string uri)
+    internal async Task<(HttpResponseMessage? response, Exception? exception)> ExecuteWithContent(string content, HttpMethod httpMethod, string uri)
     {
         ArgumentNullException.ThrowIfNull(Config);
 
@@ -136,15 +136,15 @@ public abstract class TransactionRequest<TResponse> : TransactionRequest
 
             response.EnsureSuccessStatusCode();
 
-            return response;
+            return (response, null);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            throw;
+            return (null, ex);
         }
         catch (Exception ex)
         {
-            throw await GetHttpException(request, response, statusCode, ex);
+            return (null, await GetHttpException(request, response, statusCode, ex));
         }
     }
 }

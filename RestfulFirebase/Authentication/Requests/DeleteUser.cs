@@ -23,21 +23,20 @@ public class DeleteUserRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Authorization);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            var content = $"{{ \"idToken\": \"{tokenRequest.Result}\" }}";
-
-            await ExecuteWithPostContent(content, GoogleDeleteUserUrl);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        var content = $"{{ \"idToken\": \"{tokenResponse.Result.IdToken}\" }}";
+
+        var (executeResult, executeException) = await ExecuteWithPostContent(content, GoogleDeleteUserUrl);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        return new(this, Authorization, null);
     }
 }

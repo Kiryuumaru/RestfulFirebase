@@ -278,67 +278,83 @@ public abstract class AuthenticationRequest<TResponse> : TransactionRequest<TRes
         };
     }
 
-    internal async Task<string?> ExecuteWithPostContent(string postContent, string googleUrl)
+    internal async Task<(string? response, Exception? exception)> ExecuteWithPostContent(string postContent, string googleUrl)
     {
-        var response = await ExecuteWithContent(postContent, HttpMethod.Post, BuildUrl(googleUrl));
-        var responseData = await response.Content.ReadAsStringAsync();
-
-        return responseData;
-    }
-
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
-    internal async Task<T?> ExecuteWithGet<T>(string googleUrl, JsonSerializerOptions jsonSerializerOptions)
-    {
-        var response = await Execute(HttpMethod.Get, BuildUrl(googleUrl));
-        var responseData = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions);
-    }
-
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
-    internal async Task<T?> ExecuteWithPostContent<T>(string postContent, string googleUrl, JsonSerializerOptions jsonSerializerOptions)
-    {
-        var response = await ExecuteWithContent(postContent, HttpMethod.Post, BuildUrl(googleUrl));
-        var responseData = await response.Content.ReadAsStringAsync();
-
-        return JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions);
-    }
-
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
-    internal async Task<FirebaseAuth> ExecuteAuthWithPostContent(string postContent, string googleUrl, JsonSerializerOptions jsonSerializerOptions)
-    {
-        FirebaseAuth? auth = await ExecuteWithPostContent<FirebaseAuth>(postContent, BuildUrl(googleUrl), jsonSerializerOptions);
-
-        if (auth == null)
+        var (response, exception) = await ExecuteWithContent(postContent, HttpMethod.Post, BuildUrl(googleUrl));
+        if (response == null)
         {
-            throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
+            return (null, exception);
         }
 
-        return auth;
+        var responseData = await response.Content.ReadAsStringAsync();
+        return (responseData, null);
     }
 
 #if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
 #endif
-    internal async Task RefreshUserInfo(FirebaseUser user)
+    internal async Task<(T? response, Exception? exception)> ExecuteWithGet<T>(string googleUrl, JsonSerializerOptions jsonSerializerOptions)
+    {
+        var (response, exception) = await Execute(HttpMethod.Get, BuildUrl(googleUrl));
+        if (response == null)
+        {
+            return (default, exception);
+        }
+
+        var responseData = await response.Content.ReadAsStringAsync();
+        return (JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), null);
+    }
+
+#if NET5_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+#endif
+    internal async Task<(T? response, Exception? exception)> ExecuteWithPostContent<T>(string postContent, string googleUrl, JsonSerializerOptions jsonSerializerOptions)
+    {
+        var (response, exception) = await ExecuteWithContent(postContent, HttpMethod.Post, BuildUrl(googleUrl));
+        if (response == null)
+        {
+            return (default, exception);
+        }
+
+        var responseData = await response.Content.ReadAsStringAsync();
+        return (JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), null);
+    }
+
+#if NET5_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+#endif
+    internal async Task<(FirebaseAuth? auth, Exception? exception)> ExecuteAuthWithPostContent(string postContent, string googleUrl, JsonSerializerOptions jsonSerializerOptions)
+    {
+        var (response, exception) = await ExecuteWithPostContent<FirebaseAuth>(postContent, BuildUrl(googleUrl), jsonSerializerOptions);
+        if (response == null)
+        {
+            return (default, exception);
+        }
+
+        return (response, null);
+    }
+
+#if NET5_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+#endif
+    internal async Task<Exception?> RefreshUserInfo(FirebaseUser user)
     {
         var content = $"{{\"idToken\":\"{user.IdToken}\"}}";
 
-        var response = await ExecuteWithContent(content, HttpMethod.Post, BuildUrl(GoogleGetUser));
-        var responseData = await response.Content.ReadAsStringAsync();
+        var (executeResult, executeException) = await ExecuteWithContent(content, HttpMethod.Post, BuildUrl(GoogleGetUser));
+        if (executeResult == null)
+        {
+            return executeException;
+        }
 
-        var resultJson = JsonDocument.Parse(responseData);
-        if (!(resultJson?.RootElement.TryGetProperty("users", out JsonElement userJson) ?? false))
+        var responseData = await executeResult.Content.ReadAsStringAsync();
+
+        JsonDocument resultJson = JsonDocument.Parse(responseData);
+        if (!resultJson.RootElement.TryGetProperty("users", out JsonElement userJson))
         {
             throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
         }
@@ -352,5 +368,7 @@ public abstract class AuthenticationRequest<TResponse> : TransactionRequest<TRes
 
         user.UpdateAuth(auth);
         user.UpdateInfo(auth);
+
+        return null;
     }
 }

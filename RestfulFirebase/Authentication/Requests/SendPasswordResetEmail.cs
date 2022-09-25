@@ -27,17 +27,14 @@ public class SendPasswordResetEmailRequest : AuthenticationRequest<TransactionRe
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
 
-        try
-        {
-            var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{Email}\"}}";
+        var content = $"{{\"requestType\":\"PASSWORD_RESET\",\"email\":\"{Email}\"}}";
 
-            await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
-
-            return new(this, null);
-        }
-        catch (Exception ex)
+        var (executeResult, executeException) = await ExecuteWithPostContent(content, GoogleGetConfirmationCodeUrl);
+        if (executeResult == null)
         {
-            return new(this, ex);
+            return new(this, executeException);
         }
+
+        return new(this, null);
     }
 }

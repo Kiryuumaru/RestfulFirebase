@@ -22,21 +22,22 @@ public class SignInAnonymouslyRequest : AuthenticationRequest<TransactionRespons
     {
         ArgumentNullException.ThrowIfNull(Config);
 
-        try
+        var content = $"{{\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleSignUpUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            var content = $"{{\"returnSecureToken\":true}}";
-
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GoogleSignUpUrl, CamelCaseJsonSerializerOption);
-
-            FirebaseUser user = new(auth);
-
-            await RefreshUserInfo(user);
-
-            return new(this, user, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
+
+        FirebaseUser user = new(executeResult);
+
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
         {
-            return new(this, null, ex);
+            return new(this, null, refreshException);
         }
+
+        return new(this, user, null);
     }
 }

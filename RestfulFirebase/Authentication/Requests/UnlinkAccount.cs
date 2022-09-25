@@ -33,38 +33,41 @@ public class UnlinkAccountRequest : AuthenticatedRequest
         ArgumentNullException.ThrowIfNull(Authorization);
         ArgumentNullException.ThrowIfNull(AuthType);
 
-        try
+        var tokenResponse = await Api.Authentication.GetFreshToken(this);
+        if (tokenResponse.Result == null)
         {
-            var tokenRequest = await Api.Authentication.GetFreshToken(this);
-
-            tokenRequest.ThrowIfErrorOrEmptyResult();
-
-            string? providerId;
-            if (AuthType.Value == FirebaseAuthType.EmailAndPassword)
-            {
-                providerId = AuthType.Value.ToEnumString();
-            }
-            else
-            {
-                providerId = GetProviderId(AuthType.Value);
-            }
-
-            if (string.IsNullOrEmpty(providerId))
-            {
-                throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
-            }
-
-            var content = $"{{\"idToken\":\"{tokenRequest.Result}\",\"deleteProvider\":[\"{providerId}\"]}}";
-
-            await ExecuteAuthWithPostContent(content, GoogleSetAccountUrl, CamelCaseJsonSerializerOption);
-
-            await RefreshUserInfo(Authorization);
-
-            return new(this, Authorization, null);
+            return new(this, null, tokenResponse.Error);
         }
-        catch (Exception ex)
+
+        string? providerId;
+        if (AuthType.Value == FirebaseAuthType.EmailAndPassword)
         {
-            return new(this, null, ex);
+            providerId = AuthType.Value.ToEnumString();
         }
+        else
+        {
+            providerId = GetProviderId(AuthType.Value);
+        }
+
+        if (string.IsNullOrEmpty(providerId))
+        {
+            throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
+        }
+
+        var content = $"{{\"idToken\":\"{tokenResponse.Result.IdToken}\",\"deleteProvider\":[\"{providerId}\"]}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleSetAccountUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
+        {
+            return new(this, null, executeException);
+        }
+
+        var refreshException = await RefreshUserInfo(Authorization);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, Authorization, null);
     }
 }

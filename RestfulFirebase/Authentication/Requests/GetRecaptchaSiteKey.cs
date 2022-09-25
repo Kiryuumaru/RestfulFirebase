@@ -23,20 +23,12 @@ public class GetRecaptchaSiteKeyRequest : AuthenticationRequest<TransactionRespo
     {
         ArgumentNullException.ThrowIfNull(Config);
 
-        try
+        var (executeResult, executeException) = await ExecuteWithGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, CamelCaseJsonSerializerOption);
+        if (executeResult?.RecaptchaSiteKey == null)
         {
-            RecaptchaSiteKeyDefinition? response = await ExecuteWithGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, CamelCaseJsonSerializerOption);
-
-            if (response == null || response.RecaptchaSiteKey == null)
-            {
-                throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
-            }
-
-            return new(this, response.RecaptchaSiteKey, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+
+        return new(this, executeResult.RecaptchaSiteKey, null);
     }
 }

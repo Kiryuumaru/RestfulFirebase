@@ -76,57 +76,55 @@ public class GetDocumentRequest<T> : FirestoreDatabaseRequest<TransactionRespons
 
         await writer.FlushAsync();
 
-        try
+        var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
+        if (executeResult == null)
         {
-            var response = await ExecuteWithContent(stream, HttpMethod.Post, BuildUrl());
-            using Stream contentStream = await response.Content.ReadAsStreamAsync();
-            JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+            return new(this, null, executeException);
+        }
 
-            List<DocumentTimestamp<T>> foundDocuments = new();
-            List<DocumentReferenceTimestamp> missingDocuments = new();
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
-            foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        List<DocumentTimestamp<T>> foundDocuments = new();
+        List<DocumentReferenceTimestamp> missingDocuments = new();
+
+        foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        {
+            if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
+                readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
             {
-                if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
-                    readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
+                DocumentReference? documentReference = null;
+                Document<T>? document = null;
+                T? model = null;
+                if (doc.TryGetProperty("found", out JsonElement foundProperty))
                 {
-                    DocumentReference? documentReference = null;
-                    Document<T>? document = null;
-                    T? model = null;
-                    if (doc.TryGetProperty("found", out JsonElement foundProperty))
+                    if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                        DocumentReference.Parse(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
                     {
-                        if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                            DocumentReference.Parse(foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
-                        {
-                            documentReference = docRef;
+                        documentReference = docRef;
 
-                            if (Document != null &&
-                                Document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
-                            {
-                                document = foundDocument;
-                                model = foundDocument.Model;
-                            }
-                        }
-
-                        if (Document<T>.Parse(documentReference, model, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                        if (Document != null &&
+                            Document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
                         {
-                            foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
+                            document = foundDocument;
+                            model = foundDocument.Model;
                         }
                     }
-                    else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
-                        DocumentReference.Parse(missingProperty, jsonSerializerOptions) is DocumentReference missing)
+
+                    if (Document<T>.Parse(documentReference, model, document, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                     {
-                        missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
                     }
                 }
+                else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
+                    DocumentReference.Parse(missingProperty, jsonSerializerOptions) is DocumentReference missing)
+                {
+                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                }
             }
+        }
 
-            return new(this, new GetDocumentResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()), null);
-        }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+        return new(this, new GetDocumentResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()), null);
     }
 
     internal string BuildUrl()

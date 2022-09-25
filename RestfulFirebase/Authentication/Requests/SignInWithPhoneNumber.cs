@@ -36,21 +36,22 @@ public class SignInWithPhoneNumberRequest : AuthenticationRequest<TransactionRes
         ArgumentNullException.ThrowIfNull(SessionInfo);
         ArgumentNullException.ThrowIfNull(Code);
 
-        try
+        string content = $"{{\"sessionInfo\":\"{SessionInfo}\",\"code\":\"{Code}\",\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleSignInWithPhoneNumber, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            string content = $"{{\"sessionInfo\":\"{SessionInfo}\",\"code\":\"{Code}\",\"returnSecureToken\":true}}";
-
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GoogleSignInWithPhoneNumber, CamelCaseJsonSerializerOption);
-
-            FirebaseUser user = new(auth);
-
-            await RefreshUserInfo(user);
-
-            return new(this, user, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
+
+        FirebaseUser user = new(executeResult);
+
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
         {
-            return new(this, null, ex);
+            return new(this, null, refreshException);
         }
+
+        return new(this, user, null);
     }
 }

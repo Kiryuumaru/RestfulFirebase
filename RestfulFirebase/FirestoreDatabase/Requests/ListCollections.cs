@@ -46,27 +46,28 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
+        AsyncPager<CollectionReference>.DocumentPagerIterator iterator;
         try
         {
-            var iterator = await ExecuteNextPage(null, jsonSerializerOptions);
-
-            Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>? firstIterationIterator = null;
-            if (iterator.NextPage != null)
-            {
-                firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>(
-                    async (ct) => await iterator.NextPage!(ct));
-            }
-            var firstIteration = new ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>(
-                new AsyncPager<CollectionReference>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
-            AsyncPager<CollectionReference> pager = new(new(null!, (_) => firstIteration));
-            ListCollectionsResult result = new(iterator.Item, pager);
-
-            return new TransactionResponse<ListCollectionsRequest, ListCollectionsResult>(this, result, null);
+            iterator = await ExecuteNextPage(null, jsonSerializerOptions);
         }
         catch (Exception ex)
         {
             return new TransactionResponse<ListCollectionsRequest, ListCollectionsResult>(this, null, ex);
         }
+
+        Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>? firstIterationIterator = null;
+        if (iterator.NextPage != null)
+        {
+            firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>(
+                async (ct) => await iterator.NextPage!(ct));
+        }
+        var firstIteration = new ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>(
+            new AsyncPager<CollectionReference>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
+        AsyncPager<CollectionReference> pager = new(new(null!, (_) => firstIteration));
+        ListCollectionsResult result = new(iterator.Item, pager);
+
+        return new TransactionResponse<ListCollectionsRequest, ListCollectionsResult>(this, result, null);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -102,8 +103,13 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
         }
         writer.WriteEndObject();
 
-        var response = await ExecuteWithContent(stream, HttpMethod.Post, url);
-        using Stream contentStream = await response.Content.ReadAsStreamAsync();
+        var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, url);
+        if (executeResult == null)
+        {
+            throw executeException ?? new Exception("Unknown exception occured");
+        }
+
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
         List<CollectionReference> collectionReferences = new();

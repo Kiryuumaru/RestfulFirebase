@@ -2,6 +2,7 @@
 using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.Common.Requests;
 using System;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Authentication.Requests;
@@ -41,32 +42,37 @@ public class CreateUserWithEmailAndPasswordRequest : AuthenticationRequest<Trans
         ArgumentNullException.ThrowIfNull(Email);
         ArgumentNullException.ThrowIfNull(Password);
 
-        try
+        var content = $"{{\"email\":\"{Email}\",\"password\":\"{Password}\",\"returnSecureToken\":true}}";
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GoogleSignUpUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            var content = $"{{\"email\":\"{Email}\",\"password\":\"{Password}\",\"returnSecureToken\":true}}";
+            return new(this, null, executeException);
+        }
 
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GoogleSignUpUrl, CamelCaseJsonSerializerOption);
+        FirebaseUser user = new(executeResult);
 
-            FirebaseUser user = new(auth);
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
 
-            await RefreshUserInfo(user);
-
-            if (SendVerificationEmail)
+        if (SendVerificationEmail)
+        {
+            var sendVerificationRequest = await Api.Authentication.SendEmailVerification(new SendEmailVerificationRequest()
             {
-                await Api.Authentication.SendEmailVerification(new SendEmailVerificationRequest()
-                {
-                    Config = Config,
-                    Authorization = user,
-                    CancellationToken = CancellationToken,
-                    HttpClient = HttpClient
-                });
+                Config = Config,
+                Authorization = user,
+                CancellationToken = CancellationToken,
+                HttpClient = HttpClient
+            });
+            if (sendVerificationRequest.Result == null)
+            {
+                return new(this, null, sendVerificationRequest.Error);
             }
+        }
 
-            return new(this, user, null);
-        }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+        return new(this, user, null);
     }
 }

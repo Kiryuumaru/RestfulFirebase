@@ -32,25 +32,17 @@ public class GetLinkedAccountsRequest : AuthenticationRequest<TransactionRespons
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Email);
 
-        try
+        string content = $"{{\"identifier\":\"{Email}\", \"continueUri\": \"http://localhost\"}}";
+
+        var (executeResult, executeException)  = await ExecuteWithPostContent<ProviderQueryResult>(content, GoogleCreateAuthUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            string content = $"{{\"identifier\":\"{Email}\", \"continueUri\": \"http://localhost\"}}";
-
-            ProviderQueryResult? data = await ExecuteWithPostContent<ProviderQueryResult>(content, GoogleCreateAuthUrl, CamelCaseJsonSerializerOption);
-
-            if (data == null)
-            {
-                throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
-            }
-
-            data.Email = Email;
-
-            return new(this, data, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+
+        executeResult.Email = Email;
+
+        return new(this, executeResult, null);
     }
 }
 

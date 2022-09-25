@@ -35,22 +35,14 @@ public class SendVerificationCodeRequest : AuthenticationRequest<TransactionResp
         ArgumentNullException.ThrowIfNull(PhoneNumber);
         ArgumentNullException.ThrowIfNull(RecaptchaToken);
 
-        try
+        string content = $"{{\"phoneNumber\":\"{PhoneNumber}\",\"recaptchaToken\":\"{RecaptchaToken}\"}}";
+
+        var (executeResult, executeException) = await ExecuteWithPostContent<SessionInfoDefinition>(content, GoogleSendVerificationCode, CamelCaseJsonSerializerOption);
+        if (executeResult?.SessionInfo == null)
         {
-            string content = $"{{\"phoneNumber\":\"{PhoneNumber}\",\"recaptchaToken\":\"{RecaptchaToken}\"}}";
-
-            SessionInfoDefinition? response = await ExecuteWithPostContent<SessionInfoDefinition>(content, GoogleSendVerificationCode, CamelCaseJsonSerializerOption);
-
-            if (response == null || response.SessionInfo == null)
-            {
-                throw new Exception();
-            }
-
-            return new(this, response.SessionInfo, null);
+            return new(this, null, executeException);
         }
-        catch (Exception ex)
-        {
-            return new(this, null, ex);
-        }
+
+        return new(this, executeResult.SessionInfo, null);
     }
 }

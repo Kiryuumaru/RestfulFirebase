@@ -42,30 +42,31 @@ public class SignInWithEmailAndPasswordRequest : AuthenticationRequest<Transacti
         ArgumentNullException.ThrowIfNull(Email);
         ArgumentNullException.ThrowIfNull(Password);
 
-        try
+        StringBuilder sb = new($"{{\"email\":\"{Email}\",\"password\":\"{Password}\",");
+
+        if (TenantId != null)
         {
-            StringBuilder sb = new($"{{\"email\":\"{Email}\",\"password\":\"{Password}\",");
-
-            if (TenantId != null)
-            {
-                sb.Append($"\"tenantId\":\"{TenantId}\",");
-            }
-
-            sb.Append("\"returnSecureToken\":true}");
-
-            string content = sb.ToString();
-
-            FirebaseAuth auth = await ExecuteAuthWithPostContent(content, GooglePasswordUrl, CamelCaseJsonSerializerOption);
-
-            FirebaseUser user = new(auth);
-
-            await RefreshUserInfo(user);
-
-            return new(this, user, null);
+            sb.Append($"\"tenantId\":\"{TenantId}\",");
         }
-        catch (Exception ex)
+
+        sb.Append("\"returnSecureToken\":true}");
+
+        string content = sb.ToString();
+
+        var (executeResult, executeException) = await ExecuteAuthWithPostContent(content, GooglePasswordUrl, CamelCaseJsonSerializerOption);
+        if (executeResult == null)
         {
-            return new(this, null, ex);
+            return new(this, null, executeException);
         }
+
+        FirebaseUser user = new(executeResult);
+
+        var refreshException = await RefreshUserInfo(user);
+        if (refreshException != null)
+        {
+            return new(this, null, refreshException);
+        }
+
+        return new(this, user, null);
     }
 }
