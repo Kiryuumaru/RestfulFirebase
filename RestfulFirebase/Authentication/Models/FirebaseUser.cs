@@ -2,80 +2,97 @@
 using System;
 using RestfulFirebase.Authentication.Internals;
 using RestfulFirebase.Common.Abstractions;
+using ObservableHelpers.ComponentModel;
+using ObservableHelpers.ComponentModel.Enums;
 
 namespace RestfulFirebase.Authentication.Models;
 
 /// <summary>
 /// Provides firebase user authentication implementations.
 /// </summary>
-public class FirebaseUser : IAuthorization
+[ObservableObject]
+public partial class FirebaseUser : IAuthorization
 {
     #region Properties
 
     /// <summary>
     /// Gets the firebase token of the authenticated account which can be used for authenticated queries. 
     /// </summary>
-    public string IdToken { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    [NotifyPropertyChangedFor(nameof(Token))]
+    string idToken;
 
     /// <summary>
     /// Gets the refresh token of the underlying service which can be used to get a new access token. 
     /// </summary>
-    public string RefreshToken { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string refreshToken;
 
     /// <summary>
     /// Gets the number of seconds since the token is created.
     /// </summary>
-    public int ExpiresIn { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    int expiresIn;
 
     /// <summary>
     /// Gets the <see cref="DateTimeOffset"/> when this token was created.
     /// </summary>
-    public DateTimeOffset Created { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    DateTimeOffset created;
 
     /// <summary>
     /// Gets the local id or the <c>UID</c> of the account.
     /// </summary>
-    public string LocalId { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string localId;
 
     /// <summary>
     /// Gets the federated id of the account.
     /// </summary>
-    public string? FederatedId { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? federatedId;
 
     /// <summary>
     /// Gets the first name of the user.
     /// </summary>
-    public string? FirstName { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? firstName;
 
     /// <summary>
     /// Gets the last name of the user.
     /// </summary>
-    public string? LastName { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? lastName;
 
     /// <summary>
     /// Gets the display name of the user.
     /// </summary>
-    public string? DisplayName { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? displayName;
 
     /// <summary>
     /// Gets the email of the user.
     /// </summary>
-    public string? Email { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? email;
 
     /// <summary>
     /// Gets the email verfication status of the account.
     /// </summary>
-    public bool IsEmailVerified { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    bool isEmailVerified;
 
     /// <summary>
     /// Gets or sets the photo url of the account.
     /// </summary>
-    public string? PhotoUrl { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? photoUrl;
 
     /// <summary>
     /// Gets or sets the phone number of the user.
     /// </summary>
-    public string? PhoneNumber { get; private set; }
+    [ObservableProperty(Access = AccessModifier.PublicWithPrivateSetter)]
+    string? phoneNumber;
 
     /// <inheritdoc/>
     public string Token => IdToken;
@@ -93,7 +110,7 @@ public class FirebaseUser : IAuthorization
     #region Initializers
 
     internal FirebaseUser(FirebaseAuth auth)
-        : this(auth, DateTimeOffset.UtcNow)
+        : this(auth, DateTimeOffset.Now)
     {
 
     }
@@ -105,12 +122,12 @@ public class FirebaseUser : IAuthorization
         ArgumentNullException.ThrowIfNull(auth.ExpiresIn);
         ArgumentNullException.ThrowIfNull(auth.LocalId);
 
-        IdToken = auth.IdToken;
-        RefreshToken = auth.RefreshToken;
-        ExpiresIn = auth.ExpiresIn.Value;
-        LocalId = auth.LocalId;
+        idToken = auth.IdToken;
+        refreshToken = auth.RefreshToken;
+        expiresIn = auth.ExpiresIn.Value;
+        localId = auth.LocalId;
 
-        Created = created;
+        this.created = created;
 
         UpdateAuth(auth);
     }
@@ -140,7 +157,7 @@ public class FirebaseUser : IAuthorization
         var exp = BlobSerializer.GetValue(decrypted, "exp");
         int expiresIn = string.IsNullOrEmpty(exp) ? default : (int)StringSerializer.ExtractNumber(exp!);
         var ctd = BlobSerializer.GetValue(decrypted, "ctd");
-        DateTimeOffset created = string.IsNullOrEmpty(ctd) ? default : new DateTimeOffset(StringSerializer.ExtractNumber(ctd!), DateTimeOffset.Now.Offset);
+        DateTimeOffset created = string.IsNullOrEmpty(ctd) ? default : new DateTimeOffset(StringSerializer.ExtractNumber(ctd!), DateTimeOffset.UtcNow.Offset);
         string? localId = BlobSerializer.GetValue(decrypted, "lid");
         string? federatedId = BlobSerializer.GetValue(decrypted, "fid");
         string? firstName = BlobSerializer.GetValue(decrypted, "fname");
@@ -212,7 +229,7 @@ public class FirebaseUser : IAuthorization
         auth = BlobSerializer.SetValue(auth, "tok", IdToken);
         auth = BlobSerializer.SetValue(auth, "ref", RefreshToken);
         auth = BlobSerializer.SetValue(auth, "exp", StringSerializer.CompressNumber(ExpiresIn));
-        auth = BlobSerializer.SetValue(auth, "ctd", StringSerializer.CompressNumber(Created.Ticks));
+        auth = BlobSerializer.SetValue(auth, "ctd", StringSerializer.CompressNumber(Created.ToUniversalTime().Ticks));
         auth = BlobSerializer.SetValue(auth, "lid", LocalId);
         auth = BlobSerializer.SetValue(auth, "fid", FederatedId);
         auth = BlobSerializer.SetValue(auth, "fname", FirstName);
@@ -228,80 +245,36 @@ public class FirebaseUser : IAuthorization
 
     internal void UpdateAuth(FirebaseAuth auth)
     {
-        bool hasChanges = false;
-
         if (auth.IdToken != null && auth.IdToken != IdToken)
         {
             IdToken = auth.IdToken;
-            Created = DateTime.UtcNow;
-            hasChanges = true;
+            Created = DateTimeOffset.UtcNow;
         }
         if (auth.RefreshToken != null && auth.RefreshToken != RefreshToken)
         {
             RefreshToken = auth.RefreshToken;
-            hasChanges = true;
         }
         if (auth.ExpiresIn.HasValue && auth.ExpiresIn.Value != ExpiresIn)
         {
             ExpiresIn = auth.ExpiresIn.Value;
-            hasChanges = true;
         }
         if (auth.LocalId != null && auth.LocalId != LocalId)
         {
             LocalId = auth.LocalId;
-            hasChanges = true;
         }
 
-        if (hasChanges)
-        {
-            OnAuthRefreshed();
-        }
+        UpdateInfo(auth);
     }
 
     internal void UpdateInfo(FirebaseAuth auth)
     {
-        bool hasChanges = false;
-
-        if (FederatedId != auth.FederatedId)
-        {
-            FederatedId = auth.FederatedId;
-            hasChanges = true;
-        }
-        if (FirstName != auth.FirstName)
-        {
-            FirstName = auth.FirstName;
-            hasChanges = true;
-        }
-        if (LastName != auth.LastName)
-        {
-            LastName = auth.LastName;
-            hasChanges = true;
-        }
-        if (DisplayName != auth.DisplayName)
-        {
-            DisplayName = auth.DisplayName;
-            hasChanges = true;
-        }
-        if (Email != auth.Email)
-        {
-            Email = auth.Email;
-            hasChanges = true;
-        }
-        if (IsEmailVerified != auth.IsEmailVerified)
-        {
-            IsEmailVerified = auth.IsEmailVerified;
-            hasChanges = true;
-        }
-        if (PhoneNumber != auth.PhoneNumber)
-        {
-            PhoneNumber = auth.PhoneNumber;
-            hasChanges = true;
-        }
-
-        if (hasChanges)
-        {
-            OnAuthRefreshed();
-        }
+        FederatedId = auth.FederatedId;
+        FirstName = auth.FirstName;
+        LastName = auth.LastName;
+        DisplayName = auth.DisplayName;
+        Email = auth.Email;
+        IsEmailVerified = auth.IsEmailVerified;
+        PhoneNumber = auth.PhoneNumber;
     }
 
     #endregion

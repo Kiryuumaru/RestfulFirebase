@@ -38,6 +38,12 @@ namespace RestfulFirebase.UnitTest
                 user = signupRequest.Result;
             }
 
+            string encrypted = user.Encrypt(1, 2, 3, 4, 5, 6);
+
+            FirebaseUser decrypted = FirebaseUser.Decrypt(encrypted, 1, 2, 3, 4, 5, 6);
+
+            Assert.Equivalent(user, decrypted);
+
             await Api.Authentication.DeleteUser(new DeleteUserRequest()
             {
                 Config = config,
