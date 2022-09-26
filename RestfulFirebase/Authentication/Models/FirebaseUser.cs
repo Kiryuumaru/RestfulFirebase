@@ -130,6 +130,7 @@ public partial class FirebaseUser : IAuthorization
         this.created = created;
 
         UpdateAuth(auth);
+        UpdateInfo(auth);
     }
 
     /// <summary>
@@ -199,7 +200,7 @@ public partial class FirebaseUser : IAuthorization
     /// </returns>
     public bool IsExpired()
     {
-        return DateTimeOffset.Now > Created.AddSeconds(ExpiresIn - 10);
+        return DateTimeOffset.Now > Created.AddSeconds(ExpiresIn - 60);
     }
 
     /// <summary>
@@ -262,8 +263,6 @@ public partial class FirebaseUser : IAuthorization
         {
             LocalId = auth.LocalId;
         }
-
-        UpdateInfo(auth);
     }
 
     internal void UpdateInfo(FirebaseAuth auth)
