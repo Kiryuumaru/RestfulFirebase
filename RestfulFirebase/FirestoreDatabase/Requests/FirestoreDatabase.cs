@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.Authentication.Requests;
+using RestfulFirebase.Common.Models;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -37,21 +38,24 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
     {
         var client = HttpClient ?? new HttpClient();
 
-        if (Authorization is Common.Models.AccessTokenAuthorization accessTokenType)
+        if (Authorization is AccessTokenAuthorization accessTokenType)
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessTokenType.Token);
         }
         else if (Authorization is FirebaseUser firebaseUser)
         {
-            var tokenResponse = await Api.Authentication.GetFreshToken(new GetFreshTokenRequest()
+            if (firebaseUser.IsExpired())
             {
-                Config = Config,
-                HttpClient = HttpClient,
-                CancellationToken = CancellationToken,
-                Authorization = firebaseUser,
-            });
-            tokenResponse.ThrowIfErrorOrEmptyResult();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse.Result.IdToken);
+                var tokenResponse = await Api.Authentication.GetFreshToken(new GetFreshTokenRequest()
+                {
+                    Config = Config,
+                    HttpClient = HttpClient,
+                    CancellationToken = CancellationToken,
+                    Authorization = firebaseUser,
+                });
+                tokenResponse.ThrowIfErrorOrEmptyResult();
+            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", firebaseUser.IdToken);
         }
 
         return client;
