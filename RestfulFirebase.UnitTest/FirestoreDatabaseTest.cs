@@ -856,11 +856,51 @@ public class FirestoreDatabaseTest
         Assert.NotNull(runQueryTest3.Result);
 
         Assert.Equal(5, runQueryTest3.Result.Found.Count);
-        Assert.Equivalent(writeDocuments[8], runQueryTest2.Result.Found[0].Document);
-        Assert.Equivalent(writeDocuments[7], runQueryTest2.Result.Found[1].Document);
-        Assert.Equivalent(writeDocuments[6], runQueryTest2.Result.Found[2].Document);
-        Assert.Equivalent(writeDocuments[5], runQueryTest2.Result.Found[3].Document);
-        Assert.Equivalent(writeDocuments[4], runQueryTest2.Result.Found[4].Document);
+        Assert.Equivalent(writeDocuments[8], runQueryTest3.Result.Found[0].Document);
+        Assert.Equivalent(writeDocuments[7], runQueryTest3.Result.Found[1].Document);
+        Assert.Equivalent(writeDocuments[6], runQueryTest3.Result.Found[2].Document);
+        Assert.Equivalent(writeDocuments[5], runQueryTest3.Result.Found[3].Document);
+        Assert.Equivalent(writeDocuments[4], runQueryTest3.Result.Found[4].Document);
+
+        var runQueryTest4 = await Api.FirestoreDatabase.RunQuery(new RunQueryRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            From = testCollectionReference,
+            Select = SelectQuery.DocumentName(),
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
+            OrderBy = OrderByQuery.Builder.Create()
+                .Descending(nameof(NumberModel.Val2)),
+            Offset = 1,
+            Limit = 2
+        });
+        Assert.NotNull(runQueryTest4.Result);
+
+        Assert.Equal(2, runQueryTest4.Result.Found.Count);
+        Assert.Null(runQueryTest4.Result.Found[0].Document.Model);
+        Assert.Null(runQueryTest4.Result.Found[1].Document.Model);
+
+        var runQueryTest5 = await Api.FirestoreDatabase.RunQuery(new RunQueryRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            From = testCollectionReference,
+            Select = SelectQuery.Create(nameof(NumberModel.Val2)),
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
+            OrderBy = OrderByQuery.Builder.Create()
+                .Descending(nameof(NumberModel.Val2)),
+            Offset = 1,
+            Limit = 2
+        });
+        Assert.NotNull(runQueryTest5.Result);
+
+        Assert.Equal(2, runQueryTest5.Result.Found.Count);
+        Assert.Equivalent(0, runQueryTest5.Result.Found[0].Document.Model?.Val1);
+        Assert.Equivalent(writeDocuments[8].Model?.Val2, runQueryTest5.Result.Found[0].Document.Model?.Val2);
+        Assert.Equivalent(0, runQueryTest5.Result.Found[1].Document.Model?.Val1);
+        Assert.Equivalent(writeDocuments[7].Model?.Val2, runQueryTest5.Result.Found[1].Document.Model?.Val2);
 
         await Cleanup(config, testCollectionReference);
 

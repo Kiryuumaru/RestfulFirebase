@@ -8,6 +8,7 @@ using RestfulFirebase.Common.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using RestfulFirebase.Common.Internals;
+using ObservableHelpers.ComponentModel;
 
 namespace RestfulFirebase.Common.Utilities;
 
@@ -34,7 +35,7 @@ internal class ClassMemberHelpers
 
     public static string GetFieldName(PropertyInfo propertyInfo)
     {
-        return GetPropertyName(propertyInfo.Name);
+        return GetFieldName(propertyInfo.Name);
     }
 
     public static string GetFieldName(string propertyName)
@@ -57,6 +58,14 @@ internal class ClassMemberHelpers
         {
             string? nameToCompare = null;
             bool isValueIncluded = false;
+
+            // Special exclude
+            if (propertyInfo.Name == nameof(ObservableObject.SyncOperation) ||
+                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangedEvent) ||
+                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangingEvent))
+            {
+                return false;
+            }
 
             if (!propertyInfo.CanWrite)
             {

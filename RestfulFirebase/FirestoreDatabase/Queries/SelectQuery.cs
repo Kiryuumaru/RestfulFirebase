@@ -196,6 +196,17 @@ public class SelectQuery
     }
 
     /// <summary>
+    /// Adds the '__name__' to the <see cref="SelectQuery"/> builder to only return the name of the document.
+    /// </summary>
+    /// <returns>
+    /// The created <see cref="Builder"/>.
+    /// </returns>
+    public static Builder DocumentName()
+    {
+        return Builder.Create().DocumentName();
+    }
+
+    /// <summary>
     /// Gets or sets the property name to which to apply the operator.
     /// </summary>
     public string PropertyName { get; set; }

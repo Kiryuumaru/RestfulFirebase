@@ -332,8 +332,7 @@ public partial class Document
                     case "arrayValue":
                         if (documentFieldValue.ValueKind == JsonValueKind.Object &&
                             documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement arrayProperty &&
-                            arrayProperty.ValueKind == JsonValueKind.Array &&
-                            arrayProperty.EnumerateArray() is ArrayEnumerator arrayEnumerator)
+                            arrayProperty.ValueKind == JsonValueKind.Array)
                         {
                             if (objType.IsArray && objType.GetArrayRank() == 1)
                             {
@@ -341,7 +340,7 @@ public partial class Document
 
                                 if (arrayElementType != null)
                                 {
-                                    obj = parseArrayFields(arrayElementType, arrayEnumerator);
+                                    obj = parseArrayFields(arrayElementType, arrayProperty);
                                 }
                             }
                             else
@@ -358,7 +357,7 @@ public partial class Document
                                     {
                                         Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
 
-                                        parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayEnumerator);
+                                        parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayProperty);
                                     }
                                 }
                             }
@@ -367,8 +366,7 @@ public partial class Document
                     case "mapValue":
                         if (documentFieldValue.ValueKind == JsonValueKind.Object &&
                             documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement mapProperty &&
-                            mapProperty.ValueKind == JsonValueKind.Object &&
-                            mapProperty.EnumerateObject() is ObjectEnumerator mapEnumerator)
+                            mapProperty.ValueKind == JsonValueKind.Object)
                         {
                             var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
                                 i.IsGenericType &&
@@ -382,11 +380,11 @@ public partial class Document
                                 {
                                     Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                                    parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                                    parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapProperty);
                                 }
                                 else
                                 {
-                                    parseObjectFields(objType, obj, mapEnumerator);
+                                    parseObjectFields(objType, obj, mapProperty);
                                 }
                             }
                         }
@@ -400,11 +398,11 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        object? parseArrayFields(Type valueType, ArrayEnumerator enumerator)
+        object? parseArrayFields(Type valueType, JsonElement element)
         {
             List<object?> items = new();
 
-            foreach (var fieldElement in enumerator)
+            foreach (var fieldElement in element.EnumerateArray())
             {
                 object? parsedSubObj = parseJsonElement(fieldElement, valueType);
 
@@ -424,7 +422,7 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, ArrayEnumerator enumerator)
+        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, JsonElement element)
         {
             var addMethod = collectionInterfaceType.GetMethod("Add");
             var clearMethod = collectionInterfaceType.GetMethod("Clear");
@@ -434,7 +432,7 @@ public partial class Document
             {
                 clearMethod.Invoke(collectionObj, emptyParameterPlaceholder);
 
-                foreach (var fieldElement in enumerator)
+                foreach (var fieldElement in element.EnumerateArray())
                 {
                     object? parsedSubObj = parseJsonElement(fieldElement, valueType);
 
@@ -448,7 +446,7 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, ObjectEnumerator enumerator)
+        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, JsonElement element)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
             var keysProperty = dictionaryInterfaceType.GetProperty("Keys");
@@ -469,7 +467,7 @@ public partial class Document
                 List<object?> keysAdded = new();
                 List<object> keysToRemove = new();
 
-                foreach (var fieldProperty in enumerator)
+                foreach (var fieldProperty in element.EnumerateObject())
                 {
                     string? documentFieldKey = $"\"{fieldProperty.Name}\"";
 
@@ -506,24 +504,28 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObjectFields(Type objType, object obj, ObjectEnumerator enumerator)
+        void parseObjectFields(Type objType, object obj, JsonElement element)
         {
             PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
 
-            foreach (var firebaseField in enumerator)
+            foreach (var propertyInfo in propertyInfos)
             {
-                var propertyInfo = ClassMemberHelpers.GetPropertyInfo(propertyInfos, fieldInfos, includeOnlyWithAttribute, firebaseField.Name, jsonSerializerOptions);
-
-                if (propertyInfo == null)
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, propertyInfo.Name, jsonSerializerOptions);
+                
+                if (documentField == null)
                 {
                     continue;
                 }
 
-                var subObjType = propertyInfo.PropertyType;
+                if (!element.TryGetProperty(documentField.DocumentFieldName, out JsonElement documentFieldElement) &&
+                    documentFieldElement.ValueKind == JsonValueKind.Undefined)
+                {
+                    continue;
+                }
 
-                object? parsedSubObj = parseJsonElement(firebaseField.Value, subObjType);
+                object? parsedSubObj = parseJsonElement(documentFieldElement, documentField.Type);
 
                 propertyInfo.SetValue(obj, parsedSubObj);
             }
@@ -532,14 +534,7 @@ public partial class Document
         string? name = default;
         DateTimeOffset? createTime = default;
         DateTimeOffset? updateTime = default;
-        obj ??= document?.GetModel() ?? Activator.CreateInstance(objType);
-
-        if (obj == null)
-        {
-            throw new Exception($"Failed to create instance of {nameof(objType)}");
-        }
-
-        document?.SetModel(obj);
+        bool hasFields = false;
 
         foreach (var documentProperty in jsonElementEnumerator)
         {
@@ -555,7 +550,16 @@ public partial class Document
                     updateTime = documentProperty.Value.GetDateTimeOffset();
                     break;
                 case "fields":
-                    var mapEnumerator = documentProperty.Value.EnumerateObject();
+                    hasFields = true;
+
+                    obj ??= document?.GetModel() ?? Activator.CreateInstance(objType);
+
+                    if (obj == null)
+                    {
+                        throw new Exception($"Failed to create instance of {nameof(objType)}");
+                    }
+
+                    document?.SetModel(obj);
 
                     var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
                         i.IsGenericType &&
@@ -565,15 +569,20 @@ public partial class Document
                     {
                         Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapEnumerator);
+                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, documentProperty.Value);
                     }
                     else
                     {
-                        parseObjectFields(objType, obj, mapEnumerator);
+                        parseObjectFields(objType, obj, documentProperty.Value);
                     }
 
                     break;
             }
+        }
+
+        if (!hasFields)
+        {
+            document?.SetModel(null);
         }
 
         reference ??= DocumentReference.Parse(name);
@@ -587,14 +596,12 @@ public partial class Document
             {
                 Type genericDefinition = typeof(Document<>);
                 Type genericType = genericDefinition.MakeGenericType(objType);
-                document = (Document?)Activator.CreateInstance(genericType, new object[] { reference, obj });
+                document = (Document?)Activator.CreateInstance(genericType, new object?[] { reference, hasFields ? obj : null });
 
                 if (document == null)
                 {
                     throw new Exception($"Failed to create instance of {nameof(genericType)}");
                 }
-
-                document.SetModel(obj);
             }
 
             document.Name = name;

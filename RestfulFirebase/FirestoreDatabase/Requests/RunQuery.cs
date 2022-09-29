@@ -44,14 +44,14 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     public DocumentReference? DocumentReference { get; set; }
 
     /// <summary>
-    /// Gets or sets the projection to return.
-    /// </summary>
-    public SelectQuery.Builder? Select { get; set; }
-
-    /// <summary>
     /// Gets or sets the collections to query.
     /// </summary>
     public FromQuery.Builder? From { get; set; }
+
+    /// <summary>
+    /// Gets or sets the projection to return.
+    /// </summary>
+    public SelectQuery.Builder? Select { get; set; }
 
     /// <summary>
     /// Gets or sets the filter to apply.
@@ -140,6 +140,18 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         writer.WriteStartObject();
         writer.WritePropertyName("structuredQuery");
         writer.WriteStartObject();
+        writer.WritePropertyName("from");
+        writer.WriteStartArray();
+        foreach (var from in From.FromQuery)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("collectionId");
+            writer.WriteStringValue(from.CollectionReference.Id);
+            writer.WritePropertyName("allDescendants");
+            writer.WriteBooleanValue(from.AllDescendants);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
         if (Select != null)
         {
             writer.WritePropertyName("select");
@@ -148,7 +160,10 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             writer.WriteStartArray();
             if (Select.DocumentNameOnly)
             {
+                writer.WriteStartObject();
+                writer.WritePropertyName("fieldPath");
                 writer.WriteStringValue("__name__");
+                writer.WriteEndObject();
             }
             else
             {
@@ -169,20 +184,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             }
             writer.WriteEndArray();
             writer.WriteEndObject();
-            writer.WriteEndObject();
         }
-        writer.WritePropertyName("from");
-        writer.WriteStartArray();
-        foreach (var from in From.FromQuery)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("collectionId");
-            writer.WriteStringValue(from.CollectionReference.Id);
-            writer.WritePropertyName("allDescendants");
-            writer.WriteBooleanValue(from.AllDescendants);
-            writer.WriteEndObject();
-        }
-        writer.WriteEndArray();
         if (Where != null)
         {
             writer.WritePropertyName("where");
