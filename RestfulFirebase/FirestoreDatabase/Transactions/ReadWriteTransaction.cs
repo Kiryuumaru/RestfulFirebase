@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-
-namespace RestfulFirebase.FirestoreDatabase.Transactions;
+﻿namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
 /// <summary>
 /// The transaction can be used for both read and write operations.

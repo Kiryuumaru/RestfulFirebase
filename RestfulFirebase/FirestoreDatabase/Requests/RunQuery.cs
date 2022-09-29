@@ -15,10 +15,7 @@ using RestfulFirebase.FirestoreDatabase.References;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Enums;
-using System.Data;
-using System.Runtime.Serialization.Formatters;
 using RestfulFirebase.FirestoreDatabase.Utilities;
-using static System.Net.WebRequestMethods;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -169,7 +166,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             {
                 foreach (var select in Select.SelectQuery)
                 {
-                    var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, select.PropertyName, jsonSerializerOptions);
+                    var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, select.PropertyName, jsonSerializerOptions);
 
                     if (documentField == null)
                     {
@@ -197,7 +194,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             writer.WriteStartArray();
             foreach (var filter in Where.FilterQuery)
             {
-                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, filter.PropertyName, jsonSerializerOptions);
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, filter.PropertyName, jsonSerializerOptions);
 
                 if (documentField == null)
                 {
@@ -254,7 +251,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             writer.WriteStartArray();
             foreach (var orderBy in OrderBy.OrderByQuery)
             {
-                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, orderBy.PropertyName, jsonSerializerOptions);
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, orderBy.PropertyName, jsonSerializerOptions);
 
                 if (documentField == null)
                 {

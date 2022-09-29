@@ -1,5 +1,4 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using RestfulFirebase.Common.Requests;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;

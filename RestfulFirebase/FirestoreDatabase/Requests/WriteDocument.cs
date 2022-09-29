@@ -130,7 +130,7 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
                 writer.WriteStartArray();
                 foreach (var fieldTransform in documentTransform.FieldTransform.FieldTransforms)
                 {
-                    var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(fieldTransform.ModelType, null, fieldTransform.PropertyNamePath, jsonSerializerOptions);
+                    var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(fieldTransform.ModelType, fieldTransform.PropertyNamePath, jsonSerializerOptions);
                     var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
 
                     switch (fieldTransform)

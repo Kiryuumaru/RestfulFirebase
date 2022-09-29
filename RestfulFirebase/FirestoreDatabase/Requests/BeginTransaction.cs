@@ -1,5 +1,4 @@
-﻿using System;
-using RestfulFirebase.Common.Requests;
+﻿using RestfulFirebase.Common.Requests;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.IO;

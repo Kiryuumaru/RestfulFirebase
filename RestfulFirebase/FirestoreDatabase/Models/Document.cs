@@ -14,7 +14,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
 using static System.Text.Json.JsonElement;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
@@ -512,7 +511,7 @@ public partial class Document
 
             foreach (var propertyInfo in propertyInfos)
             {
-                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, propertyInfo.Name, jsonSerializerOptions);
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, propertyInfo.Name, jsonSerializerOptions);
                 
                 if (documentField == null)
                 {

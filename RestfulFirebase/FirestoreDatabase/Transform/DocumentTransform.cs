@@ -1,12 +1,5 @@
-﻿using RestfulFirebase.Common.Utilities;
-using RestfulFirebase.FirestoreDatabase.Enums;
-using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.FirestoreDatabase.Utilities;
-using System;
+﻿using RestfulFirebase.FirestoreDatabase.References;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text.Json;
 
 namespace RestfulFirebase.FirestoreDatabase.Transform;
 

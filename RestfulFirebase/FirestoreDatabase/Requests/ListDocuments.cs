@@ -13,7 +13,6 @@ using RestfulFirebase.Common.Utilities;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using System.Data;
 using System.Reflection;
 using RestfulFirebase.Common.Attributes;
 using RestfulFirebase.FirestoreDatabase.Enums;
@@ -96,7 +95,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
 
             foreach (var order in OrderBy.OrderByQuery)
             {
-                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, order.PropertyName, jsonSerializerOptions);
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, order.PropertyName, jsonSerializerOptions);
 
                 if (documentField == null)
                 {

@@ -1,8 +1,6 @@
 ﻿using RestfulFirebase.Authentication.Enums;
-using RestfulFirebase.Authentication.Internals;
 using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.Common.Requests;
-using System;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Authentication.Requests;

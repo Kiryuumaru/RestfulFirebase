@@ -1,8 +1,6 @@
 ﻿using RestfulFirebase.Authentication.Enums;
-using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Common.Requests;
 using RestfulFirebase.Common.Utilities;
-using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;

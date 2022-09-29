@@ -3,7 +3,6 @@ using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.Common.Requests;
 using RestfulFirebase.Common.Utilities;
-using System;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Authentication.Requests;

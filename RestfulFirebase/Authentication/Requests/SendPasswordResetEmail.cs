@@ -1,5 +1,4 @@
 ﻿using RestfulFirebase.Common.Requests;
-using System;
 using System.Threading.Tasks;
 
 namespace RestfulFirebase.Authentication.Requests;
