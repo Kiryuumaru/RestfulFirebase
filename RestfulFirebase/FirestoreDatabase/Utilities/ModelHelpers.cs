@@ -12,8 +12,9 @@ using System.Collections;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.Common.Utilities;
 
-namespace RestfulFirebase.Common.Utilities;
+namespace RestfulFirebase.FirestoreDatabase.Utilities;
 
 internal static class ModelHelpers
 {

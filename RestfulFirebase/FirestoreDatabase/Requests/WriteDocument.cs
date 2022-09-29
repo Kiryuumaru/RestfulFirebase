@@ -10,6 +10,9 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transform;
 using RestfulFirebase.Common.Utilities;
+using RestfulFirebase.FirestoreDatabase.Utilities;
+using System.Linq;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -118,7 +121,186 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
         {
             foreach (var documentTransform in TransformDocument.DocumentTransforms)
             {
-                documentTransform.BuildAsUtf8JsonWriter(writer, Config, jsonSerializerOptions);
+                writer.WriteStartObject();
+                writer.WritePropertyName("transform");
+                writer.WriteStartObject();
+                writer.WritePropertyName("document");
+                writer.WriteStringValue(documentTransform.DocumentReference.BuildUrlCascade(Config.ProjectId));
+                writer.WritePropertyName("fieldTransforms");
+                writer.WriteStartArray();
+                foreach (var fieldTransform in documentTransform.FieldTransform.FieldTransforms)
+                {
+                    var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(fieldTransform.ModelType, null, fieldTransform.PropertyNamePath, jsonSerializerOptions);
+                    var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
+
+                    switch (fieldTransform)
+                    {
+                        case AppendMissingElementsTransform appendMissingElementsTransform:
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("appendMissingElements");
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("values");
+                            writer.WriteStartArray();
+                            foreach (var obj in appendMissingElementsTransform.AppendMissingElementsValue)
+                            {
+                                ModelHelpers.BuildUtf8JsonWriterObject(Config, writer, obj?.GetType(), obj, jsonSerializerOptions, null, null);
+                            }
+                            writer.WriteEndArray();
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+
+                            break;
+                        case IncrementTransform incrementTransform:
+
+                            Type incrementValueType = incrementTransform.IncrementValue.GetType();
+
+                            NumberType incrementParamNumberType = NumberTypeHelpers.GetNumberType(incrementValueType);
+                            NumberType incrementPropertyNumberType = NumberTypeHelpers.GetNumberType(lastDocumentFieldPath.Type);
+
+                            if (incrementParamNumberType == NumberType.Double && incrementPropertyNumberType != NumberType.Double)
+                            {
+                                throw new ArgumentException($"Increment type mismatch. \"{lastDocumentFieldPath.Type}\" cannot increment with \"{incrementValueType}\"");
+                            }
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("increment");
+                            writer.WriteStartObject();
+                            if (incrementPropertyNumberType == NumberType.Integer)
+                            {
+                                writer.WritePropertyName("integerValue");
+                            }
+                            else if (incrementPropertyNumberType == NumberType.Double)
+                            {
+                                writer.WritePropertyName("doubleValue");
+                            }
+                            else
+                            {
+                                throw new Exception("Increment type is not supported.");
+                            }
+                            writer.WriteRawValue(JsonSerializer.Serialize(incrementTransform.IncrementValue, jsonSerializerOptions));
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+
+                            break;
+                        case MaximumTransform maximumTransform:
+
+                            Type maximumValueType = maximumTransform.MaximumValue.GetType();
+
+                            NumberType maximumParamNumberType = NumberTypeHelpers.GetNumberType(maximumValueType);
+                            NumberType maximumPropertyNumberType = NumberTypeHelpers.GetNumberType(lastDocumentFieldPath.Type);
+
+                            if (maximumParamNumberType == NumberType.Double && maximumPropertyNumberType != NumberType.Double)
+                            {
+                                throw new ArgumentException($"Maximum type mismatch. \"{lastDocumentFieldPath.Type}\" cannot maximum with \"{maximumValueType}\"");
+                            }
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("maximum");
+                            writer.WriteStartObject();
+                            if (maximumPropertyNumberType == NumberType.Integer)
+                            {
+                                writer.WritePropertyName("integerValue");
+                            }
+                            else if (maximumPropertyNumberType == NumberType.Double)
+                            {
+                                writer.WritePropertyName("doubleValue");
+                            }
+                            else
+                            {
+                                throw new Exception("Maximum type is not supported.");
+                            }
+                            writer.WriteRawValue(JsonSerializer.Serialize(maximumTransform.MaximumValue, jsonSerializerOptions));
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+
+                            break;
+                        case MinimumTransform minimumTransform:
+
+                            Type minimumValueType = minimumTransform.MinimumValue.GetType();
+
+                            NumberType minimumParamNumberType = NumberTypeHelpers.GetNumberType(minimumValueType);
+                            NumberType minimumPropertyNumberType = NumberTypeHelpers.GetNumberType(lastDocumentFieldPath.Type);
+
+                            if (minimumParamNumberType == NumberType.Double && minimumPropertyNumberType != NumberType.Double)
+                            {
+                                throw new ArgumentException($"Minimum type mismatch. \"{lastDocumentFieldPath.Type}\" cannot minimum with \"{minimumValueType}\"");
+                            }
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("minimum");
+                            writer.WriteStartObject();
+                            if (minimumPropertyNumberType == NumberType.Integer)
+                            {
+                                writer.WritePropertyName("integerValue");
+                            }
+                            else if (minimumPropertyNumberType == NumberType.Double)
+                            {
+                                writer.WritePropertyName("doubleValue");
+                            }
+                            else
+                            {
+                                throw new Exception("Minimum type is not supported.");
+                            }
+                            writer.WriteRawValue(JsonSerializer.Serialize(minimumTransform.MinimumValue, jsonSerializerOptions));
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+
+                            break;
+                        case RemoveAllFromArrayTransform removeAllFromArrayTransform:
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("removeAllFromArray");
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("values");
+                            writer.WriteStartArray();
+                            foreach (var obj in removeAllFromArrayTransform.RemoveAllFromArrayValue)
+                            {
+                                ModelHelpers.BuildUtf8JsonWriterObject(Config, writer, obj?.GetType(), obj, jsonSerializerOptions, null, null);
+                            }
+                            writer.WriteEndArray();
+                            writer.WriteEndObject();
+                            writer.WriteEndObject();
+
+                            break;
+                        case SetToServerValueTransform setToServerValueTransform:
+
+                            writer.WriteStartObject();
+                            writer.WritePropertyName("fieldPath");
+                            writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
+                            writer.WritePropertyName("setToServerValue");
+                            if (setToServerValueTransform.SetToServerValue == ServerValue.RequestTime)
+                            {
+                                writer.WriteStringValue("REQUEST_TIME");
+                            }
+                            else if (setToServerValueTransform.SetToServerValue == ServerValue.ServerValueUnspecified)
+                            {
+                                writer.WriteStringValue("SERVER_VALUE_UNSPECIFIED");
+                            }
+                            else
+                            {
+                                throw new Exception("SetToServerValue type is not supported.");
+                            }
+                            writer.WriteEndObject();
+
+                            break;
+                        default:
+                            throw new NotImplementedException($"{fieldTransform.GetType()} Field transform not implemented.");
+                    }
+                }
+                writer.WriteEndArray();
+                writer.WriteEndObject();
+                writer.WriteEndObject();
             }
         }
         writer.WriteEndArray();

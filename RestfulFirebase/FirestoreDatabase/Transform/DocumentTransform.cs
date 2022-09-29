@@ -1,6 +1,11 @@
-﻿using RestfulFirebase.FirestoreDatabase.References;
+﻿using RestfulFirebase.Common.Utilities;
+using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.References;
+using RestfulFirebase.FirestoreDatabase.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Text.Json;
 
 namespace RestfulFirebase.FirestoreDatabase.Transform;
@@ -63,24 +68,5 @@ public class DocumentTransform
     {
         DocumentReference = documentReference;
         FieldTransform = fieldTransform;
-    }
-
-    [RequiresUnreferencedCode("Calls RestfulFirebase.FirestoreDatabase.Transform.FieldTransform.BuildUtf8JsonWriter(Utf8JsonWriter, FirebaseConfig, JsonSerializerOptions)")]
-    internal void BuildAsUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        writer.WriteStartObject();
-        writer.WritePropertyName("transform");
-        writer.WriteStartObject();
-        writer.WritePropertyName("document");
-        writer.WriteStringValue(DocumentReference.BuildUrlCascade(config.ProjectId));
-        writer.WritePropertyName("fieldTransforms");
-        writer.WriteStartArray();
-        foreach (var fieldTransform in FieldTransform.FieldTransforms)
-        {
-            fieldTransform.BuildUtf8JsonWriter(writer, config, jsonSerializerOptions);
-        }
-        writer.WriteEndArray();
-        writer.WriteEndObject();
-        writer.WriteEndObject();
     }
 }

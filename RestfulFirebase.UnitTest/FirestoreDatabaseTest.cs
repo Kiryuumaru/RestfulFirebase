@@ -1127,7 +1127,7 @@ public class FirestoreDatabaseTest
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             CollectionReference = testCollectionReference,
             PageSize = 2,
-            OrderBy = OrderBy.Builder.Create()
+            OrderBy = OrderByQuery.Builder.Create()
                 .Ascending(nameof(NormalMVVMModel.Val1))
                 .Descending(nameof(NormalMVVMModel.Val2))
         });

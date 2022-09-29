@@ -29,19 +29,4 @@ public class ReadOnlyTransaction : Transaction
     {
         ReadTime = readTime;
     }
-
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
-    internal override void BuildUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        writer.WriteStartObject();
-        writer.WritePropertyName("readOnly");
-        writer.WriteStartObject();
-        if (ReadTime.HasValue)
-        {
-            writer.WritePropertyName("readTime");
-            writer.WriteStringValue(ReadTime.Value.ToUniversalTime());
-        }
-        writer.WriteEndObject();
-        writer.WriteEndObject();
-    }
 }

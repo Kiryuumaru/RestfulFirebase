@@ -153,29 +153,4 @@ public class SetToServerValueTransform : FieldTransform
     {
         SetToServerValue = setToServerValue;
     }
-
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
-    internal override void BuildUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(ModelType, null, PropertyNamePath, jsonSerializerOptions);
-        var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
-
-        writer.WriteStartObject();
-        writer.WritePropertyName("fieldPath");
-        writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
-        writer.WritePropertyName("setToServerValue");
-        if (SetToServerValue == ServerValue.RequestTime)
-        {
-            writer.WriteStringValue("REQUEST_TIME");
-        }
-        else if (SetToServerValue == ServerValue.ServerValueUnspecified)
-        {
-            writer.WriteStringValue("SERVER_VALUE_UNSPECIFIED");
-        }
-        else
-        {
-            throw new Exception("SetToServerValue type is not supported.");
-        }
-        writer.WriteEndObject();
-    }
 }

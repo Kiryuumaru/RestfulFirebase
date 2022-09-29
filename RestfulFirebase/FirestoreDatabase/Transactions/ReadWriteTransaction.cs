@@ -29,19 +29,4 @@ public class ReadWriteTransaction : Transaction
     {
         RetryTransaction = retryTransaction;
     }
-
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
-    internal override void BuildUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        writer.WriteStartObject();
-        writer.WritePropertyName("readWrite");
-        writer.WriteStartObject();
-        if (RetryTransaction != null)
-        {
-            writer.WritePropertyName("retryTransaction");
-            writer.WriteStringValue(RetryTransaction);
-        }
-        writer.WriteEndObject();
-        writer.WriteEndObject();
-    }
 }

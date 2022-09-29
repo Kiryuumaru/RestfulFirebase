@@ -13,6 +13,10 @@ using RestfulFirebase.Common.Utilities;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System.Data;
+using System.Reflection;
+using RestfulFirebase.Common.Attributes;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -53,7 +57,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
     /// <summary>
     /// Gets or sets the order to sort results by.
     /// </summary>
-    public OrderBy.Builder? OrderBy { get; set; }
+    public OrderByQuery.Builder? OrderBy { get; set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
@@ -80,9 +84,29 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
         string? orderBy = null;
-        if (OrderBy != null && OrderBy.OrderBy.Any())
+        if (OrderBy != null && OrderBy.OrderByQuery.Any())
         {
-            orderBy = OrderBy.BuildAsQueryParameter<T>(jsonSerializerOptions);
+            Type objType = typeof(T);
+
+            PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
+
+            List<string> orderByQuery = new();
+
+            foreach (var order in OrderBy.OrderByQuery)
+            {
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, order.PropertyName, jsonSerializerOptions);
+
+                if (documentField == null)
+                {
+                    throw new ArgumentException($"OrderBy property name {order.PropertyName} does not exist in the model {objType.Name}.");
+                }
+
+                orderByQuery.Add($"{documentField.DocumentFieldName} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");
+            }
+
+            orderBy = string.Join(",", orderByQuery);
         }
 
         AsyncPager<Document<T>>.DocumentPagerIterator iterator;

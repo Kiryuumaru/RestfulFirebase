@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -75,27 +76,5 @@ public class RemoveAllFromArrayTransform : FieldTransform
         ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
 
         RemoveAllFromArrayValue = removeAllFromArrayValue;
-    }
-
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
-    internal override void BuildUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        var documentFieldPath = ClassMemberHelpers.GetDocumentFieldPath(ModelType, null, PropertyNamePath, jsonSerializerOptions);
-        var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
-
-        writer.WriteStartObject();
-        writer.WritePropertyName("fieldPath");
-        writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
-        writer.WritePropertyName("removeAllFromArray");
-        writer.WriteStartObject();
-        writer.WritePropertyName("values");
-        writer.WriteStartArray();
-        foreach (var obj in RemoveAllFromArrayValue)
-        {
-            ModelHelpers.BuildUtf8JsonWriterObject(config, writer, obj?.GetType(), obj, jsonSerializerOptions, null, null);
-        }
-        writer.WriteEndArray();
-        writer.WriteEndObject();
-        writer.WriteEndObject();
     }
 }

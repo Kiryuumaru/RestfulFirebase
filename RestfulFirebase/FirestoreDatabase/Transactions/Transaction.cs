@@ -59,7 +59,4 @@ public abstract class Transaction
     /// Gets the token for firebase database atomic operation.
     /// </summary>
     public string? Token { get; internal set; }
-
-    [RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize<TValue>(TValue, JsonSerializerOptions)")]
-    internal abstract void BuildUtf8JsonWriter(Utf8JsonWriter writer, FirebaseConfig config, JsonSerializerOptions? jsonSerializerOptions);
 }

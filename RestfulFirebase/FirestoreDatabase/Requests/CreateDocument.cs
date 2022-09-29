@@ -8,6 +8,7 @@ using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.Common.Utilities;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 

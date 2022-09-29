@@ -10,15 +10,12 @@ using System.Text.Json;
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
-/// The orderBy parameter for query.
+/// The "from" parameter for query.
 /// </summary>
-public class OrderBy
+public class FromQuery
 {
     /// <summary>
-    /// The builder for multiple document parameter. Has implicit conversion from
-    /// <para><see cref="Queries.OrderBy"/></para>
-    /// <para><see cref="Queries.OrderBy"/> array</para>
-    /// <para><see cref="List{T}"/> with item <see cref="Queries.OrderBy"/></para>
+    /// The builder for multiple document parameter.
     /// </summary>
     public class Builder
     {
@@ -34,9 +31,9 @@ public class OrderBy
         }
 
         /// <summary>
-        /// Gets the list of <see cref="Queries.OrderBy"/>.
+        /// Gets the list of <see cref="Queries.FromQuery"/>.
         /// </summary>
-        public List<OrderBy> OrderBy { get; } = new();
+        public List<FromQuery> FromQuery { get; } = new();
 
         /// <summary>
         /// Adds ascending order to the <see cref="Builder"/>.
@@ -49,7 +46,7 @@ public class OrderBy
         /// </returns>
         public Builder Ascending(string propertyName)
         {
-            OrderBy.Add(Queries.OrderBy.Ascending(propertyName));
+            FromQuery.Add(Queries.FromQuery.Ascending(propertyName));
             return this;
         }
 
@@ -64,12 +61,12 @@ public class OrderBy
         /// </returns>
         public Builder Descending(string propertyName)
         {
-            OrderBy.Add(Queries.OrderBy.Descending(propertyName));
+            FromQuery.Add(Queries.FromQuery.Descending(propertyName));
             return this;
         }
 
         /// <summary>
-        /// Adds the <see cref="Queries.OrderBy"/> to the builder.
+        /// Adds the <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
         /// <param name="propertyName">
         /// The order based on the property name of the model to order.
@@ -82,69 +79,69 @@ public class OrderBy
         /// </returns>
         public Builder Add(string propertyName, OrderDirection orderDirection)
         {
-            OrderBy.Add(Queries.OrderBy.Create(propertyName, orderDirection));
+            FromQuery.Add(Queries.FromQuery.Create(propertyName, orderDirection));
             return this;
         }
 
         /// <summary>
-        /// Adds the <see cref="Queries.OrderBy"/> to the builder.
+        /// Adds the <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
         /// <param name="orderBy">
-        /// The <see cref="Queries.OrderBy"/> to add.
+        /// The <see cref="Queries.FromQuery"/> to add.
         /// </param>
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
-        public Builder Add(OrderBy orderBy)
+        public Builder Add(FromQuery orderBy)
         {
-            OrderBy.Add(orderBy);
+            FromQuery.Add(orderBy);
             return this;
         }
 
         /// <summary>
-        /// Adds multiple the <see cref="Queries.OrderBy"/> to the builder.
+        /// Adds multiple the <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
         /// <param name="orderBy">
-        /// The multiple of <see cref="Queries.OrderBy"/> to add.
+        /// The multiple of <see cref="Queries.FromQuery"/> to add.
         /// </param>
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
-        public Builder AddRange(IEnumerable<OrderBy> orderBy)
+        public Builder AddRange(IEnumerable<FromQuery> orderBy)
         {
-            OrderBy.AddRange(orderBy);
+            FromQuery.AddRange(orderBy);
             return this;
         }
 
         /// <summary>
-        /// Converts the <see cref="Queries.OrderBy"/> to <see cref="Builder"/>
+        /// Converts the <see cref="Queries.FromQuery"/> to <see cref="Builder"/>
         /// </summary>
         /// <param name="orderBy">
-        /// The <see cref="Queries.OrderBy"/> to convert.
+        /// The <see cref="Queries.FromQuery"/> to convert.
         /// </param>
-        public static implicit operator Builder(OrderBy orderBy)
+        public static implicit operator Builder(FromQuery orderBy)
         {
             return Create().Add(orderBy);
         }
 
         /// <summary>
-        /// Converts the <see cref="Queries.OrderBy"/> array to <see cref="Builder"/>
+        /// Converts the <see cref="Queries.FromQuery"/> array to <see cref="Builder"/>
         /// </summary>
         /// <param name="orderBy">
-        /// The <see cref="Queries.OrderBy"/> array to convert.
+        /// The <see cref="Queries.FromQuery"/> array to convert.
         /// </param>
-        public static implicit operator Builder(OrderBy[] orderBy)
+        public static implicit operator Builder(FromQuery[] orderBy)
         {
             return Create().AddRange(orderBy);
         }
 
         /// <summary>
-        /// Converts the <see cref="Queries.OrderBy"/> list to <see cref="Builder"/>
+        /// Converts the <see cref="Queries.FromQuery"/> list to <see cref="Builder"/>
         /// </summary>
         /// <param name="orderBy">
-        /// The <see cref="Queries.OrderBy"/> list to convert.
+        /// The <see cref="Queries.FromQuery"/> list to convert.
         /// </param>
-        public static implicit operator Builder(List<OrderBy> orderBy)
+        public static implicit operator Builder(List<FromQuery> orderBy)
         {
             return Create().AddRange(orderBy);
         }
@@ -167,7 +164,7 @@ public class OrderBy
         {
             List<string> orderByQuery = new();
 
-            foreach (var order in OrderBy)
+            foreach (var order in FromQuery)
             {
                 orderByQuery.Add($"{order.GetDocumentFieldName(objType, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions)} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");
             }
@@ -177,75 +174,23 @@ public class OrderBy
     }
 
     /// <summary>
-    /// Gets or sets the order based on the property name of the model to order.
+    /// Gets or sets the collection ID. When set, selects only collections with this ID.
     /// </summary>
-    public string PropertyName { get; set; }
+    public string CollectionId { get; set; }
 
     /// <summary>
-    /// Gets or sets the <see cref="Enums.OrderDirection"/> of the order.
+    /// Gets or sets <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </summary>
-    public OrderDirection OrderDirection { get; set; }
+    public bool AllDescendants { get; set; }
 
-    /// <summary>
-    /// Creates an instance of <see cref="OrderBy"/>.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The order based on the property name of the model to order.
-    /// </param>
-    /// <param name="orderDirection">
-    /// The <see cref="Enums.OrderDirection"/> of the order.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="OrderBy"/>
-    /// </returns>
-    public static OrderBy Create(string propertyName, OrderDirection orderDirection)
+    public static FromQuery Create(string collectionId, bool allDescendants)
     {
-        return new(propertyName, orderDirection);
+        return new(collectionId, allDescendants);
     }
 
-    /// <summary>
-    /// Creates an instance of <see cref="OrderDirection.Ascending"/> <see cref="OrderBy"/>.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The order based on the property name of the model to order.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="OrderBy"/>
-    /// </returns>
-    public static OrderBy Ascending(string propertyName)
+    internal FromQuery(string collectionId, bool allDescendants)
     {
-        return new(propertyName, OrderDirection.Ascending);
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="OrderDirection.Descending"/> <see cref="OrderBy"/>.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The order based on the property name of the model to order.
-    /// </param>
-    /// <returns>
-    /// The created <see cref="OrderBy"/>
-    /// </returns>
-    public static OrderBy Descending(string propertyName)
-    {
-        return new(propertyName, OrderDirection.Descending);
-    }
-
-    internal OrderBy(string propertyName, OrderDirection orderDirection)
-    {
-        PropertyName = propertyName;
-        OrderDirection = orderDirection;
-    }
-
-    internal string GetDocumentFieldName(Type objType, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonSerializerOptions? jsonSerializerOptions)
-    {
-        var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, PropertyName, jsonSerializerOptions);
-
-        if (documentField == null)
-        {
-            throw new ArgumentException($"OrderBy property name {PropertyName} does not exist in the model {objType.Name}.");
-        }
-
-        return documentField.DocumentFieldName;
+        CollectionId = collectionId;
+        AllDescendants = allDescendants;
     }
 }

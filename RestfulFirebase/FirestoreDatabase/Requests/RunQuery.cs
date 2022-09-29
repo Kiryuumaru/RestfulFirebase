@@ -10,9 +10,9 @@ using System.Diagnostics.CodeAnalysis;
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
 /// <summary>
-/// Request a transaction to start an atomic operation.
+/// Request to run a query.
 /// </summary>
-public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionResponse<BeginTransactionRequest, Transaction>>
+public class RunQueryRequest : FirestoreDatabaseRequest<TransactionResponse<RunQueryRequest, Transaction>>
 {
     /// <summary>
     /// Gets or sets the <see cref="System.Text.Json.JsonSerializerOptions"/> used to serialize and deserialize documents.
@@ -20,11 +20,11 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
-    /// Gets or sets the <see cref="Transaction.Builder"/> of the transaction.
+    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
     /// </summary>
-    public Transaction.Builder? Transaction { get; set; }
+    public Transaction? Transaction { get; set; }
 
-    /// <inheritdoc cref="BeginTransactionRequest"/>
+    /// <inheritdoc cref="RunQueryRequest"/>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="Transaction"/>.
     /// </returns>
@@ -33,7 +33,7 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
     /// <see cref="Transaction"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal override async Task<TransactionResponse<BeginTransactionRequest, Transaction>> Execute()
+    internal override async Task<TransactionResponse<RunQueryRequest, Transaction>> Execute()
     {
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Transaction);
@@ -45,32 +45,7 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
 
         writer.WriteStartObject();
         writer.WritePropertyName("options");
-        if (Transaction.Transaction is ReadOnlyTransaction readOnlyTransaction)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("readOnly");
-            writer.WriteStartObject();
-            if (readOnlyTransaction.ReadTime.HasValue)
-            {
-                writer.WritePropertyName("readTime");
-                writer.WriteStringValue(readOnlyTransaction.ReadTime.Value.ToUniversalTime());
-            }
-            writer.WriteEndObject();
-            writer.WriteEndObject();
-        }
-        else if (Transaction.Transaction is ReadWriteTransaction readWriteTransaction)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("readWrite");
-            writer.WriteStartObject();
-            if (readWriteTransaction.RetryTransaction != null)
-            {
-                writer.WritePropertyName("retryTransaction");
-                writer.WriteStringValue(readWriteTransaction.RetryTransaction);
-            }
-            writer.WriteEndObject();
-            writer.WriteEndObject();
-        }
+        Transaction.Transaction.BuildUtf8JsonWriter(writer, Config, jsonSerializerOptions);
         writer.WriteEndObject();
 
         await writer.FlushAsync();
@@ -99,6 +74,6 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
 
         return
             $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
-            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":beginTransaction")}";
+            $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":runQuery")}";
     }
 }
