@@ -35,6 +35,9 @@ public class IncrementTransform : FieldTransform
     /// </exception>
     public static IncrementTransform Create<TModel>(object incrementValue, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(incrementValue);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(incrementValue, typeof(TModel), propertyNamePath);
     }
 
@@ -60,6 +63,10 @@ public class IncrementTransform : FieldTransform
     /// </exception>
     public static IncrementTransform Create(object incrementValue, Type modelType, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(incrementValue);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(incrementValue, modelType, propertyNamePath);
     }
 
@@ -71,8 +78,6 @@ public class IncrementTransform : FieldTransform
     internal IncrementTransform(object incrementValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(incrementValue);
-
         IncrementValue = incrementValue;
     }
 }

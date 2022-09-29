@@ -35,6 +35,9 @@ public class MinimumTransform : FieldTransform
     /// </exception>
     public static MinimumTransform Create<TModel>(object minimumValue, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(minimumValue);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(minimumValue, typeof(TModel), propertyNamePath);
     }
 
@@ -60,6 +63,10 @@ public class MinimumTransform : FieldTransform
     /// </exception>
     public static MinimumTransform Create(object minimumValue, Type modelType, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(minimumValue);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(minimumValue, modelType, propertyNamePath);
     }
 
@@ -71,8 +78,6 @@ public class MinimumTransform : FieldTransform
     internal MinimumTransform(object minimumValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(minimumValue);
-
         MinimumValue = minimumValue;
     }
 }

@@ -279,23 +279,12 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
                             writer.WritePropertyName("fieldPath");
                             writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
                             writer.WritePropertyName("setToServerValue");
-                            if (setToServerValueTransform.SetToServerValue == ServerValue.RequestTime)
-                            {
-                                writer.WriteStringValue("REQUEST_TIME");
-                            }
-                            else if (setToServerValueTransform.SetToServerValue == ServerValue.ServerValueUnspecified)
-                            {
-                                writer.WriteStringValue("SERVER_VALUE_UNSPECIFIED");
-                            }
-                            else
-                            {
-                                throw new Exception("SetToServerValue type is not supported.");
-                            }
+                            writer.WriteStringValue(setToServerValueTransform.SetToServerValue.ToEnumString());
                             writer.WriteEndObject();
 
                             break;
                         default:
-                            throw new NotImplementedException($"{fieldTransform.GetType()} Field transform not implemented.");
+                            throw new NotImplementedException($"{fieldTransform.GetType()} Field transform is not implemented.");
                     }
                 }
                 writer.WriteEndArray();

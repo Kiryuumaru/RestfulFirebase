@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using static System.Text.Json.JsonElement;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
@@ -60,8 +61,13 @@ public partial class Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="document"/> is a null reference.
+        /// </exception>
         public Builder Add(Document document)
         {
+            ArgumentNullException.ThrowIfNull(document);
+
             Documents.Add(document);
             return this;
         }
@@ -75,8 +81,13 @@ public partial class Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReference"/> is a null reference.
+        /// </exception>
         public Builder Add(DocumentReference documentReference)
         {
+            ArgumentNullException.ThrowIfNull(documentReference);
+
             Documents.Add(new Document(documentReference));
             return this;
         }
@@ -90,8 +101,13 @@ public partial class Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<Document> documents)
         {
+            ArgumentNullException.ThrowIfNull(documents);
+
             Documents.AddRange(documents);
             return this;
         }
@@ -105,8 +121,13 @@ public partial class Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<DocumentReference> documentReferences)
         {
+            ArgumentNullException.ThrowIfNull(documentReferences);
+
             Documents.AddRange(documentReferences.Select(i => new Document(i)));
             return this;
         }
@@ -128,6 +149,9 @@ public partial class Document
         /// <param name="documentReference">
         /// The <see cref="DocumentReference"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReference"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(DocumentReference documentReference)
         {
             return Create().Add(new Document(documentReference));
@@ -139,6 +163,9 @@ public partial class Document
         /// <param name="documents">
         /// The <see cref="Document"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(Document[] documents)
         {
             return Create().AddRange(documents);
@@ -150,6 +177,9 @@ public partial class Document
         /// <param name="documentReferences">
         /// The <see cref="DocumentReference"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(DocumentReference[] documentReferences)
         {
             return Create().AddRange(documentReferences);
@@ -161,6 +191,9 @@ public partial class Document
         /// <param name="documents">
         /// The <see cref="Document"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<Document> documents)
         {
             return Create().AddRange(documents);
@@ -172,6 +205,9 @@ public partial class Document
         /// <param name="documentReferences">
         /// The <see cref="DocumentReference"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<DocumentReference> documentReferences)
         {
             return Create().AddRange(documentReferences);
@@ -660,8 +696,13 @@ public partial class Document<T> : Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="document"/> is a null reference.
+        /// </exception>
         public Builder Add(Document<T> document)
         {
+            ArgumentNullException.ThrowIfNull(document);
+
             Documents.Add(document);
             return this;
         }
@@ -675,8 +716,13 @@ public partial class Document<T> : Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReference"/> is a null reference.
+        /// </exception>
         public Builder Add(DocumentReference documentReference)
         {
+            ArgumentNullException.ThrowIfNull(documentReference);
+
             Documents.Add(new Document<T>(documentReference, null));
             return this;
         }
@@ -690,8 +736,13 @@ public partial class Document<T> : Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<Document<T>> documents)
         {
+            ArgumentNullException.ThrowIfNull(documents);
+
             Documents.AddRange(documents);
             return this;
         }
@@ -705,8 +756,13 @@ public partial class Document<T> : Document
         /// <returns>
         /// The <see cref="Builder"/> with added document.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<DocumentReference> documentReferences)
         {
+            ArgumentNullException.ThrowIfNull(documentReferences);
+
             Documents.AddRange(documentReferences.Select(i => new Document<T>(i, null)));
             return this;
         }
@@ -717,6 +773,9 @@ public partial class Document<T> : Document
         /// <param name="document">
         /// The <see cref="Document{T}"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="document"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(Document<T> document)
         {
             return Create().Add(document);
@@ -728,6 +787,9 @@ public partial class Document<T> : Document
         /// <param name="documentReference">
         /// The <see cref="DocumentReference"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReference"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(DocumentReference documentReference)
         {
             return Create().Add(new Document<T>(documentReference, null));
@@ -739,6 +801,9 @@ public partial class Document<T> : Document
         /// <param name="documents">
         /// The <see cref="Document{T}"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(Document<T>[] documents)
         {
             return Create().AddRange(documents);
@@ -750,6 +815,9 @@ public partial class Document<T> : Document
         /// <param name="documentReferences">
         /// The <see cref="DocumentReference"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(DocumentReference[] documentReferences)
         {
             return Create().AddRange(documentReferences);
@@ -761,6 +829,9 @@ public partial class Document<T> : Document
         /// <param name="documents">
         /// The <see cref="Document{T}"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documents"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<Document<T>> documents)
         {
             return Create().AddRange(documents);
@@ -772,6 +843,9 @@ public partial class Document<T> : Document
         /// <param name="documentReferences">
         /// The <see cref="DocumentReference"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<DocumentReference> documentReferences)
         {
             return Create().AddRange(documentReferences);

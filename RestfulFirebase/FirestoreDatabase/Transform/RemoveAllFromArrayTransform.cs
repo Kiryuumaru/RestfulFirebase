@@ -37,6 +37,9 @@ public class RemoveAllFromArrayTransform : FieldTransform
     /// </exception>
     public static RemoveAllFromArrayTransform Create<TModel>(IEnumerable<object> removeAllFromArrayValue, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(removeAllFromArrayValue, typeof(TModel), propertyNamePath);
     }
 
@@ -62,6 +65,10 @@ public class RemoveAllFromArrayTransform : FieldTransform
     /// </exception>
     public static RemoveAllFromArrayTransform Create(IEnumerable<object> removeAllFromArrayValue, Type modelType, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(removeAllFromArrayValue, modelType, propertyNamePath);
     }
 
@@ -73,8 +80,6 @@ public class RemoveAllFromArrayTransform : FieldTransform
     internal RemoveAllFromArrayTransform(IEnumerable<object> removeAllFromArrayValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
-
         RemoveAllFromArrayValue = removeAllFromArrayValue;
     }
 }

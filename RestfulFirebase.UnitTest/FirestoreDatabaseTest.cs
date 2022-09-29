@@ -8,6 +8,7 @@ using RestfulFirebase.FirestoreDatabase.Queries;
 using System.Threading.Tasks;
 using RestfulFirebase.FirestoreDatabase.Transform;
 using System;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -723,6 +724,156 @@ public class FirestoreDatabaseTest
 
         Assert.Empty(getTest2.Result.Found);
         Assert.NotEmpty(getTest2.Result.Missing);
+
+        Assert.True(true);
+    }
+
+    [Fact]
+    public async void RunQueryTest()
+    {
+        FirebaseConfig config = Helpers.GetFirebaseConfig();
+
+        CollectionReference testCollectionReference = Api.FirestoreDatabase
+            .Collection("public")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(RunQueryTest));
+
+        await Cleanup(config, testCollectionReference);
+
+        Document<NumberModel>[] writeDocuments = testCollectionReference.CreateDocuments<NumberModel>(
+            ($"test1", new()
+            {
+                Val1 = 1,
+                Val2 = 3.3
+            }),
+            ($"test2", new()
+            {
+                Val1 = 1,
+                Val2 = 4.4
+            }),
+            ($"test3", new()
+            {
+                Val1 = 2,
+                Val2 = 5.5
+            }),
+            ($"test4", new()
+            {
+                Val1 = 2,
+                Val2 = 6.6
+            }),
+            ($"test5", new()
+            {
+                Val1 = 2,
+                Val2 = 7.7
+            }),
+            ($"test6", new()
+            {
+                Val1 = 2,
+                Val2 = 8.8
+            }),
+            ($"test7", new()
+            {
+                Val1 = 2,
+                Val2 = 9.9
+            }),
+            ($"test8", new()
+            {
+                Val1 = 2,
+                Val2 = 10.1
+            }),
+            ($"test9", new()
+            {
+                Val1 = 2,
+                Val2 = 10.11
+            }),
+            ($"test10", new()
+            {
+                Val1 = 2,
+                Val2 = 10.12
+            }));
+
+        var writeTest1 = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            PatchDocument = writeDocuments
+        });
+        await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments
+        });
+
+        var runQueryTest1 = await Api.FirestoreDatabase.RunQuery(new RunQueryRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            From = testCollectionReference,
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 1),
+        });
+        Assert.NotNull(runQueryTest1.Result);
+
+        Assert.Equal(2, runQueryTest1.Result.Found.Count);
+        Assert.Equivalent(writeDocuments[0], runQueryTest1.Result.Found[0].Document);
+        Assert.Equivalent(writeDocuments[1], runQueryTest1.Result.Found[1].Document);
+
+        var runQueryTest2 = await Api.FirestoreDatabase.RunQuery(new RunQueryRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            From = testCollectionReference,
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
+            OrderBy = OrderByQuery.Builder.Create()
+                .Descending(nameof(NumberModel.Val2)),
+        });
+        Assert.NotNull(runQueryTest2.Result);
+
+        Assert.Equal(8, runQueryTest2.Result.Found.Count);
+        Assert.Equivalent(writeDocuments[9], runQueryTest2.Result.Found[0].Document);
+        Assert.Equivalent(writeDocuments[8], runQueryTest2.Result.Found[1].Document);
+        Assert.Equivalent(writeDocuments[7], runQueryTest2.Result.Found[2].Document);
+        Assert.Equivalent(writeDocuments[6], runQueryTest2.Result.Found[3].Document);
+        Assert.Equivalent(writeDocuments[5], runQueryTest2.Result.Found[4].Document);
+        Assert.Equivalent(writeDocuments[4], runQueryTest2.Result.Found[5].Document);
+        Assert.Equivalent(writeDocuments[3], runQueryTest2.Result.Found[6].Document);
+        Assert.Equivalent(writeDocuments[2], runQueryTest2.Result.Found[7].Document);
+
+        var runQueryTest3 = await Api.FirestoreDatabase.RunQuery(new RunQueryRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            From = testCollectionReference,
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
+            OrderBy = OrderByQuery.Builder.Create()
+                .Descending(nameof(NumberModel.Val2)),
+            Offset = 1,
+            Limit = 5
+        });
+        Assert.NotNull(runQueryTest3.Result);
+
+        Assert.Equal(5, runQueryTest3.Result.Found.Count);
+        Assert.Equivalent(writeDocuments[8], runQueryTest2.Result.Found[0].Document);
+        Assert.Equivalent(writeDocuments[7], runQueryTest2.Result.Found[1].Document);
+        Assert.Equivalent(writeDocuments[6], runQueryTest2.Result.Found[2].Document);
+        Assert.Equivalent(writeDocuments[5], runQueryTest2.Result.Found[3].Document);
+        Assert.Equivalent(writeDocuments[4], runQueryTest2.Result.Found[4].Document);
+
+        await Cleanup(config, testCollectionReference);
+
+        var getTest3 = await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments,
+        });
+
+        Assert.NotNull(getTest3.Result);
+        Assert.Empty(getTest3.Result.Found.Select(i => i.Document));
+        Assert.NotEmpty(getTest3.Result.Missing);
 
         Assert.True(true);
     }

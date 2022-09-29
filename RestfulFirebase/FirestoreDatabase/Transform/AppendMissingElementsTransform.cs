@@ -37,6 +37,9 @@ public class AppendMissingElementsTransform : FieldTransform
     /// </exception>
     public static AppendMissingElementsTransform Create<TModel>(IEnumerable<object> appendMissingElementsValue, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(appendMissingElementsValue);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(appendMissingElementsValue, typeof(TModel), propertyNamePath);
     }
 
@@ -62,6 +65,10 @@ public class AppendMissingElementsTransform : FieldTransform
     /// </exception>
     public static AppendMissingElementsTransform Create(IEnumerable<object> appendMissingElementsValue, Type modelType, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(appendMissingElementsValue);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(appendMissingElementsValue, modelType, propertyNamePath);
     }
 
@@ -73,8 +80,6 @@ public class AppendMissingElementsTransform : FieldTransform
     internal AppendMissingElementsTransform(IEnumerable<object> appendMissingElementsValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(appendMissingElementsValue);
-
         AppendMissingElementsValue = appendMissingElementsValue;
     }
 }

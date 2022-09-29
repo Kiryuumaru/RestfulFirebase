@@ -204,6 +204,8 @@ public class FromQuery
 
     internal FromQuery(CollectionReference collectionReference, bool allDescendants)
     {
+        ArgumentNullException.ThrowIfNull(collectionReference);
+
         CollectionReference = collectionReference;
         AllDescendants = allDescendants;
     }

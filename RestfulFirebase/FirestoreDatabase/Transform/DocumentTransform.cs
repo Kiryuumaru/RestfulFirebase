@@ -45,8 +45,15 @@ public class DocumentTransform
         /// <param name="fieldTransform">
         /// The <see cref="References.DocumentReference"/> to build the <see cref="DocumentTransform"/>.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="documentReference"/> or
+        /// <paramref name="fieldTransform"/> is a null reference.
+        /// </exception>
         public Builder Add(DocumentReference documentReference, FieldTransform.Builder fieldTransform)
         {
+            ArgumentNullException.ThrowIfNull(documentReference);
+            ArgumentNullException.ThrowIfNull(fieldTransform);
+
             DocumentTransform documentTransform = new(documentReference, fieldTransform);
             DocumentTransforms.Add(documentTransform);
             return this;

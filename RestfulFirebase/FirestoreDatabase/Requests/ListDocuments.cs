@@ -100,7 +100,7 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
 
                 if (documentField == null)
                 {
-                    throw new ArgumentException($"OrderBy property name {order.PropertyName} does not exist in the model {objType.Name}.");
+                    throw new ArgumentException($"\"{order.PropertyName}\" does not exist in the model \"{objType.Name}\".");
                 }
 
                 orderByQuery.Add($"{documentField.DocumentFieldName} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");

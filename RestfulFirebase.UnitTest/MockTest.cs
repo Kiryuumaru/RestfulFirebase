@@ -4,6 +4,7 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Requests;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Enums;
 
 namespace RestfulFirebase.UnitTest;
 
@@ -71,11 +72,10 @@ public class MockTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
+            Where = FilterQuery.Builder.Create()
+                .Field(nameof(NormalMVVMModel.Val1), FieldOperator.Equal, "b"),
             OrderBy = OrderByQuery.Builder.Create()
-                .Ascending(nameof(NormalMVVMModel.Val1))
                 .Descending(nameof(NormalMVVMModel.Val2)),
-            Limit = 10,
-            Offset = 2,
         });
 
         await FirestoreDatabaseTest.Cleanup(config, testCollectionReference);

@@ -47,6 +47,9 @@ public class OrderByQuery
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyName"/> is a null reference.
+        /// </exception>
         public Builder Ascending(string propertyName)
         {
             OrderByQuery.Add(Queries.OrderByQuery.Ascending(propertyName));
@@ -62,6 +65,9 @@ public class OrderByQuery
         /// <returns>
         /// The <see cref="Builder"/> added with new field transform.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyName"/> is a null reference.
+        /// </exception>
         public Builder Descending(string propertyName)
         {
             OrderByQuery.Add(Queries.OrderByQuery.Descending(propertyName));
@@ -80,6 +86,9 @@ public class OrderByQuery
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyName"/> is a null reference.
+        /// </exception>
         public Builder Add(string propertyName, OrderDirection orderDirection)
         {
             OrderByQuery.Add(Queries.OrderByQuery.Create(propertyName, orderDirection));
@@ -95,8 +104,13 @@ public class OrderByQuery
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public Builder Add(OrderByQuery orderBy)
         {
+            ArgumentNullException.ThrowIfNull(orderBy);
+
             OrderByQuery.Add(orderBy);
             return this;
         }
@@ -110,8 +124,13 @@ public class OrderByQuery
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<OrderByQuery> orderBy)
         {
+            ArgumentNullException.ThrowIfNull(orderBy);
+
             OrderByQuery.AddRange(orderBy);
             return this;
         }
@@ -122,6 +141,9 @@ public class OrderByQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.OrderByQuery"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(OrderByQuery orderBy)
         {
             return Create().Add(orderBy);
@@ -133,6 +155,9 @@ public class OrderByQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.OrderByQuery"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(OrderByQuery[] orderBy)
         {
             return Create().AddRange(orderBy);
@@ -144,6 +169,9 @@ public class OrderByQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.OrderByQuery"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<OrderByQuery> orderBy)
         {
             return Create().AddRange(orderBy);
@@ -172,6 +200,9 @@ public class OrderByQuery
     /// <returns>
     /// The created <see cref="OrderByQuery"/>
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="propertyName"/> is a null reference.
+    /// </exception>
     public static OrderByQuery Create(string propertyName, OrderDirection orderDirection)
     {
         return new(propertyName, orderDirection);
@@ -186,6 +217,9 @@ public class OrderByQuery
     /// <returns>
     /// The created <see cref="OrderByQuery"/>
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="propertyName"/> is a null reference.
+    /// </exception>
     public static OrderByQuery Ascending(string propertyName)
     {
         return new(propertyName, OrderDirection.Ascending);
@@ -200,6 +234,9 @@ public class OrderByQuery
     /// <returns>
     /// The created <see cref="OrderByQuery"/>
     /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="propertyName"/> is a null reference.
+    /// </exception>
     public static OrderByQuery Descending(string propertyName)
     {
         return new(propertyName, OrderDirection.Descending);
@@ -207,6 +244,8 @@ public class OrderByQuery
 
     internal OrderByQuery(string propertyName, OrderDirection orderDirection)
     {
+        ArgumentNullException.ThrowIfNull(propertyName);
+
         PropertyName = propertyName;
         OrderDirection = orderDirection;
     }

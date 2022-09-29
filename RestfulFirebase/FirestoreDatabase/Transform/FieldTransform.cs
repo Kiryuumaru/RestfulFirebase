@@ -176,26 +176,6 @@ public abstract class FieldTransform
             FieldTransforms.Add(SetToServerValueTransform.RequestTime(modelType, propertyNamePath));
             return this;
         }
-
-        /// <returns>
-        /// The <see cref="Builder"/> added with new field transform.
-        /// </returns>
-        /// <inheritdoc cref="SetToServerValueTransform.ServerValueUnspecified{TModel}(string[])"/>
-        public Builder SetToServerValueUnspecified<TModel>(params string[] propertyNamePath)
-        {
-            FieldTransforms.Add(SetToServerValueTransform.ServerValueUnspecified<TModel>(propertyNamePath));
-            return this;
-        }
-
-        /// <returns>
-        /// The <see cref="Builder"/> added with new field transform.
-        /// </returns>
-        /// <inheritdoc cref="SetToServerValueTransform.ServerValueUnspecified(Type, string[])"/>
-        public Builder SetToServerValueUnspecified(Type modelType, params string[] propertyNamePath)
-        {
-            FieldTransforms.Add(SetToServerValueTransform.ServerValueUnspecified(modelType, propertyNamePath));
-            return this;
-        }
     }
 
     /// <summary>

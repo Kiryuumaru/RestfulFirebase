@@ -35,6 +35,9 @@ public class MaximumTransform : FieldTransform
     /// </exception>
     public static MaximumTransform Create<TModel>(object maximumValue, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(maximumValue);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(maximumValue, typeof(TModel), propertyNamePath);
     }
 
@@ -60,6 +63,10 @@ public class MaximumTransform : FieldTransform
     /// </exception>
     public static MaximumTransform Create(object maximumValue, Type modelType, string[] propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(maximumValue);
+        ArgumentNullException.ThrowIfNull(modelType);
+        ArgumentNullException.ThrowIfNull(propertyNamePath);
+
         return new(maximumValue, modelType, propertyNamePath);
     }
 
@@ -71,8 +78,6 @@ public class MaximumTransform : FieldTransform
     internal MaximumTransform(object maximumValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
-        ArgumentNullException.ThrowIfNull(maximumValue);
-
         MaximumValue = maximumValue;
     }
 }

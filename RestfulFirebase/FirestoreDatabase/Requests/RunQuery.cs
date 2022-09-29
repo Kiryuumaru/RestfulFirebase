@@ -14,6 +14,10 @@ using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.References;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Enums;
+using System.Data;
+using System.Runtime.Serialization.Formatters;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -39,12 +43,17 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     public DocumentReference? DocumentReference { get; set; }
 
     /// <summary>
-    /// Gets or sets the order to sort results by.
+    /// Gets or sets the collections to query.
     /// </summary>
     public FromQuery.Builder? From { get; set; }
 
     /// <summary>
-    /// Gets or sets the order to sort results by.
+    /// Gets or sets the filter to apply.
+    /// </summary>
+    public FilterQuery.Builder? Where { get; set; }
+
+    /// <summary>
+    /// Gets or sets the order to apply to the query results.
     /// </summary>
     public OrderByQuery.Builder? OrderBy { get; set; }
 
@@ -82,6 +91,12 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
+
+        Type objType = typeof(T);
+
+        PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
 
         string url;
         if (DocumentReference != null)
@@ -131,14 +146,71 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
+        if (Where != null)
+        {
+            writer.WritePropertyName("where");
+            writer.WriteStartObject();
+            writer.WritePropertyName("compositeFilter");
+            writer.WriteStartObject();
+            writer.WritePropertyName("op");
+            writer.WriteStringValue("AND");
+            writer.WritePropertyName("filters");
+            writer.WriteStartArray();
+            foreach (var filter in Where.FilterQuery)
+            {
+                var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, filter.PropertyName, jsonSerializerOptions);
+
+                if (documentField == null)
+                {
+                    throw new ArgumentException($"\"{filter.PropertyName}\" does not exist in the model \"{objType.Name}\".");
+                }
+
+                switch (filter)
+                {
+                    case UnaryFilterQuery unaryFilter:
+
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("unaryFilter");
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("op");
+                        writer.WriteStringValue(unaryFilter.Operator.ToEnumString());
+                        writer.WritePropertyName("field");
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("fieldPath");
+                        writer.WriteStringValue(documentField.DocumentFieldName);
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+
+                        break;
+                    case FieldFilterQuery fieldFilter:
+
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("fieldFilter");
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("op");
+                        writer.WriteStringValue(fieldFilter.Operator.ToEnumString());
+                        writer.WritePropertyName("field");
+                        writer.WriteStartObject();
+                        writer.WritePropertyName("fieldPath");
+                        writer.WriteStringValue(documentField.DocumentFieldName);
+                        writer.WriteEndObject();
+                        writer.WritePropertyName("value");
+                        ModelHelpers.BuildUtf8JsonWriterObject(Config, writer, fieldFilter.Value?.GetType(), fieldFilter.Value, jsonSerializerOptions, null, null);
+                        writer.WriteEndObject();
+                        writer.WriteEndObject();
+
+                        break;
+                    default:
+                        throw new NotImplementedException($"{filter.GetType()} Filter is not implemented.");
+                }
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
         if (OrderBy != null)
         {
-            Type objType = typeof(T);
-
-            PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
-
             writer.WritePropertyName("orderBy");
             writer.WriteStartArray();
             foreach (var orderBy in OrderBy.OrderByQuery)
@@ -147,7 +219,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
 
                 if (documentField == null)
                 {
-                    throw new ArgumentException($"OrderBy property name \"{orderBy.PropertyName}\" does not exist in the model \"{objType.Name}\".");
+                    throw new ArgumentException($"\"{orderBy.PropertyName}\" does not exist in the model \"{objType.Name}\".");
                 }
 
                 writer.WriteStartObject();
@@ -157,7 +229,7 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
                 writer.WriteStringValue(documentField.DocumentFieldName);
                 writer.WriteEndObject();
                 writer.WritePropertyName("direction");
-                writer.WriteStringValue(orderBy.OrderDirection == Enums.OrderDirection.Ascending ? "ASCENDING" : "DESCENDING");
+                writer.WriteStringValue(orderBy.OrderDirection == OrderDirection.Ascending ? "ASCENDING" : "DESCENDING");
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
@@ -181,6 +253,10 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         writer.WriteEndObject();
 
         await writer.FlushAsync();
+
+        stream.Seek(0, SeekOrigin.Begin);
+        StreamReader streamReader = new(stream);
+        var asdasd = streamReader.ReadToEnd();
 
         var (executeResult, executeException) = await ExecuteWithContent(stream, HttpMethod.Post, url);
         if (executeResult == null)
