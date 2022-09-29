@@ -27,6 +27,23 @@ public class DocumentReference : Reference
 
     #region Initializers
 
+    /// <summary>
+    /// Creates new instance of <see cref="DocumentReference"/>.
+    /// </summary>
+    /// <param name="parent">
+    /// The <see cref="DocumentReference"/> parent of the document to create.
+    /// </param>
+    /// <param name="documentId">
+    /// The document ID of the document to create.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="DocumentReference"/>.
+    /// </returns>
+    public static DocumentReference Create(CollectionReference parent, string documentId)
+    {
+        return new(parent, documentId);
+    }
+
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif

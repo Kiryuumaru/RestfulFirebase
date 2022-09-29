@@ -14,6 +14,7 @@ using RestfulFirebase.Authentication.Models;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.Authentication.Requests;
 using RestfulFirebase.Common.Models;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -88,8 +89,20 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
         {
             if (responseStr != null && !string.IsNullOrEmpty(responseStr) && responseStr != "N/A")
             {
-                ErrorData? errorData = JsonSerializer.Deserialize<ErrorData>(responseStr, DefaultJsonSerializerOption);
-                message = errorData?.Error?.Message ?? "";
+                var errorDoc = JsonDocument.Parse(responseStr);
+                if (errorDoc != null)
+                {
+                    if (errorDoc.RootElement.ValueKind == JsonValueKind.Object)
+                    {
+                        ErrorData? errorData = errorDoc.RootElement.Deserialize<ErrorData>(DefaultJsonSerializerOption);
+                        message = errorData?.Error?.Message ?? "";
+                    }
+                    else if (errorDoc.RootElement.ValueKind == JsonValueKind.Array)
+                    {
+                        ErrorData? errorData = errorDoc.RootElement.EnumerateArray().FirstOrDefault().Deserialize<ErrorData>(DefaultJsonSerializerOption);
+                        message = errorData?.Error?.Message ?? "";
+                    }
+                }
             }
         }
         catch (JsonException)

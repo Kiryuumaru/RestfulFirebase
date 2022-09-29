@@ -162,7 +162,6 @@ public class ListDocumentsRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
         }
         string url = CollectionReference.BuildUrl(Config.ProjectId, qb.Build());
 
-
         var (executeResult, executeException) = await Execute(HttpMethod.Get, url);
         if (executeResult == null)
         {

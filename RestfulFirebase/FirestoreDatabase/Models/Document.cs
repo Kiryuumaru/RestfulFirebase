@@ -5,6 +5,7 @@ using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
 using RestfulFirebase.FirestoreDatabase.References;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;

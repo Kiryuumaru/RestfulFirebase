@@ -13,7 +13,7 @@ namespace RestfulFirebase.UnitTest;
 
 public class FirestoreDatabaseTest
 {
-    private static async Task Cleanup(FirebaseConfig config, CollectionReference collectionReference)
+    internal static async Task Cleanup(FirebaseConfig config, CollectionReference collectionReference)
     {
         var oldDataList = await Api.FirestoreDatabase.ListDocuments(new ListDocumentsRequest<NormalMVVMModel>()
         {

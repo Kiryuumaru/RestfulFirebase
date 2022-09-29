@@ -18,11 +18,6 @@ public abstract class Reference
         return $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}";
     }
 
-    internal virtual string[] BuildUrls(string projectId, string? postSegment = null)
-    {
-        return new string[] { $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/{BuildUrlCascade(projectId)}{postSegment}" };
-    }
-
     internal abstract string BuildUrlCascade(string projectId);
 
 

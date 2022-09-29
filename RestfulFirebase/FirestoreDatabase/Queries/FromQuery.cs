@@ -1,9 +1,11 @@
 ﻿using RestfulFirebase.Common.Attributes;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.References;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 
@@ -15,7 +17,13 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 public class FromQuery
 {
     /// <summary>
-    /// The builder for multiple document parameter.
+    /// The builder for multiple document parameter. Has implicit conversion from
+    /// <para><see cref="Queries.FromQuery"/></para>
+    /// <para><see cref="Queries.FromQuery"/> array</para>
+    /// <para><see cref="List{T}"/> with item <see cref="Queries.FromQuery"/></para>
+    /// <para><see cref="References.CollectionReference"/></para>
+    /// <para><see cref="References.CollectionReference"/> array</para>
+    /// <para><see cref="List{T}"/> with item <see cref="References.CollectionReference"/></para>
     /// </summary>
     public class Builder
     {
@@ -36,50 +44,20 @@ public class FromQuery
         public List<FromQuery> FromQuery { get; } = new();
 
         /// <summary>
-        /// Adds ascending order to the <see cref="Builder"/>.
-        /// </summary>
-        /// <param name="propertyName">
-        /// The property name to order.
-        /// </param>
-        /// <returns>
-        /// The <see cref="Builder"/> added with new field transform.
-        /// </returns>
-        public Builder Ascending(string propertyName)
-        {
-            FromQuery.Add(Queries.FromQuery.Ascending(propertyName));
-            return this;
-        }
-
-        /// <summary>
-        /// Adds descending order to the <see cref="Builder"/>.
-        /// </summary>
-        /// <param name="propertyName">
-        /// The property name to order.
-        /// </param>
-        /// <returns>
-        /// The <see cref="Builder"/> added with new field transform.
-        /// </returns>
-        public Builder Descending(string propertyName)
-        {
-            FromQuery.Add(Queries.FromQuery.Descending(propertyName));
-            return this;
-        }
-
-        /// <summary>
         /// Adds the <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
-        /// <param name="propertyName">
-        /// The order based on the property name of the model to order.
+        /// <param name="collectionReference">
+        /// The <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
         /// </param>
-        /// <param name="orderDirection">
-        /// The <see cref="Enums.OrderDirection"/> of the order.
+        /// <param name="allDescendants">
+        /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
         /// </param>
         /// <returns>
         /// The <see cref="Builder"/> with added order.
         /// </returns>
-        public Builder Add(string propertyName, OrderDirection orderDirection)
+        public Builder Add(CollectionReference collectionReference, bool allDescendants = false)
         {
-            FromQuery.Add(Queries.FromQuery.Create(propertyName, orderDirection));
+            FromQuery.Add(Queries.FromQuery.Create(collectionReference, allDescendants));
             return this;
         }
 
@@ -146,51 +124,87 @@ public class FromQuery
             return Create().AddRange(orderBy);
         }
 
-        internal string BuildAsQueryParameter<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(JsonSerializerOptions? jsonSerializerOptions)
+        /// <summary>
+        /// Converts the <see cref="Queries.FromQuery"/> to <see cref="Builder"/>
+        /// </summary>
+        /// <param name="collectionReference">
+        /// The <see cref="References.CollectionReference"/> to convert.
+        /// </param>
+        public static implicit operator Builder(CollectionReference collectionReference)
         {
-            return BuildAsQueryParameter(typeof(T), jsonSerializerOptions);
+            return Create().Add(collectionReference);
         }
 
-        internal string BuildAsQueryParameter([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, JsonSerializerOptions? jsonSerializerOptions)
+        /// <summary>
+        /// Converts the <see cref="Queries.FromQuery"/> array to <see cref="Builder"/>
+        /// </summary>
+        /// <param name="collectionReferences">
+        /// The <see cref="References.CollectionReference"/> array to convert.
+        /// </param>
+        public static implicit operator Builder(CollectionReference[] collectionReferences)
         {
-            PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            bool includeOnlyWithAttribute = objType.GetCustomAttribute(typeof(FirebaseValueOnlyAttribute)) != null;
-
-            return BuildAsQueryParameter(objType, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions);
+            return Create().AddRange(collectionReferences.Select(i => Queries.FromQuery.Create(i)));
         }
 
-        internal string BuildAsQueryParameter(Type objType, PropertyInfo[] propertyInfos, FieldInfo[] fieldInfos, bool includeOnlyWithAttribute, JsonSerializerOptions? jsonSerializerOptions)
+        /// <summary>
+        /// Converts the <see cref="Queries.FromQuery"/> list to <see cref="Builder"/>
+        /// </summary>
+        /// <param name="collectionReferences">
+        /// The <see cref="References.CollectionReference"/> list to convert.
+        /// </param>
+        public static implicit operator Builder(List<CollectionReference> collectionReferences)
         {
-            List<string> orderByQuery = new();
-
-            foreach (var order in FromQuery)
-            {
-                orderByQuery.Add($"{order.GetDocumentFieldName(objType, propertyInfos, fieldInfos, includeOnlyWithAttribute, jsonSerializerOptions)} {(order.OrderDirection == OrderDirection.Ascending ? "asc" : "desc")}");
-            }
-
-            return string.Join(",", orderByQuery);
+            return Create().AddRange(collectionReferences.Select(i => Queries.FromQuery.Create(i)));
         }
     }
 
     /// <summary>
-    /// Gets or sets the collection ID. When set, selects only collections with this ID.
+    /// Gets or sets the <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
     /// </summary>
-    public string CollectionId { get; set; }
+    public CollectionReference CollectionReference { get; set; }
 
     /// <summary>
     /// Gets or sets <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </summary>
     public bool AllDescendants { get; set; }
 
-    public static FromQuery Create(string collectionId, bool allDescendants)
+    /// <summary>
+    /// Creates an instance of <see cref="FromQuery"/>.
+    /// </summary>
+    /// <param name="collectionReference">
+    /// The <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
+    /// </param>
+    /// <param name="allDescendants">
+    /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
+    /// </param>
+    /// <returns>
+    /// The created <see cref="FromQuery"/>
+    /// </returns>
+    public static FromQuery Create(CollectionReference collectionReference, bool allDescendants = false)
     {
-        return new(collectionId, allDescendants);
+        return new(collectionReference, allDescendants);
     }
 
-    internal FromQuery(string collectionId, bool allDescendants)
+    /// <summary>
+    /// Creates an instance of <see cref="FromQuery"/>.
+    /// </summary>
+    /// <param name="collectionId">
+    /// The collection ID. When set, selects only collections with this ID.
+    /// </param>
+    /// <param name="allDescendants">
+    /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
+    /// </param>
+    /// <returns>
+    /// The created <see cref="FromQuery"/>
+    /// </returns>
+    public static FromQuery Create(string collectionId, bool allDescendants = false)
     {
-        CollectionId = collectionId;
+        return new(CollectionReference.Create(collectionId), allDescendants);
+    }
+
+    internal FromQuery(CollectionReference collectionReference, bool allDescendants)
+    {
+        CollectionReference = collectionReference;
         AllDescendants = allDescendants;
     }
 }

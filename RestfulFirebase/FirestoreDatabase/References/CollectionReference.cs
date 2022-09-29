@@ -27,6 +27,37 @@ public class CollectionReference : Reference
 
     #region Initializers
 
+    /// <summary>
+    /// Creates new instance of <see cref="CollectionReference"/>.
+    /// </summary>
+    /// <param name="collectionId">
+    /// The collection ID of the collection to create.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="CollectionReference"/>.
+    /// </returns>
+    public static CollectionReference Create(string collectionId)
+    {
+        return new(null, collectionId);
+    }
+
+    /// <summary>
+    /// Creates new instance of <see cref="CollectionReference"/>.
+    /// </summary>
+    /// <param name="parent">
+    /// The <see cref="DocumentReference"/> parent of the collection to create.
+    /// </param>
+    /// <param name="collectionId">
+    /// The collection ID of the collection to create.
+    /// </param>
+    /// <returns>
+    /// The created <see cref="CollectionReference"/>.
+    /// </returns>
+    public static CollectionReference Create(DocumentReference? parent, string collectionId)
+    {
+        return new(parent, collectionId);
+    }
+
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
