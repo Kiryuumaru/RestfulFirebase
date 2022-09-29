@@ -18,6 +18,7 @@ using RestfulFirebase.FirestoreDatabase.Enums;
 using System.Data;
 using System.Runtime.Serialization.Formatters;
 using RestfulFirebase.FirestoreDatabase.Utilities;
+using static System.Net.WebRequestMethods;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -41,6 +42,11 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     /// Gets or sets the requested <see cref="References.DocumentReference"/> of the document node.
     /// </summary>
     public DocumentReference? DocumentReference { get; set; }
+
+    /// <summary>
+    /// Gets or sets the projection to return.
+    /// </summary>
+    public SelectQuery.Builder? Select { get; set; }
 
     /// <summary>
     /// Gets or sets the collections to query.
@@ -134,6 +140,37 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
         writer.WriteStartObject();
         writer.WritePropertyName("structuredQuery");
         writer.WriteStartObject();
+        if (Select != null)
+        {
+            writer.WritePropertyName("select");
+            writer.WriteStartObject();
+            writer.WritePropertyName("fields");
+            writer.WriteStartArray();
+            if (Select.DocumentNameOnly)
+            {
+                writer.WriteStringValue("__name__");
+            }
+            else
+            {
+                foreach (var select in Select.SelectQuery)
+                {
+                    var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, null, select.PropertyName, jsonSerializerOptions);
+
+                    if (documentField == null)
+                    {
+                        throw new ArgumentException($"\"{select.PropertyName}\" does not exist in the model \"{objType.Name}\".");
+                    }
+
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("fieldPath");
+                    writer.WriteStringValue(documentField.DocumentFieldName);
+                    writer.WriteEndObject();
+                }
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
         writer.WritePropertyName("from");
         writer.WriteStartArray();
         foreach (var from in From.FromQuery)

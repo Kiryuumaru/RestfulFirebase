@@ -67,7 +67,7 @@ public abstract class FilterQuery
         /// The <see cref="Queries.FilterQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with added filter.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="filter"/> is a null reference.
@@ -87,7 +87,7 @@ public abstract class FilterQuery
         /// The multiple of <see cref="Queries.FilterQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with added filter.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="filter"/> is a null reference.
