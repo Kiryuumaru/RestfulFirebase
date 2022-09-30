@@ -5,6 +5,7 @@ VisualStudioVersion = 17.0.31815.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA4E9CD5-D164-4E0E-8BBE-F92EA3DB5D61}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.github\workflows\ci-cd.yml = .github\workflows\ci-cd.yml
@@ -23,7 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{3F
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleAppExample", "Examples\ConsoleAppExample\ConsoleAppExample.csproj", "{35DD121E-17DC-4BDC-97C1-D1023CD18CA6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestfulFirebase.UnitTest", "RestfulFirebase.UnitTest\RestfulFirebase.UnitTest.csproj", "{79C66872-CC9D-410E-A975-AA81E21925E6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestfulFirebase.UnitTest", "RestfulFirebase.UnitTest\RestfulFirebase.UnitTest.csproj", "{79C66872-CC9D-410E-A975-AA81E21925E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
