@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 using System.Collections.Generic;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
@@ -61,6 +62,30 @@ public class OrderByQuery
         public Builder Descending(string propertyName)
         {
             orderByQuery.Add(new(propertyName, OrderDirection.Descending));
+            return this;
+        }
+
+        /// <summary>
+        /// Creates an instance of <see cref="Queries.OrderByQuery"/> with <see cref="OrderDirection.Ascending"/> document name order.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="Builder"/> with new added "orderBy" query.
+        /// </returns>
+        public Builder AscendingDocumentName()
+        {
+            orderByQuery.Add(new(DocumentFieldHelpers.DocumentName, OrderDirection.Ascending));
+            return this;
+        }
+
+        /// <summary>
+        /// Creates an instance of <see cref="Queries.OrderByQuery"/> with <see cref="OrderDirection.Descending"/> document name order.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="Builder"/> with new added "orderBy" query.
+        /// </returns>
+        public Builder DescendingDocumentName()
+        {
+            orderByQuery.Add(new(DocumentFieldHelpers.DocumentName, OrderDirection.Descending));
             return this;
         }
 
@@ -188,6 +213,18 @@ public class OrderByQuery
     public static Builder Descending(string propertyName)
     {
         return new Builder().Descending(propertyName);
+    }
+
+    /// <inheritdoc cref="Builder.AscendingDocumentName()"/>
+    public static Builder AscendingDocumentName()
+    {
+        return new Builder().AscendingDocumentName();
+    }
+
+    /// <inheritdoc cref="Builder.DescendingDocumentName()"/>
+    public static Builder DescendingDocumentName()
+    {
+        return new Builder().DescendingDocumentName();
     }
 
     /// <inheritdoc cref="Builder.Add(string, OrderDirection)"/>

@@ -27,6 +27,11 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
     public JsonSerializerOptions? JsonSerializerOptions { get; set; }
 
     /// <summary>
+    /// Gets or sets the <see cref="Transaction.Builder"/> of the transaction.
+    /// </summary>
+    public Transaction.Builder? Transaction { get; set; }
+
+    /// <summary>
     /// Gets or sets the requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
     /// </summary>
     public Document.Builder? PatchDocument { get; set; }
@@ -40,11 +45,6 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
     /// Gets or sets the requested <see cref="DocumentTransform"/> of the document node to transform.
     /// </summary>
     public DocumentTransform.Builder? TransformDocument { get; set; }
-
-    /// <summary>
-    /// Gets or sets the <see cref="Transactions.Transaction"/> for atomic operation.
-    /// </summary>
-    public Transaction? Transaction { get; set; }
 
     /// <inheritdoc cref="TransactionResponse{T}"/>
     /// <returns>
@@ -295,8 +295,41 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
         writer.WriteEndArray();
         if (Transaction != null)
         {
-            writer.WritePropertyName("transaction");
-            writer.WriteStringValue(Transaction.Token);
+            if (Transaction.Transaction.Token == null)
+            {
+                writer.WritePropertyName("newTransaction");
+                if (Transaction.Transaction is ReadOnlyTransaction readOnlyTransaction)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("readOnly");
+                    writer.WriteStartObject();
+                    if (readOnlyTransaction.ReadTime.HasValue)
+                    {
+                        writer.WritePropertyName("readTime");
+                        writer.WriteStringValue(readOnlyTransaction.ReadTime.Value.ToUniversalTime());
+                    }
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+                else if (Transaction.Transaction is ReadWriteTransaction readWriteTransaction)
+                {
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("readWrite");
+                    writer.WriteStartObject();
+                    if (readWriteTransaction.RetryTransaction != null)
+                    {
+                        writer.WritePropertyName("retryTransaction");
+                        writer.WriteStringValue(readWriteTransaction.RetryTransaction);
+                    }
+                    writer.WriteEndObject();
+                    writer.WriteEndObject();
+                }
+            }
+            else
+            {
+                writer.WritePropertyName("transaction");
+                writer.WriteStringValue(Transaction.Transaction.Token);
+            }
         }
         writer.WriteEndObject();
 
@@ -307,6 +340,9 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
         {
             return new(this, executeException);
         }
+
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
 
         return new(this, null);
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestfulFirebase.FirestoreDatabase.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -32,7 +33,7 @@ public class SelectQuery
         /// <summary>
         /// Gets <c>true</c> whether the "select" query is set to return the document name only; otherwise, <c>false</c>.
         /// </summary>
-        public bool IsDocumentNameOnly => SelectQuery.Any(i => i.PropertyName == DocumentName);
+        public bool IsDocumentNameOnly => SelectQuery.Any(i => i.PropertyName == DocumentFieldHelpers.DocumentName);
 
         /// <summary>
         /// Adds the <see cref="Queries.SelectQuery"/> to the builder.
@@ -70,7 +71,7 @@ public class SelectQuery
                 throw new ArgumentException("Select query already contains field projections.");
             }
 
-            selectQuery.Add(new(DocumentName));
+            selectQuery.Add(new(DocumentFieldHelpers.DocumentName));
             return this;
         }
 
@@ -182,8 +183,6 @@ public class SelectQuery
     {
         return new Builder().Add(select);
     }
-
-    internal const string DocumentName = "__name__";
 
     /// <summary>
     /// Gets or sets the property name to which to apply the operator.

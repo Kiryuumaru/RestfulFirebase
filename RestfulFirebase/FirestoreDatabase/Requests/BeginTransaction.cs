@@ -37,8 +37,6 @@ public class BeginTransactionRequest : FirestoreDatabaseRequest<TransactionRespo
         ArgumentNullException.ThrowIfNull(Config);
         ArgumentNullException.ThrowIfNull(Transaction);
 
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
-
         using MemoryStream stream = new();
         Utf8JsonWriter writer = new(stream);
 

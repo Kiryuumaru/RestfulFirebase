@@ -20,7 +20,7 @@ namespace RestfulFirebase.UnitTest
                 Password = "123123",
             });
 
-            if (loginRequest.HasResult)
+            if (loginRequest.IsSuccess)
             {
                 user = loginRequest.Result;
             }
@@ -33,7 +33,7 @@ namespace RestfulFirebase.UnitTest
                     Password = "123123",
                 });
 
-                signupRequest.ThrowIfErrorOrEmptyResult();
+                signupRequest.ThrowIfError();
 
                 user = signupRequest.Result;
             }

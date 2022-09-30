@@ -54,7 +54,7 @@ public abstract class FirestoreDatabaseRequest<TResponse> : TransactionRequest<T
                     CancellationToken = CancellationToken,
                     Authorization = firebaseUser,
                 });
-                tokenResponse.ThrowIfErrorOrEmptyResult();
+                tokenResponse.ThrowIfError();
             }
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", firebaseUser.IdToken);
         }

@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Threading;
+using System.Reflection;
 
 namespace RestfulFirebase.FirestoreDatabase.Requests;
 
@@ -28,7 +29,7 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
     public DocumentReference? DocumentReference { get; set; }
 
     /// <summary>
-    /// Gets or sets the requested page size of the result <see cref="AsyncPager{T}"/>.
+    /// Gets or sets the requested page size of the pager <see cref="ListCollectionsResult.GetAsyncEnumerator(CancellationToken)"/>.
     /// </summary>
     public int? PageSize { get; set; }
 
@@ -46,45 +47,34 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption(JsonSerializerOptions);
 
-        AsyncPager<CollectionReference>.DocumentPagerIterator iterator;
-        try
+        var firstResponse = await ExecuteNextPage(null, Config, jsonSerializerOptions, default);
+        if (firstResponse.IsError)
         {
-            iterator = await ExecuteNextPage(null, jsonSerializerOptions);
-        }
-        catch (Exception ex)
-        {
-            return new TransactionResponse<ListCollectionsRequest, ListCollectionsResult>(this, null, ex);
+            return new(this, null, firstResponse.Error);
         }
 
-        Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>? firstIterationIterator = null;
-        if (iterator.NextPage != null)
-        {
-            firstIterationIterator = new Func<CancellationToken, ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>>(
-                async (ct) => await iterator.NextPage!(ct));
-        }
-        var firstIteration = new ValueTask<AsyncPager<CollectionReference>.DocumentPagerIterator>(
-            new AsyncPager<CollectionReference>.DocumentPagerIterator(iterator.Item, firstIterationIterator));
-        AsyncPager<CollectionReference> pager = new(new(null!, (_) => firstIteration));
-        ListCollectionsResult result = new(iterator.Item, pager);
-
-        return new TransactionResponse<ListCollectionsRequest, ListCollectionsResult>(this, result, null);
+        return new(this, firstResponse.Result, null);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    private async Task<AsyncPager<CollectionReference>.DocumentPagerIterator> ExecuteNextPage(string? pageToken, JsonSerializerOptions jsonSerializerOptions)
+    private async Task<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>> ExecuteNextPage(
+        string? pageToken,
+        FirebaseConfig config,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(Config);
+        CancellationToken linkedCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, cancellationToken).Token;
 
         string url;
         if (DocumentReference == null)
         {
             url =
                 $"{Api.FirestoreDatabase.FirestoreDatabaseV1Endpoint}/" +
-                $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, Config.ProjectId, ":listCollectionIds")}";
+                $"{string.Format(Api.FirestoreDatabase.FirestoreDatabaseDocumentsEndpoint, config.ProjectId, ":listCollectionIds")}";
         }
         else
         {
-            url = DocumentReference.BuildUrl(Config.ProjectId, ":listCollectionIds");
+            url = DocumentReference.BuildUrl(config.ProjectId, ":listCollectionIds");
         }
 
         using MemoryStream stream = new();
@@ -109,8 +99,12 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
             throw executeException ?? new Exception("Unknown exception occured");
         }
 
+#if NET6_0_OR_GREATER
+        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync(linkedCancellationToken);
+#else
         using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
-        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
+#endif
+        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: linkedCancellationToken);
 
         List<CollectionReference> collectionReferences = new();
         string? nextPageToken = null;
@@ -132,35 +126,101 @@ public class ListCollectionsRequest : FirestoreDatabaseRequest<TransactionRespon
             nextPageToken = nextPageTokenProperty.Deserialize<string>(jsonSerializerOptions);
         }
 
-        if (nextPageToken == null)
-        {
-            return new(collectionReferences.ToArray(), null);
-        }
-        else
-        {
-            return new(collectionReferences.ToArray(), async (ct) => await ExecuteNextPage(nextPageToken, jsonSerializerOptions));
-        }
+        TransactionResponse<ListCollectionsRequest, ListCollectionsResult> response = null!;
+        response = new(
+            this,
+            new(collectionReferences.ToArray(),
+                nextPageToken,
+                () => response,
+                (nextPageTok, ct) =>
+                {
+                    return ExecuteNextPage(nextPageTok, config, jsonSerializerOptions, ct);
+                }),
+            null);
+        return response;
     }
 }
 
 /// <summary>
 /// The result of the <see cref="ListCollectionsRequest"/> request.
 /// </summary>
-public class ListCollectionsResult
+public class ListCollectionsResult : IAsyncEnumerable<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>>
 {
     /// <summary>
     /// Gets the first result of the list.
     /// </summary>
-    public CollectionReference[] FirstResult { get; }
+    public CollectionReference[] CollectionReferences { get; }
 
-    /// <summary>
-    /// Gets the pager iterator <see cref="AsyncPager{T}"/> to iterate to next page result.
-    /// </summary>
-    public AsyncPager<CollectionReference> CollectionPager { get; }
+    private readonly string? nextPageToken;
+    private readonly Func<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>> firstResponseFactory;
+    private readonly Func<string, CancellationToken, Task<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>>> pager;
 
-    internal ListCollectionsResult(CollectionReference[] firstResult, AsyncPager<CollectionReference> collectionPager)
+    internal ListCollectionsResult(
+        CollectionReference[] collectionReferences,
+        string? nextPageToken,
+        Func<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>> firstResponseFactory,
+        Func<string, CancellationToken, Task<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>>> pager)
     {
-        FirstResult = firstResult;
-        CollectionPager = collectionPager;
+        CollectionReferences = collectionReferences;
+        this.nextPageToken = nextPageToken;
+        this.firstResponseFactory = firstResponseFactory;
+        this.pager = pager;
+    }
+
+    /// <inheritdoc/>
+    public IAsyncEnumerator<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return new AsyncEnumerator(nextPageToken, firstResponseFactory(), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+    }
+
+    internal class AsyncEnumerator : IAsyncEnumerator<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>>
+    {
+        public TransactionResponse<ListCollectionsRequest, ListCollectionsResult> Current { get; private set; } = default!;
+
+        private ListCollectionsResult lastSuccessResult;
+
+        private readonly string? nextPageToken;
+        private readonly TransactionResponse<ListCollectionsRequest, ListCollectionsResult> firstResponse;
+        private readonly CancellationTokenSource cancellationTokenSource;
+
+        public AsyncEnumerator(string? nextPageToken, TransactionResponse<ListCollectionsRequest, ListCollectionsResult> firstResponse, CancellationTokenSource cancellationTokenSource)
+        {
+            firstResponse.ThrowIfError();
+            this.nextPageToken = nextPageToken;
+            this.firstResponse = firstResponse;
+            lastSuccessResult = firstResponse.Result;
+            this.cancellationTokenSource = cancellationTokenSource;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            cancellationTokenSource.Cancel();
+            return new ValueTask();
+        }
+
+        public async ValueTask<bool> MoveNextAsync()
+        {
+            if (Current == null)
+            {
+                Current = firstResponse;
+                return true;
+            }
+            else
+            {
+                if (nextPageToken == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    Current = await lastSuccessResult.pager.Invoke(nextPageToken, cancellationTokenSource.Token);
+                    if (Current.IsSuccess)
+                    {
+                        lastSuccessResult = Current.Result;
+                    }
+                    return true;
+                }
+            }
+        }
     }
 }

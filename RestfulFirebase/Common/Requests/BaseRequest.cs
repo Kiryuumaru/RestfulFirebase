@@ -157,13 +157,19 @@ public abstract class TransactionResponse
     /// <summary>
     /// Gets the exception of the operation.
     /// </summary>
-    public Exception? Error { get; }
+    public virtual Exception? Error { get; }
 
     /// <summary>
     /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
     /// </summary>
     [MemberNotNullWhen(false, nameof(Error))]
-    public bool IsSuccess { get => Error == null; }
+    public virtual bool IsSuccess { get => Error == null; }
+
+    /// <summary>
+    /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
+    /// </summary>
+    [MemberNotNullWhen(true, nameof(Error))]
+    public virtual bool IsError { get => Error != null; }
 
     internal TransactionResponse(Exception? error)
     {
@@ -173,7 +179,7 @@ public abstract class TransactionResponse
     /// <summary>
     /// Throws if the response has any error.
     /// </summary>
-    public void ThrowIfError()
+    public virtual void ThrowIfError()
     {
         if (Error != null)
         {
@@ -220,11 +226,18 @@ public class TransactionResponse<TRequest, TResult> : TransactionResponse<TReque
     /// </summary>
     public TResult? Result { get; }
 
-    /// <summary>
-    /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
-    /// </summary>
+    /// <inheritdoc/>
+    public override Exception? Error => base.Error;
+
+    /// <inheritdoc/>
+    [MemberNotNullWhen(false, nameof(Error))]
     [MemberNotNullWhen(true, nameof(Result))]
-    public bool HasResult { get => Result != null; }
+    public override bool IsSuccess => base.IsSuccess;
+
+    /// <inheritdoc/>
+    [MemberNotNullWhen(true, nameof(Error))]
+    [MemberNotNullWhen(false, nameof(Result))]
+    public override bool IsError => base.IsError;
 
     internal TransactionResponse(TRequest request, TResult? response, Exception? error)
         : base(request, error)
@@ -232,23 +245,9 @@ public class TransactionResponse<TRequest, TResult> : TransactionResponse<TReque
         Result = response;
     }
 
-    /// <summary>
-    /// Throws if the response is empty or has any error.
-    /// </summary>
+    /// <inheritdoc/>
     [MemberNotNull(nameof(Result))]
-    public void ThrowIfEmptyResult()
-    {
-        if (Result == null)
-        {
-            throw new NullReferenceException($"{nameof(Result)} is a null reference.");
-        }
-    }
-
-    /// <summary>
-    /// Throws if the response is empty or has any error.
-    /// </summary>
-    [MemberNotNull(nameof(Result))]
-    public void ThrowIfErrorOrEmptyResult()
+    public override void ThrowIfError()
     {
         if (Error != null)
         {
