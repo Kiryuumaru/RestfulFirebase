@@ -312,9 +312,6 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
             return new(this, executeException);
         }
 
-        using Stream contentStream = await executeResult.Content.ReadAsStreamAsync();
-        JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream);
-
         return new(this, null);
     }
 
