@@ -297,39 +297,10 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
         {
             if (Transaction.Transaction.Token == null)
             {
-                writer.WritePropertyName("newTransaction");
-                if (Transaction.Transaction is ReadOnlyTransaction readOnlyTransaction)
-                {
-                    writer.WriteStartObject();
-                    writer.WritePropertyName("readOnly");
-                    writer.WriteStartObject();
-                    if (readOnlyTransaction.ReadTime.HasValue)
-                    {
-                        writer.WritePropertyName("readTime");
-                        writer.WriteStringValue(readOnlyTransaction.ReadTime.Value.ToUniversalTime());
-                    }
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                }
-                else if (Transaction.Transaction is ReadWriteTransaction readWriteTransaction)
-                {
-                    writer.WriteStartObject();
-                    writer.WritePropertyName("readWrite");
-                    writer.WriteStartObject();
-                    if (readWriteTransaction.RetryTransaction != null)
-                    {
-                        writer.WritePropertyName("retryTransaction");
-                        writer.WriteStringValue(readWriteTransaction.RetryTransaction);
-                    }
-                    writer.WriteEndObject();
-                    writer.WriteEndObject();
-                }
+                throw new ArgumentException($"\"{nameof(Transaction)}\" is provided but missing token. \"{nameof(Transaction)}\" must be created first by passing the parameter to any read operations.");
             }
-            else
-            {
-                writer.WritePropertyName("transaction");
-                writer.WriteStringValue(Transaction.Transaction.Token);
-            }
+            writer.WritePropertyName("transaction");
+            writer.WriteStringValue(Transaction.Transaction.Token);
         }
         writer.WriteEndObject();
 
