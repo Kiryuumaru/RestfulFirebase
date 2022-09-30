@@ -155,16 +155,14 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
             writer.WriteStartObject();
             writer.WritePropertyName("fields");
             writer.WriteStartArray();
-            if (Select.DocumentNameOnly)
+            foreach (var select in Select.SelectQuery)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName("fieldPath");
-                writer.WriteStringValue("__name__");
-                writer.WriteEndObject();
-            }
-            else
-            {
-                foreach (var select in Select.SelectQuery)
+                string fieldName;
+                if (Select.IsDocumentNameOnly)
+                {
+                    fieldName = select.PropertyName;
+                }
+                else
                 {
                     var documentField = ClassMemberHelpers.GetDocumentField(propertyInfos, fieldInfos, includeOnlyWithAttribute, select.PropertyName, jsonSerializerOptions);
 
@@ -173,11 +171,13 @@ public class RunQueryRequest<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
                         throw new ArgumentException($"\"{select.PropertyName}\" does not exist in the model \"{objType.Name}\".");
                     }
 
-                    writer.WriteStartObject();
-                    writer.WritePropertyName("fieldPath");
-                    writer.WriteStringValue(documentField.DocumentFieldName);
-                    writer.WriteEndObject();
+                    fieldName = documentField.DocumentFieldName;
                 }
+
+                writer.WriteStartObject();
+                writer.WritePropertyName("fieldPath");
+                writer.WriteStringValue(fieldName);
+                writer.WriteEndObject();
             }
             writer.WriteEndArray();
             writer.WriteEndObject();

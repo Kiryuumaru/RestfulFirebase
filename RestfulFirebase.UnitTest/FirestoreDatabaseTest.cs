@@ -80,9 +80,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .AppendMissingElements<ArrayModel>(new object[] { 6, 7 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .AppendMissingElements<ArrayModel>(new object[] { 6, 7 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest1.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -98,9 +98,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .AppendMissingElements<ArrayModel>(new object[] { 7, 8 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .AppendMissingElements<ArrayModel>(new object[] { 7, 8 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest2.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -116,9 +116,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .AppendMissingElements<ArrayModel>(new object[] { 1, 2 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .AppendMissingElements<ArrayModel>(new object[] { 1, 2 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest3.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -185,9 +185,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<NumberModel>(1, nameof(NumberModel.Val1)))
+            TransformDocument = FieldTransform
+                .Increment<NumberModel>(1, nameof(NumberModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest1.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -203,9 +203,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<NumberModel>(1.5, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Increment<NumberModel>(1.5, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest2.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -221,10 +221,10 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<NumberModel>(1, nameof(NumberModel.Val1))
-                    .Increment<NumberModel>(0.5, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Increment<NumberModel>(1, nameof(NumberModel.Val1))
+                .Increment<NumberModel>(0.5, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest3.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -241,9 +241,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Increment<NumberModel>(-0.5, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Increment<NumberModel>(-0.5, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest4.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -310,9 +310,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Maximum<NumberModel>(2, nameof(NumberModel.Val1)))
+            TransformDocument = FieldTransform
+                .Maximum<NumberModel>(2, nameof(NumberModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest1.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -328,9 +328,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Maximum<NumberModel>(1.5, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Maximum<NumberModel>(1.5, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest2.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -346,10 +346,10 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Maximum<NumberModel>(3, nameof(NumberModel.Val1))
-                    .Maximum<NumberModel>(3, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Maximum<NumberModel>(3, nameof(NumberModel.Val1))
+                .Maximum<NumberModel>(3, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest3.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -366,9 +366,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Maximum<NumberModel>(2, nameof(NumberModel.Val1)))
+            TransformDocument = FieldTransform
+                .Maximum<NumberModel>(2, nameof(NumberModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest4.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -435,9 +435,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Minimum<NumberModel>(2, nameof(NumberModel.Val1)))
+            TransformDocument = FieldTransform
+                .Minimum<NumberModel>(2, nameof(NumberModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest1.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -453,9 +453,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Minimum<NumberModel>(1.5, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Minimum<NumberModel>(1.5, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest2.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -471,10 +471,10 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Minimum<NumberModel>(1, nameof(NumberModel.Val1))
-                    .Minimum<NumberModel>(1, nameof(NumberModel.Val2)))
+            TransformDocument = FieldTransform
+                .Minimum<NumberModel>(1, nameof(NumberModel.Val1))
+                .Minimum<NumberModel>(1, nameof(NumberModel.Val2))
+                .DocumentTransform(model1Reference)
         });
         transformTest3.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -491,9 +491,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .Minimum<NumberModel>(3, nameof(NumberModel.Val1)))
+            TransformDocument = FieldTransform
+                .Minimum<NumberModel>(3, nameof(NumberModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest4.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<NumberModel>()
@@ -559,9 +559,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .RemoveAllFromArray<ArrayModel>(new object[] { 4, 5 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .RemoveAllFromArray<ArrayModel>(new object[] { 4, 5 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest1.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -577,9 +577,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .RemoveAllFromArray<ArrayModel>(new object[] { 3, 4 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .RemoveAllFromArray<ArrayModel>(new object[] { 3, 4 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest2.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -595,9 +595,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .RemoveAllFromArray<ArrayModel>(new object[] { 5, 6 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .RemoveAllFromArray<ArrayModel>(new object[] { 5, 6 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest3.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -613,9 +613,9 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
-                    .RemoveAllFromArray<ArrayModel>(new object[] { 1, 2 }, nameof(ArrayModel.Val1)))
+            TransformDocument = FieldTransform
+                .RemoveAllFromArray<ArrayModel>(new object[] { 1, 2 }, nameof(ArrayModel.Val1))
+                .DocumentTransform(model1Reference)
         });
         transformTest4.ThrowIfError();
         await Api.FirestoreDatabase.GetDocument(new GetDocumentRequest<ArrayModel>()
@@ -670,7 +670,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            PatchDocument = Document.Builder.Create()
+            PatchDocument = Document
                 .Add(writeTest1Model1)
                 .Add(writeTest1Model2),
         });
@@ -678,7 +678,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = Document<TimestampModel>.Builder.Create()
+            Document = Document<TimestampModel>
                 .Add(writeTest1Model1)
                 .Add(writeTest1Model2),
         });
@@ -687,11 +687,11 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            TransformDocument = DocumentTransform.Builder.Create()
-                .Add(model1Reference, FieldTransform.Builder.Create()
+            TransformDocument = DocumentTransform
+                .Add(model1Reference, FieldTransform
                     .SetToServerRequestTime<TimestampModel>(nameof(TimestampModel.Val1))
                     .SetToServerRequestTime<TimestampModel>(nameof(TimestampModel.Val2)))
-                .Add(model2Reference, FieldTransform.Builder.Create()
+                .Add(model2Reference, FieldTransform
                     .SetToServerRequestTime<TimestampModel>(nameof(TimestampModel.Val1))
                     .SetToServerRequestTime<TimestampModel>(nameof(TimestampModel.Val2)))
         });
@@ -700,7 +700,7 @@ public class FirestoreDatabaseTest
         {
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             Config = config,
-            Document = Document<TimestampModel>.Builder.Create()
+            Document = Document<TimestampModel>
                 .Add(writeTest1Model1)
                 .Add(writeTest1Model2),
         });
@@ -810,7 +810,7 @@ public class FirestoreDatabaseTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
-            Where = FilterQuery.Builder.Create()
+            Where = FilterQuery
                 .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 1),
         });
         Assert.NotNull(runQueryTest1.Result);
@@ -824,9 +824,9 @@ public class FirestoreDatabaseTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
-            Where = FilterQuery.Builder.Create()
+            Where = FilterQuery
                 .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
-            OrderBy = OrderByQuery.Builder.Create()
+            OrderBy = OrderByQuery
                 .Descending(nameof(NumberModel.Val2)),
         });
         Assert.NotNull(runQueryTest2.Result);
@@ -846,9 +846,9 @@ public class FirestoreDatabaseTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
-            Where = FilterQuery.Builder.Create()
+            Where = FilterQuery
                 .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
-            OrderBy = OrderByQuery.Builder.Create()
+            OrderBy = OrderByQuery
                 .Descending(nameof(NumberModel.Val2)),
             Offset = 1,
             Limit = 5
@@ -867,10 +867,10 @@ public class FirestoreDatabaseTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
-            Select = SelectQuery.DocumentName(),
-            Where = FilterQuery.Builder.Create()
+            Select = SelectQuery.DocumentNameOnly(),
+            Where = FilterQuery
                 .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
-            OrderBy = OrderByQuery.Builder.Create()
+            OrderBy = OrderByQuery
                 .Descending(nameof(NumberModel.Val2)),
             Offset = 1,
             Limit = 2
@@ -886,10 +886,10 @@ public class FirestoreDatabaseTest
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
-            Select = SelectQuery.Create(nameof(NumberModel.Val2)),
-            Where = FilterQuery.Builder.Create()
+            Select = SelectQuery.Add(nameof(NumberModel.Val2)),
+            Where = FilterQuery
                 .Field(nameof(NumberModel.Val1), FieldOperator.Equal, 2),
-            OrderBy = OrderByQuery.Builder.Create()
+            OrderBy = OrderByQuery
                 .Descending(nameof(NumberModel.Val2)),
             Offset = 1,
             Limit = 2
@@ -1318,7 +1318,7 @@ public class FirestoreDatabaseTest
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
             CollectionReference = testCollectionReference,
             PageSize = 2,
-            OrderBy = OrderByQuery.Builder.Create()
+            OrderBy = OrderByQuery
                 .Ascending(nameof(NormalMVVMModel.Val1))
                 .Descending(nameof(NormalMVVMModel.Val2))
         });

@@ -13,8 +13,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using static System.Text.Json.JsonElement;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
@@ -35,21 +36,17 @@ public partial class Document
     /// </summary>
     public class Builder
     {
-        /// <summary>
-        /// Creates an instance of <see cref="Builder"/>.
-        /// </summary>
-        /// <returns>
-        /// The created <see cref="Builder"/>.
-        /// </returns>
-        public static Builder Create()
-        {
-            return new();
-        }
+        private readonly List<Document> documents = new();
 
         /// <summary>
         /// Gets the list of <see cref="Document"/>.
         /// </summary>
-        public List<Document> Documents { get; } = new();
+        public IReadOnlyList<Document> Documents { get; }
+
+        internal Builder()
+        {
+            Documents = documents.AsReadOnly();
+        }
 
         /// <summary>
         /// Adds the document to the builder.
@@ -67,7 +64,7 @@ public partial class Document
         {
             ArgumentNullException.ThrowIfNull(document);
 
-            Documents.Add(document);
+            documents.Add(document);
             return this;
         }
 
@@ -87,7 +84,7 @@ public partial class Document
         {
             ArgumentNullException.ThrowIfNull(documentReference);
 
-            Documents.Add(new Document(documentReference));
+            documents.Add(new Document(documentReference));
             return this;
         }
 
@@ -107,7 +104,7 @@ public partial class Document
         {
             ArgumentNullException.ThrowIfNull(documents);
 
-            Documents.AddRange(documents);
+            this.documents.AddRange(documents);
             return this;
         }
 
@@ -127,7 +124,7 @@ public partial class Document
         {
             ArgumentNullException.ThrowIfNull(documentReferences);
 
-            Documents.AddRange(documentReferences.Select(i => new Document(i)));
+            documents.AddRange(documentReferences.Select(i => new Document(i)));
             return this;
         }
 
@@ -139,7 +136,7 @@ public partial class Document
         /// </param>
         public static implicit operator Builder(Document document)
         {
-            return Create().Add(document);
+            return new Builder().Add(document);
         }
 
         /// <summary>
@@ -153,7 +150,7 @@ public partial class Document
         /// </exception>
         public static implicit operator Builder(DocumentReference documentReference)
         {
-            return Create().Add(new Document(documentReference));
+            return new Builder().Add(new Document(documentReference));
         }
 
         /// <summary>
@@ -167,7 +164,7 @@ public partial class Document
         /// </exception>
         public static implicit operator Builder(Document[] documents)
         {
-            return Create().AddRange(documents);
+            return new Builder().AddRange(documents);
         }
 
         /// <summary>
@@ -181,7 +178,7 @@ public partial class Document
         /// </exception>
         public static implicit operator Builder(DocumentReference[] documentReferences)
         {
-            return Create().AddRange(documentReferences);
+            return new Builder().AddRange(documentReferences);
         }
 
         /// <summary>
@@ -195,7 +192,7 @@ public partial class Document
         /// </exception>
         public static implicit operator Builder(List<Document> documents)
         {
-            return Create().AddRange(documents);
+            return new Builder().AddRange(documents);
         }
 
         /// <summary>
@@ -209,8 +206,32 @@ public partial class Document
         /// </exception>
         public static implicit operator Builder(List<DocumentReference> documentReferences)
         {
-            return Create().AddRange(documentReferences);
+            return new Builder().AddRange(documentReferences);
         }
+    }
+
+    /// <inheritdoc cref="Builder.Add(Document)"/>
+    public static Builder Add(Document document)
+    {
+        return new Builder().Add(document);
+    }
+
+    /// <inheritdoc cref="Builder.Add(DocumentReference)"/>
+    public static Builder Add(DocumentReference documentReference)
+    {
+        return new Builder().Add(documentReference);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{Document})"/>
+    public static Builder AddRange(IEnumerable<Document> documents)
+    {
+        return new Builder().AddRange(documents);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{DocumentReference})"/>
+    public static Builder AddRange(IEnumerable<DocumentReference> documentReferences)
+    {
+        return new Builder().AddRange(documentReferences);
     }
 
     #region Properties
@@ -253,7 +274,7 @@ public partial class Document
         Type objType,
         object? obj,
         Document? document,
-        ObjectEnumerator jsonElementEnumerator,
+        JsonElement.ObjectEnumerator jsonElementEnumerator,
         JsonSerializerOptions jsonSerializerOptions)
     {
 #if NET5_0_OR_GREATER
@@ -677,21 +698,17 @@ public partial class Document<T> : Document
     /// </summary>
     public new class Builder
     {
-        /// <summary>
-        /// Creates an instance of <see cref="Builder"/>.
-        /// </summary>
-        /// <returns>
-        /// The created <see cref="Builder"/>.
-        /// </returns>
-        public static Builder Create()
-        {
-            return new();
-        }
+        private readonly List<Document<T>> documents = new();
 
         /// <summary>
         /// Gets the list of <see cref="Document{T}"/>.
         /// </summary>
-        public List<Document<T>> Documents { get; } = new();
+        public IReadOnlyList<Document<T>> Documents { get; }
+
+        internal Builder()
+        {
+            Documents = documents.AsReadOnly();
+        }
 
         /// <summary>
         /// Adds the document to the builder.
@@ -709,7 +726,7 @@ public partial class Document<T> : Document
         {
             ArgumentNullException.ThrowIfNull(document);
 
-            Documents.Add(document);
+            documents.Add(document);
             return this;
         }
 
@@ -729,7 +746,7 @@ public partial class Document<T> : Document
         {
             ArgumentNullException.ThrowIfNull(documentReference);
 
-            Documents.Add(new Document<T>(documentReference, null));
+            documents.Add(new Document<T>(documentReference, null));
             return this;
         }
 
@@ -749,7 +766,7 @@ public partial class Document<T> : Document
         {
             ArgumentNullException.ThrowIfNull(documents);
 
-            Documents.AddRange(documents);
+            this.documents.AddRange(documents);
             return this;
         }
 
@@ -769,7 +786,7 @@ public partial class Document<T> : Document
         {
             ArgumentNullException.ThrowIfNull(documentReferences);
 
-            Documents.AddRange(documentReferences.Select(i => new Document<T>(i, null)));
+            documents.AddRange(documentReferences.Select(i => new Document<T>(i, null)));
             return this;
         }
 
@@ -784,7 +801,7 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(Document<T> document)
         {
-            return Create().Add(document);
+            return new Builder().Add(document);
         }
 
         /// <summary>
@@ -798,7 +815,7 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(DocumentReference documentReference)
         {
-            return Create().Add(new Document<T>(documentReference, null));
+            return new Builder().Add(new Document<T>(documentReference, null));
         }
 
         /// <summary>
@@ -812,7 +829,7 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(Document<T>[] documents)
         {
-            return Create().AddRange(documents);
+            return new Builder().AddRange(documents);
         }
 
         /// <summary>
@@ -826,7 +843,7 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(DocumentReference[] documentReferences)
         {
-            return Create().AddRange(documentReferences);
+            return new Builder().AddRange(documentReferences);
         }
 
         /// <summary>
@@ -840,7 +857,7 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(List<Document<T>> documents)
         {
-            return Create().AddRange(documents);
+            return new Builder().AddRange(documents);
         }
 
         /// <summary>
@@ -854,8 +871,32 @@ public partial class Document<T> : Document
         /// </exception>
         public static implicit operator Builder(List<DocumentReference> documentReferences)
         {
-            return Create().AddRange(documentReferences);
+            return new Builder().AddRange(documentReferences);
         }
+    }
+
+    /// <inheritdoc cref="Builder.Add(Document{T})"/>
+    public static Builder Add(Document<T> document)
+    {
+        return new Builder().Add(document);
+    }
+
+    /// <inheritdoc cref="Builder.Add(DocumentReference)"/>
+    public static new Builder Add(DocumentReference documentReference)
+    {
+        return new Builder().Add(documentReference);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{Document{T}})"/>
+    public static Builder AddRange(IEnumerable<Document<T>> documents)
+    {
+        return new Builder().AddRange(documents);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{DocumentReference})"/>
+    public static new Builder AddRange(IEnumerable<DocumentReference> documentReferences)
+    {
+        return new Builder().AddRange(documentReferences);
     }
 
     #region Properties
@@ -877,7 +918,7 @@ public partial class Document<T> : Document
         DocumentReference? reference,
         T? obj,
         Document? document,
-        ObjectEnumerator jsonElementEnumerator,
+        JsonElement.ObjectEnumerator jsonElementEnumerator,
         JsonSerializerOptions jsonSerializerOptions)
     {
         Document? newDocument = Parse(reference, typeof(T), obj, document, jsonElementEnumerator, jsonSerializerOptions);

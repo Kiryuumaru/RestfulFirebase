@@ -8,6 +8,11 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 public class UnaryFilterQuery : FilterQuery
 {
     /// <summary>
+    /// Gets or sets the <see cref="UnaryOperator"/> to apply.
+    /// </summary>
+    public UnaryOperator Operator { get; set; }
+
+    /// <summary>
     /// Creates new instance of <see cref="UnaryFilterQuery"/>.
     /// </summary>
     /// <param name="propertyName">
@@ -16,27 +21,14 @@ public class UnaryFilterQuery : FilterQuery
     /// <param name="operator">
     /// The <see cref="UnaryOperator"/> to apply.
     /// </param>
-    /// <returns>
-    /// The created <see cref="UnaryFilterQuery"/>.
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public static UnaryFilterQuery Create(string propertyName, UnaryOperator @operator)
+    public UnaryFilterQuery(string propertyName, UnaryOperator @operator)
+        : base(propertyName)
     {
         ArgumentNullException.ThrowIfNull(propertyName);
 
-        return new(propertyName, @operator);
-    }
-
-    /// <summary>
-    /// Gets or sets the <see cref="UnaryOperator"/> to apply.
-    /// </summary>
-    public UnaryOperator Operator { get; set; }
-
-    internal UnaryFilterQuery(string propertyName, UnaryOperator @operator)
-        : base(propertyName)
-    {
         Operator = @operator;
     }
 }

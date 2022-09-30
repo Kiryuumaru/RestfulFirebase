@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -16,26 +17,22 @@ public class SelectQuery
     /// </summary>
     public class Builder
     {
-        /// <summary>
-        /// Creates an instance of <see cref="Builder"/>.
-        /// </summary>
-        /// <returns>
-        /// The created <see cref="Builder"/>.
-        /// </returns>
-        public static Builder Create()
-        {
-            return new();
-        }
+        private readonly List<SelectQuery> selectQuery = new();
 
         /// <summary>
         /// Gets the list of <see cref="Queries.SelectQuery"/>.
         /// </summary>
-        public List<SelectQuery> SelectQuery { get; } = new();
+        public IReadOnlyList<SelectQuery> SelectQuery { get; }
+
+        internal Builder()
+        {
+            SelectQuery = selectQuery.AsReadOnly();
+        }
 
         /// <summary>
-        /// Gets or sets <c>true</c> to only return the name of the document; otherwise, <c>false</c>.
+        /// Gets <c>true</c> whether the "select" query is set to return the document name only; otherwise, <c>false</c>.
         /// </summary>
-        public bool DocumentNameOnly { get; set; }
+        public bool IsDocumentNameOnly => SelectQuery.Any(i => i.PropertyName == DocumentName);
 
         /// <summary>
         /// Adds the <see cref="Queries.SelectQuery"/> to the builder.
@@ -44,20 +41,19 @@ public class SelectQuery
         /// The property name to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added select query.
+        /// The <see cref="Builder"/> with new added "select" query.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="propertyName"/> is a null reference.
         /// </exception>
         public Builder Add(string propertyName)
         {
-            ArgumentNullException.ThrowIfNull(propertyName);
-            if (DocumentNameOnly)
+            if (IsDocumentNameOnly)
             {
                 throw new ArgumentException("Select query is set to return only the document name.");
             }
 
-            SelectQuery.Add(Queries.SelectQuery.Create(propertyName));
+            selectQuery.Add(new(propertyName));
             return this;
         }
 
@@ -65,39 +61,40 @@ public class SelectQuery
         /// Adds the '__name__' to the <see cref="Queries.SelectQuery"/> builder to only return the name of the document.
         /// </summary>
         /// <returns>
-        /// The <see cref="Builder"/> with added select query.
+        /// The <see cref="Builder"/> with new added "select" query.
         /// </returns>
-        public Builder DocumentName()
+        public Builder DocumentNameOnly()
         {
             if (SelectQuery.Count != 0)
             {
                 throw new ArgumentException("Select query already contains field projections.");
             }
-            DocumentNameOnly = true;
+
+            selectQuery.Add(new(DocumentName));
             return this;
         }
 
         /// <summary>
         /// Adds the <see cref="Queries.SelectQuery"/> to the builder.
         /// </summary>
-        /// <param name="filter">
+        /// <param name="select">
         /// The <see cref="Queries.SelectQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with new added "select" query.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="filter"/> is a null reference.
+        /// <paramref name="select"/> is a null reference.
         /// </exception>
-        public Builder Add(SelectQuery filter)
+        public Builder Add(SelectQuery select)
         {
-            ArgumentNullException.ThrowIfNull(filter);
-            if (DocumentNameOnly)
+            ArgumentNullException.ThrowIfNull(select);
+            if (IsDocumentNameOnly)
             {
                 throw new ArgumentException("Select query is set to return only the document name.");
             }
 
-            SelectQuery.Add(filter);
+            selectQuery.Add(select);
             return this;
         }
 
@@ -108,7 +105,7 @@ public class SelectQuery
         /// The multiple of <see cref="Queries.SelectQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with new added "select" query.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="filter"/> is a null reference.
@@ -116,12 +113,12 @@ public class SelectQuery
         public Builder AddRange(IEnumerable<SelectQuery> filter)
         {
             ArgumentNullException.ThrowIfNull(filter);
-            if (DocumentNameOnly)
+            if (IsDocumentNameOnly)
             {
                 throw new ArgumentException("Select query is set to return only the document name.");
             }
 
-            SelectQuery.AddRange(filter);
+            selectQuery.AddRange(filter);
             return this;
         }
 
@@ -136,7 +133,7 @@ public class SelectQuery
         /// </exception>
         public static implicit operator Builder(SelectQuery filter)
         {
-            return Create().Add(filter);
+            return new Builder().Add(filter);
         }
 
         /// <summary>
@@ -150,7 +147,7 @@ public class SelectQuery
         /// </exception>
         public static implicit operator Builder(SelectQuery[] filter)
         {
-            return Create().AddRange(filter);
+            return new Builder().AddRange(filter);
         }
 
         /// <summary>
@@ -164,9 +161,34 @@ public class SelectQuery
         /// </exception>
         public static implicit operator Builder(List<SelectQuery> filter)
         {
-            return Create().AddRange(filter);
+            return new Builder().AddRange(filter);
         }
     }
+
+    /// <inheritdoc cref="Builder.Add(string)"/>
+    public static Builder Add(string propertyName)
+    {
+        return new Builder().Add(propertyName);
+    }
+
+    /// <inheritdoc cref="Builder.DocumentNameOnly()"/>
+    public static Builder DocumentNameOnly()
+    {
+        return new Builder().DocumentNameOnly();
+    }
+
+    /// <inheritdoc cref="Builder.Add(SelectQuery)"/>
+    public static Builder Add(SelectQuery select)
+    {
+        return new Builder().Add(select);
+    }
+
+    internal const string DocumentName = "__name__";
+
+    /// <summary>
+    /// Gets or sets the property name to which to apply the operator.
+    /// </summary>
+    public string PropertyName { get; set; }
 
     /// <summary>
     /// Creates new instance of <see cref="SelectQuery"/>.
@@ -180,31 +202,10 @@ public class SelectQuery
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public static SelectQuery Create(string propertyName)
+    public SelectQuery(string propertyName)
     {
         ArgumentNullException.ThrowIfNull(propertyName);
 
-        return new(propertyName);
-    }
-
-    /// <summary>
-    /// Adds the '__name__' to the <see cref="SelectQuery"/> builder to only return the name of the document.
-    /// </summary>
-    /// <returns>
-    /// The created <see cref="Builder"/>.
-    /// </returns>
-    public static Builder DocumentName()
-    {
-        return Builder.Create().DocumentName();
-    }
-
-    /// <summary>
-    /// Gets or sets the property name to which to apply the operator.
-    /// </summary>
-    public string PropertyName { get; set; }
-
-    internal SelectQuery(string propertyName)
-    {
         PropertyName = propertyName;
     }
 }

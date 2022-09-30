@@ -8,6 +8,16 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 public class FieldFilterQuery : FilterQuery
 {
     /// <summary>
+    /// Gets or sets the <see cref="FieldOperator"/> to apply.
+    /// </summary>
+    public FieldOperator Operator { get; set; }
+
+    /// <summary>
+    /// Gets or sets the value to compare to.
+    /// </summary>
+    public object? Value { get; set; }
+
+    /// <summary>
     /// Creates new instance of <see cref="FieldFilterQuery"/>.
     /// </summary>
     /// <param name="propertyName">
@@ -19,32 +29,14 @@ public class FieldFilterQuery : FilterQuery
     /// <param name="value">
     /// The value to compare to.
     /// </param>
-    /// <returns>
-    /// The created <see cref="FieldFilterQuery"/>.
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public static FieldFilterQuery Create(string propertyName, FieldOperator @operator, object? value)
+    public FieldFilterQuery(string propertyName, FieldOperator @operator, object? value)
+        : base(propertyName)
     {
         ArgumentNullException.ThrowIfNull(propertyName);
 
-        return new(propertyName, @operator, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the <see cref="FieldOperator"/> to apply.
-    /// </summary>
-    public FieldOperator Operator { get; set; }
-
-    /// <summary>
-    /// Gets or sets the value to compare to.
-    /// </summary>
-    public object? Value { get; set; }
-
-    internal FieldFilterQuery(string propertyName, FieldOperator @operator, object? value)
-        : base(propertyName)
-    {
         Operator = @operator;
         Value = value;
     }

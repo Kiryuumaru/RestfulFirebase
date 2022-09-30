@@ -18,24 +18,6 @@ public abstract class Transaction
         /// </summary>
         public Transaction Transaction { get; }
 
-        /// <returns>
-        /// The <see cref="Builder"/> with the created transaction.
-        /// </returns>
-        /// <inheritdoc cref="ReadOnlyTransaction.Create(DateTimeOffset?)"/>
-        public static Builder ReadOnly(DateTimeOffset? readTime = null)
-        {
-            return new(ReadOnlyTransaction.Create(readTime));
-        }
-
-        /// <returns>
-        /// The <see cref="Builder"/> with the created transaction.
-        /// </returns>
-        /// <inheritdoc cref="ReadWriteTransaction.Create(string?)"/>
-        public static Builder ReadWrite(string? retryTransaction = null)
-        {
-            return new(ReadWriteTransaction.Create(retryTransaction));
-        }
-
         internal Builder(Transaction transaction)
         {
             Transaction = transaction;
@@ -51,6 +33,34 @@ public abstract class Transaction
         {
             return new(transaction);
         }
+    }
+
+    /// <summary>
+    /// Adds new instance of <see cref="ReadOnlyTransaction"/> to the builder.
+    /// </summary>
+    /// <param name="readTime">
+    /// Reads documents at the given time. This may not be older than 60 seconds.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Builder"/>.
+    /// </returns>
+    public static Builder ReadOnly(DateTimeOffset? readTime = null)
+    {
+        return new Builder(new ReadOnlyTransaction(readTime));
+    }
+
+    /// <summary>
+    /// Adds new instance of <see cref="ReadWriteTransaction"/> to the builder.
+    /// </summary>
+    /// <param name="retryTransaction">
+    /// An optional transaction to retry.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Builder"/>.
+    /// </returns>
+    public static Builder ReadWrite(string? retryTransaction = null)
+    {
+        return new Builder(new ReadWriteTransaction(retryTransaction));
     }
 
     /// <summary>

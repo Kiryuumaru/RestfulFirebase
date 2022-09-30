@@ -279,7 +279,7 @@ public class WriteDocumentRequest : FirestoreDatabaseRequest<TransactionResponse
                             writer.WritePropertyName("fieldPath");
                             writer.WriteStringValue(string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName)));
                             writer.WritePropertyName("setToServerValue");
-                            writer.WriteStringValue(setToServerValueTransform.SetToServerValue.ToEnumString());
+                            writer.WriteStringValue(setToServerValueTransform.ServerValue.ToEnumString());
                             writer.WriteEndObject();
 
                             break;

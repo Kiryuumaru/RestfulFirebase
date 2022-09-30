@@ -8,34 +8,12 @@ namespace RestfulFirebase.FirestoreDatabase.Transform;
 public class MinimumTransform : FieldTransform
 {
     /// <summary>
-    /// Creates field "minimum" transformation parameter for "minimum" transform commit writes.
+    /// Gets the object to "minimum" to the given property path.
     /// </summary>
-    /// <typeparam name="TModel">
-    /// The type of the model to "minimum".
-    /// </typeparam>
-    /// <param name="minimumValue">
-    /// The value to "minimum" to the model <typeparamref name="TModel"/>.
-    /// </param>
-    /// <param name="propertyNamePath">
-    /// The property path of the model to "minimum".
-    /// </param>
-    /// <returns>
-    /// The created <see cref="MinimumTransform"/>.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="minimumValue"/> and
-    /// <paramref name="propertyNamePath"/> is a null reference.
-    /// </exception>
-    public static MinimumTransform Create<TModel>(object minimumValue, string[] propertyNamePath)
-    {
-        ArgumentNullException.ThrowIfNull(minimumValue);
-        ArgumentNullException.ThrowIfNull(propertyNamePath);
-
-        return new(minimumValue, typeof(TModel), propertyNamePath);
-    }
+    public object MinimumValue { get; }
 
     /// <summary>
-    /// Creates field "minimum" transformation parameter for "minimum" transform commit writes.
+    /// Creates new instance of <see cref="MinimumTransform"/>.
     /// </summary>
     /// <param name="minimumValue">
     /// The value to "minimum" to the model <paramref name="modelType"/>.
@@ -46,31 +24,16 @@ public class MinimumTransform : FieldTransform
     /// <param name="propertyNamePath">
     /// The property path of the model to "minimum".
     /// </param>
-    /// <returns>
-    /// The created <see cref="MinimumTransform"/>.
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="minimumValue"/>,
-    /// <paramref name="modelType"/> and
+    /// <paramref name="modelType"/> or
     /// <paramref name="propertyNamePath"/> is a null reference.
     /// </exception>
-    public static MinimumTransform Create(object minimumValue, Type modelType, string[] propertyNamePath)
-    {
-        ArgumentNullException.ThrowIfNull(minimumValue);
-        ArgumentNullException.ThrowIfNull(modelType);
-        ArgumentNullException.ThrowIfNull(propertyNamePath);
-
-        return new(minimumValue, modelType, propertyNamePath);
-    }
-
-    /// <summary>
-    /// Gets the object to "minimum" to the given property path.
-    /// </summary>
-    public object MinimumValue { get; }
-
-    internal MinimumTransform(object minimumValue, Type modelType, string[] propertyNamePath)
+    public MinimumTransform(object minimumValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
+        ArgumentNullException.ThrowIfNull(minimumValue);
+
         MinimumValue = minimumValue;
     }
 }

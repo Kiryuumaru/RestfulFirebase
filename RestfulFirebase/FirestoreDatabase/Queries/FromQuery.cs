@@ -20,24 +20,41 @@ public class FromQuery
     /// </summary>
     public class Builder
     {
-        /// <summary>
-        /// Creates an instance of <see cref="Builder"/>.
-        /// </summary>
-        /// <returns>
-        /// The created <see cref="Builder"/>.
-        /// </returns>
-        public static Builder Create()
-        {
-            return new();
-        }
+        private readonly List<FromQuery> fromQuery = new();
 
         /// <summary>
         /// Gets the list of <see cref="Queries.FromQuery"/>.
         /// </summary>
-        public List<FromQuery> FromQuery { get; } = new();
+        public IReadOnlyList<FromQuery> FromQuery { get; }
+
+        internal Builder()
+        {
+            FromQuery = fromQuery.AsReadOnly();
+        }
 
         /// <summary>
-        /// Adds the <see cref="Queries.FromQuery"/> to the builder.
+        /// Adds an instance of <see cref="Queries.FromQuery"/> to the builder.
+        /// </summary>
+        /// <param name="collectionId">
+        /// The collection ID. When set, selects only collections with this ID.
+        /// </param>
+        /// <param name="allDescendants">
+        /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
+        /// </param>
+        /// <returns>
+        /// The <see cref="Builder"/> with new added "from" query.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="collectionId"/> is a null reference.
+        /// </exception>
+        public Builder Add(string collectionId, bool allDescendants = false)
+        {
+            fromQuery.Add(new(collectionId, allDescendants));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an instance of <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
         /// <param name="collectionReference">
         /// The <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
@@ -46,26 +63,34 @@ public class FromQuery
         /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with new added "from" query.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="collectionReference"/> is a null reference.
+        /// </exception>
         public Builder Add(CollectionReference collectionReference, bool allDescendants = false)
         {
-            FromQuery.Add(Queries.FromQuery.Create(collectionReference, allDescendants));
+            fromQuery.Add(new(collectionReference, allDescendants));
             return this;
         }
 
         /// <summary>
-        /// Adds the <see cref="Queries.FromQuery"/> to the builder.
+        /// Adds an instance of <see cref="Queries.FromQuery"/> to the builder.
         /// </summary>
         /// <param name="orderBy">
         /// The <see cref="Queries.FromQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with new added "from" query.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public Builder Add(FromQuery orderBy)
         {
-            FromQuery.Add(orderBy);
+            ArgumentNullException.ThrowIfNull(orderBy);
+
+            fromQuery.Add(orderBy);
             return this;
         }
 
@@ -76,11 +101,16 @@ public class FromQuery
         /// The multiple of <see cref="Queries.FromQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added order.
+        /// The <see cref="Builder"/> with new added "from" query.
         /// </returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public Builder AddRange(IEnumerable<FromQuery> orderBy)
         {
-            FromQuery.AddRange(orderBy);
+            ArgumentNullException.ThrowIfNull(orderBy);
+
+            fromQuery.AddRange(orderBy);
             return this;
         }
 
@@ -90,9 +120,12 @@ public class FromQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.FromQuery"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(FromQuery orderBy)
         {
-            return Create().Add(orderBy);
+            return new Builder().Add(orderBy);
         }
 
         /// <summary>
@@ -101,9 +134,12 @@ public class FromQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.FromQuery"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(FromQuery[] orderBy)
         {
-            return Create().AddRange(orderBy);
+            return new Builder().AddRange(orderBy);
         }
 
         /// <summary>
@@ -112,9 +148,12 @@ public class FromQuery
         /// <param name="orderBy">
         /// The <see cref="Queries.FromQuery"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="orderBy"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<FromQuery> orderBy)
         {
-            return Create().AddRange(orderBy);
+            return new Builder().AddRange(orderBy);
         }
 
         /// <summary>
@@ -123,9 +162,12 @@ public class FromQuery
         /// <param name="collectionReference">
         /// The <see cref="References.CollectionReference"/> to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="collectionReference"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(CollectionReference collectionReference)
         {
-            return Create().Add(collectionReference);
+            return new Builder().Add(collectionReference);
         }
 
         /// <summary>
@@ -134,9 +176,12 @@ public class FromQuery
         /// <param name="collectionReferences">
         /// The <see cref="References.CollectionReference"/> array to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="collectionReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(CollectionReference[] collectionReferences)
         {
-            return Create().AddRange(collectionReferences.Select(i => Queries.FromQuery.Create(i)));
+            return new Builder().AddRange(collectionReferences.Select(i => new FromQuery(i)));
         }
 
         /// <summary>
@@ -145,10 +190,37 @@ public class FromQuery
         /// <param name="collectionReferences">
         /// The <see cref="References.CollectionReference"/> list to convert.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="collectionReferences"/> is a null reference.
+        /// </exception>
         public static implicit operator Builder(List<CollectionReference> collectionReferences)
         {
-            return Create().AddRange(collectionReferences.Select(i => Queries.FromQuery.Create(i)));
+            return new Builder().AddRange(collectionReferences.Select(i => new FromQuery(i)));
         }
+    }
+
+    /// <inheritdoc cref="Builder.Add(string, bool)"/>
+    public static Builder Add(string collectionId, bool allDescendants = false)
+    {
+        return new Builder().Add(collectionId, allDescendants);
+    }
+
+    /// <inheritdoc cref="Builder.Add(CollectionReference, bool)"/>
+    public static Builder Add(CollectionReference collectionReference, bool allDescendants = false)
+    {
+        return new Builder().Add(collectionReference, allDescendants);
+    }
+
+    /// <inheritdoc cref="Builder.Add(FromQuery)"/>
+    public static Builder Add(FromQuery orderBy)
+    {
+        return new Builder().Add(orderBy);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{FromQuery})"/>
+    public static Builder AddRange(IEnumerable<FromQuery> orderBy)
+    {
+        return new Builder().AddRange(orderBy);
     }
 
     /// <summary>
@@ -164,23 +236,6 @@ public class FromQuery
     /// <summary>
     /// Creates an instance of <see cref="FromQuery"/>.
     /// </summary>
-    /// <param name="collectionReference">
-    /// The <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
-    /// </param>
-    /// <param name="allDescendants">
-    /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
-    /// </param>
-    /// <returns>
-    /// The created <see cref="FromQuery"/>
-    /// </returns>
-    public static FromQuery Create(CollectionReference collectionReference, bool allDescendants = false)
-    {
-        return new(collectionReference, allDescendants);
-    }
-
-    /// <summary>
-    /// Creates an instance of <see cref="FromQuery"/>.
-    /// </summary>
     /// <param name="collectionId">
     /// The collection ID. When set, selects only collections with this ID.
     /// </param>
@@ -190,12 +245,33 @@ public class FromQuery
     /// <returns>
     /// The created <see cref="FromQuery"/>
     /// </returns>
-    public static FromQuery Create(string collectionId, bool allDescendants = false)
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionId"/> is a null reference.
+    /// </exception>
+    public FromQuery(string collectionId, bool allDescendants = false)
     {
-        return new(CollectionReference.Create(collectionId), allDescendants);
+        ArgumentNullException.ThrowIfNull(collectionId);
+
+        CollectionReference = new CollectionReference(null, collectionId);
+        AllDescendants = allDescendants;
     }
 
-    internal FromQuery(CollectionReference collectionReference, bool allDescendants)
+    /// <summary>
+    /// Creates an instance of <see cref="FromQuery"/>.
+    /// </summary>
+    /// <param name="collectionReference">
+    /// The <see cref="References.CollectionReference"/>. When set, selects only collections with this ID.
+    /// </param>
+    /// <param name="allDescendants">
+    /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
+    /// </param>
+    /// <returns>
+    /// The created <see cref="FromQuery"/>
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionReference"/> is a null reference.
+    /// </exception>
+    public FromQuery(CollectionReference collectionReference, bool allDescendants = false)
     {
         ArgumentNullException.ThrowIfNull(collectionReference);
 

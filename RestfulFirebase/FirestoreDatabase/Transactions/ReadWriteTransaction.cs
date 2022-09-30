@@ -6,22 +6,17 @@
 public class ReadWriteTransaction : Transaction
 {
     /// <summary>
+    /// Gets an optional transaction to retry.
+    /// </summary>
+    public string? RetryTransaction { get; }
+
+    /// <summary>
     /// Creates the transaction that can be used for both read and write operations.
     /// </summary>
     /// <param name="retryTransaction">
     /// An optional transaction to retry.
     /// </param>
-    public static ReadWriteTransaction Create(string? retryTransaction = null)
-    {
-        return new(retryTransaction);
-    }
-
-    /// <summary>
-    /// Gets an optional transaction to retry.
-    /// </summary>
-    public string? RetryTransaction { get; }
-
-    internal ReadWriteTransaction(string? retryTransaction)
+    public ReadWriteTransaction(string? retryTransaction)
     {
         RetryTransaction = retryTransaction;
     }

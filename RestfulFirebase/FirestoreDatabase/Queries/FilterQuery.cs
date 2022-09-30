@@ -16,39 +16,60 @@ public abstract class FilterQuery
     /// </summary>
     public class Builder
     {
-        /// <summary>
-        /// Creates an instance of <see cref="Builder"/>.
-        /// </summary>
-        /// <returns>
-        /// The created <see cref="Builder"/>.
-        /// </returns>
-        public static Builder Create()
-        {
-            return new();
-        }
+        private readonly List<FilterQuery> filterQuery = new();
 
         /// <summary>
         /// Gets the list of <see cref="Queries.FilterQuery"/>.
         /// </summary>
-        public List<FilterQuery> FilterQuery { get; } = new();
+        public IReadOnlyList<FilterQuery> FilterQuery { get; }
 
+        internal Builder()
+        {
+            FilterQuery = filterQuery.AsReadOnly();
+        }
+
+        /// <summary>
+        /// Adds new instance of <see cref="UnaryFilterQuery"/> to the builder.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The property name to which to apply the operator.
+        /// </param>
+        /// <param name="operator">
+        /// The <see cref="UnaryOperator"/> to apply.
+        /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> added with new filter.
+        /// The <see cref="Builder"/> with new added "where" query.
         /// </returns>
-        /// <inheritdoc cref="UnaryFilterQuery.Create(string, UnaryOperator)"/>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyName"/> is a null reference.
+        /// </exception>
         public Builder Unary(string propertyName, UnaryOperator @operator)
         {
-            FilterQuery.Add(UnaryFilterQuery.Create(propertyName, @operator));
+            filterQuery.Add(new UnaryFilterQuery(propertyName, @operator));
             return this;
         }
 
+        /// <summary>
+        /// Adds new instance of <see cref="FieldFilterQuery"/> to the builder.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The property name to which to apply the operator.
+        /// </param>
+        /// <param name="operator">
+        /// The <see cref="FieldOperator"/> to apply.
+        /// </param>
+        /// <param name="value">
+        /// The value to compare to.
+        /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> added with new filter.
+        /// The <see cref="Builder"/> with new added "where" query.
         /// </returns>
-        /// <inheritdoc cref="FieldFilterQuery.Create(string, FieldOperator, object?)"/>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="propertyName"/> is a null reference.
+        /// </exception>
         public Builder Field(string propertyName, FieldOperator @operator, object? value)
         {
-            FilterQuery.Add(FieldFilterQuery.Create(propertyName, @operator, value));
+            filterQuery.Add(new FieldFilterQuery(propertyName, @operator, value));
             return this;
         }
 
@@ -59,7 +80,7 @@ public abstract class FilterQuery
         /// The <see cref="Queries.FilterQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added filter.
+        /// The <see cref="Builder"/> with new added "where" query.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="filter"/> is a null reference.
@@ -68,7 +89,7 @@ public abstract class FilterQuery
         {
             ArgumentNullException.ThrowIfNull(filter);
 
-            FilterQuery.Add(filter);
+            filterQuery.Add(filter);
             return this;
         }
 
@@ -79,7 +100,7 @@ public abstract class FilterQuery
         /// The multiple of <see cref="Queries.FilterQuery"/> to add.
         /// </param>
         /// <returns>
-        /// The <see cref="Builder"/> with added filter.
+        /// The <see cref="Builder"/> with new added "where" query.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="filter"/> is a null reference.
@@ -88,7 +109,7 @@ public abstract class FilterQuery
         {
             ArgumentNullException.ThrowIfNull(filter);
 
-            FilterQuery.AddRange(filter);
+            filterQuery.AddRange(filter);
             return this;
         }
 
@@ -103,7 +124,7 @@ public abstract class FilterQuery
         /// </exception>
         public static implicit operator Builder(FilterQuery filter)
         {
-            return Create().Add(filter);
+            return new Builder().Add(filter);
         }
 
         /// <summary>
@@ -117,7 +138,7 @@ public abstract class FilterQuery
         /// </exception>
         public static implicit operator Builder(FilterQuery[] filter)
         {
-            return Create().AddRange(filter);
+            return new Builder().AddRange(filter);
         }
 
         /// <summary>
@@ -131,8 +152,32 @@ public abstract class FilterQuery
         /// </exception>
         public static implicit operator Builder(List<FilterQuery> filter)
         {
-            return Create().AddRange(filter);
+            return new Builder().AddRange(filter);
         }
+    }
+
+    /// <inheritdoc cref="Builder.Unary(string, UnaryOperator)"/>
+    public static Builder Unary(string propertyName, UnaryOperator @operator)
+    {
+        return new Builder().Unary(propertyName, @operator);
+    }
+
+    /// <inheritdoc cref="Builder.Field(string, FieldOperator, object?)"/>
+    public static Builder Field(string propertyName, FieldOperator @operator, object? value)
+    {
+        return new Builder().Field(propertyName, @operator, value);
+    }
+
+    /// <inheritdoc cref="Builder.Add(FilterQuery)"/>
+    public static Builder Add(FilterQuery filter)
+    {
+        return new Builder().Add(filter);
+    }
+
+    /// <inheritdoc cref="Builder.AddRange(IEnumerable{FilterQuery})"/>
+    public static Builder AddRange(IEnumerable<FilterQuery> filter)
+    {
+        return new Builder().AddRange(filter);
     }
 
     /// <summary>
