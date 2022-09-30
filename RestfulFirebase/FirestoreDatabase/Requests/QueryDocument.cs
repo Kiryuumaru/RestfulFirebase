@@ -398,11 +398,6 @@ public class QueryDocumentRequest<[DynamicallyAccessedMembers(DynamicallyAccesse
 #endif
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: linkedCancellationToken);
 
-        var asdasd = jsonDocument.RootElement.ToString();
-        stream.Seek(0, SeekOrigin.Begin);
-        StreamReader streamReader = new(stream);
-        var asdas = streamReader.ReadToEnd();
-
         List<DocumentTimestamp<T>> foundDocuments = new();
         int? skippedResults = null;
         DateTimeOffset? skippedReadTime = null;
