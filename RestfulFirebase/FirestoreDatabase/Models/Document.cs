@@ -271,7 +271,7 @@ public partial class Document
 #endif
     internal static Document? Parse(
         DocumentReference? reference,
-        Type objType,
+        Type? objType,
         object? obj,
         Document? document,
         JsonElement.ObjectEnumerator jsonElementEnumerator,
@@ -570,6 +570,11 @@ public partial class Document
                     updateTime = documentProperty.Value.GetDateTimeOffset();
                     break;
                 case "fields":
+                    if (objType == null)
+                    {
+                        continue;
+                    }
+
                     hasFields = true;
 
                     obj ??= document?.GetModel() ?? Activator.CreateInstance(objType);
@@ -614,13 +619,20 @@ public partial class Document
         {
             if (document == null)
             {
-                Type genericDefinition = typeof(Document<>);
-                Type genericType = genericDefinition.MakeGenericType(objType);
-                document = (Document?)Activator.CreateInstance(genericType, new object?[] { reference, hasFields ? obj : null });
-
-                if (document == null)
+                if (objType == null)
                 {
-                    throw new Exception($"Failed to create instance of {nameof(genericType)}");
+                    document = new(reference);
+                }
+                else
+                {
+                    Type genericDefinition = typeof(Document<>);
+                    Type genericType = genericDefinition.MakeGenericType(objType);
+                    document = (Document?)Activator.CreateInstance(genericType, new object?[] { reference, hasFields ? obj : null });
+
+                    if (document == null)
+                    {
+                        throw new Exception($"Failed to create instance of {nameof(genericType)}");
+                    }
                 }
             }
 

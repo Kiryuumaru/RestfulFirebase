@@ -265,9 +265,6 @@ public class FromQuery
     /// <param name="allDescendants">
     /// <c>true</c> whether to select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </param>
-    /// <returns>
-    /// The created <see cref="FromQuery"/>
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="collectionReference"/> is a null reference.
     /// </exception>

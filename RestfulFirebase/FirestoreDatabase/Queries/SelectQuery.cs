@@ -195,9 +195,6 @@ public class SelectQuery
     /// <param name="propertyName">
     /// The property name of document's fields to return.
     /// </param>
-    /// <returns>
-    /// The created <see cref="SelectQuery"/>.
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>

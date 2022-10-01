@@ -254,9 +254,6 @@ public class OrderByQuery
     /// <param name="orderDirection">
     /// The <see cref="Enums.OrderDirection"/> of the order.
     /// </param>
-    /// <returns>
-    /// The created <see cref="OrderByQuery"/>
-    /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>

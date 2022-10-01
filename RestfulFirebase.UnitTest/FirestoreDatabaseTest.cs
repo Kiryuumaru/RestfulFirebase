@@ -16,7 +16,7 @@ public class FirestoreDatabaseTest
 {
     internal static async Task Cleanup(FirebaseConfig config, CollectionReference collectionReference)
     {
-        var oldDataList = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NormalMVVMModel>()
+        var oldDataList = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
@@ -34,7 +34,6 @@ public class FirestoreDatabaseTest
                 oldDocs.Add(doc.Document);
             }
         }
-
         var cleanups = await Api.FirestoreDatabase.WriteDocument(new WriteDocumentRequest()
         {
             Config = config,

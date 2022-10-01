@@ -20,6 +20,16 @@ public static partial class FirestoreDatabase
     public static Task<TransactionResponse<BeginTransactionRequest, Transaction>> BeginTransaction(BeginTransactionRequest request)
         => request.Execute();
 
+    /// <inheritdoc cref="CreateDocumentRequest.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<CreateDocumentRequest, Document>> CreateDocument(CreateDocumentRequest request)
+        => request.Execute();
+
     /// <inheritdoc cref="CreateDocumentRequest{T}.Execute"/>
     /// <param name="request">
     /// The request of the operation.
@@ -29,6 +39,16 @@ public static partial class FirestoreDatabase
 #endif
     public static Task<TransactionResponse<CreateDocumentRequest<T>, Document<T>>> CreateDocument<T>(CreateDocumentRequest<T> request)
         where T : class => request.Execute();
+
+    /// <inheritdoc cref="GetDocumentRequest.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<GetDocumentRequest, GetDocumentResult>> GetDocument(GetDocumentRequest request)
+        => request.Execute();
 
     /// <inheritdoc cref="GetDocumentRequest{T}.Execute"/>
     /// <param name="request">
@@ -48,6 +68,16 @@ public static partial class FirestoreDatabase
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
     public static Task<TransactionResponse<ListCollectionsRequest, ListCollectionsResult>> ListCollections(ListCollectionsRequest request)
+        => request.Execute();
+
+    /// <inheritdoc cref="QueryDocumentRequest.Execute"/>
+    /// <param name="request">
+    /// The request of the operation.
+    /// </param>
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+#endif
+    public static Task<TransactionResponse<QueryDocumentRequest, QueryDocumentResult>> QueryDocument(QueryDocumentRequest request)
         => request.Execute();
 
     /// <inheritdoc cref="QueryDocumentRequest{T}.Execute"/>

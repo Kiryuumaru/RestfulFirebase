@@ -25,47 +25,47 @@ public class MockTest
         await FirestoreDatabaseTest.Cleanup(config, testCollectionReference);
 
         Document<NumberModel>[] writeDocuments = testCollectionReference.CreateDocuments<NumberModel>(
-            ($"test1", new()
+            ($"test01", new()
             {
                 Val1 = 1,
                 Val2 = 3.3
             }),
-            ($"test2", new()
+            ($"test02", new()
             {
                 Val1 = 1,
                 Val2 = 4.4
             }),
-            ($"test3", new()
+            ($"test03", new()
             {
                 Val1 = 2,
                 Val2 = 5.5
             }),
-            ($"test4", new()
+            ($"test04", new()
             {
                 Val1 = 2,
                 Val2 = 6.6
             }),
-            ($"test5", new()
+            ($"test05", new()
             {
                 Val1 = 2,
                 Val2 = 7.7
             }),
-            ($"test6", new()
+            ($"test06", new()
             {
                 Val1 = 2,
                 Val2 = 8.8
             }),
-            ($"test7", new()
+            ($"test07", new()
             {
                 Val1 = 2,
                 Val2 = 9.9
             }),
-            ($"test8", new()
+            ($"test08", new()
             {
                 Val1 = 2,
                 Val2 = 10.1
             }),
-            ($"test9", new()
+            ($"test09", new()
             {
                 Val1 = 2,
                 Val2 = 10.11
@@ -90,8 +90,9 @@ public class MockTest
             Document = writeDocuments,
             From = testCollectionReference,
             OrderBy = OrderByQuery
-                .Ascending(nameof(NumberModel.Val1))
-                .Descending(nameof(NumberModel.Val2)),
+                .AscendingDocumentName(),
+            StartAt = CursorQuery
+                .Add(writeDocuments[5].Reference),
             PageSize = 2
         });
         runQueryTest1.ThrowIfError();
@@ -105,18 +106,13 @@ public class MockTest
             docs.AddRange(page.Result.Documents);
         }
 
-        Assert.Equal(5, iteration);
-        Assert.Equal(10, docs.Count);
-        Assert.Equivalent(writeDocuments[0], docs[1].Document);
-        Assert.Equivalent(writeDocuments[1], docs[0].Document);
-        Assert.Equivalent(writeDocuments[2], docs[9].Document);
-        Assert.Equivalent(writeDocuments[3], docs[8].Document);
-        Assert.Equivalent(writeDocuments[4], docs[7].Document);
-        Assert.Equivalent(writeDocuments[5], docs[6].Document);
-        Assert.Equivalent(writeDocuments[6], docs[5].Document);
-        Assert.Equivalent(writeDocuments[7], docs[4].Document);
-        Assert.Equivalent(writeDocuments[8], docs[3].Document);
-        Assert.Equivalent(writeDocuments[9], docs[2].Document);
+        Assert.Equal(3, iteration);
+        Assert.Equal(5, docs.Count);
+        Assert.Equivalent(docs[0].Document, writeDocuments[5]);
+        Assert.Equivalent(docs[1].Document, writeDocuments[6]);
+        Assert.Equivalent(docs[2].Document, writeDocuments[7]);
+        Assert.Equivalent(docs[3].Document, writeDocuments[8]);
+        Assert.Equivalent(docs[4].Document, writeDocuments[9]);
 
         Assert.True(true);
     }
