@@ -23,25 +23,13 @@ public class CursorQuery
         public IReadOnlyList<CursorQuery> CursorQuery { get; }
 
         /// <summary>
-        /// Gets or sets <c>true</c> whether the position is just before or just after the given values, relative to the sort order defined by the query; otherwise, <c>false</c>.
+        /// Gets or sets <c>true</c> whether the position is on the given values, relative to the sort order defined by the query; otherwise, <c>false</c> to skip the given values.
         /// </summary>
-        public bool JustBeforeOrAfter { get; set; } = true;
+        public bool OnGiven { get; set; } = true;
 
         internal Builder()
         {
             CursorQuery = fromQuery.AsReadOnly();
-        }
-
-        /// <summary>
-        /// Sets the cursor to specify that the position is next to the given values, relative to the sort order defined by the query.
-        /// </summary>
-        /// <returns>
-        /// The <see cref="Builder"/>
-        /// </returns>
-        public Builder OnNextValues()
-        {
-            JustBeforeOrAfter = false;
-            return this;
         }
 
         /// <summary>
@@ -52,7 +40,19 @@ public class CursorQuery
         /// </returns>
         public Builder OnGivenValues()
         {
-            JustBeforeOrAfter = true;
+            OnGiven = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the cursor to specify that the position will skip the given values and select the next one, relative to the sort order defined by the query.
+        /// </summary>
+        /// <returns>
+        /// The <see cref="Builder"/>
+        /// </returns>
+        public Builder OnNextValues()
+        {
+            OnGiven = false;
             return this;
         }
 

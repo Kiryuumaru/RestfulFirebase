@@ -741,52 +741,52 @@ public class FirestoreDatabaseTest
         await Cleanup(config, testCollectionReference);
 
         Document<NumberModel>[] writeDocuments = testCollectionReference.CreateDocuments<NumberModel>(
-            ($"test1", new()
+            ($"test00", new()
             {
                 Val1 = 1,
                 Val2 = 3.3
             }),
-            ($"test2", new()
+            ($"test01", new()
             {
                 Val1 = 1,
                 Val2 = 4.4
             }),
-            ($"test3", new()
+            ($"test02", new()
             {
                 Val1 = 2,
                 Val2 = 5.5
             }),
-            ($"test4", new()
+            ($"test03", new()
             {
                 Val1 = 2,
                 Val2 = 6.6
             }),
-            ($"test5", new()
+            ($"test04", new()
             {
                 Val1 = 2,
                 Val2 = 7.7
             }),
-            ($"test6", new()
+            ($"test05", new()
             {
                 Val1 = 2,
                 Val2 = 8.8
             }),
-            ($"test7", new()
+            ($"test06", new()
             {
                 Val1 = 2,
                 Val2 = 9.9
             }),
-            ($"test8", new()
+            ($"test07", new()
             {
                 Val1 = 2,
                 Val2 = 10.1
             }),
-            ($"test9", new()
+            ($"test08", new()
             {
                 Val1 = 2,
                 Val2 = 10.11
             }),
-            ($"test10", new()
+            ($"test09", new()
             {
                 Val1 = 2,
                 Val2 = 10.12
@@ -845,6 +845,92 @@ public class FirestoreDatabaseTest
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments,
+            From = testCollectionReference,
+            OrderBy = OrderByQuery
+                .AscendingDocumentName(),
+            StartAt = CursorQuery
+                .Add(writeDocuments[5].Reference),
+            EndAt = CursorQuery
+                .Add(writeDocuments[8].Reference),
+        });
+        runQueryTest3.ThrowIfError();
+
+        Assert.Equal(4, runQueryTest3.Result.Documents.Count);
+        Assert.Equivalent(runQueryTest3.Result.Documents[0].Document, writeDocuments[5]);
+        Assert.Equivalent(runQueryTest3.Result.Documents[1].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest3.Result.Documents[2].Document, writeDocuments[7]);
+        Assert.Equivalent(runQueryTest3.Result.Documents[3].Document, writeDocuments[8]);
+
+        var runQueryTest4 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments,
+            From = testCollectionReference,
+            OrderBy = OrderByQuery
+                .AscendingDocumentName(),
+            StartAt = CursorQuery
+                .Add(writeDocuments[5].Reference)
+                .OnNextValues(),
+            EndAt = CursorQuery
+                .Add(writeDocuments[8].Reference)
+                .OnNextValues(),
+        });
+        runQueryTest4.ThrowIfError();
+
+        Assert.Equal(2, runQueryTest4.Result.Documents.Count);
+        Assert.Equivalent(runQueryTest4.Result.Documents[0].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest4.Result.Documents[1].Document, writeDocuments[7]);
+
+        var runQueryTest5 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments,
+            From = testCollectionReference,
+            OrderBy = OrderByQuery
+                .Ascending(nameof(NumberModel.Val2)),
+            StartAt = CursorQuery
+                .Add(8.8)
+                .OnGivenValues(),
+            EndAt = CursorQuery
+                .Add(10.11)
+                .OnGivenValues(),
+        });
+        runQueryTest5.ThrowIfError();
+
+        Assert.Equal(4, runQueryTest5.Result.Documents.Count);
+        Assert.Equivalent(runQueryTest5.Result.Documents[0].Document, writeDocuments[5]);
+        Assert.Equivalent(runQueryTest5.Result.Documents[1].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest5.Result.Documents[2].Document, writeDocuments[7]);
+        Assert.Equivalent(runQueryTest5.Result.Documents[3].Document, writeDocuments[8]);
+
+        var runQueryTest6 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
+            Document = writeDocuments,
+            From = testCollectionReference,
+            OrderBy = OrderByQuery
+                .Ascending(nameof(NumberModel.Val2)),
+            StartAt = CursorQuery
+                .Add(8.8)
+                .OnNextValues(),
+            EndAt = CursorQuery
+                .Add(10.11)
+                .OnNextValues(),
+        });
+        runQueryTest6.ThrowIfError();
+
+        Assert.Equal(2, runQueryTest6.Result.Documents.Count);
+        Assert.Equivalent(runQueryTest6.Result.Documents[0].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest6.Result.Documents[1].Document, writeDocuments[7]);
+
+        var runQueryTest7 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        {
+            Config = config,
+            JsonSerializerOptions = Helpers.JsonSerializerOptions,
             From = testCollectionReference,
             Select = SelectQuery.DocumentNameOnly(),
             Where = FilterQuery
@@ -852,18 +938,18 @@ public class FirestoreDatabaseTest
             OrderBy = OrderByQuery
                 .Descending(nameof(NumberModel.Val2)),
         });
-        Assert.NotNull(runQueryTest3.Result);
+        Assert.NotNull(runQueryTest7.Result);
 
-        Assert.Null(runQueryTest3.Result.Documents[0].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[1].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[2].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[3].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[4].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[5].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[6].Document.Model);
-        Assert.Null(runQueryTest3.Result.Documents[7].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[0].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[1].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[2].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[3].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[4].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[5].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[6].Document.Model);
+        Assert.Null(runQueryTest7.Result.Documents[7].Document.Model);
 
-        var runQueryTest4 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        var runQueryTest8 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
@@ -875,15 +961,15 @@ public class FirestoreDatabaseTest
                 .Descending(nameof(NumberModel.Val2)),
             PageSize = 2
         });
-        Assert.NotNull(runQueryTest4.Result);
+        Assert.NotNull(runQueryTest8.Result);
 
-        Assert.Equal(2, runQueryTest4.Result.Documents.Count);
-        Assert.Equivalent(0, runQueryTest4.Result.Documents[0].Document.Model?.Val1);
-        Assert.Equivalent(writeDocuments[9].Model?.Val2, runQueryTest4.Result.Documents[0].Document.Model?.Val2);
-        Assert.Equivalent(0, runQueryTest4.Result.Documents[1].Document.Model?.Val1);
-        Assert.Equivalent(writeDocuments[8].Model?.Val2, runQueryTest4.Result.Documents[1].Document.Model?.Val2);
+        Assert.Equal(2, runQueryTest8.Result.Documents.Count);
+        Assert.Equivalent(0, runQueryTest8.Result.Documents[0].Document.Model?.Val1);
+        Assert.Equivalent(writeDocuments[9].Model?.Val2, runQueryTest8.Result.Documents[0].Document.Model?.Val2);
+        Assert.Equivalent(0, runQueryTest8.Result.Documents[1].Document.Model?.Val1);
+        Assert.Equivalent(writeDocuments[8].Model?.Val2, runQueryTest8.Result.Documents[1].Document.Model?.Val2);
 
-        var runQueryTest5 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        var runQueryTest9 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
@@ -894,31 +980,31 @@ public class FirestoreDatabaseTest
                 .Descending(nameof(NumberModel.Val2)),
             PageSize = 2
         });
-        runQueryTest5.ThrowIfError();
+        runQueryTest9.ThrowIfError();
 
-        int runQueryTest5Iteration = 0;
-        List<DocumentTimestamp<NumberModel>> runQueryTest5Docs = new();
-        await foreach (var page in runQueryTest5.Result)
+        int runQueryTest9Iteration = 0;
+        List<DocumentTimestamp<NumberModel>> runQueryTest9Docs = new();
+        await foreach (var page in runQueryTest9.Result)
         {
             page.ThrowIfError();
-            runQueryTest5Iteration++;
-            runQueryTest5Docs.AddRange(page.Result.Documents);
+            runQueryTest9Iteration++;
+            runQueryTest9Docs.AddRange(page.Result.Documents);
         }
 
-        Assert.Equal(5, runQueryTest5Iteration);
-        Assert.Equal(10, runQueryTest5Docs.Count);
-        Assert.Equivalent(runQueryTest5Docs[0].Document, writeDocuments[1]);
-        Assert.Equivalent(runQueryTest5Docs[1].Document, writeDocuments[0]);
-        Assert.Equivalent(runQueryTest5Docs[2].Document, writeDocuments[9]);
-        Assert.Equivalent(runQueryTest5Docs[3].Document, writeDocuments[8]);
-        Assert.Equivalent(runQueryTest5Docs[4].Document, writeDocuments[7]);
-        Assert.Equivalent(runQueryTest5Docs[5].Document, writeDocuments[6]);
-        Assert.Equivalent(runQueryTest5Docs[6].Document, writeDocuments[5]);
-        Assert.Equivalent(runQueryTest5Docs[7].Document, writeDocuments[4]);
-        Assert.Equivalent(runQueryTest5Docs[8].Document, writeDocuments[3]);
-        Assert.Equivalent(runQueryTest5Docs[9].Document, writeDocuments[2]);
+        Assert.Equal(5, runQueryTest9Iteration);
+        Assert.Equal(10, runQueryTest9Docs.Count);
+        Assert.Equivalent(runQueryTest9Docs[0].Document, writeDocuments[1]);
+        Assert.Equivalent(runQueryTest9Docs[1].Document, writeDocuments[0]);
+        Assert.Equivalent(runQueryTest9Docs[2].Document, writeDocuments[9]);
+        Assert.Equivalent(runQueryTest9Docs[3].Document, writeDocuments[8]);
+        Assert.Equivalent(runQueryTest9Docs[4].Document, writeDocuments[7]);
+        Assert.Equivalent(runQueryTest9Docs[5].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest9Docs[6].Document, writeDocuments[5]);
+        Assert.Equivalent(runQueryTest9Docs[7].Document, writeDocuments[4]);
+        Assert.Equivalent(runQueryTest9Docs[8].Document, writeDocuments[3]);
+        Assert.Equivalent(runQueryTest9Docs[9].Document, writeDocuments[2]);
 
-        var runQueryTest6 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        var runQueryTest10 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
@@ -930,29 +1016,29 @@ public class FirestoreDatabaseTest
                 .Descending(nameof(NumberModel.Val2)),
             PageSize = 2
         });
-        runQueryTest6.ThrowIfError();
+        runQueryTest10.ThrowIfError();
 
-        int runQueryTest6Iteration = 0;
-        List<DocumentTimestamp<NumberModel>> runQueryTest6Docs = new();
-        await foreach (var page in runQueryTest6.Result)
+        int runQueryTest10Iteration = 0;
+        List<DocumentTimestamp<NumberModel>> runQueryTest10Docs = new();
+        await foreach (var page in runQueryTest10.Result)
         {
             page.ThrowIfError();
-            runQueryTest6Iteration++;
-            runQueryTest6Docs.AddRange(page.Result.Documents);
+            runQueryTest10Iteration++;
+            runQueryTest10Docs.AddRange(page.Result.Documents);
         }
 
-        Assert.Equal(4, runQueryTest6Iteration);
-        Assert.Equal(8, runQueryTest6Docs.Count);
-        Assert.Equivalent(runQueryTest6Docs[0].Document, writeDocuments[9]);
-        Assert.Equivalent(runQueryTest6Docs[1].Document, writeDocuments[8]);
-        Assert.Equivalent(runQueryTest6Docs[2].Document, writeDocuments[7]);
-        Assert.Equivalent(runQueryTest6Docs[3].Document, writeDocuments[6]);
-        Assert.Equivalent(runQueryTest6Docs[4].Document, writeDocuments[5]);
-        Assert.Equivalent(runQueryTest6Docs[5].Document, writeDocuments[4]);
-        Assert.Equivalent(runQueryTest6Docs[6].Document, writeDocuments[3]);
-        Assert.Equivalent(runQueryTest6Docs[7].Document, writeDocuments[2]);
+        Assert.Equal(4, runQueryTest10Iteration);
+        Assert.Equal(8, runQueryTest10Docs.Count);
+        Assert.Equivalent(runQueryTest10Docs[0].Document, writeDocuments[9]);
+        Assert.Equivalent(runQueryTest10Docs[1].Document, writeDocuments[8]);
+        Assert.Equivalent(runQueryTest10Docs[2].Document, writeDocuments[7]);
+        Assert.Equivalent(runQueryTest10Docs[3].Document, writeDocuments[6]);
+        Assert.Equivalent(runQueryTest10Docs[4].Document, writeDocuments[5]);
+        Assert.Equivalent(runQueryTest10Docs[5].Document, writeDocuments[4]);
+        Assert.Equivalent(runQueryTest10Docs[6].Document, writeDocuments[3]);
+        Assert.Equivalent(runQueryTest10Docs[7].Document, writeDocuments[2]);
 
-        var runQueryTest7 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
+        var runQueryTest11 = await Api.FirestoreDatabase.QueryDocument(new QueryDocumentRequest<NumberModel>()
         {
             Config = config,
             JsonSerializerOptions = Helpers.JsonSerializerOptions,
@@ -965,23 +1051,23 @@ public class FirestoreDatabaseTest
             PageSize = 2,
             SkipPage = 2
         });
-        runQueryTest7.ThrowIfError();
+        runQueryTest11.ThrowIfError();
 
-        int runQueryTest7Iteration = 0;
-        List<DocumentTimestamp<NumberModel>> runQueryTest7Docs = new();
-        await foreach (var page in runQueryTest7.Result)
+        int runQueryTest11Iteration = 0;
+        List<DocumentTimestamp<NumberModel>> runQueryTest11Docs = new();
+        await foreach (var page in runQueryTest11.Result)
         {
             page.ThrowIfError();
-            runQueryTest7Iteration++;
-            runQueryTest7Docs.AddRange(page.Result.Documents);
+            runQueryTest11Iteration++;
+            runQueryTest11Docs.AddRange(page.Result.Documents);
         }
 
-        Assert.Equal(2, runQueryTest7Iteration);
-        Assert.Equal(4, runQueryTest7Docs.Count);
-        Assert.Equivalent(runQueryTest7Docs[0].Document, writeDocuments[5]);
-        Assert.Equivalent(runQueryTest7Docs[1].Document, writeDocuments[4]);
-        Assert.Equivalent(runQueryTest7Docs[2].Document, writeDocuments[3]);
-        Assert.Equivalent(runQueryTest7Docs[3].Document, writeDocuments[2]);
+        Assert.Equal(2, runQueryTest11Iteration);
+        Assert.Equal(4, runQueryTest11Docs.Count);
+        Assert.Equivalent(runQueryTest11Docs[0].Document, writeDocuments[5]);
+        Assert.Equivalent(runQueryTest11Docs[1].Document, writeDocuments[4]);
+        Assert.Equivalent(runQueryTest11Docs[2].Document, writeDocuments[3]);
+        Assert.Equivalent(runQueryTest11Docs[3].Document, writeDocuments[2]);
 
         await Cleanup(config, testCollectionReference);
 

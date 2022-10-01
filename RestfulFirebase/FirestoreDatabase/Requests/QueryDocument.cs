@@ -192,7 +192,7 @@ internal static class QueryDocumentRequestHelpers
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(request.StartAt.JustBeforeOrAfter);
+            writer.WriteBooleanValue(request.StartAt.OnGiven);
             writer.WriteEndObject();
         }
         if (request.EndAt != null)
@@ -207,7 +207,7 @@ internal static class QueryDocumentRequestHelpers
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(request.EndAt.JustBeforeOrAfter);
+            writer.WriteBooleanValue(!request.EndAt.OnGiven);
             writer.WriteEndObject();
         }
         writer.WritePropertyName("offset");
