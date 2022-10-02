@@ -1,4 +1,7 @@
 ﻿using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.Common.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Models;
 
@@ -8,10 +11,9 @@ namespace RestfulFirebase.Common.Models;
 public class AccessTokenAuthorization : IAuthorization
 {
     /// <inheritdoc/>
-    public string Token { get; }
-
-    /// <inheritdoc/>
     public bool IsAccessToken => true;
+
+    private readonly string token;
 
     /// <summary>
     /// Creates an instance of <see cref="AccessTokenAuthorization"/>.
@@ -21,6 +23,12 @@ public class AccessTokenAuthorization : IAuthorization
     /// </param>
     public AccessTokenAuthorization(string token)
     {
-        Token = token;
+        this.token = token;
+    }
+
+    /// <inheritdoc/>
+    public ValueTask<Response<string>> GetFreshToken(CancellationToken cancellationToken = default)
+    {
+        return new ValueTask<Response<string>>(new Response<string>(token, null));
     }
 }

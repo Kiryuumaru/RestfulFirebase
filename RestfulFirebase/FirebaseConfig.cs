@@ -1,9 +1,15 @@
-﻿namespace RestfulFirebase;
+﻿using ObservableHelpers.ComponentModel;
+using RestfulFirebase.Http;
+using System.Net.Http;
+using System.Text.Json;
+
+namespace RestfulFirebase;
 
 /// <summary>
 /// Provides configuration for all operation.
 /// </summary>
-public class FirebaseConfig
+[ObservableObject]
+public partial class FirebaseConfig
 {
     /// <summary>
     /// Gets or sets the firebase API key.
@@ -16,6 +22,12 @@ public class FirebaseConfig
     public string ProjectId { get; }
 
     /// <summary>
+    /// Gets or sets the <see cref="IHttpClientFactory"/>.
+    /// </summary>
+    [ObservableProperty]
+    private IHttpClientFactory? httpClientFactory;
+
+    /// <summary>
     /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
     /// </summary>
     /// <param name="apiKey">
@@ -25,8 +37,8 @@ public class FirebaseConfig
     /// The project ID of the app.
     /// </param>
     /// <exception cref="ArgumentNullException">
-    /// <paramref name="projectId"/> and
-    /// <paramref name="projectId"/> are either a null reference.
+    /// <paramref name="projectId"/> or
+    /// <paramref name="projectId"/> is a null reference.
     /// </exception>
     public FirebaseConfig(string projectId, string apiKey)
     {
