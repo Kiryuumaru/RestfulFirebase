@@ -14,6 +14,7 @@ using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Enums;
 using System.Threading;
 using RestfulFirebase.Common.Abstractions;
+using System.IO;
 
 namespace RestfulFirebase.Authentication;
 
@@ -245,5 +246,65 @@ public partial class AuthenticationApi
             FirebaseAuthType.EmailAndPassword => throw new InvalidOperationException("Email auth type cannot be used like this. Use methods specific to email & password authentication."),
             _ => throw new NotImplementedException(""),
         };
+    }
+
+    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.Execute<T>(HttpClient, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
+    internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
+    {
+        var response = await HttpHelpers.Execute<T>(App.GetClient(), HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        if (response.IsError)
+        {
+            return new(default, response, await GetHttpException(response));
+        }
+
+        return response;
+    }
+
+    internal async Task<HttpResponse> ExecutePost(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    {
+        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), cancellationToken);
+        if (response.IsError)
+        {
+            return new(response, await GetHttpException(response));
+        }
+
+        return response;
+    }
+
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
+#endif
+    internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    {
+        var response = await HttpHelpers.ExecuteWithContent<T>(App.GetClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        if (response.IsError)
+        {
+            return new(default, response, await GetHttpException(response));
+        }
+
+        return response;
+    }
+
+#if NET5_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+#endif
+    internal async Task<HttpResponse<FirebaseUser>> StartUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    {
+        var response = await ExecutePost<FirebaseAuth>(stream, googleUrl, cancellationToken);
+        if (response.IsError)
+        {
+            return new(null, response);
+        }
+
+        FirebaseUser user = new(App, response.Result);
+
+        var refreshResponse = await user.RefreshUserInfo(cancellationToken);
+        if (refreshResponse.IsError)
+        {
+            return new(null, refreshResponse);
+        }
+
+        return new(user, response);
     }
 }

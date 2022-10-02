@@ -15,6 +15,7 @@ using System.Linq;
 using System.Data;
 using System.IO;
 using System.Diagnostics.CodeAnalysis;
+using static RestfulFirebase.Authentication.AuthenticationApi;
 
 namespace RestfulFirebase.Authentication;
 
@@ -23,11 +24,6 @@ namespace RestfulFirebase.Authentication;
 /// </summary>
 public partial class FirebaseUser
 {
-    internal string BuildUrl(string googleUrl)
-    {
-        return string.Format(googleUrl, App.Config.ApiKey);
-    }
-
 #if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -50,11 +46,12 @@ public partial class FirebaseUser
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
+        
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, BuildUrl(AuthenticationApi.GoogleGetUser), cancellationToken);
-        if (response.IsError)
+        var response = await App.Authentication.ExecutePost(stream, GoogleGetUser, cancellationToken);
+        if (response.IsError || response.HttpResponseMessage == null)
         {
-            throw await AuthenticationApi.GetHttpException(response);
+            return response;
         }
 
 #if NET6_0_OR_GREATER
@@ -66,18 +63,41 @@ public partial class FirebaseUser
         JsonDocument resultJson = JsonDocument.Parse(responseData);
         if (!resultJson.RootElement.TryGetProperty("users", out JsonElement userJson))
         {
-            throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
+            return new(response.HttpRequestMessage, response.HttpResponseMessage, response.HttpStatusCode,
+                new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 
         var auth = JsonSerializer.Deserialize<FirebaseAuth>(userJson.EnumerateArray().First(), JsonSerializerHelpers.CamelCaseJsonSerializerOption);
 
         if (auth == null)
         {
-            throw new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default);
+            return new(response.HttpRequestMessage, response.HttpResponseMessage, response.HttpStatusCode,
+                new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 
         UpdateAuth(auth);
         UpdateInfo(auth);
+
+        return response;
+    }
+
+#if NET5_0_OR_GREATER
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+#endif
+    private async Task<HttpResponse> ExecuteUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    {
+        var response = await App.Authentication.ExecutePost(stream, googleUrl, cancellationToken);
+        if (response.IsError)
+        {
+            return response;
+        }
+
+        var responseRefresh = await RefreshUserInfo(cancellationToken);
+        if (responseRefresh.IsError)
+        {
+            return responseRefresh;
+        }
 
         return response;
     }

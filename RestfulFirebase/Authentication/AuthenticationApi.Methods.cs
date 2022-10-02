@@ -52,7 +52,7 @@ public partial class AuthenticationApi
 #endif
     public async Task<HttpResponse<string>> GetRecaptchaSiteKey(CancellationToken cancellationToken = default)
     {
-        var response = await HttpHelpers.Execute<RecaptchaSiteKeyDefinition>(App.GetClient(), HttpMethod.Get, BuildUrl(GoogleRecaptchaParams), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await ExecuteGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, cancellationToken);
         
         return new(response.Result?.RecaptchaSiteKey, response);
     }
@@ -97,10 +97,10 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent<SessionInfoDefinition>(App.GetClient(), stream, HttpMethod.Post, BuildUrl(GoogleSendVerificationCode), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await ExecutePost<SessionInfoDefinition>(stream, GoogleSendVerificationCode, cancellationToken);
         if (response.IsError)
         {
-            return new HttpResponse<string>(null, response);
+            return new(null, response);
         }
 
         return new(response.Result?.SessionInfo, response);
@@ -137,7 +137,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, BuildUrl(GoogleGetConfirmationCodeUrl), cancellationToken);
+        return await ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken);
     }
 
     /// <summary>
@@ -175,7 +175,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent<ProviderQuery>(App.GetClient(), stream, HttpMethod.Post, BuildUrl(GoogleCreateAuthUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await ExecutePost<ProviderQuery>(stream, GoogleCreateAuthUrl, cancellationToken);
         if (response.IsError)
         {
             return response;
@@ -231,7 +231,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await StartUser(stream, BuildUrl(GoogleSignUpUrl), cancellationToken);
+        var response = await StartUser(stream, GoogleSignUpUrl, cancellationToken);
         if (response.IsError)
         {
             return new(null, response);
@@ -295,7 +295,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GooglePasswordUrl), cancellationToken);
+        return await StartUser(stream, GooglePasswordUrl, cancellationToken);
     }
 
     /// <summary>
@@ -336,7 +336,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleSignInWithPhoneNumber), cancellationToken);
+        return await StartUser(stream, GoogleSignInWithPhoneNumber, cancellationToken);
     }
 
     /// <summary>
@@ -370,7 +370,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleCustomAuthUrl), cancellationToken);
+        return await StartUser(stream, GoogleCustomAuthUrl, cancellationToken);
     }
 
     /// <summary>
@@ -411,7 +411,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleIdentityUrl), cancellationToken);
+        return await StartUser(stream, GoogleIdentityUrl, cancellationToken);
     }
 
     /// <summary>
@@ -454,7 +454,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleIdentityUrl), cancellationToken);
+        return await StartUser(stream, GoogleIdentityUrl, cancellationToken);
     }
 
     /// <summary>
@@ -492,7 +492,7 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleIdentityUrl), cancellationToken);
+        return await StartUser(stream, GoogleIdentityUrl, cancellationToken);
     }
 
     /// <summary>
@@ -516,29 +516,6 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        return await StartUser(stream, BuildUrl(GoogleSignUpUrl), cancellationToken);
-    }
-
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
-    private async Task<HttpResponse<FirebaseUser>> StartUser(MemoryStream stream, string url, CancellationToken cancellationToken)
-    {
-        var response = await HttpHelpers.ExecuteWithContent<FirebaseAuth>(App.GetClient(), stream, HttpMethod.Post, url, JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
-        if (response.IsError)
-        {
-            return new(null, response);
-        }
-
-        FirebaseUser user = new(App, response.Result);
-
-        var refreshResponse = await user.RefreshUserInfo(cancellationToken);
-        if (refreshResponse.IsError)
-        {
-            return new(null, refreshResponse);
-        }
-
-        return new(user, response);
+        return await StartUser(stream, GoogleSignUpUrl, cancellationToken);
     }
 }

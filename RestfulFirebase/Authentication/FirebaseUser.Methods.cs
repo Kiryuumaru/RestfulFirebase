@@ -15,6 +15,7 @@ using RestfulFirebase.Common.Models;
 using System.Text;
 using RestfulFirebase.Authentication.Enums;
 using System.Diagnostics.CodeAnalysis;
+using static RestfulFirebase.Authentication.AuthenticationApi;
 
 namespace RestfulFirebase.Authentication;
 
@@ -149,7 +150,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent<FirebaseAuth>(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleRefreshAuth, JsonSerializerHelpers.SnakeCaseJsonSerializerOption, cancellationToken);
+        var response = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
         if (response.IsError)
         {
             return new HttpResponse<string>(null, response);
@@ -192,7 +193,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleGetConfirmationCodeUrl, cancellationToken);
+        return await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken);
     }
 
     /// <summary>
@@ -235,19 +236,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleUpdateUser, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
-
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleUpdateUser, cancellationToken);
     }
 
     /// <summary>
@@ -290,19 +279,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleUpdateUser, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
-
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleUpdateUser, cancellationToken);
     }
 
     /// <summary>
@@ -374,19 +351,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleSetAccountUrl, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
-
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
     }
 
     /// <summary>
@@ -415,7 +380,9 @@ public partial class FirebaseUser
         writer.WriteStringValue(tokenResponse.Result);
         writer.WriteEndObject();
 
-        return await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleDeleteUserUrl, cancellationToken);
+        await writer.FlushAsync(cancellationToken);
+
+        return await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken);
     }
 
     /// <summary>
@@ -463,19 +430,9 @@ public partial class FirebaseUser
         writer.WriteStringValue(tokenResponse.Result);
         writer.WriteEndObject();
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleSetAccountUrl, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
+        await writer.FlushAsync(cancellationToken);
 
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
     }
 
     /// <summary>
@@ -507,7 +464,7 @@ public partial class FirebaseUser
             return new(httpResponse);
         }
 
-        var providerId = AuthenticationApi.GetProviderId(authType);
+        var providerId = GetProviderId(authType);
 
         using MemoryStream stream = new();
         Utf8JsonWriter writer = new(stream);
@@ -523,19 +480,9 @@ public partial class FirebaseUser
         writer.WriteStringValue(tokenResponse.Result);
         writer.WriteEndObject();
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleIdentityUrl, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
+        await writer.FlushAsync(cancellationToken);
 
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken);
     }
 
     /// <summary>
@@ -566,7 +513,7 @@ public partial class FirebaseUser
         }
         else
         {
-            providerId = AuthenticationApi.GetProviderId(authType);
+            providerId = GetProviderId(authType);
         }
 
         using MemoryStream stream = new();
@@ -579,18 +526,8 @@ public partial class FirebaseUser
         writer.WriteStringValue(tokenResponse.Result);
         writer.WriteEndObject();
 
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, AuthenticationApi.GoogleSetAccountUrl, cancellationToken);
-        if (response.IsError)
-        {
-            return response;
-        }
+        await writer.FlushAsync(cancellationToken);
 
-        var responseRefresh = await RefreshUserInfo(cancellationToken);
-        if (responseRefresh.IsError)
-        {
-            return responseRefresh;
-        }
-
-        return response;
+        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
     }
 }

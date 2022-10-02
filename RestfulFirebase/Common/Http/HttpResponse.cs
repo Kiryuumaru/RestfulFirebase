@@ -47,6 +47,14 @@ public class HttpResponse : Response, IHttpResponse
         HttpStatusCode = response.HttpStatusCode;
     }
 
+    internal HttpResponse(IHttpResponse response, Exception? error)
+        : base(error)
+    {
+        HttpRequestMessage = response.HttpRequestMessage;
+        HttpResponseMessage = response.HttpResponseMessage;
+        HttpStatusCode = response.HttpStatusCode;
+    }
+
     /// <summary>
     /// Gets the <see cref="HttpRequestMessage.Content"/> as string.
     /// </summary>
@@ -124,6 +132,14 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
 
     internal HttpResponse(TResult? result, IHttpResponse response)
         : base(result, response.Error)
+    {
+        HttpRequestMessage = response.HttpRequestMessage;
+        HttpResponseMessage = response.HttpResponseMessage;
+        HttpStatusCode = response.HttpStatusCode;
+    }
+
+    internal HttpResponse(TResult? result, IHttpResponse response, Exception? error)
+        : base(result, error)
     {
         HttpRequestMessage = response.HttpRequestMessage;
         HttpResponseMessage = response.HttpResponseMessage;

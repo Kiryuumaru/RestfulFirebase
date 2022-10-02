@@ -14,6 +14,8 @@ namespace RestfulFirebase.UnitTest
 
             var loginRequest = await app.Authentication.SignInWithEmailAndPassword("test@mail.com", "123123");
 
+            var ss1 = await loginRequest.GetResponseContentAsString();
+
             if (loginRequest.IsSuccess)
             {
                 user = loginRequest.Result;
