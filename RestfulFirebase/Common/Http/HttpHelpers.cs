@@ -20,6 +20,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -43,6 +48,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -81,6 +91,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -114,6 +129,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -145,6 +165,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -171,6 +196,11 @@ internal static class HttpHelpers
 
         try
         {
+            if (request.Content != null)
+            {
+                await request.Content.LoadIntoBufferAsync();
+            }
+
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;

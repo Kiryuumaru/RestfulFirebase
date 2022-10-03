@@ -68,7 +68,7 @@ public class HttpResponse : Response, IHttpResponse
             return null;
         }
 
-        return HttpRequestMessage?.Content == null ? null : await HttpRequestMessage.Content.ReadAsStringAsync();
+        return await HttpRequestMessage.Content.ReadAsStringAsync();
     }
 
     /// <summary>
@@ -79,7 +79,12 @@ public class HttpResponse : Response, IHttpResponse
     /// </returns>
     public async Task<string?> GetResponseContentAsString()
     {
-        return HttpResponseMessage?.Content == null ? null : await HttpResponseMessage.Content.ReadAsStringAsync();
+        if (HttpResponseMessage?.Content == null)
+        {
+            return null;
+        }
+
+        return await HttpResponseMessage.Content.ReadAsStringAsync();
     }
 }
 
@@ -169,7 +174,7 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
             return null;
         }
 
-        return HttpRequestMessage?.Content == null ? null : await HttpRequestMessage.Content.ReadAsStringAsync();
+        return await HttpRequestMessage.Content.ReadAsStringAsync();
     }
 
     /// <summary>
@@ -180,6 +185,11 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
     /// </returns>
     public async Task<string?> GetResponseContentAsString()
     {
-        return HttpResponseMessage?.Content == null ? null : await HttpResponseMessage.Content.ReadAsStringAsync();
+        if (HttpResponseMessage?.Content == null)
+        {
+            return null;
+        }
+
+        return await HttpResponseMessage.Content.ReadAsStringAsync();
     }
 }

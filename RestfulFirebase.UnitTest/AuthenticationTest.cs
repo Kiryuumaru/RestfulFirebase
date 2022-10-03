@@ -14,7 +14,8 @@ namespace RestfulFirebase.UnitTest
 
             var loginRequest = await app.Authentication.SignInWithEmailAndPassword("test@mail.com", "123123");
 
-            var ss1 = await loginRequest.GetResponseContentAsString();
+            var ss1 = await loginRequest.GetRequestContentAsString();
+            var ss2 = await loginRequest.GetResponseContentAsString();
 
             if (loginRequest.IsSuccess)
             {
@@ -24,7 +25,8 @@ namespace RestfulFirebase.UnitTest
             {
                 var signupRequest = await app.Authentication.CreateUserWithEmailAndPassword("test@mail.com", "123123", false);
 
-                var ss2 = await signupRequest.GetResponseContentAsString();
+                var ss3 = await signupRequest.GetRequestContentAsString();
+                var ss4 = await signupRequest.GetResponseContentAsString();
 
                 signupRequest.ThrowIfError();
 
