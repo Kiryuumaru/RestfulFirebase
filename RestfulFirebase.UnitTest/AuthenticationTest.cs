@@ -1,4 +1,6 @@
 using RestfulFirebase.Authentication;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace RestfulFirebase.UnitTest
@@ -8,14 +10,19 @@ namespace RestfulFirebase.UnitTest
         [Fact]
         public async void Test1()
         {
-            FirebaseApp app = new(Helpers.GetFirebaseConfig());
+            FirebaseApp app = Helpers.GetFirebaseApp();
 
             FirebaseUser user;
 
             var loginRequest = await app.Authentication.SignInWithEmailAndPassword("test@mail.com", "123123");
 
-            var ss1 = await loginRequest.GetRequestContentAsString();
-            var ss2 = await loginRequest.GetResponseContentAsString();
+            List<(string?, string?, string?)> logins = new();
+            List<(string?, string?, string?)> creates = new();
+
+            foreach (var transac in loginRequest.HttpTransactions)
+            {
+                logins.Add((transac.RequestUrl, await transac.GetRequestContentAsString(), await transac.GetResponseContentAsString()));
+            }
 
             if (loginRequest.IsSuccess)
             {
@@ -25,8 +32,10 @@ namespace RestfulFirebase.UnitTest
             {
                 var signupRequest = await app.Authentication.CreateUserWithEmailAndPassword("test@mail.com", "123123", false);
 
-                var ss3 = await signupRequest.GetRequestContentAsString();
-                var ss4 = await signupRequest.GetResponseContentAsString();
+                foreach (var transac in signupRequest.HttpTransactions)
+                {
+                    creates.Add((transac.RequestUrl, await transac.GetRequestContentAsString(), await transac.GetResponseContentAsString()));
+                }
 
                 signupRequest.ThrowIfError();
 

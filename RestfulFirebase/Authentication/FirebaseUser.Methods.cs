@@ -131,11 +131,13 @@ public partial class FirebaseUser
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
 #endif
-    public async ValueTask<Response<string>> GetFreshToken(CancellationToken cancellationToken = default)
+    public async ValueTask<HttpResponse<string>> GetFreshToken(CancellationToken cancellationToken = default)
     {
+        HttpResponse<string> response = new();
+
         if (!IsExpired())
         {
-            return new Response<string>(idToken, null);
+            return response.Concat(idToken);
         }
 
         using MemoryStream stream = new();
@@ -150,17 +152,23 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
-        if (response.IsError)
+        var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
+        response.Concat(postResponse);
+        if (postResponse.IsError)
         {
-            return new HttpResponse<string>(null, response);
+            return response;
         }
 
-        UpdateAuth(response.Result);
+        UpdateAuth(postResponse.Result);
 
-        await RefreshUserInfo(cancellationToken);
+        var refreshResponse = await RefreshUserInfo(cancellationToken);
+        response.Concat(refreshResponse);
+        if (refreshResponse.IsError)
+        {
+            return response;
+        }
 
-        return new HttpResponse<string>(idToken, response);
+        return response.Concat(idToken);
     }
 
     /// <summary>
@@ -174,11 +182,13 @@ public partial class FirebaseUser
     /// </returns>
     public async Task<HttpResponse> SendEmailVerification(CancellationToken cancellationToken = default)
     {
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -193,7 +203,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken);
+        return response.Concat(await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken));
     }
 
     /// <summary>
@@ -215,11 +225,13 @@ public partial class FirebaseUser
     {
         ArgumentNullException.ThrowIfNull(newEmail);
 
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -236,7 +248,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleUpdateUser, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
     }
 
     /// <summary>
@@ -258,11 +270,13 @@ public partial class FirebaseUser
     {
         ArgumentNullException.ThrowIfNull(newPassword);
 
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -279,7 +293,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleUpdateUser, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
     }
 
     /// <summary>
@@ -299,11 +313,13 @@ public partial class FirebaseUser
     /// </returns>
     public async Task<HttpResponse> UpdateProfile(string displayName, string photoUrl, CancellationToken cancellationToken = default)
     {
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -351,7 +367,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 
     /// <summary>
@@ -365,11 +381,13 @@ public partial class FirebaseUser
     /// </returns>
     public async Task<HttpResponse> DeleteUser(CancellationToken cancellationToken = default)
     {
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -382,7 +400,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken);
+        return response.Concat(await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken));
     }
 
     /// <summary>
@@ -409,11 +427,13 @@ public partial class FirebaseUser
         ArgumentNullException.ThrowIfNull(email);
         ArgumentNullException.ThrowIfNull(password);
 
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -432,7 +452,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 
     /// <summary>
@@ -457,11 +477,13 @@ public partial class FirebaseUser
     {
         ArgumentNullException.ThrowIfNull(oauthAccessToken);
 
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         var providerId = GetProviderId(authType);
@@ -482,7 +504,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken));
     }
 
     /// <summary>
@@ -499,11 +521,13 @@ public partial class FirebaseUser
     /// </returns>
     public async Task<HttpResponse> UnlinkAccounts(FirebaseAuthType authType, CancellationToken cancellationToken = default)
     {
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         string? providerId;
@@ -528,6 +552,6 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken);
+        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 }

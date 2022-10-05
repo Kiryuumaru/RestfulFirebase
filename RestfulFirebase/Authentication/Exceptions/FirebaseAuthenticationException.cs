@@ -15,7 +15,7 @@ public class FirebaseAuthenticationException : FirebaseException
     /// </summary>
     public AuthErrorType ErrorType { get; }
 
-    internal FirebaseAuthenticationException(AuthErrorType errorType, string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception? innerException)
+    internal FirebaseAuthenticationException(AuthErrorType errorType, string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode? httpStatusCode, Exception? innerException)
         : base(message, requestUrl, requestContent, response, httpStatusCode, innerException)
     {
         ErrorType = errorType;

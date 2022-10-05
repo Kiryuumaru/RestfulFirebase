@@ -3,6 +3,9 @@ using System.Net;
 using System;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using RestfulFirebase.Common.Http;
 
 namespace RestfulFirebase.Common.Abstractions;
 
@@ -12,19 +15,9 @@ namespace RestfulFirebase.Common.Abstractions;
 public interface IHttpResponse
 {
     /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpRequestMessage"/> of the request.
+    /// Gets all http transactions made by the request.
     /// </summary>
-    public HttpRequestMessage HttpRequestMessage { get; }
-
-    /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpResponseMessage"/> of the request.
-    /// </summary>
-    public HttpResponseMessage? HttpResponseMessage { get; }
-
-    /// <summary>
-    /// Gets the <see cref="System.Net.HttpStatusCode"/> of the request.
-    /// </summary>
-    public HttpStatusCode HttpStatusCode { get; }
+    public IReadOnlyList<HttpTransaction> HttpTransactions { get; }
 
     /// <summary>
     /// Gets the exception of the operation.
@@ -35,15 +28,16 @@ public interface IHttpResponse
     /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
     /// </summary>
     [MemberNotNullWhen(false, nameof(Error))]
-    [MemberNotNullWhen(true, nameof(HttpResponseMessage))]
     public bool IsSuccess { get; }
 
     /// <summary>
     /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
     /// </summary>
     [MemberNotNullWhen(true, nameof(Error))]
-    [MemberNotNullWhen(false, nameof(HttpResponseMessage))]
     public bool IsError { get; }
 
+    /// <summary>
+    /// Throws if the response has any error.
+    /// </summary>
     void ThrowIfError();
 }

@@ -27,8 +27,8 @@ public class AccessTokenAuthorization : IAuthorization
     }
 
     /// <inheritdoc/>
-    public ValueTask<Response<string>> GetFreshToken(CancellationToken cancellationToken = default)
+    public ValueTask<HttpResponse<string>> GetFreshToken(CancellationToken cancellationToken = default)
     {
-        return new ValueTask<Response<string>>(new Response<string>(token, null));
+        return new ValueTask<HttpResponse<string>>(new HttpResponse<string>(token));
     }
 }

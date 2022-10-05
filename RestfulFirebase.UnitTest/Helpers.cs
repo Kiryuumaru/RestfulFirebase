@@ -7,19 +7,19 @@ namespace RestfulFirebase.UnitTest;
 
 internal class Helpers
 {
-    //public static JsonSerializerOptions JsonSerializerOptions = new()
-    //{
-    //    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    //    PropertyNameCaseInsensitive = true,
-    //    Converters =
-    //    {
-    //        ModelWithCustomSerializer.Converter.Instance
-    //    }
-    //};
+    public static JsonSerializerOptions JsonSerializerOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        Converters =
+        {
+            ModelWithCustomSerializer.Converter.Instance
+        }
+    };
 
     private static FirebaseConfig? firebaseConfig;
 
-    public static FirebaseConfig GetFirebaseConfig()
+    public static FirebaseApp GetFirebaseApp()
     {
         if (firebaseConfig == null)
         {
@@ -36,6 +36,6 @@ internal class Helpers
             firebaseConfig = new(projectId, apiKey);
         }
 
-        return firebaseConfig;
+        return new(firebaseConfig);
     }
 }

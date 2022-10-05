@@ -23,7 +23,7 @@ public interface IAuthorization
     /// The <see cref="CancellationToken"/> that propagates notification if the operation should be canceled.
     /// </param>
     /// <returns>
-    /// The <see cref="ValueTask{T}"/> with <see cref="string"/> token.
+    /// The <see cref="ValueTask{T}"/> proxy that represents <see cref="HttpResponse"/> with <see cref="string"/> token.
     /// </returns>
-    public ValueTask<Response<string>> GetFreshToken(CancellationToken cancellationToken);
+    public ValueTask<HttpResponse<string>> GetFreshToken(CancellationToken cancellationToken);
 }

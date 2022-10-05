@@ -26,9 +26,9 @@ public class FirebaseException : ArgumentException
     /// <summary>
     /// Gets the status code of the exception occured.
     /// </summary>
-    public HttpStatusCode StatusCode { get; }
+    public HttpStatusCode? StatusCode { get; }
 
-    internal FirebaseException(string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode httpStatusCode, Exception? innerException)
+    internal FirebaseException(string message, string? requestUrl, string? requestContent, string? response, HttpStatusCode? httpStatusCode, Exception? innerException)
         : base(message, innerException)
     {
         RequestUrl = requestUrl;

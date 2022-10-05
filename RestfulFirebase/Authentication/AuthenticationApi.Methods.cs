@@ -52,9 +52,16 @@ public partial class AuthenticationApi
 #endif
     public async Task<HttpResponse<string>> GetRecaptchaSiteKey(CancellationToken cancellationToken = default)
     {
-        var response = await ExecuteGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, cancellationToken);
-        
-        return new(response.Result?.RecaptchaSiteKey, response);
+        HttpResponse<string> response = new();
+
+        var getResponse = await ExecuteGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, cancellationToken);
+        response.Concat(getResponse);
+        if (getResponse.IsError || getResponse.Result.RecaptchaSiteKey == null)
+        {
+            return response;
+        }
+
+        return response.Concat(getResponse.Result.RecaptchaSiteKey);
     }
 
     /// <summary>
@@ -97,13 +104,16 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await ExecutePost<SessionInfoDefinition>(stream, GoogleSendVerificationCode, cancellationToken);
-        if (response.IsError)
+        HttpResponse<string> response = new();
+
+        var postResponse = await ExecutePost<SessionInfoDefinition>(stream, GoogleSendVerificationCode, cancellationToken);
+        response.Concat(postResponse);
+        if (postResponse.IsError || postResponse.Result.SessionInfo == null)
         {
-            return new(null, response);
+            return response;
         }
 
-        return new(response.Result?.SessionInfo, response);
+        return response.Concat(postResponse.Result.SessionInfo);
     }
 
     /// <summary>
@@ -231,18 +241,22 @@ public partial class AuthenticationApi
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await StartUser(stream, GoogleSignUpUrl, cancellationToken);
-        if (response.IsError)
+        HttpResponse<FirebaseUser> response = new();
+
+        var startResponse = await StartUser(stream, GoogleSignUpUrl, cancellationToken);
+        response.Concat(startResponse);
+        if (startResponse.IsError)
         {
-            return new(null, response);
+            return response;
         }
 
         if (sendVerificationEmail)
         {
-            var sendVerificationResponse = await response.Result.SendEmailVerification(cancellationToken);
+            var sendVerificationResponse = await startResponse.Result.SendEmailVerification(cancellationToken);
+            response.Concat(sendVerificationResponse);
             if (sendVerificationResponse.IsError)
             {
-                return new(null, sendVerificationResponse);
+                return response;
             }
         }
 

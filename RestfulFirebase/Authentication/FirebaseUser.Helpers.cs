@@ -30,11 +30,13 @@ public partial class FirebaseUser
 #endif
     internal async Task<HttpResponse> RefreshUserInfo(CancellationToken cancellationToken)
     {
+        HttpResponse response = new();
+
         var tokenResponse = await GetFreshToken(cancellationToken);
-        if (tokenResponse is HttpResponse<string> httpResponse &&
-            httpResponse.IsError)
+        response.Concat(tokenResponse);
+        if (tokenResponse.IsError)
         {
-            return new(httpResponse);
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -47,23 +49,23 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
         
-
-        var response = await App.Authentication.ExecutePost(stream, GoogleGetUser, cancellationToken);
-        if (response.IsError || response.HttpResponseMessage == null)
+        var postResponse = await App.Authentication.ExecutePost(stream, GoogleGetUser, cancellationToken);
+        response.Concat(postResponse);
+        if (postResponse.IsError || postResponse.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return response;
         }
 
 #if NET6_0_OR_GREATER
-        var responseData = await response.HttpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        var responseData = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        var responseData = await response.HttpResponseMessage.Content.ReadAsStreamAsync();
+        var responseData = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync();
 #endif
 
         JsonDocument resultJson = JsonDocument.Parse(responseData);
         if (!resultJson.RootElement.TryGetProperty("users", out JsonElement userJson))
         {
-            return new(response.HttpRequestMessage, response.HttpResponseMessage, response.HttpStatusCode,
+            return new(lastHttpTransaction.HttpRequestMessage, lastHttpTransaction.HttpResponseMessage, lastHttpTransaction.HttpStatusCode,
                 new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 
@@ -71,7 +73,7 @@ public partial class FirebaseUser
 
         if (auth == null)
         {
-            return new(response.HttpRequestMessage, response.HttpResponseMessage, response.HttpStatusCode,
+            return new(lastHttpTransaction.HttpRequestMessage, lastHttpTransaction.HttpResponseMessage, lastHttpTransaction.HttpStatusCode,
                 new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 
@@ -87,16 +89,20 @@ public partial class FirebaseUser
 #endif
     private async Task<HttpResponse> ExecuteUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await App.Authentication.ExecutePost(stream, googleUrl, cancellationToken);
-        if (response.IsError)
+        HttpResponse response = new();
+
+        var postResponse = await App.Authentication.ExecutePost(stream, googleUrl, cancellationToken);
+        response.Concat(postResponse);
+        if (postResponse.IsError)
         {
             return response;
         }
 
         var responseRefresh = await RefreshUserInfo(cancellationToken);
+        response.Concat(responseRefresh);
         if (responseRefresh.IsError)
         {
-            return responseRefresh;
+            return response;
         }
 
         return response;

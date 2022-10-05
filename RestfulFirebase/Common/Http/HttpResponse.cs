@@ -4,8 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Mail;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,75 +18,59 @@ namespace RestfulFirebase.Common.Http;
 /// </summary>
 public class HttpResponse : Response, IHttpResponse
 {
-    /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpRequestMessage"/> of the request.
-    /// </summary>
-    public HttpRequestMessage HttpRequestMessage { get; }
+    /// <inheritdoc/>
+    public IReadOnlyList<HttpTransaction> HttpTransactions { get; }
 
-    /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpResponseMessage"/> of the request.
-    /// </summary>
-    public HttpResponseMessage? HttpResponseMessage { get; }
+    private readonly List<HttpTransaction> httpTransactions;
 
-    /// <summary>
-    /// Gets the <see cref="System.Net.HttpStatusCode"/> of the request.
-    /// </summary>
-    public HttpStatusCode HttpStatusCode { get; }
-
-    internal HttpResponse(HttpRequestMessage request, HttpResponseMessage? response, HttpStatusCode httpStatusCode, Exception? error)
-        : base(error)
+    internal HttpResponse()
+        : this(default(Exception))
     {
-        HttpRequestMessage = request;
-        HttpResponseMessage = response;
-        HttpStatusCode = httpStatusCode;
+
     }
 
     internal HttpResponse(IHttpResponse response)
-        : base(response.Error)
+        : this(response.Error)
     {
-        HttpRequestMessage = response.HttpRequestMessage;
-        HttpResponseMessage = response.HttpResponseMessage;
-        HttpStatusCode = response.HttpStatusCode;
+        httpTransactions.AddRange(response.HttpTransactions);
     }
 
     internal HttpResponse(IHttpResponse response, Exception? error)
+        : this(error)
+    {
+        httpTransactions.AddRange(response.HttpTransactions);
+    }
+
+    internal HttpResponse(HttpRequestMessage request, HttpResponseMessage response, HttpStatusCode httpStatusCode, Exception? error)
+        : this(error)
+    {
+        httpTransactions.Add(new(request, response, httpStatusCode));
+    }
+
+    internal HttpResponse(Exception? error)
         : base(error)
     {
-        HttpRequestMessage = response.HttpRequestMessage;
-        HttpResponseMessage = response.HttpResponseMessage;
-        HttpStatusCode = response.HttpStatusCode;
+        httpTransactions = new();
+        HttpTransactions = httpTransactions.AsReadOnly();
     }
 
-    /// <summary>
-    /// Gets the <see cref="HttpRequestMessage.Content"/> as string.
-    /// </summary>
-    /// <returns>
-    /// The <see cref="Task"/> that represents the string content.
-    /// </returns>
-    public async Task<string?> GetRequestContentAsString()
+    internal HttpResponse Concat(params IHttpResponse[] responses)
     {
-        if (HttpRequestMessage.Content == null)
+        if (responses.LastOrDefault() is IHttpResponse lastResponse)
         {
-            return null;
+            Error = lastResponse.Error;
         }
-
-        return await HttpRequestMessage.Content.ReadAsStringAsync();
+        foreach (var response in responses)
+        {
+            httpTransactions.AddRange(response.HttpTransactions);
+        }
+        return this;
     }
 
-    /// <summary>
-    /// Gets the <see cref="HttpResponseMessage.Content"/> as string.
-    /// </summary>
-    /// <returns>
-    /// The <see cref="Task"/> that represents the string content.
-    /// </returns>
-    public async Task<string?> GetResponseContentAsString()
+    internal HttpResponse Concat(Exception? error)
     {
-        if (HttpResponseMessage?.Content == null)
-        {
-            return null;
-        }
-
-        return await HttpResponseMessage.Content.ReadAsStringAsync();
+        Error = error;
+        return this;
     }
 }
 
@@ -94,102 +80,86 @@ public class HttpResponse : Response, IHttpResponse
 /// <inheritdoc/>
 public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
 {
-    /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpRequestMessage"/> of the request.
-    /// </summary>
-    public HttpRequestMessage HttpRequestMessage { get; }
-
-    /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpResponseMessage"/> of the request.
-    /// </summary>
-    public HttpResponseMessage? HttpResponseMessage { get; }
-
-    /// <summary>
-    /// Gets the <see cref="System.Net.HttpStatusCode"/> of the request.
-    /// </summary>
-    public HttpStatusCode HttpStatusCode { get; }
-
     /// <inheritdoc/>
-    public override TResult? Result => base.Result;
+    public IReadOnlyList<HttpTransaction> HttpTransactions { get; }
 
-    /// <inheritdoc/>
-    public override Exception? Error => base.Error;
+    private readonly List<HttpTransaction> httpTransactions;
 
-    /// <inheritdoc/>
-    [MemberNotNullWhen(false, nameof(Error))]
-    [MemberNotNullWhen(true, nameof(Result))]
-    [MemberNotNullWhen(true, nameof(HttpResponseMessage))]
-    public override bool IsSuccess => base.IsSuccess;
-
-    /// <inheritdoc/>
-    [MemberNotNullWhen(true, nameof(Error))]
-    [MemberNotNullWhen(false, nameof(Result))]
-    [MemberNotNullWhen(false, nameof(HttpResponseMessage))]
-    public override bool IsError => base.IsError;
-
-    internal HttpResponse(HttpRequestMessage request, HttpResponseMessage? response, TResult? result, HttpStatusCode httpStatusCode, Exception? error)
-        : base(result, error)
+    internal HttpResponse()
+        : this(default(TResult), default(Exception))
     {
-        HttpRequestMessage = request;
-        HttpResponseMessage = response;
-        HttpStatusCode = httpStatusCode;
+
+    }
+
+    internal HttpResponse(TResult result)
+        : this(result, default(Exception))
+    {
+
+    }
+
+    internal HttpResponse(IHttpResponse response)
+        : this(default(TResult), default(Exception))
+    {
+        httpTransactions.AddRange(response.HttpTransactions);
     }
 
     internal HttpResponse(TResult? result, IHttpResponse response)
-        : base(result, response.Error)
+        : this(result, response.Error)
     {
-        HttpRequestMessage = response.HttpRequestMessage;
-        HttpResponseMessage = response.HttpResponseMessage;
-        HttpStatusCode = response.HttpStatusCode;
+        httpTransactions.AddRange(response.HttpTransactions);
+    }
+
+    internal HttpResponse(IHttpResponse response, Exception? error)
+        : this(default(TResult), error)
+    {
+        httpTransactions.AddRange(response.HttpTransactions);
     }
 
     internal HttpResponse(TResult? result, IHttpResponse response, Exception? error)
+        : this(result, error)
+    {
+        httpTransactions.AddRange(response.HttpTransactions);
+    }
+
+    internal HttpResponse(TResult? result, HttpRequestMessage request, HttpResponseMessage response, HttpStatusCode httpStatusCode, Exception? error)
+        : this(result, error)
+    {
+        httpTransactions.Add(new(request, response, httpStatusCode));
+    }
+
+    internal HttpResponse(TResult? result, Exception? error)
         : base(result, error)
     {
-        HttpRequestMessage = response.HttpRequestMessage;
-        HttpResponseMessage = response.HttpResponseMessage;
-        HttpStatusCode = response.HttpStatusCode;
+        httpTransactions = new();
+        HttpTransactions = httpTransactions.AsReadOnly();
     }
 
-    /// <inheritdoc/>
-    [MemberNotNull(nameof(Result))]
-    public override void ThrowIfError()
+    internal HttpResponse<TResult> Concat(params IHttpResponse[] responses)
     {
-        if (base.Result == null || Result == null)
+        if (responses.LastOrDefault() is IHttpResponse lastResponse)
         {
-            throw Error!;
+            Error = lastResponse.Error;
+            if (lastResponse is HttpResponse<TResult> lastTypedResponse)
+            {
+                Result = lastTypedResponse.Result;
+            }
         }
+        foreach (var response in responses)
+        {
+            httpTransactions.AddRange(response.HttpTransactions);
+        }
+        return this;
     }
 
-    /// <summary>
-    /// Gets the <see cref="HttpRequestMessage.Content"/> as string.
-    /// </summary>
-    /// <returns>
-    /// The <see cref="Task"/> that represents the string content.
-    /// </returns>
-    public async Task<string?> GetRequestContentAsString()
+    internal HttpResponse<TResult> Concat(TResult? result)
     {
-        if (HttpRequestMessage.Content == null)
-        {
-            return null;
-        }
-
-        return await HttpRequestMessage.Content.ReadAsStringAsync();
+        Result = result;
+        return this;
     }
 
-    /// <summary>
-    /// Gets the <see cref="HttpResponseMessage.Content"/> as string.
-    /// </summary>
-    /// <returns>
-    /// The <see cref="Task"/> that represents the string content.
-    /// </returns>
-    public async Task<string?> GetResponseContentAsString()
+    internal HttpResponse<TResult> Concat(Exception? error)
     {
-        if (HttpResponseMessage?.Content == null)
-        {
-            return null;
-        }
-
-        return await HttpResponseMessage.Content.ReadAsStringAsync();
+        Error = error;
+        return this;
     }
 }

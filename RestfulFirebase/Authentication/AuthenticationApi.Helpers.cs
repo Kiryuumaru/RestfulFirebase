@@ -15,6 +15,7 @@ using RestfulFirebase.Authentication.Enums;
 using System.Threading;
 using RestfulFirebase.Common.Abstractions;
 using System.IO;
+using System.Linq;
 
 namespace RestfulFirebase.Authentication;
 
@@ -46,28 +47,18 @@ public partial class AuthenticationApi
 #endif
     internal static async Task<Exception> GetHttpException(IHttpResponse response)
     {
-        string? requestUrlStr = null;
-        string? requestContentStr = null;
-        string? responseStr = null;
-        if (response.HttpRequestMessage.RequestUri != null)
-        {
-            requestUrlStr = response.HttpRequestMessage.RequestUri.ToString();
-        }
-        if (response.HttpRequestMessage.Content != null)
-        {
-            requestContentStr = await response.HttpRequestMessage.Content.ReadAsStringAsync();
-        }
-        if (response.HttpResponseMessage != null)
-        {
-            responseStr = await response.HttpResponseMessage.Content.ReadAsStringAsync();
-        }
+        var lastTransaction = response.HttpTransactions.LastOrDefault();
+
+        string? requestUrlStr = lastTransaction?.HttpRequestMessage?.RequestUri?.ToString();
+        string? requestContentStr = lastTransaction == null ? null : await lastTransaction.GetRequestContentAsString();
+        string? responseContentStr = lastTransaction == null ? null : await lastTransaction.GetResponseContentAsString();
 
         string? message = null;
         try
         {
-            if (responseStr != null && !string.IsNullOrEmpty(responseStr) && responseStr != "N/A")
+            if (responseContentStr != null && !string.IsNullOrEmpty(responseContentStr) && responseContentStr != "N/A")
             {
-                ErrorData? errorData = JsonSerializer.Deserialize<ErrorData>(responseStr, JsonSerializerHelpers.CamelCaseJsonSerializerOption);
+                ErrorData? errorData = JsonSerializer.Deserialize<ErrorData>(responseContentStr, JsonSerializerHelpers.CamelCaseJsonSerializerOption);
                 message = errorData?.Error?.Message ?? "";
             }
         }
@@ -231,7 +222,7 @@ public partial class AuthenticationApi
             errorType = AuthErrorType.UndefinedException;
         }
 
-        return new FirebaseAuthenticationException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseStr, response.HttpStatusCode, response.Error);
+        return new FirebaseAuthenticationException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseContentStr, lastTransaction?.HttpStatusCode, response.Error);
     }
 
     internal static string? GetProviderId(FirebaseAuthType authType)
@@ -248,7 +239,9 @@ public partial class AuthenticationApi
         };
     }
 
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.Execute<T>(HttpClient, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
+#if NET5_0_OR_GREATER
+    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
+#endif
     internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
     {
         var response = await HttpHelpers.Execute<T>(App.GetClient(), HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
@@ -291,20 +284,25 @@ public partial class AuthenticationApi
 #endif
     internal async Task<HttpResponse<FirebaseUser>> StartUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await ExecutePost<FirebaseAuth>(stream, googleUrl, cancellationToken);
-        if (response.IsError)
+        HttpResponse<FirebaseUser> response = new();
+
+        var postResponse = await ExecutePost<FirebaseAuth>(stream, googleUrl, cancellationToken);
+        response.Concat(postResponse);
+        if (postResponse.IsError)
         {
-            return new(null, response);
+            return response;
         }
 
-        FirebaseUser user = new(App, response.Result);
+        FirebaseUser user = new(App, postResponse.Result);
+        response.Concat(user);
 
         var refreshResponse = await user.RefreshUserInfo(cancellationToken);
+        response.Concat(refreshResponse);
         if (refreshResponse.IsError)
         {
-            return new(null, refreshResponse);
+            return response;
         }
 
-        return new(user, response);
+        return response;
     }
 }

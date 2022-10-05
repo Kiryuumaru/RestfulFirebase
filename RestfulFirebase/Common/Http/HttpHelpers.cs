@@ -18,13 +18,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -35,7 +35,7 @@ internal static class HttpHelpers
         }
         catch (Exception ex)
         {
-            return new HttpResponse(request, response, statusCode, ex);
+            return new HttpResponse(request, response!, statusCode, ex);
         }
     }
 
@@ -46,13 +46,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -65,11 +65,11 @@ internal static class HttpHelpers
             var responseData = await response.Content.ReadAsStringAsync();
 #endif
 
-            return new(request, response, JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), statusCode, null);
+            return new(JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), request, response, statusCode, null);
         }
         catch (Exception ex)
         {
-            return new(request, response, default, statusCode, ex);
+            return new(default, request, response!, statusCode, ex);
         }
     }
 
@@ -89,13 +89,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -106,7 +106,7 @@ internal static class HttpHelpers
         }
         catch (Exception ex)
         {
-            return new(request, response, statusCode, ex);
+            return new(request, response!, statusCode, ex);
         }
     }
 
@@ -127,13 +127,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -146,11 +146,11 @@ internal static class HttpHelpers
             var responseData = await response.Content.ReadAsStringAsync();
 #endif
 
-            return new(request, response, JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), statusCode, null);
+            return new(JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), request, response, statusCode, null);
         }
         catch (Exception ex)
         {
-            return new(request, response, default, statusCode, ex);
+            return new(default, request, response!, statusCode, ex);
         }
     }
 
@@ -163,13 +163,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -180,7 +180,7 @@ internal static class HttpHelpers
         }
         catch (Exception ex)
         {
-            return new(request, response, statusCode, ex);
+            return new(request, response!, statusCode, ex);
         }
     }
 
@@ -194,13 +194,13 @@ internal static class HttpHelpers
         HttpResponseMessage? response = null;
         HttpStatusCode statusCode = HttpStatusCode.OK;
 
+        if (request.Content != null)
+        {
+            await request.Content.LoadIntoBufferAsync();
+        }
+
         try
         {
-            if (request.Content != null)
-            {
-                await request.Content.LoadIntoBufferAsync();
-            }
-
             response = await httpClient.SendAsync(request, cancellationToken);
 
             statusCode = response.StatusCode;
@@ -213,11 +213,11 @@ internal static class HttpHelpers
             var responseData = await response.Content.ReadAsStringAsync();
 #endif
 
-            return new(request, response, JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), statusCode, null);
+            return new(JsonSerializer.Deserialize<T>(responseData, jsonSerializerOptions), request, response, statusCode, null);
         }
         catch (Exception ex)
         {
-            return new(request, response, default, statusCode, ex);
+            return new(default, request, response!, statusCode, ex);
         }
     }
 }

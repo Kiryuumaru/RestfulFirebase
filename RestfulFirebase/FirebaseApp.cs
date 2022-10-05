@@ -1,4 +1,5 @@
-﻿using RestfulFirebase.Authentication;
+﻿using RestfulFirebase.FirestoreDatabase;
+using RestfulFirebase.Authentication;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -15,9 +16,14 @@ public partial class FirebaseApp
     public FirebaseConfig Config { get; }
 
     /// <summary>
-    /// Gets the <see cref="AuthenticationApi"/> for firebase authentication app module.
+    /// Gets the <see cref="AuthenticationApi"/> for firebase authentication operations.
     /// </summary>
     public AuthenticationApi Authentication { get; }
+
+    /// <summary>
+    /// Gets the <see cref="AuthenticationApi"/> for firebase firestore database operations.
+    /// </summary>
+    public FirestoreDatabaseApi FirestoreDatabase { get; }
 
     /// <summary>
     /// Creates new instance of <see cref="FirebaseApp"/> app.
@@ -29,5 +35,6 @@ public partial class FirebaseApp
     {
         Config = config;
         Authentication = new(this);
+        FirestoreDatabase = new(this);
     }
 }
