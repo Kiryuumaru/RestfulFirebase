@@ -121,7 +121,7 @@ public partial class FirestoreDatabaseApi
         return response.Concat(new ListCollectionResult(
             collectionReferences.ToArray(),
             nextPageToken,
-            () => response,
+            response,
             (nextPageTok, ct) =>
             {
                 return ExecuteListCollectionNextPage(response, nextPageTok, pageSize, documentReference, authorization, options, ct);

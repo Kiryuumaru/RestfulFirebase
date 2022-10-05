@@ -34,7 +34,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
     public int CurrentPage { get; internal set; }
 
     private readonly int pageSize;
-    private readonly Func<HttpResponse<QueryDocumentResult>> firstResponseFactory;
+    private readonly HttpResponse<QueryDocumentResult> firstResponse;
     private readonly Func<int, CancellationToken, Task<HttpResponse<QueryDocumentResult>>> pager;
 
     internal QueryDocumentResult(
@@ -43,7 +43,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
         DateTimeOffset? skippedReadTime,
         int currentPage,
         int pageSize,
-        Func<HttpResponse<QueryDocumentResult>> firstResponseFactory,
+        HttpResponse<QueryDocumentResult> firstResponse,
         Func<int, CancellationToken, Task<HttpResponse<QueryDocumentResult>>> pager)
     {
         Documents = documents;
@@ -51,7 +51,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
         SkippedReadTime = skippedReadTime;
         CurrentPage = currentPage;
         this.pageSize = pageSize;
-        this.firstResponseFactory = firstResponseFactory;
+        this.firstResponse = firstResponse;
         this.pager = pager;
     }
 
@@ -75,7 +75,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
     /// <inheritdoc/>
     public IAsyncEnumerator<HttpResponse<QueryDocumentResult>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        return new AsyncEnumerator(pageSize, firstResponseFactory(), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        return new AsyncEnumerator(pageSize, firstResponse, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
     }
 
     internal class AsyncEnumerator : IAsyncEnumerator<HttpResponse<QueryDocumentResult>>
@@ -161,7 +161,7 @@ public class QueryDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessed
     public int CurrentPage { get; internal set; }
 
     private readonly int pageSize;
-    private readonly Func<HttpResponse<QueryDocumentResult<T>>> firstResponseFactory;
+    private readonly HttpResponse<QueryDocumentResult<T>> firstResponse;
     private readonly Func<int, CancellationToken, Task<HttpResponse<QueryDocumentResult<T>>>> pager;
 
     internal QueryDocumentResult(
@@ -170,7 +170,7 @@ public class QueryDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessed
         DateTimeOffset? skippedReadTime,
         int currentPage,
         int pageSize,
-        Func<HttpResponse<QueryDocumentResult<T>>> firstResponseFactory,
+        HttpResponse<QueryDocumentResult<T>> firstResponse,
         Func<int, CancellationToken, Task<HttpResponse<QueryDocumentResult<T>>>> pager)
     {
         Documents = documents;
@@ -178,7 +178,7 @@ public class QueryDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessed
         SkippedReadTime = skippedReadTime;
         CurrentPage = currentPage;
         this.pageSize = pageSize;
-        this.firstResponseFactory = firstResponseFactory;
+        this.firstResponse = firstResponse;
         this.pager = pager;
     }
 
@@ -202,7 +202,7 @@ public class QueryDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessed
     /// <inheritdoc/>
     public IAsyncEnumerator<HttpResponse<QueryDocumentResult<T>>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        return new AsyncEnumerator(pageSize, firstResponseFactory(), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        return new AsyncEnumerator(pageSize, firstResponse, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
     }
 
     internal class AsyncEnumerator : IAsyncEnumerator<HttpResponse<QueryDocumentResult<T>>>

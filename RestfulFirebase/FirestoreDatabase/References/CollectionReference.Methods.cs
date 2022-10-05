@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Http;
+using System;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 
@@ -49,6 +50,16 @@ public partial class CollectionReference : Reference
 
         return new DocumentReference(App, id, this);
     }
+
+    /// <inheritdoc cref="FirestoreDatabaseApi.CreateDocument(object, CollectionReference, string?, IAuthorization?, JsonSerializerOptions?, CancellationToken)"/>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse<Document>> CreateDocument(object model, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        => App.FirestoreDatabase.CreateDocument(model, this, documentId, authorization, jsonSerializerOptions, cancellationToken);
+
+    /// <inheritdoc cref="FirestoreDatabaseApi.CreateDocument{T}(T, CollectionReference, string?, IAuthorization?, JsonSerializerOptions?, CancellationToken)"/>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class => App.FirestoreDatabase.CreateDocument(model, this, documentId, authorization, jsonSerializerOptions, cancellationToken);
 
     public async Task<HttpResponse<Document<T>[]>> PatchDocument<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
         where T : class

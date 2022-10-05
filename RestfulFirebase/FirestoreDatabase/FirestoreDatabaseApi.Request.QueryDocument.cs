@@ -525,7 +525,7 @@ public partial class FirestoreDatabaseApi
             skippedReadTime,
             page,
             pageSize,
-            () => response,
+            response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage(
@@ -706,7 +706,7 @@ public partial class FirestoreDatabaseApi
             skippedReadTime,
             page,
             pageSize,
-            () => response,
+            response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage<T>(

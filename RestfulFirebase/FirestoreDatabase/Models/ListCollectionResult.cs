@@ -19,25 +19,25 @@ public class ListCollectionResult : IAsyncEnumerable<HttpResponse<ListCollection
     public CollectionReference[] CollectionReferences { get; }
 
     private readonly string? nextPageToken;
-    private readonly Func<HttpResponse<ListCollectionResult>> firstResponseFactory;
+    private readonly HttpResponse<ListCollectionResult> firstResponse;
     private readonly Func<string, CancellationToken, Task<HttpResponse<ListCollectionResult>>> pager;
 
     internal ListCollectionResult(
         CollectionReference[] collectionReferences,
         string? nextPageToken,
-        Func<HttpResponse<ListCollectionResult>> firstResponseFactory,
+        HttpResponse<ListCollectionResult> firstResponse,
         Func<string, CancellationToken, Task<HttpResponse<ListCollectionResult>>> pager)
     {
         CollectionReferences = collectionReferences;
         this.nextPageToken = nextPageToken;
-        this.firstResponseFactory = firstResponseFactory;
+        this.firstResponse = firstResponse;
         this.pager = pager;
     }
 
     /// <inheritdoc/>
     public IAsyncEnumerator<HttpResponse<ListCollectionResult>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        return new AsyncEnumerator(nextPageToken, firstResponseFactory(), CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
+        return new AsyncEnumerator(nextPageToken, firstResponse, CancellationTokenSource.CreateLinkedTokenSource(cancellationToken));
     }
 
     internal class AsyncEnumerator : IAsyncEnumerator<HttpResponse<ListCollectionResult>>

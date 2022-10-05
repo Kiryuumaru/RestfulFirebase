@@ -102,15 +102,24 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="model"/> or
     /// <paramref name="collectionReference"/> is a null reference.
     /// </exception>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="model"/> is a value type.
+    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public async Task<HttpResponse<Document>> CreateDocument(object model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
 
+        Type modelType = model.GetType();
+
+        if (!modelType.IsClass)
+        {
+            throw new ArgumentException($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
+        }
+
         JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
-        Type modelType = model.GetType();
 
         HttpResponse<Document> response = new();
 
@@ -173,56 +182,5 @@ public partial class FirestoreDatabaseApi
         }
 
         return response.Concat(Document<T>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
-    }
-
-    /// <summary>
-    /// Request to create a <see cref="Document{T}"/> of the specified request query.
-    /// </summary>
-    /// <param name="document">
-    /// The document to recreate.
-    /// </param>
-    /// <param name="collectionReference">
-    /// The requested <see cref="CollectionReference"/> of the collection node.
-    /// </param>
-    /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the newly created <see cref="Document{T}"/>.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="document"/> or
-    /// <paramref name="collectionReference"/> is a null reference.
-    /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<Document<T>>> CreateDocument<T>(Document<T> document, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
-        where T : class
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        ArgumentNullException.ThrowIfNull(collectionReference);
-
-        JsonSerializerOptions options = ConfigureJsonSerializerOption(jsonSerializerOptions);
-
-        Type modelType = typeof(T);
-
-        HttpResponse<Document<T>> response = new();
-
-        var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, document.Model, document, collectionReference, documentId, authorization, options, cancellationToken);
-        response.Concat(createDocumentResponse);
-        if (createDocumentResponse.IsError || jsonDocument == null)
-        {
-            return response;
-        }
-
-        return response.Concat(Document<T>.Parse(App, null, document.Model, document, jsonDocument.RootElement.EnumerateObject(), options));
     }
 }
