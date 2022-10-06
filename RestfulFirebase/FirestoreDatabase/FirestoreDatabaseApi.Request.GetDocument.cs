@@ -71,16 +71,6 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal Task<(JsonDocument?, HttpResponse)> ExecuteGetDocument(
-        DocumentReference documentReference,
-        Transaction? transaction,
-        IAuthorization? authorization,
-        CancellationToken cancellationToken)
-    {
-        return ExecuteGetDocument(new DocumentReference[] { documentReference }, transaction, authorization, cancellationToken);
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<HttpResponse<GetDocumentsResult>> GetDocument(IEnumerable<DocumentReference> documentReferences, IEnumerable<Document> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
