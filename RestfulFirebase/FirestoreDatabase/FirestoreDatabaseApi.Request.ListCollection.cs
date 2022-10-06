@@ -18,7 +18,7 @@ namespace RestfulFirebase.FirestoreDatabase;
 public partial class FirestoreDatabaseApi
 {
     /// <summary>
-    /// Request to list the <see cref="Document{T}"/> of the specified request query.
+    /// Request to list the <see cref="Document{T}"/>.
     /// </summary>
     /// <param name="pageSize">
     /// The requested page size of the pager <see cref="ListCollectionResult.GetAsyncEnumerator(CancellationToken)"/>.

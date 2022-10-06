@@ -12,6 +12,7 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 using System.Threading;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Abstractions;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase;
 
@@ -19,7 +20,7 @@ public partial class FirestoreDatabaseApi
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<(JsonDocument?, HttpResponse)> ExecuteGetDocument(
-        IEnumerable<Document> documents,
+        IEnumerable<DocumentReference> documentReferences,
         Transaction? transaction,
         IAuthorization? authorization,
         CancellationToken cancellationToken)
@@ -34,9 +35,9 @@ public partial class FirestoreDatabaseApi
         writer.WriteStartObject();
         writer.WritePropertyName("documents");
         writer.WriteStartArray();
-        foreach (var doc in documents)
+        foreach (var documentReference in documentReferences)
         {
-            writer.WriteStringValue(doc.Reference.BuildUrlCascade(App.Config.ProjectId));
+            writer.WriteStringValue(documentReference.BuildUrlCascade(App.Config.ProjectId));
         }
         writer.WriteEndArray();
         if (transaction != null)
@@ -69,40 +70,24 @@ public partial class FirestoreDatabaseApi
         return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
-    /// <summary>
-    /// Request to get the document of the specified request query.
-    /// </summary>
-    /// <param name="document">
-    /// The single or multiple documents to get.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="document"/> is a null reference.
-    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Document.Builder document, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal Task<(JsonDocument?, HttpResponse)> ExecuteGetDocument(
+        DocumentReference documentReference,
+        Transaction? transaction,
+        IAuthorization? authorization,
+        CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(document);
+        return ExecuteGetDocument(new DocumentReference[] { documentReference }, transaction, authorization, cancellationToken);
+    }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<GetDocumentsResult>> GetDocument(IEnumerable<DocumentReference> documentReferences, IEnumerable<Document> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    {
         JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
 
-        HttpResponse<GetDocumentResult> response = new();
+        HttpResponse<GetDocumentsResult> response = new();
 
-        var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(document.Documents, transaction, authorization, cancellationToken);
+        var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(documentReferences, transaction, authorization, cancellationToken);
         response.Concat(getDocumentResponse);
         if (getDocumentResponse.IsError || jsonDocument == null)
         {
@@ -127,7 +112,7 @@ public partial class FirestoreDatabaseApi
                     {
                         parsedDocumentReference = docRef;
 
-                        if (document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document foundDocument)
+                        if (documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document foundDocument)
                         {
                             parsedDocument = foundDocument;
                             parsedModel = foundDocument.GetModel();
@@ -153,11 +138,160 @@ public partial class FirestoreDatabaseApi
             }
         }
 
-        return response.Concat(new GetDocumentResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        return response.Concat(new GetDocumentsResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<GetDocumentsResult<T>>> GetDocument<T>(IEnumerable<DocumentReference> documentReferences, IEnumerable<Document<T>> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+
+        HttpResponse<GetDocumentsResult<T>> response = new();
+
+        var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(documentReferences, transaction, authorization, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError || jsonDocument == null)
+        {
+            return response;
+        }
+
+        List<DocumentTimestamp<T>> foundDocuments = new();
+        List<DocumentReferenceTimestamp> missingDocuments = new();
+
+        foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        {
+            if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
+                readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
+            {
+                DocumentReference? parsedDocumentReference = null;
+                Document<T>? parsedDocument = null;
+                T? parsedModel = null;
+                if (doc.TryGetProperty("found", out JsonElement foundProperty))
+                {
+                    if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                        DocumentReference.Parse(App, foundNameProperty, configuredJsonSerializerOptions) is DocumentReference docRef)
+                    {
+                        parsedDocumentReference = docRef;
+
+                        if (documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                        {
+                            parsedDocument = foundDocument;
+                            parsedModel = foundDocument.Model;
+                        }
+                    }
+
+                    if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundProperty.EnumerateObject(), configuredJsonSerializerOptions) is Document<T> found)
+                    {
+                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
+                    }
+                }
+                else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
+                    DocumentReference.Parse(App, missingProperty, configuredJsonSerializerOptions) is DocumentReference missing)
+                {
+                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                }
+            }
+            else if (transaction != null &&
+                jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
+                transactionElement.GetString() is string transactionToken)
+            {
+                transaction.Token = transactionToken;
+            }
+        }
+
+        return response.Concat(new GetDocumentsResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
     }
 
     /// <summary>
-    /// Request to get the document of the specified request query.
+    /// Request to get the document.
+    /// </summary>
+    /// <param name="document">
+    /// The single or multiple documents to get.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="document"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Document document, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+
+        HttpResponse<GetDocumentResult> response = new();
+
+        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document[] { document }, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        var found = getDocumentResponse.Result.Found.FirstOrDefault();
+        var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
+
+        response.Concat(new GetDocumentResult(found, missing));
+
+        return response;
+    }
+
+    /// <summary>
+    /// Request to get the documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The single or multiple documents to get.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<Document> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        HttpResponse<GetDocumentsResult> response = new();
+
+        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// Request to get the document.
     /// </summary>
     /// <typeparam name="T">
     /// The type of the document model.
@@ -184,66 +318,70 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Document<T>.Builder document, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Document<T> document, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
-
         HttpResponse<GetDocumentResult<T>> response = new();
 
-        var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(document.Documents, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document<T>[] { document }, transaction, authorization, jsonSerializerOptions, cancellationToken);
         response.Concat(getDocumentResponse);
-        if (getDocumentResponse.IsError || jsonDocument == null)
+        if (getDocumentResponse.IsError)
         {
             return response;
         }
 
-        List<DocumentTimestamp<T>> foundDocuments = new();
-        List<DocumentReferenceTimestamp> missingDocuments = new();
+        var found = getDocumentResponse.Result.Found.FirstOrDefault();
+        var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
 
-        foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        response.Concat(new GetDocumentResult<T>(found, missing));
+
+        return response;
+    }
+
+    /// <summary>
+    /// Request to get the documents.
+    /// </summary>
+    /// <typeparam name="T">
+    /// The type of the document model.
+    /// </typeparam>
+    /// <param name="documents">
+    /// The single or multiple documents to get.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public async Task<HttpResponse<GetDocumentsResult<T>>> GetDocument<T>(IEnumerable<Document<T>> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        HttpResponse<GetDocumentsResult<T>> response = new();
+
+        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError)
         {
-            if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
-                readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
-            {
-                DocumentReference? parsedDocumentReference = null;
-                Document<T>? parsedDocument = null;
-                T? parsedModel = null;
-                if (doc.TryGetProperty("found", out JsonElement foundProperty))
-                {
-                    if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                        DocumentReference.Parse(App, foundNameProperty, configuredJsonSerializerOptions) is DocumentReference docRef)
-                    {
-                        parsedDocumentReference = docRef;
-
-                        if (document.Documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
-                        {
-                            parsedDocument = foundDocument;
-                            parsedModel = foundDocument.Model;
-                        }
-                    }
-
-                    if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundProperty.EnumerateObject(), configuredJsonSerializerOptions) is Document<T> found)
-                    {
-                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
-                    }
-                }
-                else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
-                    DocumentReference.Parse(App, missingProperty, configuredJsonSerializerOptions) is DocumentReference missing)
-                {
-                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
-                }
-            }
-            else if (transaction != null &&
-                jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
-                transactionElement.GetString() is string transactionToken)
-            {
-                transaction.Token = transactionToken;
-            }
+            return response;
         }
 
-        return response.Concat(new GetDocumentResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        return response;
     }
 }

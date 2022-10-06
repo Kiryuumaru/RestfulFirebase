@@ -11,19 +11,19 @@ namespace RestfulFirebase.FirestoreDatabase.Models;
 /// <summary>
 /// The result of the <see cref="FirestoreDatabaseApi.GetDocument(Document.Builder, Transaction?, IAuthorization?, JsonSerializerOptions?, CancellationToken)"/> request.
 /// </summary>
-public class GetDocumentsResult
+public class GetDocumentResult
 {
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public IReadOnlyList<DocumentTimestamp> Found { get; }
+    public DocumentTimestamp? Found { get; }
 
     /// <summary>
     /// Gets the missing document.
     /// </summary>
-    public IReadOnlyList<DocumentReferenceTimestamp> Missing { get; }
+    public DocumentReferenceTimestamp? Missing { get; }
 
-    internal GetDocumentsResult(IReadOnlyList<DocumentTimestamp> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
+    internal GetDocumentResult(DocumentTimestamp? found, DocumentReferenceTimestamp? missing)
     {
         Found = found;
         Missing = missing;
@@ -36,20 +36,20 @@ public class GetDocumentsResult
 /// <typeparam name="T">
 /// The type of the model of the document.
 /// </typeparam>
-public class GetDocumentsResult<T>
+public class GetDocumentResult<T>
     where T : class
 {
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public IReadOnlyList<DocumentTimestamp<T>> Found { get; }
+    public DocumentTimestamp<T>? Found { get; }
 
     /// <summary>
     /// Gets the missing document.
     /// </summary>
-    public IReadOnlyList<DocumentReferenceTimestamp> Missing { get; }
+    public DocumentReferenceTimestamp? Missing { get; }
 
-    internal GetDocumentsResult(IReadOnlyList<DocumentTimestamp<T>> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
+    internal GetDocumentResult(DocumentTimestamp<T>? found, DocumentReferenceTimestamp? missing)
     {
         Found = found;
         Missing = missing;

@@ -74,39 +74,8 @@ public partial class FirestoreDatabaseApi
         return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
-    /// <summary>
-    /// Request to create a <see cref="Document"/> of the specified request query.
-    /// </summary>
-    /// <param name="model">
-    /// The model to create the document.
-    /// </param>
-    /// <param name="collectionReference">
-    /// The requested <see cref="CollectionReference"/> of the collection node.
-    /// </param>
-    /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the newly created <see cref="Document"/>.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="model"/> or
-    /// <paramref name="collectionReference"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="model"/> is a value type.
-    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<Document>> CreateDocument(object model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<Document>> CreateDocument(object model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
@@ -133,36 +102,8 @@ public partial class FirestoreDatabaseApi
         return response.Concat(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
     }
 
-    /// <summary>
-    /// Request to create a <see cref="Document{T}"/> of the specified request query.
-    /// </summary>
-    /// <param name="model">
-    /// The model to create the document.
-    /// </param>
-    /// <param name="collectionReference">
-    /// The requested <see cref="CollectionReference"/> of the collection node.
-    /// </param>
-    /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the newly created <see cref="Document{T}"/>.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="model"/> or
-    /// <paramref name="collectionReference"/> is a null reference.
-    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(model);
