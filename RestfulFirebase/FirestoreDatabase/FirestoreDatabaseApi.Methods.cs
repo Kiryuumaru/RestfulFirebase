@@ -48,7 +48,7 @@ public partial class FirestoreDatabaseApi
 
         CollectionGroupReference reference = new(App, null);
 
-        reference.AddCollection(collectionIds);
+        reference.AddCollection(true, collectionIds);
 
         return reference;
     }

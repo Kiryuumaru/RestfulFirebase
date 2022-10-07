@@ -49,7 +49,7 @@ public partial class AuthenticationApi
     {
         var lastTransaction = response.HttpTransactions.LastOrDefault();
 
-        string? requestUrlStr = lastTransaction?.HttpRequestMessage?.RequestUri?.ToString();
+        string? requestUrlStr = lastTransaction?.RequestMessage?.RequestUri?.ToString();
         string? requestContentStr = lastTransaction == null ? null : await lastTransaction.GetRequestContentAsString();
         string? responseContentStr = lastTransaction == null ? null : await lastTransaction.GetResponseContentAsString();
 
@@ -222,7 +222,7 @@ public partial class AuthenticationApi
             errorType = AuthErrorType.UndefinedException;
         }
 
-        return new FirebaseAuthenticationException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseContentStr, lastTransaction?.HttpStatusCode, response.Error);
+        return new FirebaseAuthenticationException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseContentStr, lastTransaction?.StatusCode, response.Error);
     }
 
     internal static string? GetProviderId(FirebaseAuthType authType)

@@ -9,6 +9,7 @@ using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
@@ -106,9 +107,6 @@ public partial class DocumentReference : Reference
     /// <param name="model">
     /// The model to create the document.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
     /// </param>
@@ -125,8 +123,8 @@ public partial class DocumentReference : Reference
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<Document>> CreateDocument(object model, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
-        => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, jsonSerializerOptions, cancellationToken);
+    public Task<HttpResponse<Document>> CreateDocument(object model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+        => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, cancellationToken);
 
     /// <summary>
     /// Request to create a <see cref="Models.Document"/>.
@@ -137,9 +135,6 @@ public partial class DocumentReference : Reference
     /// <param name="model">
     /// The model to create the document.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
     /// </param>
@@ -156,17 +151,14 @@ public partial class DocumentReference : Reference
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
-        where T : class => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, jsonSerializerOptions, cancellationToken);
+    public Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+        where T : class => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, cancellationToken);
 
     /// <summary>
     /// Request to get the document.
     /// </summary>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
@@ -178,11 +170,11 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         HttpResponse<GetDocumentResult> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document>(), transaction, authorization, jsonSerializerOptions, cancellationToken);
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document>(), transaction, authorization, cancellationToken);
         response.Concat(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -198,9 +190,6 @@ public partial class DocumentReference : Reference
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
     /// </param>
@@ -211,12 +200,12 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         HttpResponse<GetDocumentResult<T>> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document<T>>(), transaction, authorization, jsonSerializerOptions, cancellationToken);
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document<T>>(), transaction, authorization, cancellationToken);
         response.Concat(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -232,9 +221,6 @@ public partial class DocumentReference : Reference
     /// <param name="pageSize">
     /// The requested page size of the pager <see cref="ListCollectionResult.GetAsyncEnumerator(CancellationToken)"/>.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
     /// </param>
@@ -245,9 +231,9 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="ListCollectionResult"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
-        return App.FirestoreDatabase.ListCollection(pageSize, this, authorization, jsonSerializerOptions, cancellationToken);
+        return App.FirestoreDatabase.ListCollection(pageSize, this, authorization, cancellationToken);
     }
 
     /// <summary>
@@ -255,9 +241,6 @@ public partial class DocumentReference : Reference
     /// </summary>
     /// <param name="model">
     /// The model to patch the document fields. If it is a null reference, operation will delete the document.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
@@ -272,10 +255,10 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> PatchDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> PatchDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
-        return App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, cancellationToken);
     }
 
     /// <summary>
@@ -283,9 +266,6 @@ public partial class DocumentReference : Reference
     /// </summary>
     /// <param name="model">
     /// The model to patch the document fields. If it is a null reference, operation will delete the document.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
     /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
@@ -300,21 +280,21 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<T>>> PatchAndGetDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<T>>> PatchAndGetDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         Document<T> doc = new(this, model);
 
         HttpResponse<GetDocumentResult<T>> response = new();
 
-        var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, cancellationToken);
         response.Concat(patchDocumentResponse);
         if (patchDocumentResponse.IsError)
         {
             return response;
         }
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(doc, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(doc, transaction, authorization, cancellationToken);
         response.Concat(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -327,9 +307,6 @@ public partial class DocumentReference : Reference
     /// <summary>
     /// Request to perform a delete operation to a document.
     /// </summary>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -343,8 +320,48 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> DeleteDocument(Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> DeleteDocument(Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
-        return App.FirestoreDatabase.WriteDocument(null, new DocumentReference[] { this }, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return App.FirestoreDatabase.WriteDocument(null, new DocumentReference[] { this }, null, transaction, authorization, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates a structured <see cref="Queries.Query"/>.
+    /// </summary>
+    /// <param name="collectionId">
+    /// The collection ID to query.
+    /// </param>
+    /// <returns>
+    /// The created structured <see cref="Queries.Query"/>
+    /// </returns>
+    public Query Query(string collectionId)
+    {
+        Query query = new(App, null, this);
+
+        query.From(false, collectionId);
+
+        return query;
+    }
+
+    /// <summary>
+    /// Creates a structured <see cref="Queries.Query"/>.
+    /// </summary>
+    /// <typeparam name="TModel">
+    /// The type of the document model.
+    /// </typeparam>
+    /// <param name="collectionId">
+    /// The collection ID to query.
+    /// </param>
+    /// <returns>
+    /// The created structured <see cref="Queries.Query"/>
+    /// </returns>
+    public Query<TModel> Query<TModel>(string collectionId)
+        where TModel : class
+    {
+        Query<TModel> query = new(App, this);
+
+        query.From(false, collectionId);
+
+        return query;
     }
 }

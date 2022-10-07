@@ -40,7 +40,7 @@ public class MockTest
                 }),
                 ($"test02", new()
                 {
-                    Val1 = 2,
+                    Val1 = 1,
                     Val2 = 5.5,
                     Val3 = "c"
                 }),
@@ -87,6 +87,34 @@ public class MockTest
                     Val3 = "j"
                 })
             });
+        Assert.NotNull(writeDocuments.Result);
+        Assert.Equal(10, writeDocuments.Result.Found.Count);
+
+        var docs = writeDocuments.Result.Found.Select(i => i.Document).OrderBy(i => i.Reference.Id).ToArray();
+
+        var queryResponse1 = await testCollectionReference.Query<MixedModel>()
+            .Ascending(nameof(MixedModel.Val3))
+            .AscendingDocumentName()
+            .StartAt(docs[5].Model.Val3)
+            .StartAt(docs[5])
+            .RunQuery();
+        Assert.NotNull(queryResponse1.Result);
+
+        var docs1 = queryResponse1.Result.Documents;
+        var transaction1 = await queryResponse1.GetTransactionContentsAsString();
+
+        var queryResponse2 = await testCollectionReference.Query<MixedModel>()
+            .Descending(nameof(MixedModel.Val3))
+            .DescendingDocumentName()
+            .StartAt(docs[5].Model.Val3)
+            .StartAt(docs[5])
+            .EndAt(docs[1].Model.Val3)
+            .EndAt(docs[1])
+            .RunQuery();
+        Assert.NotNull(queryResponse2.Result);
+
+        var docs2 = queryResponse2.Result.Documents;
+        var transaction2 = await queryResponse2.GetTransactionContentsAsString();
 
         Assert.True(true);
     }

@@ -26,9 +26,6 @@ public partial class FirestoreDatabaseApi
     /// <param name="documentReference">
     /// The requested <see cref="DocumentReference"/> of the document node.
     /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
     /// </param>
@@ -39,11 +36,11 @@ public partial class FirestoreDatabaseApi
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="ListCollectionResult"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, DocumentReference? documentReference = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, DocumentReference? documentReference = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
-        JsonSerializerOptions options = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        return await ExecuteListCollectionNextPage(new(), null, pageSize, documentReference, authorization, options, cancellationToken);
+        return await ExecuteListCollectionNextPage(new(), null, pageSize, documentReference, authorization, jsonSerializerOptions, cancellationToken);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -53,7 +50,7 @@ public partial class FirestoreDatabaseApi
         int? pageSize,
         DocumentReference? documentReference,
         IAuthorization? authorization,
-        JsonSerializerOptions options,
+        JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
     {
         string url;
@@ -92,9 +89,9 @@ public partial class FirestoreDatabaseApi
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync();
+        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
@@ -105,7 +102,7 @@ public partial class FirestoreDatabaseApi
         {
             foreach (var doc in documentsProperty.EnumerateArray())
             {
-                CollectionReference? collectionReference = CollectionReference.Parse(App, doc, options);
+                CollectionReference? collectionReference = CollectionReference.Parse(App, doc, jsonSerializerOptions);
                 if (collectionReference != null)
                 {
                     collectionReferences.Add(collectionReference);
@@ -115,7 +112,7 @@ public partial class FirestoreDatabaseApi
 
         if (jsonDocument.RootElement.TryGetProperty("nextPageToken", out JsonElement nextPageTokenProperty))
         {
-            nextPageToken = nextPageTokenProperty.Deserialize<string>(options);
+            nextPageToken = nextPageTokenProperty.Deserialize<string>(jsonSerializerOptions);
         }
 
         return response.Append(new ListCollectionResult(
@@ -124,7 +121,7 @@ public partial class FirestoreDatabaseApi
             response,
             (nextPageTok, ct) =>
             {
-                return ExecuteListCollectionNextPage(response, nextPageTok, pageSize, documentReference, authorization, options, ct);
+                return ExecuteListCollectionNextPage(response, nextPageTok, pageSize, documentReference, authorization, jsonSerializerOptions, ct);
             }));
     }
 }

@@ -25,12 +25,28 @@ public partial class FirestoreDatabaseApi
     internal const string FirestoreDatabaseV1Endpoint = "https://firestore.googleapis.com/v1";
     internal const string FirestoreDatabaseDocumentsEndpoint = "projects/{0}/databases/(default)/documents{1}";
 
+    internal JsonSerializerOptions ConfigureJsonSerializerOption()
+    {
+        if (App.Config.JsonSerializerOptions == null)
+        {
+            return JsonSerializerHelpers.CamelCaseJsonSerializerOption;
+        }
+        else
+        {
+            return new JsonSerializerOptions(App.Config.JsonSerializerOptions)
+            {
+                IgnoreReadOnlyFields = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString,
+            };
+        }
+    }
+
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal static async Task<Exception> GetHttpException(IHttpResponse response)
     {
         var lastTransaction = response.HttpTransactions.LastOrDefault();
 
-        string? requestUrlStr = lastTransaction?.HttpRequestMessage?.RequestUri?.ToString();
+        string? requestUrlStr = lastTransaction?.RequestMessage?.RequestUri?.ToString();
         string? requestContentStr = lastTransaction == null ? null : await lastTransaction.GetRequestContentAsString();
         string? responseContentStr = lastTransaction == null ? null : await lastTransaction.GetResponseContentAsString();
 
@@ -64,7 +80,7 @@ public partial class FirestoreDatabaseApi
             return ex;
         }
 
-        FirestoreErrorType errorType = lastTransaction?.HttpStatusCode switch
+        FirestoreErrorType errorType = lastTransaction?.StatusCode switch
         {
             //400
             HttpStatusCode.BadRequest => FirestoreErrorType.BadRequestException,
@@ -86,23 +102,7 @@ public partial class FirestoreDatabaseApi
             _ => FirestoreErrorType.UndefinedException,
         };
 
-        return new FirestoreDatabaseException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseContentStr, lastTransaction?.HttpStatusCode, response.Error);
-    }
-
-    internal static JsonSerializerOptions ConfigureJsonSerializerOption(JsonSerializerOptions? jsonSerializerOptions)
-    {
-        if (jsonSerializerOptions == null)
-        {
-            return JsonSerializerHelpers.CamelCaseJsonSerializerOption;
-        }
-        else
-        {
-            return new JsonSerializerOptions(jsonSerializerOptions)
-            {
-                IgnoreReadOnlyFields = true,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            };
-        }
+        return new FirestoreDatabaseException(errorType, message ?? "Unknown error occured.", requestUrlStr, requestContentStr, responseContentStr, lastTransaction?.StatusCode, response.Error);
     }
 
     internal async Task<HttpResponse<HttpClient>> GetClient(IAuthorization? authorization, CancellationToken cancellationToken)

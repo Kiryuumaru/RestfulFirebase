@@ -28,6 +28,12 @@ public partial class FirebaseConfig
     private IHttpClientFactory? httpClientFactory;
 
     /// <summary>
+    /// Gets or sets the default <see cref="System.Text.Json.JsonSerializerOptions"/>.
+    /// </summary>
+    [ObservableProperty]
+    JsonSerializerOptions? jsonSerializerOptions;
+
+    /// <summary>
     /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
     /// </summary>
     /// <param name="apiKey">

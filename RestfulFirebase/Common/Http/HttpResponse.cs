@@ -72,6 +72,36 @@ public class HttpResponse : Response, IHttpResponse
         Error = error;
         return this;
     }
+
+    /// <summary>
+    /// Gets the string representation of the HTTP transactions.
+    /// </summary>
+    /// <returns>
+    /// The <see cref="Task"/> that represents the string transaction contents.
+    /// </returns>
+    public async Task<IEnumerable<StringHttpTransaction>> GetTransactionContentsAsString()
+    {
+        List<StringHttpTransaction> transactions = new();
+        List<Task> tasks = new();
+
+        for (int i = 0; i < HttpTransactions.Count; i++)
+        {
+            int index = i;
+            transactions.Add(null!);
+            tasks.Add(Task.Run(async () =>
+            {
+                string url = HttpTransactions[index].RequestUrl;
+                string? requestContent = await HttpTransactions[index].GetRequestContentAsString();
+                string? responseContent = await HttpTransactions[index].GetResponseContentAsString();
+                HttpStatusCode statusCode = HttpTransactions[index].StatusCode;
+                transactions[index] = new StringHttpTransaction(url, requestContent, responseContent, statusCode);
+            }));
+        }
+
+        await Task.WhenAll(tasks);
+
+        return transactions;
+    }
 }
 
 /// <summary>
@@ -161,5 +191,35 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
     {
         Error = error;
         return this;
+    }
+
+    /// <summary>
+    /// Gets the string representation of the HTTP transactions.
+    /// </summary>
+    /// <returns>
+    /// The <see cref="Task"/> that represents the string transaction contents.
+    /// </returns>
+    public async Task<IEnumerable<StringHttpTransaction>> GetTransactionContentsAsString()
+    {
+        List<StringHttpTransaction> transactions = new();
+        List<Task> tasks = new();
+
+        for (int i = 0; i < HttpTransactions.Count; i++)
+        {
+            int index = i;
+            transactions.Add(null!);
+            tasks.Add(Task.Run(async () =>
+            {
+                string url = HttpTransactions[index].RequestUrl;
+                string? requestContent = await HttpTransactions[index].GetRequestContentAsString();
+                string? responseContent = await HttpTransactions[index].GetResponseContentAsString();
+                HttpStatusCode statusCode = HttpTransactions[index].StatusCode;
+                transactions[index] = new StringHttpTransaction(url, requestContent, responseContent, statusCode);
+            }));
+        }
+
+        await Task.WhenAll(tasks);
+
+        return transactions;
     }
 }

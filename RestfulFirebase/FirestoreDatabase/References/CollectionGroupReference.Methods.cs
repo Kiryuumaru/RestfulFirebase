@@ -10,6 +10,7 @@ using System.Threading;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.FirestoreDatabase.Queries;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 
@@ -19,7 +20,8 @@ public partial class CollectionGroupReference : Reference
     public override bool Equals(object? obj)
     {
         return obj is CollectionGroupReference reference &&
-               EqualityComparer<IReadOnlyList<(bool, string)>>.Default.Equals(Ids, reference.Ids) &&
+               EqualityComparer<IReadOnlyList<string>>.Default.Equals(AllDescendants, reference.AllDescendants) &&
+               EqualityComparer<IReadOnlyList<string>>.Default.Equals(DirectDescendants, reference.DirectDescendants) &&
                EqualityComparer<DocumentReference?>.Default.Equals(Parent, reference.Parent);
     }
 
@@ -27,7 +29,8 @@ public partial class CollectionGroupReference : Reference
     public override int GetHashCode()
     {
         int hashCode = 1488852771;
-        hashCode = hashCode * -1521134295 + EqualityComparer<IReadOnlyList<(bool, string)>>.Default.GetHashCode(Ids);
+        hashCode = hashCode * -1521134295 + EqualityComparer<IReadOnlyList<string>>.Default.GetHashCode(AllDescendants);
+        hashCode = hashCode * -1521134295 + EqualityComparer<IReadOnlyList<string>>.Default.GetHashCode(DirectDescendants);
         hashCode = hashCode * -1521134295 + (Parent == null ? 0 : EqualityComparer<DocumentReference?>.Default.GetHashCode(Parent));
         return hashCode;
     }
@@ -48,7 +51,7 @@ public partial class CollectionGroupReference : Reference
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
 
-        ids.AddRange(collectionIds.Select(id => (true, id)));
+        this.allDescendants.AddRange(collectionIds);
 
         return this;
     }
@@ -72,8 +75,63 @@ public partial class CollectionGroupReference : Reference
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
 
-        ids.AddRange(collectionIds.Select(id => (allDescendants, id)));
+        if (allDescendants)
+        {
+            this.allDescendants.AddRange(collectionIds);
+        }
+        else
+        {
+            directDescendants.AddRange(collectionIds);
+        }
 
         return this;
+    }
+
+    /// <summary>
+    /// Creates a structured <see cref="Queries.Query"/>.
+    /// </summary>
+    /// <returns>
+    /// The created structured <see cref="Queries.Query"/>
+    /// </returns>
+    public Query Query()
+    {
+        Query query = new(App, null, Parent);
+
+        if (AllDescendants.Count != 0)
+        {
+            query.From(true, AllDescendants.ToArray());
+        }
+        if (DirectDescendants.Count != 0)
+        {
+            query.From(false, DirectDescendants.ToArray());
+        }
+
+        return query;
+    }
+
+    /// <summary>
+    /// Creates a structured <see cref="Queries.Query{TModel}"/>.
+    /// </summary>
+    /// <typeparam name="TModel">
+    /// The type of the document model.
+    /// </typeparam>
+    /// <returns>
+    /// The created structured <see cref="Queries.Query{TModel}"/>
+    /// </returns>
+    public Query<TModel> Query<TModel>()
+        where TModel : class
+    {
+        Query<TModel> query = new(App, Parent);
+
+        if (AllDescendants.Count != 0)
+        {
+            query.From(true, AllDescendants.ToArray());
+        }
+        if (DirectDescendants.Count != 0)
+        {
+            query.From(false, DirectDescendants.ToArray());
+        }
+
+        return query;
     }
 }

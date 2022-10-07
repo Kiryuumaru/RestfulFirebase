@@ -57,15 +57,15 @@ public partial class FirebaseUser
         }
 
 #if NET6_0_OR_GREATER
-        var responseData = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        var responseData = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        var responseData = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync();
+        var responseData = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
 
         JsonDocument resultJson = JsonDocument.Parse(responseData);
         if (!resultJson.RootElement.TryGetProperty("users", out JsonElement userJson))
         {
-            return new(lastHttpTransaction.HttpRequestMessage, lastHttpTransaction.HttpResponseMessage, lastHttpTransaction.HttpStatusCode,
+            return new(lastHttpTransaction.RequestMessage, lastHttpTransaction.ResponseMessage, lastHttpTransaction.StatusCode,
                 new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 
@@ -73,7 +73,7 @@ public partial class FirebaseUser
 
         if (auth == null)
         {
-            return new(lastHttpTransaction.HttpRequestMessage, lastHttpTransaction.HttpResponseMessage, lastHttpTransaction.HttpStatusCode,
+            return new(lastHttpTransaction.RequestMessage, lastHttpTransaction.ResponseMessage, lastHttpTransaction.StatusCode,
                 new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
         }
 

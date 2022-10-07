@@ -19,28 +19,29 @@ public class HttpTransaction
     /// <summary>
     /// Gets the request URL of the response.
     /// </summary>
-    public string? RequestUrl { get; }
+    public string RequestUrl { get; }
 
     /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpRequestMessage"/> of the request.
+    /// Gets the <see cref="HttpRequestMessage"/> of the request.
     /// </summary>
-    public HttpRequestMessage HttpRequestMessage { get; }
+    public HttpRequestMessage RequestMessage { get; }
 
     /// <summary>
-    /// Gets the <see cref="System.Net.Http.HttpResponseMessage"/> of the request.
+    /// Gets the <see cref="HttpResponseMessage"/> of the request.
     /// </summary>
-    public HttpResponseMessage HttpResponseMessage { get; }
+    public HttpResponseMessage ResponseMessage { get; }
 
     /// <summary>
-    /// Gets the <see cref="System.Net.HttpStatusCode"/> of the request.
+    /// Gets the <see cref="HttpStatusCode"/> of the request.
     /// </summary>
-    public HttpStatusCode HttpStatusCode { get; }
+    public HttpStatusCode StatusCode { get; }
 
     internal HttpTransaction(HttpRequestMessage request, HttpResponseMessage response, HttpStatusCode httpStatusCode)
     {
-        HttpRequestMessage = request;
-        HttpResponseMessage = response;
-        HttpStatusCode = httpStatusCode;
+        RequestUrl = request.RequestUri.ToString();
+        RequestMessage = request;
+        ResponseMessage = response;
+        StatusCode = httpStatusCode;
     }
 
     /// <summary>
@@ -51,12 +52,12 @@ public class HttpTransaction
     /// </returns>
     public async Task<string?> GetRequestContentAsString()
     {
-        if (HttpRequestMessage?.Content == null)
+        if (RequestMessage?.Content == null)
         {
             return null;
         }
 
-        return await HttpRequestMessage.Content.ReadAsStringAsync();
+        return await RequestMessage.Content.ReadAsStringAsync();
     }
 
     /// <summary>
@@ -67,11 +68,45 @@ public class HttpTransaction
     /// </returns>
     public async Task<string?> GetResponseContentAsString()
     {
-        if (HttpResponseMessage?.Content == null)
+        if (ResponseMessage?.Content == null)
         {
             return null;
         }
 
-        return await HttpResponseMessage.Content.ReadAsStringAsync();
+        return await ResponseMessage.Content.ReadAsStringAsync();
+    }
+}
+
+/// <summary>
+/// The base response for all HTTP requests.
+/// </summary>
+public class StringHttpTransaction
+{
+    /// <summary>
+    /// Gets the request URL of the response.
+    /// </summary>
+    public string RequestUrl { get; }
+
+    /// <summary>
+    /// Gets the <see cref="HttpRequestMessage"/> of the request.
+    /// </summary>
+    public string? RequestMessage { get; }
+
+    /// <summary>
+    /// Gets the <see cref="HttpResponseMessage"/> of the request.
+    /// </summary>
+    public string? ResponseMessage { get; }
+
+    /// <summary>
+    /// Gets the <see cref="HttpStatusCode"/> of the request.
+    /// </summary>
+    public HttpStatusCode StatusCode { get; }
+
+    internal StringHttpTransaction(string url, string? request, string? response, HttpStatusCode httpStatusCode)
+    {
+        RequestUrl = url;
+        RequestMessage = request;
+        ResponseMessage = response;
+        StatusCode = httpStatusCode;
     }
 }

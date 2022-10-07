@@ -15,20 +15,29 @@ public partial class CollectionGroupReference : Reference
     /// <summary>
     /// Gets the ID of the collection references.
     /// </summary>
-    public IReadOnlyList<(bool allDescendants, string id)> Ids { get; }
+    public IReadOnlyList<string> AllDescendants { get; }
+
+    /// <summary>
+    /// Gets the ID of the collection references.
+    /// </summary>
+    public IReadOnlyList<string> DirectDescendants { get; }
 
     /// <summary>
     /// Gets the parent of the collection reference. returns a <c>null</c> reference if the collection reference is a root collection reference.
     /// </summary>
     public DocumentReference? Parent { get; }
 
-    private readonly List<(bool allDescendants, string id)> ids;
+    private readonly List<string> allDescendants;
+    private readonly List<string> directDescendants;
 
     internal CollectionGroupReference(FirebaseApp app, DocumentReference? parent)
         : base(app)
     {
-        ids = new();
-        Ids = ids.AsReadOnly();
+        allDescendants = new();
+        directDescendants = new();
+        AllDescendants = allDescendants.AsReadOnly();
+        DirectDescendants = directDescendants.AsReadOnly();
+
         Parent = parent;
     }
 }

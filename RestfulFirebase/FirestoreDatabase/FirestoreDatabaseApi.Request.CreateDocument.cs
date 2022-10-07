@@ -66,16 +66,16 @@ public partial class FirestoreDatabaseApi
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.HttpResponseMessage.Content.ReadAsStreamAsync();
+        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
 
         return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<Document>> CreateDocument(object model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<Document>> CreateDocument(object model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
@@ -87,41 +87,41 @@ public partial class FirestoreDatabaseApi
             throw new ArgumentException($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
         }
 
-        JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
 
         HttpResponse<Document> response = new();
 
-        var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, configuredJsonSerializerOptions, cancellationToken);
+        var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
         response.Concat(createDocumentResponse);
         if (createDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
         }
 
-        return response.Append(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
+        return response.Append(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, CollectionReference collectionReference, string? documentId = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
 
-        JsonSerializerOptions configuredJsonSerializerOptions = ConfigureJsonSerializerOption(jsonSerializerOptions);
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
         Type modelType = typeof(T);
 
         HttpResponse<Document<T>> response = new();
 
-        var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, configuredJsonSerializerOptions, cancellationToken);
+        var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
         response.Concat(createDocumentResponse);
         if (createDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
         }
 
-        return response.Append(Document<T>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
+        return response.Append(Document<T>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
     }
 }
