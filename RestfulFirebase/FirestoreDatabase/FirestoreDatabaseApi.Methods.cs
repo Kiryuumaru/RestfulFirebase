@@ -34,7 +34,7 @@ public partial class FirestoreDatabaseApi
     /// Creates a root collection group reference <see cref="CollectionGroupReference"/>.
     /// </summary>
     /// <param name="collectionIds">
-    /// The multiple ID of the collection reference.
+    /// The ID of the collection references.
     /// </param>
     /// <returns>
     /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionIds"/>.
@@ -46,6 +46,36 @@ public partial class FirestoreDatabaseApi
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
 
-        return new CollectionGroupReference(App, collectionIds, null);
+        CollectionGroupReference reference = new(App, null);
+
+        reference.AddCollection(collectionIds);
+
+        return reference;
+    }
+
+    /// <summary>
+    /// Creates a collection group reference <see cref="CollectionGroupReference"/>.
+    /// </summary>
+    /// <param name="allDescendants">
+    /// When <c>false</c>, selects only collections that are immediate children of the parent specified in the containing RunQueryRequest. When <c>true</c>, selects all descendant collections.
+    /// </param>
+    /// <param name="collectionIds">
+    /// The ID of the collection references.
+    /// </param>
+    /// <returns>
+    /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionIds"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionIds"/> is a <c>null</c> reference.
+    /// </exception>
+    public CollectionGroupReference CollectionGroup(bool allDescendants, params string[] collectionIds)
+    {
+        ArgumentNullException.ThrowIfNull(collectionIds);
+
+        CollectionGroupReference reference = new(App, null);
+
+        reference.AddCollection(allDescendants, collectionIds);
+
+        return reference;
     }
 }

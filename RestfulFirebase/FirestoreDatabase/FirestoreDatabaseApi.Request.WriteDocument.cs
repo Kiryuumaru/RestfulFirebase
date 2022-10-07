@@ -23,7 +23,7 @@ namespace RestfulFirebase.FirestoreDatabase;
 public partial class FirestoreDatabaseApi
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse> ExecuteWriteDocument(IEnumerable<Document>? patchDocuments = default, IEnumerable<Document>? deleteDocuments = default, IEnumerable<DocumentTransform>? transformDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse> ExecuteWriteDocument(IEnumerable<Document>? patchDocuments = default, IEnumerable<DocumentReference>? deleteDocumentReferences = default, IEnumerable<DocumentTransform>? transformDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         string url =
             $"{FirestoreDatabaseV1Endpoint}/" +
@@ -62,13 +62,13 @@ public partial class FirestoreDatabaseApi
                 }
             }
         }
-        if (deleteDocuments != null)
+        if (deleteDocumentReferences != null)
         {
-            foreach (var document in deleteDocuments)
+            foreach (var deleteDocumentReference in deleteDocumentReferences)
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("delete");
-                writer.WriteStringValue(document.Reference.BuildUrlCascade(App.Config.ProjectId));
+                writer.WriteStringValue(deleteDocumentReference.BuildUrlCascade(App.Config.ProjectId));
                 writer.WriteEndObject();
             }
         }
@@ -83,7 +83,7 @@ public partial class FirestoreDatabaseApi
                 writer.WriteStringValue(documentTransform.DocumentReference.BuildUrlCascade(App.Config.ProjectId));
                 writer.WritePropertyName("fieldTransforms");
                 writer.WriteStartArray();
-                foreach (var fieldTransform in documentTransform.FieldTransform.FieldTransforms)
+                foreach (var fieldTransform in documentTransform.FieldTransforms)
                 {
                     var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(fieldTransform.ModelType, fieldTransform.PropertyNamePath, jsonSerializerOptions);
                     var lastDocumentFieldPath = documentFieldPath.LastOrDefault()!;
@@ -259,56 +259,24 @@ public partial class FirestoreDatabaseApi
         return await ExecutePost(authorization, stream, url, cancellationToken);
     }
 
-    /// <summary>
-    /// Request to perform a write operation to documents.
-    /// </summary>
-    /// <param name="patchDocument">
-    /// The requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
-    /// </param>
-    /// <param name="deleteDocument">
-    /// The requested <see cref="Document{T}"/> to delete the document.
-    /// </param>
-    /// <param name="transformDocument">
-    /// The requested <see cref="DocumentTransform"/> of the document node to transform.
-    /// </param>
-    /// <param name="jsonSerializerOptions">
-    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="patchDocument"/>,
-    /// <paramref name="deleteDocument"/> and
-    /// <paramref name="transformDocument"/> are all null reference.
-    /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse> WriteDocument(Document.Builder? patchDocument = default, Document.Builder? deleteDocument = default, DocumentTransform.Builder? transformDocument = default, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse> WriteDocument(IEnumerable<Document>? patchDocuments = default, IEnumerable<DocumentReference>? deleteDocumentReferences = default, IEnumerable<DocumentTransform>? transformDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
-        if (patchDocument == null &&
-            deleteDocument == null &&
-            transformDocument == null)
+        if (patchDocuments == null &&
+            deleteDocumentReferences == null &&
+            transformDocuments == null)
         {
             throw new ArgumentException($"All " +
-                $"\"{nameof(patchDocument)}\", " +
-                $"\"{nameof(deleteDocument)}\" and " +
-                $"\"{nameof(transformDocument)}\" are null references. Provide at least one argument.");
+                $"\"{nameof(patchDocuments)}\", " +
+                $"\"{nameof(deleteDocumentReferences)}\" and " +
+                $"\"{nameof(transformDocuments)}\" are null references. Provide at least one argument.");
         }
 
-        return await ExecuteWriteDocument(patchDocument?.Documents, deleteDocument?.Documents, transformDocument?.DocumentTransforms, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return await ExecuteWriteDocument(patchDocuments, deleteDocumentReferences, transformDocuments, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 
     /// <summary>
-    /// Request to perform a patch operation to documents.
+    /// Request to perform a patch operation to document.
     /// </summary>
     /// <param name="patchDocument">
     /// The requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
@@ -332,11 +300,43 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="patchDocument"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> PatchDocument(Document.Builder patchDocument, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> PatchDocument(Document patchDocument, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(patchDocument);
 
-        return WriteDocument(patchDocument, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return WriteDocument(new Document[] { patchDocument }, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+    }
+
+    /// <summary>
+    /// Request to perform a patch operation to document.
+    /// </summary>
+    /// <param name="patchDocuments">
+    /// The requested <see cref="Document{T}"/> to patch the document fields. If <see cref="Document{T}.Model"/> is a null reference, operation will delete the document.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="patchDocuments"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse> PatchDocuments(IEnumerable<Document> patchDocuments, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(patchDocuments);
+
+        return WriteDocument(patchDocuments, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 
     /// <summary>
@@ -364,18 +364,18 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="deleteDocument"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> DeleteDocument(Document.Builder deleteDocument, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> DeleteDocument(Document deleteDocument, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(deleteDocument);
 
-        return WriteDocument(null, deleteDocument, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return WriteDocument(null, new DocumentReference[] { deleteDocument.Reference }, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 
     /// <summary>
-    /// Request to perform a transform operation to documents.
+    /// Request to perform a delete operation to documents.
     /// </summary>
-    /// <param name="transformDocument">
-    /// The requested <see cref="DocumentTransform"/> of the document node to transform.
+    /// <param name="deleteDocuments">
+    /// The requested <see cref="Document{T}"/> to delete the document.
     /// </param>
     /// <param name="jsonSerializerOptions">
     /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
@@ -393,13 +393,13 @@ public partial class FirestoreDatabaseApi
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// <paramref name="transformDocument"/> is a null reference.
+    /// <paramref name="deleteDocuments"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> TransformDocument(DocumentTransform.Builder transformDocument, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> DeleteDocuments(IEnumerable<Document> deleteDocuments, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(transformDocument);
+        ArgumentNullException.ThrowIfNull(deleteDocuments);
 
-        return WriteDocument(null, null, transformDocument, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        return WriteDocument(null, deleteDocuments.Select(i => i.Reference), null, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 }

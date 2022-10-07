@@ -13,24 +13,7 @@ public class AppendMissingElementsTransform : FieldTransform
     /// </summary>
     public IEnumerable<object> AppendMissingElementsValue { get; }
 
-    /// <summary>
-    /// Creates new instance of <see cref="AppendMissingElementsTransform"/>.
-    /// </summary>
-    /// <param name="appendMissingElementsValue">
-    /// The value to "appendMissingElements" to the model <paramref name="modelType"/>.
-    /// </param>
-    /// <param name="modelType">
-    /// The type of the model to "appendMissingElements".
-    /// </param>
-    /// <param name="propertyNamePath">
-    /// The property path of the model to "appendMissingElements".
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="appendMissingElementsValue"/>,
-    /// <paramref name="modelType"/> or
-    /// <paramref name="propertyNamePath"/> is a null reference.
-    /// </exception>
-    public AppendMissingElementsTransform(IEnumerable<object> appendMissingElementsValue, Type modelType, string[] propertyNamePath)
+    internal AppendMissingElementsTransform(IEnumerable<object> appendMissingElementsValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
         ArgumentNullException.ThrowIfNull(appendMissingElementsValue);

@@ -13,24 +13,7 @@ public class RemoveAllFromArrayTransform : FieldTransform
     /// </summary>
     public IEnumerable<object> RemoveAllFromArrayValue { get; }
 
-    /// <summary>
-    /// Creates new instance of <see cref="RemoveAllFromArrayTransform"/>.
-    /// </summary>
-    /// <param name="removeAllFromArrayValue">
-    /// The value to "removeAllFromArray" to the model <paramref name="modelType"/>.
-    /// </param>
-    /// <param name="modelType">
-    /// The type of the model to "removeAllFromArray".
-    /// </param>
-    /// <param name="propertyNamePath">
-    /// The property path of the model to "removeAllFromArray".
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="removeAllFromArrayValue"/>,
-    /// <paramref name="modelType"/> or
-    /// <paramref name="propertyNamePath"/> is a null reference.
-    /// </exception>
-    public RemoveAllFromArrayTransform(IEnumerable<object> removeAllFromArrayValue, Type modelType, string[] propertyNamePath)
+    internal RemoveAllFromArrayTransform(IEnumerable<object> removeAllFromArrayValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
         ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);

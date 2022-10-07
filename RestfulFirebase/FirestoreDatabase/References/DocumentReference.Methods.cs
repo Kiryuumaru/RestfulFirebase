@@ -52,7 +52,56 @@ public partial class DocumentReference : Reference
     }
 
     /// <summary>
-    /// Request to create a <see cref="Models.Document"/>.
+    /// Creates a collection group reference <see cref="CollectionGroupReference"/>.
+    /// </summary>
+    /// <param name="collectionIds">
+    /// The ID of the collection references.
+    /// </param>
+    /// <returns>
+    /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionIds"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionIds"/> is a <c>null</c> reference.
+    /// </exception>
+    public CollectionGroupReference CollectionGroup(params string[] collectionIds)
+    {
+        ArgumentNullException.ThrowIfNull(collectionIds);
+
+        CollectionGroupReference reference = new(App, this);
+
+        reference.AddCollection(collectionIds);
+
+        return reference;
+    }
+
+    /// <summary>
+    /// Creates a collection group reference <see cref="CollectionGroupReference"/>.
+    /// </summary>
+    /// <param name="allDescendants">
+    /// When <c>false</c>, selects only collections that are immediate children of the parent specified in the containing RunQueryRequest. When <c>true</c>, selects all descendant collections.
+    /// </param>
+    /// <param name="collectionIds">
+    /// The ID of the collection references.
+    /// </param>
+    /// <returns>
+    /// The <see cref="CollectionReference"/> of the specified <paramref name="collectionIds"/>.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="collectionIds"/> is a <c>null</c> reference.
+    /// </exception>
+    public CollectionGroupReference CollectionGroup(bool allDescendants, params string[] collectionIds)
+    {
+        ArgumentNullException.ThrowIfNull(collectionIds);
+
+        CollectionGroupReference reference = new(App, this);
+
+        reference.AddCollection(allDescendants, collectionIds);
+
+        return reference;
+    }
+
+    /// <summary>
+    /// Request to create a <see cref="Document"/>.
     /// </summary>
     /// <param name="model">
     /// The model to create the document.
@@ -199,5 +248,57 @@ public partial class DocumentReference : Reference
     public Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
         return App.FirestoreDatabase.ListCollection(pageSize, this, authorization, jsonSerializerOptions, cancellationToken);
+    }
+
+    /// <summary>
+    /// Request to perform a patch operation to document.
+    /// </summary>
+    /// <param name="model">
+    /// The model to patch the document fields. If it is a null reference, operation will delete the document.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse> PatchDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        return App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+    }
+
+    /// <summary>
+    /// Request to perform a delete operation to a document.
+    /// </summary>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse> DeleteDocument(Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+    {
+        return App.FirestoreDatabase.WriteDocument(null, new DocumentReference[] { this }, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 }

@@ -202,54 +202,35 @@ public partial class CollectionReference : Reference
         return response;
     }
 
-    public async Task<HttpResponse<Document<T>[]>> PatchDocument<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
-        where T : class
+    /// <summary>
+    /// Request to perform a delete operation to documents.
+    /// </summary>
+    /// <param name="documentNames">
+    /// The requested document names to delete.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="documentNames"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse> DeleteDocuments(IEnumerable<string> documentNames, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
     {
-        List<Document> docs = new();
+        ArgumentNullException.ThrowIfNull(documentNames);
 
-        foreach (var (documentName, model) in documents)
-        {
-            docs.Add(new Document<T>(Document(documentName), model));
-        }
-
-        HttpResponse<Document<T>[]> response = new();
-
-        var patchResponse = await App.FirestoreDatabase.PatchDocument(docs, transaction, authorization, jsonSerializerOptions, cancellationToken);
-        response.Concat(patchResponse);
-        if (patchResponse.IsError)
-        {
-            return response;
-        }
-
-        return response.Concat(docs.Cast<Document<T>>().ToArray());
-    }
-
-    public async Task<HttpResponse<DocumentTimestamp<T>[]>> PatchAndGetDocument<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
-        where T : class
-    {
-        List<Document<T>> docs = new();
-
-        foreach (var (documentName, model) in documents)
-        {
-            docs.Add(new Document<T>(Document(documentName), model));
-        }
-
-        HttpResponse<DocumentTimestamp<T>[]> response = new();
-
-        var patchResponse = await App.FirestoreDatabase.PatchDocument(docs.Select(i => (Document)i).ToList(), transaction, authorization, jsonSerializerOptions, cancellationToken);
-        response.Concat(response);
-        if (patchResponse.IsError)
-        {
-            return response;
-        }
-
-        var getResponse = await App.FirestoreDatabase.GetDocument<T>(docs, transaction, authorization, jsonSerializerOptions, cancellationToken);
-        response.Concat(getResponse);
-        if (getResponse.IsError)
-        {
-            return response;
-        }
-
-        return response.Concat(getResponse.Result.Found.ToArray());
+        return App.FirestoreDatabase.WriteDocument(null, documentNames.Select(i => Document(i)), null, transaction, authorization, jsonSerializerOptions, cancellationToken);
     }
 }

@@ -13,23 +13,7 @@ public class SetToServerValueTransform : FieldTransform
     /// </summary>
     public ServerValue ServerValue { get; }
 
-    /// <summary>
-    /// Creates new instance of <see cref="SetToServerValueTransform"/>.
-    /// </summary>
-    /// <param name="serverValue">
-    /// The value to "setToServerValue" to the model <paramref name="modelType"/>.
-    /// </param>
-    /// <param name="modelType">
-    /// The type of the model to "setToServerValue".
-    /// </param>
-    /// <param name="propertyNamePath">
-    /// The property path of the model to "setToServerValue".
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="modelType"/> or
-    /// <paramref name="propertyNamePath"/> is a null reference.
-    /// </exception>
-    public SetToServerValueTransform(ServerValue serverValue, Type modelType, string[] propertyNamePath)
+    internal SetToServerValueTransform(ServerValue serverValue, Type modelType, string[] propertyNamePath)
         : base(modelType, propertyNamePath)
     {
         ServerValue = serverValue;
