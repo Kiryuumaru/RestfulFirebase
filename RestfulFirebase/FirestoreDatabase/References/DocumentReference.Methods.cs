@@ -279,6 +279,52 @@ public partial class DocumentReference : Reference
     }
 
     /// <summary>
+    /// Request to perform a patch operation to document.
+    /// </summary>
+    /// <param name="model">
+    /// The model to patch the document fields. If it is a null reference, operation will delete the document.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public async Task<HttpResponse<GetDocumentResult<T>>> PatchAndGetDocument<T>(T? model, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        Document<T> doc = new(this, model);
+
+        HttpResponse<GetDocumentResult<T>> response = new();
+
+        var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(patchDocumentResponse);
+        if (patchDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(doc, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        return response;
+    }
+
+    /// <summary>
     /// Request to perform a delete operation to a document.
     /// </summary>
     /// <param name="jsonSerializerOptions">

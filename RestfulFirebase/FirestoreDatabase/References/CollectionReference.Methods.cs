@@ -203,6 +203,90 @@ public partial class CollectionReference : Reference
     }
 
     /// <summary>
+    /// Request to perform a patch operation to documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The requested document to patch.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public Task<HttpResponse> PatchDocuments<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        return App.FirestoreDatabase.WriteDocument(documents.Select(i => new Document<T>(Document(i.documentName), i.model)), null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+    }
+
+    /// <summary>
+    /// Request to perform a patch operation to documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The requested document to patch.
+    /// </param>
+    /// <param name="jsonSerializerOptions">
+    /// The <see cref="JsonSerializerOptions"/> used to serialize and deserialize documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public async Task<HttpResponse<GetDocumentsResult<T>>> PatchAndGetDocuments<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, JsonSerializerOptions? jsonSerializerOptions = default, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        IEnumerable<Document<T>> docs = documents.Select(i => new Document<T>(Document(i.documentName), i.model));
+
+        HttpResponse<GetDocumentsResult<T>> response = new();
+
+        var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(docs, null, null, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(patchDocumentResponse);
+        if (patchDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocuments(docs, transaction, authorization, jsonSerializerOptions, cancellationToken);
+        response.Concat(getDocumentResponse);
+        if (getDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        return response;
+    }
+
+    /// <summary>
     /// Request to perform a delete operation to documents.
     /// </summary>
     /// <param name="documentNames">

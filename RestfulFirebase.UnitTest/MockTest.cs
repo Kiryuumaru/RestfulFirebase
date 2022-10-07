@@ -23,7 +23,7 @@ public class MockTest
             .Document(nameof(FirestoreDatabaseTest))
             .Collection("QueryDocument");
 
-        var writeDocuments = await testCollectionReference.PatchAndGetDocument(
+        var writeDocuments = await testCollectionReference.PatchDocuments(
             new (string, MixedModel?)[]
             {
                 ($"test00", new()
