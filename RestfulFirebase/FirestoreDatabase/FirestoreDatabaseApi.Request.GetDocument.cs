@@ -128,7 +128,7 @@ public partial class FirestoreDatabaseApi
             }
         }
 
-        return response.Concat(new GetDocumentsResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        return response.Append(new GetDocumentsResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -190,7 +190,7 @@ public partial class FirestoreDatabaseApi
             }
         }
 
-        return response.Concat(new GetDocumentsResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        return response.Append(new GetDocumentsResult<T>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
     }
 
     /// <summary>
@@ -234,7 +234,7 @@ public partial class FirestoreDatabaseApi
         var found = getDocumentResponse.Result.Found.FirstOrDefault();
         var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
 
-        response.Concat(new GetDocumentResult(found, missing));
+        response.Append(new GetDocumentResult(found, missing));
 
         return response;
     }
@@ -325,7 +325,7 @@ public partial class FirestoreDatabaseApi
         var found = getDocumentResponse.Result.Found.FirstOrDefault();
         var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
 
-        response.Concat(new GetDocumentResult<T>(found, missing));
+        response.Append(new GetDocumentResult<T>(found, missing));
 
         return response;
     }

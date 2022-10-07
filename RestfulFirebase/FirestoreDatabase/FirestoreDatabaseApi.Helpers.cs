@@ -110,7 +110,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<HttpClient> response = new();
 
         var client = App.GetClient();
-        response.Concat(client);
+        response.Append(client);
 
         if (authorization == null)
         {
@@ -147,7 +147,7 @@ public partial class FirestoreDatabaseApi
         response.Concat(getResponse);
         if (getResponse.IsError)
         {
-            return response.Concat(await GetHttpException(response));
+            return response.Append(await GetHttpException(response));
         }
 
         return response;
@@ -158,17 +158,17 @@ public partial class FirestoreDatabaseApi
         HttpResponse response = new();
 
         var clientResponse = await GetClient(authorization, cancellationToken);
-        response.Concat(clientResponse);
+        response.Append(clientResponse);
         if (clientResponse.IsError)
         {
             return response;
         }
 
         var postResponse = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, url, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError)
         {
-            return response.Concat(await GetHttpException(response));
+            return response.Append(await GetHttpException(response));
         }
 
         return response;
@@ -192,7 +192,7 @@ public partial class FirestoreDatabaseApi
         response.Concat(postResponse);
         if (postResponse.IsError)
         {
-            return response.Concat(await GetHttpException(response));
+            return response.Append(await GetHttpException(response));
         }
 
         return response;

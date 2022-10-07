@@ -61,7 +61,7 @@ public partial class AuthenticationApi
             return response;
         }
 
-        return response.Concat(getResponse.Result.RecaptchaSiteKey);
+        return response.Append(getResponse.Result.RecaptchaSiteKey);
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public partial class AuthenticationApi
             return response;
         }
 
-        return response.Concat(postResponse.Result.SessionInfo);
+        return response.Append(postResponse.Result.SessionInfo);
     }
 
     /// <summary>

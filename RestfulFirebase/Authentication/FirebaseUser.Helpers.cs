@@ -33,7 +33,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -50,7 +50,7 @@ public partial class FirebaseUser
         await writer.FlushAsync(cancellationToken);
         
         var postResponse = await App.Authentication.ExecutePost(stream, GoogleGetUser, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError || postResponse.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return response;
@@ -92,14 +92,14 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var postResponse = await App.Authentication.ExecutePost(stream, googleUrl, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError)
         {
             return response;
         }
 
         var responseRefresh = await RefreshUserInfo(cancellationToken);
-        response.Concat(responseRefresh);
+        response.Append(responseRefresh);
         if (responseRefresh.IsError)
         {
             return response;

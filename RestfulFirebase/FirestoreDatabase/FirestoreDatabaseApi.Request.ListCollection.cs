@@ -118,7 +118,7 @@ public partial class FirestoreDatabaseApi
             nextPageToken = nextPageTokenProperty.Deserialize<string>(options);
         }
 
-        return response.Concat(new ListCollectionResult(
+        return response.Append(new ListCollectionResult(
             collectionReferences.ToArray(),
             nextPageToken,
             response,

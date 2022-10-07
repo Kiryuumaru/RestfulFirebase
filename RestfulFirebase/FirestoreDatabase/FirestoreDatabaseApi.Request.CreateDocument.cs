@@ -99,7 +99,7 @@ public partial class FirestoreDatabaseApi
             return response;
         }
 
-        return response.Concat(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
+        return response.Append(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -122,6 +122,6 @@ public partial class FirestoreDatabaseApi
             return response;
         }
 
-        return response.Concat(Document<T>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
+        return response.Append(Document<T>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), configuredJsonSerializerOptions));
     }
 }

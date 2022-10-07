@@ -54,7 +54,7 @@ public class HttpResponse : Response, IHttpResponse
         HttpTransactions = httpTransactions.AsReadOnly();
     }
 
-    internal HttpResponse Concat(params IHttpResponse[] responses)
+    internal HttpResponse Append(params IHttpResponse[] responses)
     {
         if (responses.LastOrDefault() is IHttpResponse lastResponse)
         {
@@ -67,7 +67,7 @@ public class HttpResponse : Response, IHttpResponse
         return this;
     }
 
-    internal HttpResponse Concat(Exception? error)
+    internal HttpResponse Append(Exception? error)
     {
         Error = error;
         return this;
@@ -151,13 +151,13 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
         return this;
     }
 
-    internal HttpResponse<TResult> Concat(TResult? result)
+    internal HttpResponse<TResult> Append(TResult? result)
     {
         Result = result;
         return this;
     }
 
-    internal HttpResponse<TResult> Concat(Exception? error)
+    internal HttpResponse<TResult> Append(Exception? error)
     {
         Error = error;
         return this;

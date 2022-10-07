@@ -519,7 +519,7 @@ public partial class FirestoreDatabaseApi
             }
         }
 
-        return response.Concat(new QueryDocumentResult(
+        return response.Append(new QueryDocumentResult(
             foundDocuments,
             skippedResults,
             skippedReadTime,
@@ -700,7 +700,7 @@ public partial class FirestoreDatabaseApi
             }
         }
 
-        return response.Concat(new QueryDocumentResult<T>(
+        return response.Append(new QueryDocumentResult<T>(
             foundDocuments,
             skippedResults,
             skippedReadTime,

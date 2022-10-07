@@ -294,7 +294,7 @@ public partial class AuthenticationApi
         }
 
         FirebaseUser user = new(App, postResponse.Result);
-        response.Concat(user);
+        response.Append(user);
 
         var refreshResponse = await user.RefreshUserInfo(cancellationToken);
         response.Concat(refreshResponse);

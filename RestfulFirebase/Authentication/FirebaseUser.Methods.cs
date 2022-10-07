@@ -137,7 +137,7 @@ public partial class FirebaseUser
 
         if (!IsExpired())
         {
-            return response.Concat(idToken);
+            return response.Append(idToken);
         }
 
         using MemoryStream stream = new();
@@ -168,7 +168,7 @@ public partial class FirebaseUser
             return response;
         }
 
-        return response.Concat(idToken);
+        return response.Append(idToken);
     }
 
     /// <summary>
@@ -185,7 +185,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -203,7 +203,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken));
+        return response.Append(await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken));
     }
 
     /// <summary>
@@ -228,7 +228,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -248,7 +248,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
     }
 
     /// <summary>
@@ -273,7 +273,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -293,7 +293,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
     }
 
     /// <summary>
@@ -316,7 +316,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -367,7 +367,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 
     /// <summary>
@@ -384,7 +384,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -400,7 +400,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken));
+        return response.Append(await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken));
     }
 
     /// <summary>
@@ -430,7 +430,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -452,7 +452,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 
     /// <summary>
@@ -480,7 +480,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -504,7 +504,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken));
     }
 
     /// <summary>
@@ -524,7 +524,7 @@ public partial class FirebaseUser
         HttpResponse response = new();
 
         var tokenResponse = await GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -552,6 +552,6 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Concat(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
     }
 }
