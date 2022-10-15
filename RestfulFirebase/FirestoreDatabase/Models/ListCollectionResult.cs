@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.References;
+using RestfulFirebase.Common.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,21 +10,21 @@ using System.Threading.Tasks;
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
-/// The result of the <see cref="ListCollectionsRequest"/> request.
+/// The result of the <see cref="FirestoreDatabaseApi.ListCollection(int?, DocumentReference?, IAuthorization?, CancellationToken)"/> request.
 /// </summary>
 public class ListCollectionResult : IAsyncEnumerable<HttpResponse<ListCollectionResult>>
 {
     /// <summary>
     /// Gets the first result of the list.
     /// </summary>
-    public CollectionReference[] CollectionReferences { get; }
+    public IReadOnlyList<CollectionReference> CollectionReferences { get; }
 
     private readonly string? nextPageToken;
     private readonly HttpResponse<ListCollectionResult> firstResponse;
     private readonly Func<string, CancellationToken, Task<HttpResponse<ListCollectionResult>>> pager;
 
     internal ListCollectionResult(
-        CollectionReference[] collectionReferences,
+        IReadOnlyList<CollectionReference> collectionReferences,
         string? nextPageToken,
         HttpResponse<ListCollectionResult> firstResponse,
         Func<string, CancellationToken, Task<HttpResponse<ListCollectionResult>>> pager)
@@ -70,7 +71,7 @@ public class ListCollectionResult : IAsyncEnumerable<HttpResponse<ListCollection
             if (Current == null)
             {
                 Current = firstResponse;
-                return lastSuccessResult.CollectionReferences.Length != 0;
+                return lastSuccessResult.CollectionReferences.Count != 0;
             }
             else
             {

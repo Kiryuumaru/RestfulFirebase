@@ -235,49 +235,50 @@ internal static class DocumentFieldHelpers
 
     internal static object GetLimitValue(Type type, bool isMaxValue)
     {
-        if (type.IsAssignableFrom(typeof(bool)))
+        if (type != typeof(object))
         {
-            return isMaxValue;
+            if (type.IsAssignableFrom(typeof(bool)))
+            {
+                return isMaxValue;
+            }
+            else if (
+                type.IsAssignableFrom(typeof(sbyte)) ||
+                type.IsAssignableFrom(typeof(byte)) ||
+                type.IsAssignableFrom(typeof(short)) ||
+                type.IsAssignableFrom(typeof(ushort)) ||
+                type.IsAssignableFrom(typeof(int)) ||
+                type.IsAssignableFrom(typeof(uint)) ||
+                type.IsAssignableFrom(typeof(long)) ||
+                type.IsAssignableFrom(typeof(ulong)) ||
+                type.IsAssignableFrom(typeof(nint)) ||
+                type.IsAssignableFrom(typeof(nuint)))
+            {
+                return isMaxValue ? long.MaxValue : long.MinValue;
+            }
+            else if (
+                type.IsAssignableFrom(typeof(float)) ||
+                type.IsAssignableFrom(typeof(double)))
+            {
+                return isMaxValue ? double.MaxValue : double.MinValue;
+            }
+            else if (type.IsAssignableFrom(typeof(decimal)))
+            {
+                return isMaxValue ? decimal.MaxValue : decimal.MinValue;
+            }
+            else if (
+                type.IsAssignableFrom(typeof(DateTime)) ||
+                type.IsAssignableFrom(typeof(DateTimeOffset)))
+            {
+                return isMaxValue ? DateTimeOffset.MaxValue : DateTimeOffset.MinValue;
+            }
+            else if (
+                type.IsAssignableFrom(typeof(string)) ||
+                type.IsAssignableFrom(typeof(char)))
+            {
+                return isMaxValue ? char.MaxValue : char.MinValue;
+            }
         }
-        else if (
-            type.IsAssignableFrom(typeof(sbyte)) ||
-            type.IsAssignableFrom(typeof(byte)) ||
-            type.IsAssignableFrom(typeof(short)) ||
-            type.IsAssignableFrom(typeof(ushort)) ||
-            type.IsAssignableFrom(typeof(int)) ||
-            type.IsAssignableFrom(typeof(uint)) ||
-            type.IsAssignableFrom(typeof(long)) ||
-            type.IsAssignableFrom(typeof(ulong)) ||
-            type.IsAssignableFrom(typeof(nint)) ||
-            type.IsAssignableFrom(typeof(nuint)))
-        {
-            return isMaxValue ? long.MaxValue : long.MinValue;
-        }
-        else if (
-            type.IsAssignableFrom(typeof(float)) ||
-            type.IsAssignableFrom(typeof(double)))
-        {
-            return isMaxValue ? double.MaxValue : double.MinValue;
-        }
-        else if (type.IsAssignableFrom(typeof(decimal)))
-        {
-            return isMaxValue ? decimal.MaxValue : decimal.MinValue;
-        }
-        else if (
-            type.IsAssignableFrom(typeof(DateTime)) ||
-            type.IsAssignableFrom(typeof(DateTimeOffset)))
-        {
-            return isMaxValue ? DateTimeOffset.MaxValue : DateTimeOffset.MinValue;
-        }
-        else if (
-            type.IsAssignableFrom(typeof(string)) ||
-            type.IsAssignableFrom(typeof(char)))
-        {
-            return isMaxValue ? char.MaxValue : char.MinValue;
-        }
-        else
-        {
-            throw new NotSupportedException($"\"{type}\" type is not supported or has no limit values.");
-        }
+
+        throw new NotSupportedException($"\"{type}\" type is not supported or has no limit values.");
     }
 }

@@ -38,7 +38,7 @@ public class HttpTransaction
 
     internal HttpTransaction(HttpRequestMessage request, HttpResponseMessage response, HttpStatusCode httpStatusCode)
     {
-        RequestUrl = request.RequestUri.ToString();
+        RequestUrl = request.RequestUri?.ToString()!;
         RequestMessage = request;
         ResponseMessage = response;
         StatusCode = httpStatusCode;

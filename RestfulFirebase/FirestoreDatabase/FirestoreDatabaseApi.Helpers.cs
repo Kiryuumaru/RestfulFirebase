@@ -118,7 +118,7 @@ public partial class FirestoreDatabaseApi
         }
 
         var tokenResponse = await authorization.GetFreshToken(cancellationToken);
-        response.Concat(tokenResponse);
+        response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
             return response;
@@ -137,14 +137,14 @@ public partial class FirestoreDatabaseApi
         HttpResponse<T> response = new();
 
         var clientResponse = await GetClient(authorization, cancellationToken);
-        response.Concat(clientResponse);
+        response.Append(clientResponse);
         if (clientResponse.IsError)
         {
             return response;
         }
 
         var getResponse = await HttpHelpers.Execute<T>(App.GetClient(), HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
-        response.Concat(getResponse);
+        response.Append(getResponse);
         if (getResponse.IsError)
         {
             return response.Append(await GetHttpException(response));
@@ -182,14 +182,14 @@ public partial class FirestoreDatabaseApi
         HttpResponse<T> response = new();
 
         var clientResponse = await GetClient(authorization, cancellationToken);
-        response.Concat(clientResponse);
+        response.Append(clientResponse);
         if (clientResponse.IsError)
         {
             return new HttpResponse<T>(default, clientResponse);
         }
 
         var postResponse = await HttpHelpers.ExecuteWithContent<T>(App.GetClient(), stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError)
         {
             return response.Append(await GetHttpException(response));

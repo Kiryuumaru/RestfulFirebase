@@ -13,6 +13,57 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
+public abstract partial class BaseQuery<TQuery>
+{
+    /// <summary>
+    /// Sets the requested page size of pager async enumerator. Must be >= 1 if specified. Default is 20.
+    /// </summary>
+    /// <param name="pageSize">
+    /// The page size of pager async enumerator.
+    /// </param>
+    /// <returns>
+    /// The query with custom page size configuration.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="pageSize"/> is less than or equal to 0.
+    /// </exception>
+    public TQuery PageSize(int pageSize)
+    {
+        if (pageSize <= 0)
+        {
+            throw new ArgumentException($"\"{nameof(pageSize)}\" is less than or equal to zero.");
+        }
+
+        SizeOfPages = pageSize;
+
+        return (TQuery)this;
+    }
+
+    /// <summary>
+    /// Sets the page to skip of pager async enumerator. Must be >= 0 if specified. Default is 0.
+    /// </summary>
+    /// <param name="skipPage">
+    /// The page to skip of pager async enumerator
+    /// </param>
+    /// <returns>
+    /// The query with custom skip page configuration.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="skipPage"/> is less than 0.
+    /// </exception>
+    public TQuery SkipPage(int skipPage)
+    {
+        if (skipPage < 0)
+        {
+            throw new ArgumentException($"\"{nameof(skipPage)}\" is less than zero.");
+        }
+
+        PagesToSkip = skipPage;
+
+        return (TQuery)this;
+    }
+}
+
 public partial class Query
 {
     /// <summary>

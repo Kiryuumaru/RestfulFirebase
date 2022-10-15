@@ -22,6 +22,7 @@ using System.Xml.Linq;
 using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Internals;
+using System.Net;
 
 namespace RestfulFirebase.FirestoreDatabase;
 
@@ -32,7 +33,6 @@ public partial class FirestoreDatabaseApi
         int page,
         int offset,
         StructuredQuery<TQuery> query,
-        List<StructuredCursor> startCursor,
         Transaction? transaction,
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
@@ -127,8 +127,12 @@ public partial class FirestoreDatabaseApi
                         writer.WritePropertyName("fieldPath");
                         writer.WriteStringValue(filter.DocumentFieldPath);
                         writer.WriteEndObject();
-                        writer.WritePropertyName("value");
-                        ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, fieldFilter.Value?.GetType(), fieldFilter.Value, jsonSerializerOptions, null, null);
+                        ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, fieldFilter.Value?.GetType(), fieldFilter.Value, jsonSerializerOptions,
+                            () =>
+                            {
+                                writer.WritePropertyName("value");
+                            },
+                            null);
                         writer.WriteEndObject();
                         writer.WriteEndObject();
 
@@ -162,19 +166,19 @@ public partial class FirestoreDatabaseApi
             writer.WriteEndArray();
         }
 
-        if (startCursor.Count != 0)
+        if (query.StartCursor.Count != 0)
         {
             writer.WritePropertyName("startAt");
             writer.WriteStartObject();
             writer.WritePropertyName("values");
             writer.WriteStartArray();
-            foreach (var cursor in startCursor)
+            foreach (var cursor in query.StartCursor)
             {
                 ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, cursor.ValueType, cursor.Value, jsonSerializerOptions, null, null);
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(!query.Query.IsStartAfter);
+            writer.WriteBooleanValue(!query.IsStartAfter);
             writer.WriteEndObject();
         }
 
@@ -190,14 +194,14 @@ public partial class FirestoreDatabaseApi
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(query.Query.IsEndBefore);
+            writer.WriteBooleanValue(query.IsEndBefore);
             writer.WriteEndObject();
         }
 
         writer.WritePropertyName("offset");
         writer.WriteNumberValue(offset);
         writer.WritePropertyName("limit");
-        writer.WriteNumberValue(query.Query.PageSize);
+        writer.WriteNumberValue(query.Query.SizeOfPages);
         writer.WriteEndObject();
         if (transaction != null)
         {
@@ -230,11 +234,381 @@ public partial class FirestoreDatabaseApi
         return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
+    private static async Task<HttpResponse<Document?>> GetLatestDocument(
+        DocumentReference? docRef,
+        Transaction? transaction,
+        IAuthorization? authorization,
+        CancellationToken cancellationToken)
+    {
+        HttpResponse<Document?> response = new();
+
+        if (docRef != null)
+        {
+            var getDocumentResponse = await docRef.GetDocument(transaction, authorization, cancellationToken);
+            response.Append(getDocumentResponse);
+            if (getDocumentResponse.IsError || getDocumentResponse.Result?.Found == null)
+            {
+                return response;
+            }
+            response.Append(getDocumentResponse.Result?.Found?.Document);
+        }
+
+        return response;
+    }
+
+    private static async Task<(CursorQuery? cursorQuery, HttpResponse<Document?> response)> GetLatestDocument(
+        IEnumerable<CursorQuery> cursorQueries,
+        Transaction? transaction,
+        IAuthorization? authorization,
+        CancellationToken cancellationToken)
+    {
+        HttpResponse<Document?> response = new();
+
+        var cursorQueryDoc = cursorQueries.LastOrDefault(i =>
+            i.Value is Document ||
+            i.Value is DocumentTimestamp ||
+            i.Value is DocumentReference ||
+            i.Value is DocumentReferenceTimestamp);
+
+        DocumentReference? docRef = null;
+
+        if (cursorQueryDoc?.Value is Document document)
+        {
+            if (transaction != null)
+            {
+                response.Append(document);
+                return (cursorQueryDoc, response);
+            }
+            docRef = document.Reference;
+        }
+        else if (cursorQueryDoc?.Value is DocumentTimestamp documentTimestamp)
+        {
+            if (transaction != null)
+            {
+                response.Append(documentTimestamp.Document);
+                return (cursorQueryDoc, response);
+            }
+            docRef = documentTimestamp.Document.Reference;
+        }
+        else if (cursorQueryDoc?.Value is DocumentReference documentReference)
+        {
+            docRef = documentReference;
+        }
+        else if (cursorQueryDoc?.Value is DocumentReferenceTimestamp documentReferenceTimestamp)
+        {
+            docRef = documentReferenceTimestamp.Reference;
+        }
+
+        var getDocumentResponse = await GetLatestDocument(docRef, transaction, authorization, cancellationToken);
+        response.Append(getDocumentResponse);
+
+        return (cursorQueryDoc, response);
+    }
+
+    private static void BuildOrderCursor<TQuery>(
+        StructuredQuery<TQuery> structuredQuery,
+        Document? startDoc,
+        Document? endDoc,
+        JsonSerializerOptions jsonSerializerOptions)
+        where TQuery : BaseQuery<TQuery>
+    {
+        if (startDoc != null)
+        {
+            structuredQuery.StartCursor.Clear();
+        }
+        if (endDoc != null)
+        {
+            structuredQuery.EndCursor.Clear();
+        }
+
+        bool orderByHasDocumentNameIndicator = false;
+        foreach (var orderByQuery in structuredQuery.Query.OrderByQuery)
+        {
+            if (orderByHasDocumentNameIndicator)
+            {
+                throw new ArgumentException($"OrderBy query has \"__name__\" and must be placed at the end.");
+            }
+
+            string fieldPath;
+            if (orderByQuery.NamePath.Length == 1 && orderByQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
+            {
+                fieldPath = DocumentFieldHelpers.DocumentName;
+                orderByHasDocumentNameIndicator = true;
+            }
+            else if (!orderByQuery.IsNamePathAPropertyPath)
+            {
+                fieldPath = string.Join(".", orderByQuery.NamePath);
+            }
+            else if (structuredQuery.Query.ModelType != null)
+            {
+                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(structuredQuery.Query.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+            }
+            else
+            {
+                throw new ArgumentException($"OrderBy query with property path enabled requires a query with types");
+            }
+
+            if (startDoc != null && !orderByHasDocumentNameIndicator)
+            {
+                startDoc.Fields.TryGetValue(fieldPath, out object? startDocValue);
+                structuredQuery.StartCursor.Add(new(new(startDocValue), startDocValue?.GetType(), startDocValue));
+            }
+            if (endDoc != null && !orderByHasDocumentNameIndicator)
+            {
+                endDoc.Fields.TryGetValue(fieldPath, out object? endDocValue);
+                structuredQuery.EndCursor.Add(new(new(endDocValue), endDocValue?.GetType(), endDocValue));
+            }
+
+            structuredQuery.OrderBy.Add(new(orderByQuery, fieldPath));
+        }
+
+        if (!orderByHasDocumentNameIndicator)
+        {
+            structuredQuery.OrderBy.Add(new(new(new string[] { DocumentFieldHelpers.DocumentName }, false, structuredQuery.OrderBy.LastOrDefault()?.OrderByQuery.Direction ?? Direction.Ascending), DocumentFieldHelpers.DocumentName));
+        }
+
+        if (startDoc != null)
+        {
+            structuredQuery.StartCursor.Add(new(new(startDoc.Reference), typeof(DocumentReference), startDoc.Reference));
+        }
+        if (endDoc != null)
+        {
+            structuredQuery.EndCursor.Add(new(new(endDoc.Reference), typeof(DocumentReference), endDoc.Reference));
+        }
+    }
+
+    private static async Task<HttpResponse<StructuredQuery<TQuery>>> BuildStartingStructureQuery<TQuery>(
+        BaseQuery<TQuery> query,
+        Transaction? transaction,
+        IAuthorization? authorization,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
+        where TQuery : BaseQuery<TQuery>
+    {
+        HttpResponse<StructuredQuery<TQuery>> response = new();
+
+        StructuredQuery<TQuery> structuredQuery = new(query);
+
+        foreach (var fromQuery in query.FromQuery)
+        {
+            structuredQuery.From.Add(new(fromQuery));
+        }
+
+        bool selectHasDocumentNameIndicator = false;
+        foreach (var selectQuery in query.SelectQuery)
+        {
+            if (selectHasDocumentNameIndicator && query.SelectQuery.Count != 1)
+            {
+                throw new ArgumentException($"Select query has \"__name__\" indicator and should not contain any other select query.");
+            }
+
+            string fieldPath;
+            if (selectQuery.NamePath.Length == 1 && selectQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
+            {
+                fieldPath = DocumentFieldHelpers.DocumentName;
+                selectHasDocumentNameIndicator = true;
+            }
+            else if (!selectQuery.IsNamePathAPropertyPath)
+            {
+                fieldPath = string.Join(".", selectQuery.NamePath);
+            }
+            else if (query.ModelType != null)
+            {
+                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, selectQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+            }
+            else
+            {
+                throw new ArgumentException($"Select query with property path enabled requires a query with types");
+            }
+
+            structuredQuery.Select.Add(new(selectQuery, fieldPath));
+        }
+
+        foreach (var whereQuery in query.WhereQuery)
+        {
+            string fieldPath;
+            if (whereQuery.NamePath.Length == 1 && whereQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
+            {
+                fieldPath = DocumentFieldHelpers.DocumentName;
+            }
+            else if (!whereQuery.IsNamePathAPropertyPath)
+            {
+                fieldPath = string.Join(".", whereQuery.NamePath);
+            }
+            else if (query.ModelType != null)
+            {
+                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, whereQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+            }
+            else
+            {
+                throw new ArgumentException($"Where query with property path enabled requires a query with types");
+            }
+
+            structuredQuery.Where.Add(new(whereQuery, fieldPath));
+        }
+
+        var (startCursorRef, getLatestStartCursorDoc) = await GetLatestDocument(query.StartCursorQuery, transaction, authorization, cancellationToken);
+        response.Append(getLatestStartCursorDoc);
+        if (getLatestStartCursorDoc.IsError)
+        {
+            return response;
+        }
+        Document? startDoc = getLatestStartCursorDoc.Result;
+
+        var (endCursorRef, getLatestEndCursorDoc) = await GetLatestDocument(query.EndCursorQuery, transaction, authorization, cancellationToken);
+        response.Append(getLatestEndCursorDoc);
+        if (getLatestEndCursorDoc.IsError)
+        {
+            return response;
+        }
+        Document? endDoc = getLatestEndCursorDoc.Result;
+
+        BuildOrderCursor(structuredQuery, startDoc, endDoc, jsonSerializerOptions);
+
+        int startCursorIndex = 0;
+        int endCursorIndex = 0;
+
+        foreach (var startCursorQuery in query.StartCursorQuery)
+        {
+            if (startCursorQuery == startCursorRef)
+            {
+                continue;
+            }
+
+            Type? objType;
+            object? obj;
+            if (startCursorQuery.Value is Document document)
+            {
+                obj = document.Reference;
+                objType = document.Reference.GetType();
+            }
+            else if (startCursorQuery.Value is DocumentTimestamp documentTimestamp)
+            {
+                obj = documentTimestamp.Document.Reference;
+                objType = documentTimestamp.Document.Reference.GetType();
+            }
+            else if (startCursorQuery.Value is DocumentReferenceTimestamp documentReferenceTimestamp)
+            {
+                obj = documentReferenceTimestamp.Reference;
+                objType = documentReferenceTimestamp.Reference.GetType();
+            }
+            else
+            {
+                obj = startCursorQuery.Value;
+                objType = startCursorQuery.Value?.GetType();
+            }
+
+            if (structuredQuery.StartCursor.Count < startCursorIndex)
+            {
+                structuredQuery.StartCursor.Add(new(startCursorQuery, objType, obj));
+            }
+            else
+            {
+                structuredQuery.StartCursor[startCursorIndex] = new(startCursorQuery, objType, obj);
+            }
+
+            startCursorIndex++;
+        }
+
+        foreach (var endCursorQuery in query.EndCursorQuery)
+        {
+            if (endCursorQuery == endCursorRef)
+            {
+                continue;
+            }
+
+            Type? objType;
+            object? obj;
+            if (endCursorQuery.Value is Document document)
+            {
+                obj = document.Reference;
+                objType = document.Reference.GetType();
+            }
+            else if (endCursorQuery.Value is DocumentTimestamp documentTimestamp)
+            {
+                obj = documentTimestamp.Document.Reference;
+                objType = documentTimestamp.Document.Reference.GetType();
+            }
+            else if (endCursorQuery.Value is DocumentReferenceTimestamp documentReferenceTimestamp)
+            {
+                obj = documentReferenceTimestamp.Reference;
+                objType = documentReferenceTimestamp.Reference.GetType();
+            }
+            else
+            {
+                obj = endCursorQuery.Value;
+                objType = endCursorQuery.Value?.GetType();
+            }
+
+            if (structuredQuery.EndCursor.Count < startCursorIndex)
+            {
+                structuredQuery.EndCursor.Add(new(endCursorQuery, objType, obj));
+            }
+            else
+            {
+                structuredQuery.EndCursor[startCursorIndex] = new(endCursorQuery, objType, obj);
+            }
+
+            endCursorIndex++;
+        }
+
+        response.Append(structuredQuery);
+
+        return response;
+    }
+
+    private static async Task<HttpResponse<StructuredQuery<TQuery>>> BuildStructureQuery<TQuery>(
+        StructuredQuery<TQuery> query,
+        Document? startDoc,
+        Transaction? transaction,
+        IAuthorization? authorization,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
+        where TQuery : BaseQuery<TQuery>
+    {
+        HttpResponse<StructuredQuery<TQuery>> response = new();
+
+        StructuredQuery<TQuery> structuredQuery = new(query);
+
+        structuredQuery.OrderBy.Clear();
+        structuredQuery.StartCursor.Clear();
+        structuredQuery.IsStartAfter = true;
+
+        if (startDoc == null)
+        {
+            var (_, getLatestStartCursorDoc) = await GetLatestDocument(query.Query.StartCursorQuery, transaction, authorization, cancellationToken);
+            response.Append(getLatestStartCursorDoc);
+            if (getLatestStartCursorDoc.IsError)
+            {
+                return response;
+            }
+            startDoc = getLatestStartCursorDoc.Result;
+        }
+        else
+        {
+            var getLatestStartCursorDoc = await GetLatestDocument(startDoc.Reference, transaction, authorization, cancellationToken);
+            response.Append(getLatestStartCursorDoc);
+            if (getLatestStartCursorDoc.IsError)
+            {
+                return response;
+            }
+            startDoc = getLatestStartCursorDoc.Result;
+        }
+
+        BuildOrderCursor(structuredQuery, startDoc, null, jsonSerializerOptions);
+
+        response.Append(structuredQuery);
+
+        return response;
+    }
+
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     private async Task<HttpResponse<QueryDocumentResult>> QueryDocumentPage<TQuery>(
         HttpResponse<QueryDocumentResult> response,
-        StructuredQuery<TQuery> query,
-        List<StructuredCursor> startCursor,
+        Task<HttpResponse<StructuredQuery<TQuery>>> queryTask,
         int page,
         int offset,
         Transaction? transaction,
@@ -244,16 +618,24 @@ public partial class FirestoreDatabaseApi
         CancellationToken cancellationToken)
         where TQuery : BaseQuery<TQuery>
     {
+        var queryResponse = await queryTask;
+        response.Append(queryResponse);
+        if (queryResponse.IsError)
+        {
+            return response;
+        }
+
+        var query = queryResponse.Result;
+
         var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
             page,
             offset,
             query,
-            startCursor,
             transaction,
             authorization,
             jsonSerializerOptions,
             cancellationToken);
-        response.Concat(queryDocumentResponse);
+        response.Append(queryDocumentResponse);
         if (queryDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
@@ -308,19 +690,20 @@ public partial class FirestoreDatabaseApi
             }
         }
 
+        Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
+
         return response.Append(new QueryDocumentResult(
-            foundDocuments,
+            foundDocuments.AsReadOnly(),
             skippedResults,
             skippedReadTime,
             page,
-            query.Query.PageSize,
+            query.Query.SizeOfPages,
             response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage(
                     response,
-                    query,
-                    startCursor,
+                    BuildStructureQuery(query, lastDoc, transaction, authorization, jsonSerializerOptions, ct),
                     pageNum,
                     0,
                     transaction,
@@ -334,8 +717,7 @@ public partial class FirestoreDatabaseApi
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     private async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
         HttpResponse<QueryDocumentResult<T>> response,
-        StructuredQuery<TQuery> query,
-        List<StructuredCursor> startCursor,
+        Task<HttpResponse<StructuredQuery<TQuery>>> queryTask,
         int page,
         int offset,
         Transaction? transaction,
@@ -346,16 +728,24 @@ public partial class FirestoreDatabaseApi
         where T : class
         where TQuery : BaseQuery<TQuery>
     {
+        var queryResponse = await queryTask;
+        response.Append(queryResponse);
+        if (queryResponse.IsError)
+        {
+            return response;
+        }
+
+        var query = queryResponse.Result;
+
         var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
             page,
             offset,
             query,
-            startCursor,
             transaction,
             authorization,
             jsonSerializerOptions,
             cancellationToken);
-        response.Concat(queryDocumentResponse);
+        response.Append(queryDocumentResponse);
         if (queryDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
@@ -410,19 +800,20 @@ public partial class FirestoreDatabaseApi
             }
         }
 
+        Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
+
         return response.Append(new QueryDocumentResult<T>(
-            foundDocuments,
+            foundDocuments.AsReadOnly(),
             skippedResults,
             skippedReadTime,
             page,
-            query.Query.PageSize,
+            query.Query.SizeOfPages,
             response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage(
                     response,
-                    query,
-                    startCursor,
+                    BuildStructureQuery(query, lastDoc, transaction, authorization, jsonSerializerOptions, ct),
                     pageNum,
                     0,
                     transaction,
@@ -444,43 +835,11 @@ public partial class FirestoreDatabaseApi
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        StructuredQuery<TQuery> structuredQuery = new(query);
-
-        foreach (var fromQuery in query.FromQuery)
-        {
-            structuredQuery.From.Add(new(fromQuery));
-        }
-        foreach (var selectQuery in query.SelectQuery)
-        {
-            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, selectQuery.NamePath, jsonSerializerOptions);
-
-            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
-
-            structuredQuery.Select.Add(new(selectQuery, fieldPath));
-        }
-        foreach (var whereQuery in query.WhereQuery)
-        {
-            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, whereQuery.NamePath, jsonSerializerOptions);
-
-            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
-
-            structuredQuery.Where.Add(new(whereQuery, fieldPath));
-        }
-        foreach (var orderByQuery in query.OrderByQuery)
-        {
-            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
-
-            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
-
-            structuredQuery.OrderBy.Add(new(orderByQuery, fieldPath));
-        }
-
         return await QueryDocumentPage(
             new(),
-            structuredQuery,
-            structuredQuery.StartCursor,
+            BuildStartingStructureQuery(query, transaction, authorization, jsonSerializerOptions, cancellationToken),
             0,
-            query.SkipPage * query.PageSize,
+            query.PagesToSkip * query.SizeOfPages,
             transaction,
             cacheDocuments,
             authorization,
@@ -500,14 +859,11 @@ public partial class FirestoreDatabaseApi
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        StructuredQuery<TQuery> structuredQuery = new(query);
-
         return await QueryDocumentPage<T, TQuery>(
             new(),
-            structuredQuery,
-            structuredQuery.StartCursor,
+            BuildStartingStructureQuery(query, transaction, authorization, jsonSerializerOptions, cancellationToken),
             0,
-            query.SkipPage * query.PageSize,
+            query.PagesToSkip * query.SizeOfPages,
             transaction,
             cacheDocuments,
             authorization,

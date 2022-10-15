@@ -33,7 +33,10 @@ internal class Helpers
             Assert.NotNull(projectId);
             Assert.NotNull(apiKey);
 
-            firebaseConfig = new(projectId, apiKey);
+            firebaseConfig = new(projectId, apiKey)
+            {
+                JsonSerializerOptions = JsonSerializerOptions
+            };
         }
 
         return new(firebaseConfig);

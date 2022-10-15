@@ -87,7 +87,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentsResult> response = new();
 
         var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(allDocRefs, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
@@ -158,7 +158,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentsResult<T>> response = new();
 
         var (jsonDocument, getDocumentResponse) = await ExecuteGetDocument(allDocRefs, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
@@ -240,16 +240,13 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentResult> response = new();
 
         var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document[] { document }, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
         }
 
-        var found = getDocumentResponse.Result.Found.FirstOrDefault();
-        var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
-
-        response.Append(new GetDocumentResult(found, missing));
+        response.Append(new GetDocumentResult(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -283,7 +280,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentsResult> response = new();
 
         var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
@@ -325,16 +322,13 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentResult<T>> response = new();
 
         var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document<T>[] { document }, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
         }
 
-        var found = getDocumentResponse.Result.Found.FirstOrDefault();
-        var missing = getDocumentResponse.Result.Missing.FirstOrDefault();
-
-        response.Append(new GetDocumentResult<T>(found, missing));
+        response.Append(new GetDocumentResult<T>(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -372,7 +366,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<GetDocumentsResult<T>> response = new();
 
         var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;

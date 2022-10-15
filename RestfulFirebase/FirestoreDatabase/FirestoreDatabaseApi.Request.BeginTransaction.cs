@@ -34,7 +34,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<TTransaction> response = new();
 
         var postResponse = await ExecutePost(authorization, stream, url, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (response.IsError || response.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return response;

@@ -55,7 +55,7 @@ public partial class AuthenticationApi
         HttpResponse<string> response = new();
 
         var getResponse = await ExecuteGet<RecaptchaSiteKeyDefinition>(GoogleRecaptchaParams, cancellationToken);
-        response.Concat(getResponse);
+        response.Append(getResponse);
         if (getResponse.IsError || getResponse.Result.RecaptchaSiteKey == null)
         {
             return response;
@@ -107,7 +107,7 @@ public partial class AuthenticationApi
         HttpResponse<string> response = new();
 
         var postResponse = await ExecutePost<SessionInfoDefinition>(stream, GoogleSendVerificationCode, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError || postResponse.Result.SessionInfo == null)
         {
             return response;
@@ -244,7 +244,7 @@ public partial class AuthenticationApi
         HttpResponse<FirebaseUser> response = new();
 
         var startResponse = await StartUser(stream, GoogleSignUpUrl, cancellationToken);
-        response.Concat(startResponse);
+        response.Append(startResponse);
         if (startResponse.IsError)
         {
             return response;
@@ -253,7 +253,7 @@ public partial class AuthenticationApi
         if (sendVerificationEmail)
         {
             var sendVerificationResponse = await startResponse.Result.SendEmailVerification(cancellationToken);
-            response.Concat(sendVerificationResponse);
+            response.Append(sendVerificationResponse);
             if (sendVerificationResponse.IsError)
             {
                 return response;

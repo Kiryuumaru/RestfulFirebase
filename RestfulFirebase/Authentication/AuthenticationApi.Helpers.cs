@@ -287,7 +287,7 @@ public partial class AuthenticationApi
         HttpResponse<FirebaseUser> response = new();
 
         var postResponse = await ExecutePost<FirebaseAuth>(stream, googleUrl, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError)
         {
             return response;
@@ -297,7 +297,7 @@ public partial class AuthenticationApi
         response.Append(user);
 
         var refreshResponse = await user.RefreshUserInfo(cancellationToken);
-        response.Concat(refreshResponse);
+        response.Append(refreshResponse);
         if (refreshResponse.IsError)
         {
             return response;

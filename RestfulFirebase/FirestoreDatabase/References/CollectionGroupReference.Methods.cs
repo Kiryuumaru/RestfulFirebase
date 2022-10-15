@@ -118,7 +118,7 @@ public partial class CollectionGroupReference : Reference
     /// <returns>
     /// The created structured <see cref="Queries.Query{TModel}"/>
     /// </returns>
-    public Query<TModel> Query<TModel>()
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
         Query<TModel> query = new(App, Parent);

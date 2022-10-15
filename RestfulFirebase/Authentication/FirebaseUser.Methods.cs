@@ -153,7 +153,7 @@ public partial class FirebaseUser
         await writer.FlushAsync(cancellationToken);
 
         var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError)
         {
             return response;
@@ -162,7 +162,7 @@ public partial class FirebaseUser
         UpdateAuth(postResponse.Result);
 
         var refreshResponse = await RefreshUserInfo(cancellationToken);
-        response.Concat(refreshResponse);
+        response.Append(refreshResponse);
         if (refreshResponse.IsError)
         {
             return response;

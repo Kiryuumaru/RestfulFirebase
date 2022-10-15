@@ -32,6 +32,11 @@ internal static class ModelBuilderHelpers
     {
         bool hasAppended = false;
 
+        if (objType == typeof(object))
+        {
+            objType = obj?.GetType();
+        }
+
         if (objType == null || obj == null)
         {
             if (!hasAppended)

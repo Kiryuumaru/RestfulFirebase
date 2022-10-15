@@ -93,7 +93,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<Document> response = new();
 
         var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
-        response.Concat(createDocumentResponse);
+        response.Append(createDocumentResponse);
         if (createDocumentResponse.IsError || jsonDocument == null)
         {
             return response;
@@ -116,7 +116,7 @@ public partial class FirestoreDatabaseApi
         HttpResponse<Document<T>> response = new();
 
         var (jsonDocument, createDocumentResponse) = await ExecuteCreateDocument(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
-        response.Concat(createDocumentResponse);
+        response.Append(createDocumentResponse);
         if (createDocumentResponse.IsError || jsonDocument == null)
         {
             return response;

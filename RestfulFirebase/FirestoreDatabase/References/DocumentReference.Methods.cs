@@ -175,11 +175,13 @@ public partial class DocumentReference : Reference
         HttpResponse<GetDocumentResult> response = new();
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document>(), transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
         }
+
+        response.Append(new GetDocumentResult(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -206,11 +208,13 @@ public partial class DocumentReference : Reference
         HttpResponse<GetDocumentResult<T>> response = new();
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, Array.Empty<Document<T>>(), transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
         }
+
+        response.Append(new GetDocumentResult<T>(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -288,14 +292,14 @@ public partial class DocumentReference : Reference
         HttpResponse<GetDocumentResult<T>> response = new();
 
         var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(new Document[] { new Document<T>(this, model) }, null, null, transaction, authorization, cancellationToken);
-        response.Concat(patchDocumentResponse);
+        response.Append(patchDocumentResponse);
         if (patchDocumentResponse.IsError)
         {
             return response;
         }
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocument(doc, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
@@ -355,7 +359,7 @@ public partial class DocumentReference : Reference
     /// <returns>
     /// The created structured <see cref="Queries.Query"/>
     /// </returns>
-    public Query<TModel> Query<TModel>(string collectionId)
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(string collectionId)
         where TModel : class
     {
         Query<TModel> query = new(App, this);

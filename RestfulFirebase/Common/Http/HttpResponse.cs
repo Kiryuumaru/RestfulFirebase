@@ -164,7 +164,7 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
         HttpTransactions = httpTransactions.AsReadOnly();
     }
 
-    internal HttpResponse<TResult> Concat(params IHttpResponse[] responses)
+    internal HttpResponse<TResult> Append(params IHttpResponse[] responses)
     {
         if (responses.LastOrDefault() is IHttpResponse lastResponse)
         {

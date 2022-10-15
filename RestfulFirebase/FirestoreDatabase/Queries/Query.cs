@@ -59,12 +59,12 @@ public abstract partial class BaseQuery<TQuery>
     /// <summary>
     /// Gets the requested page size of pager async enumerator. Must be >= 1 if specified. Default is 20.
     /// </summary>
-    public int PageSize { get; private set; } = 20;
+    public int SizeOfPages { get; private set; } = 20;
 
     /// <summary>
-    /// Gets the page to skip of pager async enumerator. Must be >= 1 if specified. Default is 0.
+    /// Gets the page to skip of pager async enumerator. Must be >= 0 if specified. Default is 0.
     /// </summary>
-    public int SkipPage { get; private set; } = 0;
+    public int PagesToSkip { get; private set; } = 0;
 
     /// <summary>
     /// Gets the document reference to run this query.
@@ -82,12 +82,12 @@ public abstract partial class BaseQuery<TQuery>
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public Type? ModelType { get; }
 
-    private readonly List<FromQuery> fromQuery;
-    private readonly List<SelectQuery> selectQuery;
-    private readonly List<FilterQuery> whereQuery;
-    private readonly List<OrderByQuery> orderByQuery;
-    private readonly List<CursorQuery> startCursorQuery;
-    private readonly List<CursorQuery> endCursorQuery;
+    internal readonly List<FromQuery> fromQuery;
+    internal readonly List<SelectQuery> selectQuery;
+    internal readonly List<FilterQuery> whereQuery;
+    internal readonly List<OrderByQuery> orderByQuery;
+    internal readonly List<CursorQuery> startCursorQuery;
+    internal readonly List<CursorQuery> endCursorQuery;
 
     internal BaseQuery(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
     {
@@ -144,20 +144,45 @@ internal class StructuredQuery<TQuery>
 {
     public BaseQuery<TQuery> Query { get; }
 
-    public List<StructuredFrom> From { get; } = new();
+    public List<StructuredFrom> From { get; }
 
-    public List<StructuredSelect> Select { get; } = new();
+    public List<StructuredSelect> Select { get; }
 
-    public List<StructuredFilter> Where { get; } = new();
+    public List<StructuredFilter> Where { get; }
 
-    public List<StructuredOrderBy> OrderBy { get; } = new();
+    public List<StructuredOrderBy> OrderBy { get; }
 
-    public List<StructuredCursor> StartCursor { get; } = new();
+    public List<StructuredCursor> StartCursor { get; }
 
-    public List<StructuredCursor> EndCursor { get; } = new();
+    public List<StructuredCursor> EndCursor { get; }
+
+    public bool IsStartAfter { get; internal set; } = false;
+
+    public bool IsEndBefore { get; internal set; } = false;
 
     public StructuredQuery(BaseQuery<TQuery> query)
     {
         Query = query;
+        From = new();
+        Select = new();
+        Where = new();
+        OrderBy = new();
+        StartCursor = new();
+        EndCursor = new();
+        IsStartAfter = query.IsStartAfter;
+        IsEndBefore = query.IsEndBefore;
+    }
+
+    public StructuredQuery(StructuredQuery<TQuery> query)
+    {
+        Query = query.Query;
+        From = new(query.From);
+        Select = new(query.Select);
+        Where = new(query.Where);
+        OrderBy = new(query.OrderBy);
+        StartCursor = new(query.StartCursor);
+        EndCursor = new(query.EndCursor);
+        IsStartAfter = query.IsStartAfter;
+        IsEndBefore = query.IsEndBefore;
     }
 }

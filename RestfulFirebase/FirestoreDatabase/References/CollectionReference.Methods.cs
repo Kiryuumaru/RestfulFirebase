@@ -140,7 +140,7 @@ public partial class CollectionReference : Reference
         HttpResponse<GetDocumentsResult> response = new();
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), Array.Empty<Document>(), transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
@@ -182,7 +182,7 @@ public partial class CollectionReference : Reference
         HttpResponse<GetDocumentsResult<T>> response = new();
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), Array.Empty<Document<T>>(), transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
@@ -253,14 +253,14 @@ public partial class CollectionReference : Reference
         HttpResponse<GetDocumentsResult<T>> response = new();
 
         var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(docs, null, null, transaction, authorization, cancellationToken);
-        response.Concat(patchDocumentResponse);
+        response.Append(patchDocumentResponse);
         if (patchDocumentResponse.IsError)
         {
             return response;
         }
 
         var getDocumentResponse = await App.FirestoreDatabase.GetDocuments(docs, transaction, authorization, cancellationToken);
-        response.Concat(getDocumentResponse);
+        response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
             return response;
@@ -339,7 +339,7 @@ public partial class CollectionReference : Reference
     /// <exception cref="ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
-    public Query<TModel> Query<TModel>(bool allDescendants = false)
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)
         where TModel : class
     {
         if (allDescendants && Parent != null)

@@ -5,11 +5,15 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
-/// The result of the <see cref="QueryDocumentRequest"/> request.
+/// The result of the <see cref="FirestoreDatabaseApi.QueryDocument{TQuery}(BaseQuery{TQuery}, IEnumerable{Document}?, Transaction?, IAuthorization?, CancellationToken)"/> request.
 /// </summary>
 public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentResult>>
 {
@@ -55,23 +59,6 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
         this.pager = pager;
     }
 
-    /// <summary>
-    /// Request to go to get page of the result query.
-    /// </summary>
-    /// <param name="page">
-    /// The page number to go to.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> of the request.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="QueryDocumentResult"/>.
-    /// </returns>
-    public Task<HttpResponse<QueryDocumentResult>> GetPage(int page, CancellationToken cancellationToken = default)
-    {
-        return pager.Invoke(page, cancellationToken);
-    }
-
     /// <inheritdoc/>
     public IAsyncEnumerator<HttpResponse<QueryDocumentResult>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
@@ -108,7 +95,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
             if (Current == null)
             {
                 Current = firstResponse;
-                return true;
+                return lastSuccessResult.Documents.Count != 0;
             }
             else
             {
@@ -132,7 +119,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
 }
 
 /// <summary>
-/// The result of the <see cref="QueryDocumentRequest{T}"/> request.
+/// The result of the <see cref="FirestoreDatabaseApi.QueryDocument{T, TQuery}(BaseQuery{TQuery}, IEnumerable{Document}?, Transaction?, IAuthorization?, CancellationToken)"/> request.
 /// </summary>
 /// <typeparam name="T">
 /// The type of the model of the document.
@@ -180,23 +167,6 @@ public class QueryDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessed
         this.pageSize = pageSize;
         this.firstResponse = firstResponse;
         this.pager = pager;
-    }
-
-    /// <summary>
-    /// Request to go to get page of the result query.
-    /// </summary>
-    /// <param name="page">
-    /// The page number to go to.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> of the request.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="TransactionResponse"/> with the result <see cref="QueryDocumentResult{T}"/>.
-    /// </returns>
-    public Task<HttpResponse<QueryDocumentResult<T>>> GetPage(int page, CancellationToken cancellationToken = default)
-    {
-        return pager.Invoke(page, cancellationToken);
     }
 
     /// <inheritdoc/>

@@ -82,7 +82,7 @@ public partial class FirestoreDatabaseApi
         writer.WriteEndObject();
 
         var postResponse = await ExecutePost(authorization, stream, url, cancellationToken);
-        response.Concat(postResponse);
+        response.Append(postResponse);
         if (postResponse.IsError || postResponse.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return response;
@@ -116,7 +116,7 @@ public partial class FirestoreDatabaseApi
         }
 
         return response.Append(new ListCollectionResult(
-            collectionReferences.ToArray(),
+            collectionReferences.AsReadOnly(),
             nextPageToken,
             response,
             (nextPageTok, ct) =>
