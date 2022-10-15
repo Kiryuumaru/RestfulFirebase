@@ -2,6 +2,7 @@
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -31,7 +32,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException($"\"{nameof(namePath)}\" is empty.");
         }
 
-        orderByQuery.Add(new(GetDocumentPath(namePath), Direction.Ascending));
+        orderByQuery.Add(new(namePath, Direction.Ascending));
 
         return (TQuery)this;
     }
@@ -60,7 +61,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException($"\"{nameof(namePath)}\" is empty.");
         }
 
-        orderByQuery.Add(new(GetDocumentPath(namePath), Direction.Descending));
+        orderByQuery.Add(new(namePath, Direction.Descending));
 
         return (TQuery)this;
     }
@@ -73,7 +74,7 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery AscendingDocumentName()
     {
-        orderByQuery.Add(new(DocumentFieldHelpers.DocumentName, Direction.Ascending));
+        orderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, Direction.Ascending));
 
         return (TQuery)this;
     }
@@ -86,7 +87,7 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery DescendingDocumentName()
     {
-        orderByQuery.Add(new(DocumentFieldHelpers.DocumentName, Direction.Descending));
+        orderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, Direction.Ascending));
 
         return (TQuery)this;
     }
@@ -100,16 +101,29 @@ public class OrderByQuery
     /// <summary>
     /// Gets or sets the order based on the document field path to order.
     /// </summary>
-    public string DocumentFieldPath { get; internal set; }
+    public string[] NamePath { get; internal set; }
 
     /// <summary>
     /// Gets or sets the <see cref="Enums.Direction"/> of the order.
     /// </summary>
     public Direction Direction { get; internal set; }
 
-    internal OrderByQuery(string documentFieldPath, Direction direction)
+    internal OrderByQuery(string[] namePath, Direction direction)
     {
-        DocumentFieldPath = documentFieldPath;
+        NamePath = namePath;
         Direction = direction;
+    }
+}
+
+internal class StructuredOrderBy
+{
+    public OrderByQuery OrderByQuery { get; internal set; }
+
+    public string DocumentFieldPath { get; internal set; }
+
+    internal StructuredOrderBy(OrderByQuery orderByQuery, string documentFieldPath)
+    {
+        OrderByQuery = orderByQuery;
+        DocumentFieldPath = documentFieldPath;
     }
 }

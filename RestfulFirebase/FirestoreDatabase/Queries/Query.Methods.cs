@@ -15,6 +15,24 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 public partial class Query
 {
+    /// <summary>
+    /// Runs the structured query.
+    /// </summary>
+    /// <param name="cacheDocuments">
+    /// The cached <see cref="Document"/> that will use to populate the instance of the documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult"/>.
+    /// </returns>
     public Task<HttpResponse<QueryDocumentResult>> RunQuery(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
@@ -27,6 +45,24 @@ public partial class Query
 
 public partial class Query<TModel>
 {
+    /// <summary>
+    /// Runs the structured query.
+    /// </summary>
+    /// <param name="cacheDocuments">
+    /// The cached <see cref="Document"/> that will use to populate the instance of the documents.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult{TModel}"/>.
+    /// </returns>
     public Task<HttpResponse<QueryDocumentResult<TModel>>> RunQuery(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,

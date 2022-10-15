@@ -93,28 +93,34 @@ public class MockTest
         var docs = writeDocuments.Result.Found.Select(i => i.Document).OrderBy(i => i.Reference.Id).ToArray();
 
         var queryResponse1 = await testCollectionReference.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val3))
+            .Ascending(nameof(MixedModel.Val1))
             .AscendingDocumentName()
-            .StartAt(docs[5].Model.Val3)
-            .StartAt(docs[5])
             .RunQuery();
-        Assert.NotNull(queryResponse1.Result);
 
-        var docs1 = queryResponse1.Result.Documents;
         var transaction1 = await queryResponse1.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse1.Result);
+        var docs1 = queryResponse1.Result.Documents.Select(i => i.Document);
 
         var queryResponse2 = await testCollectionReference.Query<MixedModel>()
-            .Descending(nameof(MixedModel.Val3))
-            .DescendingDocumentName()
-            .StartAt(docs[5].Model.Val3)
+            .Ascending(nameof(MixedModel.Val1))
+            .AscendingDocumentName()
+            .StartAt(2)
             .StartAt(docs[5])
-            .EndAt(docs[1].Model.Val3)
-            .EndAt(docs[1])
             .RunQuery();
-        Assert.NotNull(queryResponse2.Result);
 
-        var docs2 = queryResponse2.Result.Documents;
         var transaction2 = await queryResponse2.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse2.Result);
+        var docs2 = queryResponse2.Result.Documents.Select(i => i.Document);
+
+        var queryResponse3 = await testCollectionReference.Query<MixedModel>()
+            .Ascending(nameof(MixedModel.Val1))
+            .AscendingDocumentName()
+            .StartAt(docs[5])
+            .RunQuery();
+
+        var transaction3 = await queryResponse3.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse3.Result);
+        var docs3 = queryResponse3.Result.Documents.Select(i => i.Document);
 
         Assert.True(true);
     }

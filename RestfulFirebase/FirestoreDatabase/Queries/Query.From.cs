@@ -98,3 +98,13 @@ public class FromQuery
         AllDescendants = allDescendants;
     }
 }
+
+internal class StructuredFrom
+{
+    public FromQuery FromQuery { get; internal set; }
+
+    internal StructuredFrom(FromQuery fromQuery)
+    {
+        FromQuery = fromQuery;
+    }
+}

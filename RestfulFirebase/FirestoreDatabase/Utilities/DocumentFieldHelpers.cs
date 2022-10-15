@@ -186,6 +186,11 @@ internal static class DocumentFieldHelpers
 
     public static TypedDocumentFieldPair[] GetDocumentFieldPath([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, string[] propertyNamePath, JsonSerializerOptions? jsonSerializerOptions)
     {
+        if (!propertyNamePath.Any())
+        {
+            throw new ArgumentException($"{propertyNamePath} is empty.");
+        }
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] static Type? getDictionaryValueType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
@@ -201,11 +206,6 @@ internal static class DocumentFieldHelpers
             }
 
             return null;
-        }
-
-        if (!propertyNamePath.Any())
-        {
-            throw new ArgumentException($"{propertyNamePath} is empty.");
         }
 
         List<TypedDocumentFieldPair> documentFields = new();
@@ -277,7 +277,7 @@ internal static class DocumentFieldHelpers
         }
         else
         {
-            throw new NotSupportedException($"\"{type}\" type is not supported.");
+            throw new NotSupportedException($"\"{type}\" type is not supported or has no limit values.");
         }
     }
 }

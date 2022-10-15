@@ -31,7 +31,8 @@ public partial class FirestoreDatabaseApi
     internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocument<TQuery>(
         int page,
         int offset,
-        BaseQuery<TQuery> query,
+        StructuredQuery<TQuery> query,
+        List<StructuredCursor> startCursor,
         Transaction? transaction,
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
@@ -39,9 +40,9 @@ public partial class FirestoreDatabaseApi
         where TQuery : BaseQuery<TQuery>
     {
         string url;
-        if (query.DocumentReference != null)
+        if (query.Query.DocumentReference != null)
         {
-            url = query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
+            url = query.Query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
         }
         else
         {
@@ -58,23 +59,23 @@ public partial class FirestoreDatabaseApi
         writer.WriteStartObject();
         writer.WritePropertyName("from");
         writer.WriteStartArray();
-        foreach (var from in query.FromQuery)
+        foreach (var from in query.From)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("collectionId");
-            writer.WriteStringValue(from.CollectionId);
+            writer.WriteStringValue(from.FromQuery.CollectionId);
             writer.WritePropertyName("allDescendants");
-            writer.WriteBooleanValue(from.AllDescendants);
+            writer.WriteBooleanValue(from.FromQuery.AllDescendants);
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
-        if (query.SelectQuery.Count != 0)
+        if (query.Select.Count != 0)
         {
             writer.WritePropertyName("select");
             writer.WriteStartObject();
             writer.WritePropertyName("fields");
             writer.WriteStartArray();
-            foreach (var select in query.SelectQuery)
+            foreach (var select in query.Select)
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("fieldPath");
@@ -84,7 +85,7 @@ public partial class FirestoreDatabaseApi
             writer.WriteEndArray();
             writer.WriteEndObject();
         }
-        if (query.WhereQuery.Count != 0)
+        if (query.Where.Count != 0)
         {
             writer.WritePropertyName("where");
             writer.WriteStartObject();
@@ -94,9 +95,9 @@ public partial class FirestoreDatabaseApi
             writer.WriteStringValue("AND");
             writer.WritePropertyName("filters");
             writer.WriteStartArray();
-            foreach (var filter in query.WhereQuery)
+            foreach (var filter in query.Where)
             {
-                switch (filter)
+                switch (filter.FilterQuery)
                 {
                     case UnaryFilterQuery unaryFilter:
 
@@ -108,7 +109,7 @@ public partial class FirestoreDatabaseApi
                         writer.WritePropertyName("field");
                         writer.WriteStartObject();
                         writer.WritePropertyName("fieldPath");
-                        writer.WriteStringValue(unaryFilter.DocumentFieldPath);
+                        writer.WriteStringValue(filter.DocumentFieldPath);
                         writer.WriteEndObject();
                         writer.WriteEndObject();
                         writer.WriteEndObject();
@@ -124,7 +125,7 @@ public partial class FirestoreDatabaseApi
                         writer.WritePropertyName("field");
                         writer.WriteStartObject();
                         writer.WritePropertyName("fieldPath");
-                        writer.WriteStringValue(fieldFilter.DocumentFieldPath);
+                        writer.WriteStringValue(filter.DocumentFieldPath);
                         writer.WriteEndObject();
                         writer.WritePropertyName("value");
                         ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, fieldFilter.Value?.GetType(), fieldFilter.Value, jsonSerializerOptions, null, null);
@@ -133,7 +134,8 @@ public partial class FirestoreDatabaseApi
 
                         break;
                     default:
-                        throw new NotImplementedException($"{filter.GetType()} Filter is not implemented.");
+
+                        throw new NotImplementedException($"\"{filter.GetType()}\" filter is not implemented.");
                 }
             }
             writer.WriteEndArray();
@@ -141,11 +143,11 @@ public partial class FirestoreDatabaseApi
             writer.WriteEndObject();
         }
 
-        if (query.OrderByQuery.Count != 0)
+        if (query.OrderBy.Count != 0)
         {
             writer.WritePropertyName("orderBy");
             writer.WriteStartArray();
-            foreach (var orderBy in query.OrderByQuery)
+            foreach (var orderBy in query.OrderBy)
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName("field");
@@ -154,88 +156,48 @@ public partial class FirestoreDatabaseApi
                 writer.WriteStringValue(orderBy.DocumentFieldPath);
                 writer.WriteEndObject();
                 writer.WritePropertyName("direction");
-                writer.WriteStringValue(orderBy.Direction == Direction.Ascending ? "ASCENDING" : "DESCENDING");
+                writer.WriteStringValue(orderBy.OrderByQuery.Direction == Direction.Ascending ? "ASCENDING" : "DESCENDING");
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
         }
 
-        if (query.StartCursorQuery.Count != 0)
+        if (startCursor.Count != 0)
         {
             writer.WritePropertyName("startAt");
             writer.WriteStartObject();
             writer.WritePropertyName("values");
             writer.WriteStartArray();
-            foreach (var cursor in query.StartCursorQuery)
+            foreach (var cursor in startCursor)
             {
-                Type? objType = cursor.Value?.GetType();
-                object? obj;
-
-                if (cursor.Value is Document document)
-                {
-                    obj = document.Reference;
-                }
-                else if (cursor.Value is DocumentTimestamp documentTimestamp)
-                {
-                    obj = documentTimestamp.Document.Reference;
-                }
-                else if (cursor.Value is DocumentReferenceTimestamp documentReferenceTimestamp)
-                {
-                    obj = documentReferenceTimestamp.Reference;
-                }
-                else
-                {
-                    obj = cursor.Value;
-                }
-
-                ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, objType, obj, jsonSerializerOptions, null, null);
+                ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, cursor.ValueType, cursor.Value, jsonSerializerOptions, null, null);
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(!query.IsStartAfter);
+            writer.WriteBooleanValue(!query.Query.IsStartAfter);
             writer.WriteEndObject();
         }
 
-        if (query.EndCursorQuery.Count != 0)
+        if (query.EndCursor.Count != 0)
         {
             writer.WritePropertyName("endAt");
             writer.WriteStartObject();
             writer.WritePropertyName("values");
             writer.WriteStartArray();
-            foreach (var cursor in query.EndCursorQuery)
+            foreach (var cursor in query.EndCursor)
             {
-                Type? objType = cursor.Value?.GetType();
-                object? obj;
-
-                if (cursor.Value is Document document)
-                {
-                    obj = document.Reference;
-                }
-                else if (cursor.Value is DocumentTimestamp documentTimestamp)
-                {
-                    obj = documentTimestamp.Document.Reference;
-                }
-                else if (cursor.Value is DocumentReferenceTimestamp documentReferenceTimestamp)
-                {
-                    obj = documentReferenceTimestamp.Reference;
-                }
-                else
-                {
-                    obj = cursor.Value;
-                }
-
-                ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, objType, obj, jsonSerializerOptions, null, null);
+                ModelBuilderHelpers.BuildUtf8JsonWriterObject(App.Config, writer, cursor.ValueType, cursor.Value, jsonSerializerOptions, null, null);
             }
             writer.WriteEndArray();
             writer.WritePropertyName("before");
-            writer.WriteBooleanValue(query.IsEndBefore);
+            writer.WriteBooleanValue(query.Query.IsEndBefore);
             writer.WriteEndObject();
         }
 
         writer.WritePropertyName("offset");
         writer.WriteNumberValue(offset);
         writer.WritePropertyName("limit");
-        writer.WriteNumberValue(query.PageSize);
+        writer.WriteNumberValue(query.Query.PageSize);
         writer.WriteEndObject();
         if (transaction != null)
         {
@@ -269,56 +231,10 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<QueryDocumentResult>> QueryDocument<TQuery>(
-        BaseQuery<TQuery> query,
-        IEnumerable<Document>? cacheDocuments = default,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        where TQuery : BaseQuery<TQuery>
-    {
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
-
-        return await QueryDocumentPage(
-            new(),
-            query,
-            0,
-            query.SkipPage * query.PageSize,
-            transaction,
-            cacheDocuments,
-            authorization,
-            jsonSerializerOptions,
-            cancellationToken);
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
-        BaseQuery<TQuery> query,
-        IEnumerable<Document>? cacheDocuments = default,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        where T : class
-        where TQuery : BaseQuery<TQuery>
-    {
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
-
-        return await QueryDocumentPage<T, TQuery>(
-            new(),
-            query,
-            0,
-            query.SkipPage * query.PageSize,
-            transaction,
-            cacheDocuments,
-            authorization,
-            jsonSerializerOptions,
-            cancellationToken);
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     private async Task<HttpResponse<QueryDocumentResult>> QueryDocumentPage<TQuery>(
         HttpResponse<QueryDocumentResult> response,
-        BaseQuery<TQuery> query,
+        StructuredQuery<TQuery> query,
+        List<StructuredCursor> startCursor,
         int page,
         int offset,
         Transaction? transaction,
@@ -332,6 +248,7 @@ public partial class FirestoreDatabaseApi
             page,
             offset,
             query,
+            startCursor,
             transaction,
             authorization,
             jsonSerializerOptions,
@@ -369,7 +286,7 @@ public partial class FirestoreDatabaseApi
                         }
                     }
 
-                    if (Document.Parse(App, query.DocumentReference, parsedModel?.GetType(), parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document found)
+                    if (Document.Parse(App, parsedDocumentReference, parsedModel?.GetType(), parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document found)
                     {
                         foundDocuments.Add(new DocumentTimestamp(found, readTime));
                     }
@@ -396,13 +313,14 @@ public partial class FirestoreDatabaseApi
             skippedResults,
             skippedReadTime,
             page,
-            query.PageSize,
+            query.Query.PageSize,
             response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage(
                     response,
                     query,
+                    startCursor,
                     pageNum,
                     0,
                     transaction,
@@ -416,7 +334,8 @@ public partial class FirestoreDatabaseApi
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     private async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
         HttpResponse<QueryDocumentResult<T>> response,
-        BaseQuery<TQuery> query,
+        StructuredQuery<TQuery> query,
+        List<StructuredCursor> startCursor,
         int page,
         int offset,
         Transaction? transaction,
@@ -431,6 +350,7 @@ public partial class FirestoreDatabaseApi
             page,
             offset,
             query,
+            startCursor,
             transaction,
             authorization,
             jsonSerializerOptions,
@@ -468,7 +388,7 @@ public partial class FirestoreDatabaseApi
                         }
                     }
 
-                    if (Document<T>.Parse(App, query.DocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                    if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                     {
                         foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
                     }
@@ -495,13 +415,14 @@ public partial class FirestoreDatabaseApi
             skippedResults,
             skippedReadTime,
             page,
-            query.PageSize,
+            query.Query.PageSize,
             response,
             (pageNum, ct) =>
             {
                 return QueryDocumentPage(
                     response,
                     query,
+                    startCursor,
                     pageNum,
                     0,
                     transaction,
@@ -510,5 +431,87 @@ public partial class FirestoreDatabaseApi
                     jsonSerializerOptions,
                     ct);
             }));
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<QueryDocumentResult>> QueryDocument<TQuery>(
+        BaseQuery<TQuery> query,
+        IEnumerable<Document>? cacheDocuments = default,
+        Transaction? transaction = default,
+        IAuthorization? authorization = default,
+        CancellationToken cancellationToken = default)
+        where TQuery : BaseQuery<TQuery>
+    {
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+
+        StructuredQuery<TQuery> structuredQuery = new(query);
+
+        foreach (var fromQuery in query.FromQuery)
+        {
+            structuredQuery.From.Add(new(fromQuery));
+        }
+        foreach (var selectQuery in query.SelectQuery)
+        {
+            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, selectQuery.NamePath, jsonSerializerOptions);
+
+            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+
+            structuredQuery.Select.Add(new(selectQuery, fieldPath));
+        }
+        foreach (var whereQuery in query.WhereQuery)
+        {
+            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, whereQuery.NamePath, jsonSerializerOptions);
+
+            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+
+            structuredQuery.Where.Add(new(whereQuery, fieldPath));
+        }
+        foreach (var orderByQuery in query.OrderByQuery)
+        {
+            var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(query.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
+
+            string fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+
+            structuredQuery.OrderBy.Add(new(orderByQuery, fieldPath));
+        }
+
+        return await QueryDocumentPage(
+            new(),
+            structuredQuery,
+            structuredQuery.StartCursor,
+            0,
+            query.SkipPage * query.PageSize,
+            transaction,
+            cacheDocuments,
+            authorization,
+            jsonSerializerOptions,
+            cancellationToken);
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
+        BaseQuery<TQuery> query,
+        IEnumerable<Document>? cacheDocuments = default,
+        Transaction? transaction = default,
+        IAuthorization? authorization = default,
+        CancellationToken cancellationToken = default)
+        where T : class
+        where TQuery : BaseQuery<TQuery>
+    {
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+
+        StructuredQuery<TQuery> structuredQuery = new(query);
+
+        return await QueryDocumentPage<T, TQuery>(
+            new(),
+            structuredQuery,
+            structuredQuery.StartCursor,
+            0,
+            query.SkipPage * query.PageSize,
+            transaction,
+            cacheDocuments,
+            authorization,
+            jsonSerializerOptions,
+            cancellationToken);
     }
 }

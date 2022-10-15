@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.FirestoreDatabase.Enums;
+using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
@@ -64,11 +65,6 @@ public abstract partial class BaseQuery<TQuery>
     /// Gets the page to skip of pager async enumerator. Must be >= 1 if specified. Default is 0.
     /// </summary>
     public int SkipPage { get; private set; } = 0;
-
-    /// <summary>
-    /// Gets <c>true</c> whether the "select" query is set to return the document name only; otherwise, <c>false</c>. Default is <c>false</c>.
-    /// </summary>
-    public bool IsSelectNameOnly { get; private set; } = false;
 
     /// <summary>
     /// Gets the document reference to run this query.
@@ -140,5 +136,28 @@ public partial class Query<[DynamicallyAccessedMembers(DynamicallyAccessedMember
         : base(app, typeof(TModel), documentReference)
     {
 
+    }
+}
+
+internal class StructuredQuery<TQuery>
+    where TQuery : BaseQuery<TQuery>
+{
+    public BaseQuery<TQuery> Query { get; }
+
+    public List<StructuredFrom> From { get; } = new();
+
+    public List<StructuredSelect> Select { get; } = new();
+
+    public List<StructuredFilter> Where { get; } = new();
+
+    public List<StructuredOrderBy> OrderBy { get; } = new();
+
+    public List<StructuredCursor> StartCursor { get; } = new();
+
+    public List<StructuredCursor> EndCursor { get; } = new();
+
+    public StructuredQuery(BaseQuery<TQuery> query)
+    {
+        Query = query;
     }
 }

@@ -8,6 +8,7 @@ using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -55,6 +56,13 @@ public partial class Document
     public virtual Type? Type { get => GetModel()?.GetType(); }
 
     /// <summary>
+    /// Gets the fields of the document.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?> Fields { get; }
+
+    private readonly ConcurrentDictionary<string, object?> fields;
+
+    /// <summary>
     /// Creates an instance of <see cref="Document{T}"/>.
     /// </summary>
     /// <param name="reference">
@@ -63,6 +71,9 @@ public partial class Document
     public Document(DocumentReference reference)
     {
         this.reference = reference;
+
+        fields = new();
+        Fields = fields.AsReadOnly();
     }
 }
 

@@ -20,8 +20,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <paramref name="namePath"/> is a null reference.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// <paramref name="namePath"/> is empty or
-    /// the select query is already set to return only the document name.
+    /// <paramref name="namePath"/> is empty.
     /// </exception>
     public TQuery Select(params string[] namePath)
     {
@@ -32,12 +31,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException($"\"{nameof(namePath)}\" is empty.");
         }
 
-        if (IsSelectNameOnly)
-        {
-            throw new ArgumentException("Select query is already set to return only the document name.");
-        }
-
-        selectQuery.Add(new(GetDocumentPath(namePath)));
+        selectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }));
 
         return (TQuery)this;
     }
@@ -58,8 +52,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException("Select query already contains field projections.");
         }
 
-        IsSelectNameOnly = true;
-        selectQuery.Add(new(DocumentFieldHelpers.DocumentName));
+        selectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }));
 
         return (TQuery)this;
     }
@@ -73,10 +66,23 @@ public class SelectQuery
     /// <summary>
     /// Gets the path of the document field the projection will return.
     /// </summary>
+    public string[] NamePath { get; internal set; }
+
+    internal SelectQuery(string[] namePath)
+    {
+        NamePath = namePath;
+    }
+}
+
+internal class StructuredSelect
+{
+    public SelectQuery? SelectQuery { get; internal set; }
+
     public string DocumentFieldPath { get; internal set; }
 
-    internal SelectQuery(string documentFieldPath)
+    internal StructuredSelect(SelectQuery selectQuery, string documentFieldPath)
     {
+        SelectQuery = selectQuery;
         DocumentFieldPath = documentFieldPath;
     }
 }

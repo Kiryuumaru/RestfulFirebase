@@ -1,5 +1,9 @@
-﻿using System;
+﻿using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -16,13 +20,8 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery StartAt(object? value)
     {
-        if (startCursorQuery.Count > 0 &&
-            IsStartAfter)
-        {
-            throw new ArgumentException($"Cannot combine \"{nameof(StartAt)}\" with \"{nameof(StartAfter)}\" query.");
-        }
-
         IsStartAfter = false;
+
         startCursorQuery.Add(new(value));
 
         return (TQuery)this;
@@ -39,14 +38,9 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery StartAfter(object? value)
     {
-        if (startCursorQuery.Count > 0 &&
-            !IsStartAfter)
-        {
-            throw new ArgumentException($"Cannot combine \"{nameof(StartAt)}\" with \"{nameof(StartAfter)}\" query.");
-        }
+        IsStartAfter = true;
 
         startCursorQuery.Add(new(value));
-        IsStartAfter = true;
 
         return (TQuery)this;
     }
@@ -62,13 +56,8 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery EndAt(object? value)
     {
-        if (endCursorQuery.Count > 0 &&
-            IsEndBefore)
-        {
-            throw new ArgumentException($"Cannot combine \"{nameof(EndAt)}\" with \"{nameof(EndAfter)}\" query.");
-        }
-
         IsEndBefore = false;
+
         endCursorQuery.Add(new(value));
 
         return (TQuery)this;
@@ -85,14 +74,9 @@ public abstract partial class BaseQuery<TQuery>
     /// </returns>
     public TQuery EndAfter(object? value)
     {
-        if (endCursorQuery.Count > 0 &&
-            !IsEndBefore)
-        {
-            throw new ArgumentException($"Cannot combine \"{nameof(EndAt)}\" with \"{nameof(EndAfter)}\" query.");
-        }
+        IsEndBefore = true;
 
         endCursorQuery.Add(new(value));
-        IsEndBefore = true;
 
         return (TQuery)this;
     }
@@ -110,6 +94,22 @@ public class CursorQuery
 
     internal CursorQuery(object? value)
     {
+        Value = value;
+    }
+}
+
+internal class StructuredCursor
+{
+    public CursorQuery CursorQuery { get; internal set; }
+
+    public Type? ValueType { get; internal set; }
+
+    public object? Value { get; internal set; }
+
+    internal StructuredCursor(CursorQuery cursorQuery, Type? valueType, object? value)
+    {
+        CursorQuery = cursorQuery;
+        ValueType = valueType;
         Value = value;
     }
 }

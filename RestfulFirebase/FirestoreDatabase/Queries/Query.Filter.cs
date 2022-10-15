@@ -25,7 +25,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(new string[] { name }), @operator));
+        whereQuery.Add(new UnaryFilterQuery(new string[] { name }, @operator));
 
         return (TQuery)this;
     }
@@ -54,7 +54,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(subName);
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(new string[] { name, subName }), @operator));
+        whereQuery.Add(new UnaryFilterQuery(new string[] { name, subName }, @operator));
 
         return (TQuery)this;
     }
@@ -88,7 +88,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName1);
         ArgumentNullException.ThrowIfNull(subName2);
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2 }), @operator));
+        whereQuery.Add(new UnaryFilterQuery(new string[] { name, subName1, subName2 }, @operator));
 
         return (TQuery)this;
     }
@@ -127,7 +127,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName2);
         ArgumentNullException.ThrowIfNull(subName3);
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2, subName3 }), @operator));
+        whereQuery.Add(new UnaryFilterQuery(new string[] { name, subName1, subName2, subName3 }, @operator));
 
         return (TQuery)this;
     }
@@ -171,7 +171,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName3);
         ArgumentNullException.ThrowIfNull(subName4);
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2, subName3, subName4 }), @operator));
+        whereQuery.Add(new UnaryFilterQuery(new string[] { name, subName1, subName2, subName3, subName4 }, @operator));
 
         return (TQuery)this;
     }
@@ -203,7 +203,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException($"\"{nameof(namePath)}\" is empty.");
         }
 
-        whereQuery.Add(new UnaryFilterQuery(GetDocumentPath(namePath), @operator));
+        whereQuery.Add(new UnaryFilterQuery(namePath, @operator));
 
         return (TQuery)this;
     }
@@ -230,7 +230,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(new string[] { name }), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(new string[] { name }, @operator, value));
 
         return (TQuery)this;
     }
@@ -262,7 +262,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(subName);
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(new string[] { name, subName }), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(new string[] { name, subName }, @operator, value));
 
         return (TQuery)this;
     }
@@ -299,7 +299,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName1);
         ArgumentNullException.ThrowIfNull(subName2);
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2 }), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(new string[] { name, subName1, subName2 }, @operator, value));
 
         return (TQuery)this;
     }
@@ -341,7 +341,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName2);
         ArgumentNullException.ThrowIfNull(subName3);
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2, subName3 }), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(new string[] { name, subName1, subName2, subName3 }, @operator, value));
 
         return (TQuery)this;
     }
@@ -388,7 +388,7 @@ public abstract partial class BaseQuery<TQuery>
         ArgumentNullException.ThrowIfNull(subName3);
         ArgumentNullException.ThrowIfNull(subName4);
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(new string[] { name, subName1, subName2, subName3, subName4 }), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(new string[] { name, subName1, subName2, subName3, subName4 }, @operator, value));
 
         return (TQuery)this;
     }
@@ -423,7 +423,7 @@ public abstract partial class BaseQuery<TQuery>
             throw new ArgumentException($"\"{nameof(namePath)}\" is empty.");
         }
 
-        whereQuery.Add(new FieldFilterQuery(GetDocumentPath(namePath), @operator, value));
+        whereQuery.Add(new FieldFilterQuery(namePath, @operator, value));
 
         return (TQuery)this;
     }
@@ -437,11 +437,11 @@ public abstract class FilterQuery
     /// <summary>
     /// Gets the path of the document field to filter.
     /// </summary>
-    public string DocumentFieldPath { get; internal set; }
+    public string[] NamePath { get; internal set; }
 
-    internal FilterQuery(string documentFieldPath)
+    internal FilterQuery(string[] namePath)
     {
-        DocumentFieldPath = documentFieldPath;
+        NamePath = namePath;
     }
 }
 
@@ -455,8 +455,8 @@ public class UnaryFilterQuery : FilterQuery
     /// </summary>
     public UnaryOperator Operator { get; set; }
 
-    internal UnaryFilterQuery(string documentFieldPath, UnaryOperator @operator)
-        : base(documentFieldPath)
+    internal UnaryFilterQuery(string[] namePath, UnaryOperator @operator)
+        : base(namePath)
     {
         Operator = @operator;
     }
@@ -477,10 +477,23 @@ public class FieldFilterQuery : FilterQuery
     /// </summary>
     public object? Value { get; set; }
 
-    internal FieldFilterQuery(string documentFieldPath, FieldOperator @operator, object? value)
-        : base(documentFieldPath)
+    internal FieldFilterQuery(string[] namePath, FieldOperator @operator, object? value)
+        : base(namePath)
     {
         Operator = @operator;
         Value = value;
+    }
+}
+
+internal class StructuredFilter
+{
+    public FilterQuery FilterQuery { get; internal set; }
+
+    public string DocumentFieldPath { get; internal set; }
+
+    internal StructuredFilter(FilterQuery filterQuery, string documentFieldPath)
+    {
+        FilterQuery = filterQuery;
+        DocumentFieldPath = documentFieldPath;
     }
 }

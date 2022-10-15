@@ -35,10 +35,12 @@ public partial class Document
         JsonElement.ObjectEnumerator jsonElementEnumerator,
         JsonSerializerOptions jsonSerializerOptions)
     {
+        Dictionary<string, object?> documentFields = new();
+
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        object? parseJsonElement(JsonElement jsonElement, Type objType)
+        object? parseJsonElement(JsonElement jsonElement, string fieldName, Type objType)
         {
             JsonConverter? jsonConverter = jsonSerializerOptions.Converters.FirstOrDefault(i => i.CanConvert(objType));
 
@@ -118,7 +120,7 @@ public partial class Document
 
                                 if (arrayElementType != null)
                                 {
-                                    obj = parseArrayFields(arrayElementType, arrayProperty);
+                                    obj = parseArrayFields(arrayElementType, fieldName, arrayProperty);
                                 }
                             }
                             else
@@ -135,7 +137,7 @@ public partial class Document
                                     {
                                         Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
 
-                                        parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, arrayProperty);
+                                        parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, fieldName, arrayProperty);
                                     }
                                 }
                             }
@@ -158,11 +160,11 @@ public partial class Document
                                 {
                                     Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                                    parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, mapProperty);
+                                    parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, fieldName, mapProperty);
                                 }
                                 else
                                 {
-                                    parseObjectFields(objType, obj, mapProperty);
+                                    parseObjectFields(objType, obj, fieldName, mapProperty);
                                 }
                             }
                         }
@@ -176,15 +178,22 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        object? parseArrayFields(Type valueType, JsonElement element)
+        object? parseArrayFields(Type valueType, string fieldName, JsonElement element)
         {
             List<object?> items = new();
 
+            int index = 0;
+
             foreach (var fieldElement in element.EnumerateArray())
             {
-                object? parsedSubObj = parseJsonElement(fieldElement, valueType);
+                string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $".{index}";
+                object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
+
+                documentFields.Add(subFieldName, parsedSubObj);
 
                 items.Add(parsedSubObj);
+
+                index++;
             }
 
             Array obj = Array.CreateInstance(valueType, items.Count);
@@ -200,7 +209,7 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, JsonElement element)
+        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, string fieldName, JsonElement element)
         {
             var addMethod = collectionInterfaceType.GetMethod("Add");
             var clearMethod = collectionInterfaceType.GetMethod("Clear");
@@ -210,13 +219,20 @@ public partial class Document
             {
                 clearMethod.Invoke(collectionObj, emptyParameterPlaceholder);
 
+                int index = 0;
+
                 foreach (var fieldElement in element.EnumerateArray())
                 {
-                    object? parsedSubObj = parseJsonElement(fieldElement, valueType);
+                    string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $".{index}";
+                    object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
+
+                    documentFields.Add(subFieldName, parsedSubObj);
 
                     addMethodParameter[0] = parsedSubObj;
 
                     addMethod.Invoke(collectionObj, addMethodParameter);
+
+                    index++;
                 }
             }
         }
@@ -224,7 +240,7 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, JsonElement element)
+        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, string fieldName, JsonElement element)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
             var keysProperty = dictionaryInterfaceType.GetProperty("Keys");
@@ -256,7 +272,10 @@ public partial class Document
 
                     keyParameter[0] = objKey;
 
-                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, valueType);
+                    string subFieldName = string.IsNullOrEmpty(fieldName) ? fieldProperty.Name : $".{fieldProperty.Name}";
+                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, subFieldName, valueType);
+
+                    documentFields.Add(subFieldName, parsedSubObj);
 
                     itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
 
@@ -282,7 +301,7 @@ public partial class Document
 #if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-        void parseObjectFields(Type objType, object obj, JsonElement element)
+        void parseObjectFields(Type objType, object obj, string fieldName, JsonElement element)
         {
             PropertyInfo[] propertyInfos = objType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             FieldInfo[] fieldInfos = objType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -303,7 +322,10 @@ public partial class Document
                     continue;
                 }
 
-                object? parsedSubObj = parseJsonElement(documentFieldElement, documentField.Type);
+                string subFieldName = string.IsNullOrEmpty(fieldName) ? documentField.DocumentFieldName : $".{documentField.DocumentFieldName}";
+                object? parsedSubObj = parseJsonElement(documentFieldElement, subFieldName, documentField.Type);
+
+                documentFields.Add(subFieldName, parsedSubObj);
 
                 propertyInfo.SetValue(obj, parsedSubObj);
             }
@@ -352,11 +374,11 @@ public partial class Document
                     {
                         Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, documentProperty.Value);
+                        parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, "", documentProperty.Value);
                     }
                     else
                     {
-                        parseObjectFields(objType, obj, documentProperty.Value);
+                        parseObjectFields(objType, obj, "", documentProperty.Value);
                     }
 
                     break;
@@ -398,19 +420,22 @@ public partial class Document
             document.Reference = reference;
             document.CreateTime = createTime.Value;
             document.UpdateTime = updateTime.Value;
+
+            List<string> fieldsToRemove = new(documentFields.Keys);
+
+            foreach (var pair in documentFields)
+            {
+                document.fields.AddOrUpdate(pair.Key, pair.Value, (_, _) => pair.Value);
+                fieldsToRemove.Remove(pair.Key);
+            }
+
+            foreach (var fieldToRemove in fieldsToRemove)
+            {
+                document.fields.TryRemove(fieldToRemove, out _);
+            }
         }
 
         return document;
-    }
-
-    internal virtual object? GetModel()
-    {
-        return null;
-    }
-
-    internal virtual void SetModel(object? obj)
-    {
-        return;
     }
 
 #if NET5_0_OR_GREATER
@@ -428,6 +453,16 @@ public partial class Document
         Type objType = obj.GetType();
 
         ModelBuilderHelpers.BuildUtf8JsonWriter(config, writer, objType, obj, this, jsonSerializerOptions);
+    }
+
+    internal virtual object? GetModel()
+    {
+        return null;
+    }
+
+    internal virtual void SetModel(object? obj)
+    {
+        return;
     }
 }
 
