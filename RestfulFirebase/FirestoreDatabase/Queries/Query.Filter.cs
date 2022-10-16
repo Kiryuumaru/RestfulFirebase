@@ -815,7 +815,7 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
 public abstract class FilterQuery
 {
     /// <summary>
-    /// Gets the path of the document field to filter.
+    /// Gets the path of the property or document field to filter.
     /// </summary>
     public string[] NamePath { get; internal set; }
 

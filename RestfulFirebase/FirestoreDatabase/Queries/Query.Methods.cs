@@ -84,7 +84,7 @@ public partial class Query
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult"/>.
     /// </returns>
-    public Task<HttpResponse<QueryDocumentResult>> RunQuery(
+    public Task<HttpResponse<QueryDocumentResult>> Run(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
         IAuthorization? authorization = default,
@@ -114,7 +114,7 @@ public partial class Query<TModel>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult{TModel}"/>.
     /// </returns>
-    public Task<HttpResponse<QueryDocumentResult<TModel>>> RunQuery(
+    public Task<HttpResponse<QueryDocumentResult<TModel>>> Run(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
         IAuthorization? authorization = default,

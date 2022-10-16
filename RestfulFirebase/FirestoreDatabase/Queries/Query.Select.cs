@@ -135,7 +135,7 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
 public class SelectQuery
 {
     /// <summary>
-    /// Gets the path of the document field the projection will return.
+    /// Gets the path of the property or document field the projection will return.
     /// </summary>
     public string[] NamePath { get; internal set; }
 

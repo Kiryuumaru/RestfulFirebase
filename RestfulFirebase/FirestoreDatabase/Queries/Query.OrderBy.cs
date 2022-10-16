@@ -233,7 +233,7 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
 public class OrderByQuery
 {
     /// <summary>
-    /// Gets or sets the order based on the document field path to order.
+    /// Gets the path of the property or document field to order.
     /// </summary>
     public string[] NamePath { get; internal set; }
 
