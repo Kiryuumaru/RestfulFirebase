@@ -72,7 +72,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <returns>
     /// The query with new added end <see cref="CursorQuery"/>.
     /// </returns>
-    public TQuery EndAfter(object? value)
+    public TQuery EndBefore(object? value)
     {
         IsEndBefore = true;
 

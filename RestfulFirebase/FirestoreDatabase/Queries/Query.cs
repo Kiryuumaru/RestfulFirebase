@@ -160,6 +160,16 @@ internal class StructuredQuery<TQuery>
 
     public bool IsEndBefore { get; internal set; } = false;
 
+    public int SizeOfPages { get; internal set; } = 20;
+
+    public int PagesToSkip { get; internal set; } = 0;
+
+    public DocumentReference? DocumentReference { get; }
+
+    public FirebaseApp App { get; }
+
+    public Type? ModelType { get; }
+
     public StructuredQuery(BaseQuery<TQuery> query)
     {
         Query = query;
@@ -171,6 +181,11 @@ internal class StructuredQuery<TQuery>
         EndCursor = new();
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
+        SizeOfPages = query.SizeOfPages;
+        PagesToSkip = query.PagesToSkip;
+        DocumentReference = query.DocumentReference;
+        App = query.App;
+        ModelType = query.ModelType;
     }
 
     public StructuredQuery(StructuredQuery<TQuery> query)
@@ -184,5 +199,10 @@ internal class StructuredQuery<TQuery>
         EndCursor = new(query.EndCursor);
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
+        SizeOfPages = query.SizeOfPages;
+        PagesToSkip = query.PagesToSkip;
+        DocumentReference = query.DocumentReference;
+        App = query.App;
+        ModelType = query.ModelType;
     }
 }

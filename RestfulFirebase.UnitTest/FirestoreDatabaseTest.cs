@@ -291,77 +291,164 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs11[3], testDocs1[9]);
 
         var queryResponse12 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
+            .StartAfter(testDocs1[5])
+            .EndAt(testDocs1[8])
             .RunQuery();
 
         var transaction12 = await queryResponse12.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse12.Result);
         var docs12 = queryResponse12.Result.Documents.Select(i => i.Document).ToArray();
-        Assert.Equal(10, docs12.Length);
-        Assert.Equivalent(docs12[0], testDocs1[0]);
-        Assert.Equivalent(docs12[1], testDocs1[2]);
-        Assert.Equivalent(docs12[2], testDocs1[1]);
-        Assert.Equivalent(docs12[3], testDocs1[8]);
-        Assert.Equivalent(docs12[4], testDocs1[7]);
-        Assert.Equivalent(docs12[5], testDocs1[6]);
-        Assert.Equivalent(docs12[6], testDocs1[5]);
-        Assert.Equivalent(docs12[7], testDocs1[4]);
-        Assert.Equivalent(docs12[8], testDocs1[3]);
-        Assert.Equivalent(docs12[9], testDocs1[9]);
+        Assert.Equal(3, docs12.Length);
+        Assert.Equivalent(docs12[0], testDocs1[6]);
+        Assert.Equivalent(docs12[1], testDocs1[7]);
+        Assert.Equivalent(docs12[2], testDocs1[8]);
 
         var queryResponse13 = await testCollectionReference1.Query<MixedModel>()
+            .StartAfter(testDocs1[5])
+            .EndBefore(testDocs1[9])
+            .RunQuery();
+
+        var transaction13 = await queryResponse13.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse13.Result);
+        var docs13 = queryResponse13.Result.Documents.Select(i => i.Document).ToArray();
+        Assert.Equal(3, docs13.Length);
+        Assert.Equivalent(docs13[0], testDocs1[6]);
+        Assert.Equivalent(docs13[1], testDocs1[7]);
+        Assert.Equivalent(docs13[2], testDocs1[8]);
+
+        var queryResponse14 = await testCollectionReference1.Query<MixedModel>()
+            .Ascending(nameof(MixedModel.Val1))
+            .Descending(nameof(MixedModel.Val2))
+            .RunQuery();
+
+        var transaction14 = await queryResponse14.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse14.Result);
+        var docs14 = queryResponse14.Result.Documents.Select(i => i.Document).ToArray();
+        Assert.Equal(10, docs14.Length);
+        Assert.Equivalent(docs14[0], testDocs1[0]);
+        Assert.Equivalent(docs14[1], testDocs1[2]);
+        Assert.Equivalent(docs14[2], testDocs1[1]);
+        Assert.Equivalent(docs14[3], testDocs1[8]);
+        Assert.Equivalent(docs14[4], testDocs1[7]);
+        Assert.Equivalent(docs14[5], testDocs1[6]);
+        Assert.Equivalent(docs14[6], testDocs1[5]);
+        Assert.Equivalent(docs14[7], testDocs1[4]);
+        Assert.Equivalent(docs14[8], testDocs1[3]);
+        Assert.Equivalent(docs14[9], testDocs1[9]);
+
+        var queryResponse15 = await testCollectionReference1.Query<MixedModel>()
             .Ascending(nameof(MixedModel.Val1))
             .Descending(nameof(MixedModel.Val2))
             .PageSize(2)
             .RunQuery();
 
-        var transaction13 = await queryResponse13.GetTransactionContentsAsString();
-        Assert.NotNull(queryResponse13.Result);
-        List<Document<MixedModel>> docs13 = new();
+        var transaction15 = await queryResponse15.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse15.Result);
+        List<Document<MixedModel>> docs15 = new();
 
-        int pages13 = 0;
-        await foreach (var response in queryResponse13.Result)
+        int pages15 = 0;
+        await foreach (var response in queryResponse15.Result)
         {
             var t = await response.GetTransactionContentsAsString();
             Assert.NotNull(response.Result);
             var d = response.Result.Documents.Select(i => i.Document).ToArray();
-            docs13.AddRange(d);
+            docs15.AddRange(d);
             Assert.True(true);
-            pages13++;
+            pages15++;
         }
 
-        Assert.Equal(5, pages13);
-        Assert.Equivalent(docs12, docs13);
+        Assert.Equal(5, pages15);
+        Assert.Equivalent(docs14, docs15);
 
-        var queryResponse14 = await testCollectionReference1.Query<MixedModel>()
+        var queryResponse16 = await testCollectionReference1.Query<MixedModel>()
+            .Ascending(nameof(MixedModel.Val1))
+            .Descending(nameof(MixedModel.Val2))
+            .EndAt(testDocs1[4])
+            .PageSize(2)
+            .RunQuery();
+
+        var transaction16 = await queryResponse16.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse16.Result);
+        List<Document<MixedModel>> docs16 = new();
+
+        int pages16 = 0;
+        await foreach (var response in queryResponse16.Result)
+        {
+            var t = await response.GetTransactionContentsAsString();
+            Assert.NotNull(response.Result);
+            var d = response.Result.Documents.Select(i => i.Document).ToArray();
+            docs16.AddRange(d);
+            Assert.True(true);
+            pages16++;
+        }
+
+        Assert.Equal(4, pages16);
+        Assert.Equivalent(docs16[0], testDocs1[0]);
+        Assert.Equivalent(docs16[1], testDocs1[2]);
+        Assert.Equivalent(docs16[2], testDocs1[1]);
+        Assert.Equivalent(docs16[3], testDocs1[8]);
+        Assert.Equivalent(docs16[4], testDocs1[7]);
+        Assert.Equivalent(docs16[5], testDocs1[6]);
+        Assert.Equivalent(docs16[6], testDocs1[5]);
+        Assert.Equivalent(docs16[7], testDocs1[4]);
+
+        var queryResponse17 = await testCollectionReference1.Query<MixedModel>()
             .Ascending(nameof(MixedModel.Val1))
             .Descending(nameof(MixedModel.Val2))
             .PageSize(2)
             .SkipPage(3)
             .RunQuery();
 
-        var transaction14 = await queryResponse14.GetTransactionContentsAsString();
-        Assert.NotNull(queryResponse14.Result);
-        List<Document<MixedModel>> docs14 = new();
+        var transaction17 = await queryResponse17.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse17.Result);
+        List<Document<MixedModel>> docs17 = new();
 
-        int pages14 = 0;
-        await foreach (var response in queryResponse14.Result)
+        int pages17 = 0;
+        await foreach (var response in queryResponse17.Result)
         {
             var t = await response.GetTransactionContentsAsString();
             Assert.NotNull(response.Result);
             var d = response.Result.Documents.Select(i => i.Document).ToArray();
-            docs14.AddRange(d);
+            docs17.AddRange(d);
             Assert.True(true);
-            pages14++;
+            pages17++;
         }
 
-        Assert.Equal(2, pages14);
-        Assert.Equal(4, docs14.Count);
-        Assert.Equivalent(docs14[0], testDocs1[5]);
-        Assert.Equivalent(docs14[1], testDocs1[4]);
-        Assert.Equivalent(docs14[2], testDocs1[3]);
-        Assert.Equivalent(docs14[3], testDocs1[9]);
+        Assert.Equal(2, pages17);
+        Assert.Equal(4, docs17.Count);
+        Assert.Equivalent(docs17[0], testDocs1[5]);
+        Assert.Equivalent(docs17[1], testDocs1[4]);
+        Assert.Equivalent(docs17[2], testDocs1[3]);
+        Assert.Equivalent(docs17[3], testDocs1[9]);
+
+        var queryResponse18 = await testCollectionReference1.Query<MixedModel>()
+            .Ascending(nameof(MixedModel.Val1))
+            .Descending(nameof(MixedModel.Val2))
+            .EndAt(testDocs1[3])
+            .PageSize(2)
+            .SkipPage(3)
+            .RunQuery();
+
+        var transaction18 = await queryResponse18.GetTransactionContentsAsString();
+        Assert.NotNull(queryResponse18.Result);
+        List<Document<MixedModel>> docs18 = new();
+
+        int pages18 = 0;
+        await foreach (var response in queryResponse18.Result)
+        {
+            var t = await response.GetTransactionContentsAsString();
+            Assert.NotNull(response.Result);
+            var d = response.Result.Documents.Select(i => i.Document).ToArray();
+            docs18.AddRange(d);
+            Assert.True(true);
+            pages18++;
+        }
+
+        Assert.Equal(2, pages18);
+        Assert.Equal(3, docs18.Count);
+        Assert.Equivalent(docs18[0], testDocs1[5]);
+        Assert.Equivalent(docs18[1], testDocs1[4]);
+        Assert.Equivalent(docs18[2], testDocs1[3]);
 
         await Cleanup(testCollectionReference1);
         await Cleanup(testCollectionReference2);

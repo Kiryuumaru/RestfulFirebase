@@ -40,9 +40,9 @@ public partial class FirestoreDatabaseApi
         where TQuery : BaseQuery<TQuery>
     {
         string url;
-        if (query.Query.DocumentReference != null)
+        if (query.DocumentReference != null)
         {
-            url = query.Query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
+            url = query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
         }
         else
         {
@@ -201,7 +201,7 @@ public partial class FirestoreDatabaseApi
         writer.WritePropertyName("offset");
         writer.WriteNumberValue(offset);
         writer.WritePropertyName("limit");
-        writer.WriteNumberValue(query.Query.SizeOfPages);
+        writer.WriteNumberValue(query.SizeOfPages);
         writer.WriteEndObject();
         if (transaction != null)
         {
@@ -339,9 +339,9 @@ public partial class FirestoreDatabaseApi
             {
                 fieldPath = string.Join(".", orderByQuery.NamePath);
             }
-            else if (structuredQuery.Query.ModelType != null)
+            else if (structuredQuery.ModelType != null)
             {
-                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(structuredQuery.Query.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
+                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(structuredQuery.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
                 fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
             }
             else
@@ -697,7 +697,7 @@ public partial class FirestoreDatabaseApi
             skippedResults,
             skippedReadTime,
             page,
-            query.Query.SizeOfPages,
+            query.SizeOfPages,
             response,
             (pageNum, ct) =>
             {
@@ -807,7 +807,7 @@ public partial class FirestoreDatabaseApi
             skippedResults,
             skippedReadTime,
             page,
-            query.Query.SizeOfPages,
+            query.SizeOfPages,
             response,
             (pageNum, ct) =>
             {
