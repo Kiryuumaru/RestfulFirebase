@@ -51,7 +51,7 @@ public partial class CollectionGroupReference : Reference
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
 
-        this.allDescendants.AddRange(collectionIds);
+        this.WritableAllDescendants.AddRange(collectionIds);
 
         return this;
     }
@@ -77,25 +77,25 @@ public partial class CollectionGroupReference : Reference
 
         if (allDescendants)
         {
-            this.allDescendants.AddRange(collectionIds);
+            this.WritableAllDescendants.AddRange(collectionIds);
         }
         else
         {
-            directDescendants.AddRange(collectionIds);
+            WritableDirectDescendants.AddRange(collectionIds);
         }
 
         return this;
     }
 
     /// <summary>
-    /// Creates a structured <see cref="Queries.Query"/>.
+    /// Creates a structured <see cref="QueryRoot"/>.
     /// </summary>
     /// <returns>
-    /// The created structured <see cref="Queries.Query"/>
+    /// The created structured <see cref="QueryRoot"/>
     /// </returns>
-    public Query Query()
+    public QueryRoot Query()
     {
-        Query query = new(App, null, Parent);
+        QueryRoot query = new(App, null, Parent);
 
         if (AllDescendants.Count != 0)
         {
@@ -110,18 +110,18 @@ public partial class CollectionGroupReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="Queries.Query{TModel}"/>.
+    /// Creates a structured <see cref="QueryRoot{TModel}"/>.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
     /// </typeparam>
     /// <returns>
-    /// The created structured <see cref="Queries.Query{TModel}"/>
+    /// The created structured <see cref="QueryRoot{TModel}"/>
     /// </returns>
-    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
+    public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
-        Query<TModel> query = new(App, Parent);
+        QueryRoot<TModel> query = new(App, Parent);
 
         if (AllDescendants.Count != 0)
         {

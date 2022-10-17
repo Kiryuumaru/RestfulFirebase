@@ -5,10 +5,10 @@ using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     /// <summary>
-    /// Adds an instance of <see cref="Queries.FromQuery"/> to the query.
+    /// Adds an instance of <see cref="FromQuery"/> to the query.
     /// </summary>
     /// <param name="collectionIds">
     /// The ID of the collection references.
@@ -25,19 +25,15 @@ public abstract partial class BaseQuery<TQuery>
     public TQuery From(params string[] collectionIds)
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
+        ArgumentException.ThrowIfHasNullOrEmpty(collectionIds);
 
-        if (collectionIds.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(collectionIds)}\" is empty.");
-        }
-
-        fromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, DocumentReference == null)));
+        WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, DocumentReference == null)));
 
         return (TQuery)this;
     }
 
     /// <summary>
-    /// Adds an instance of <see cref="Queries.FromQuery"/> to the query.
+    /// Adds an instance of <see cref="FromQuery"/> to the query.
     /// </summary>
     /// <param name="allDescendants">
     /// When <c>false</c>, selects only collections that are immediate children of the parent specified in the containing RunQueryRequest. When <c>true</c>, selects all descendant collections.
@@ -58,18 +54,13 @@ public abstract partial class BaseQuery<TQuery>
     public TQuery From(bool allDescendants, params string[] collectionIds)
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
-
-        if (collectionIds.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(collectionIds)}\" is empty.");
-        }
-
+        ArgumentException.ThrowIfHasNullOrEmpty(collectionIds);
         if (allDescendants && DocumentReference != null)
         {
-            throw new ArgumentException($"\"{nameof(allDescendants)}\" is only applicable from root query.");
+            ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        fromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, allDescendants)));
+        WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, allDescendants)));
 
         return (TQuery)this;
     }

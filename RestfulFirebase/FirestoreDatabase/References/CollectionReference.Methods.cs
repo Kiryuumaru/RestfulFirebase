@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using RestfulFirebase.Common.Http;
 using System;
 using RestfulFirebase.FirestoreDatabase.Queries;
+using RestfulFirebase.FirestoreDatabase.Writes;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 
@@ -117,6 +118,9 @@ public partial class CollectionReference : Reference
     /// <param name="documentNames">
     /// The name of the documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -133,13 +137,13 @@ public partial class CollectionReference : Reference
     /// <paramref name="documentNames"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<string> documentNames, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<string> documentNames, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(documentNames);
 
         HttpResponse<GetDocumentsResult> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), Array.Empty<Document>(), transaction, authorization, cancellationToken);
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), null, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -158,6 +162,9 @@ public partial class CollectionReference : Reference
     /// <param name="documentNames">
     /// The name of the documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -174,14 +181,14 @@ public partial class CollectionReference : Reference
     /// <paramref name="documentNames"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult<T>>> GetDocuments<T>(IEnumerable<string> documentNames, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult<T>>> GetDocuments<T>(IEnumerable<string> documentNames, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(documentNames);
 
         HttpResponse<GetDocumentsResult<T>> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), Array.Empty<Document<T>>(), transaction, authorization, cancellationToken);
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(documentNames.Select(i => Document(i)), null, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -218,7 +225,9 @@ public partial class CollectionReference : Reference
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        return App.FirestoreDatabase.WriteDocument(documents.Select(i => new Document<T>(Document(i.documentName), i.model)), null, null, transaction, authorization, cancellationToken);
+        return App.FirestoreDatabase.Write()
+            .Patch(documents.Select(i => new Document<T>(Document(i.documentName), i.model)))
+            .Run(transaction, authorization, cancellationToken);
     }
 
     /// <summary>
@@ -226,6 +235,9 @@ public partial class CollectionReference : Reference
     /// </summary>
     /// <param name="documents">
     /// The requested document to patch.
+    /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
     /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
@@ -243,30 +255,14 @@ public partial class CollectionReference : Reference
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult<T>>> PatchAndGetDocuments<T>(IEnumerable<(string documentName, T? model)> documents, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        where T : class
+    public Task<HttpResponse<GetDocumentsResult<TModel>>> PatchAndGetDocuments<TModel>(IEnumerable<(string documentName, TModel? model)> documents, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+        where TModel : class
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        IEnumerable<Document<T>> docs = documents.Select(i => new Document<T>(Document(i.documentName), i.model));
-
-        HttpResponse<GetDocumentsResult<T>> response = new();
-
-        var patchDocumentResponse = await App.FirestoreDatabase.WriteDocument(docs, null, null, transaction, authorization, cancellationToken);
-        response.Append(patchDocumentResponse);
-        if (patchDocumentResponse.IsError)
-        {
-            return response;
-        }
-
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocuments(docs, transaction, authorization, cancellationToken);
-        response.Append(getDocumentResponse);
-        if (getDocumentResponse.IsError)
-        {
-            return response;
-        }
-
-        return response;
+        return App.FirestoreDatabase.Write()
+            .Patch(documents.Select(i => new Document<TModel>(Document(i.documentName), i.model)))
+            .RunAndGet<TModel>(cacheDocuments, transaction, authorization, cancellationToken);
     }
 
     /// <summary>
@@ -295,29 +291,69 @@ public partial class CollectionReference : Reference
     {
         ArgumentNullException.ThrowIfNull(documentNames);
 
-        return App.FirestoreDatabase.WriteDocument(null, documentNames.Select(i => Document(i)), null, transaction, authorization, cancellationToken);
+        return App.FirestoreDatabase.Write()
+            .Delete(documentNames.Select(i => Document(i)))
+            .Run(transaction, authorization, cancellationToken);
     }
 
     /// <summary>
-    /// Creates a structured <see cref="Queries.Query"/>.
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
+    /// </summary>
+    /// <param name="documentName">
+    /// The requested document names to transform.
+    /// </param>
+    /// <returns>
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documentName"/> is a <c>null</c> reference.
+    /// </exception>
+    public WriteWithDocumentTransform TransformDocument(string documentName)
+    {
+        return App.FirestoreDatabase.Write().DocumentTransform(Document(documentName));
+    }
+
+    /// <summary>
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
+    /// </summary>
+    /// <param name="documentName">
+    /// The requested document names to transform.
+    /// </param>
+    /// <typeparam name="TModel">
+    /// The type of the model of the document to transform.
+    /// </typeparam>
+    /// <returns>
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documentName"/> is a <c>null</c> reference.
+    /// </exception>
+    public WriteWithDocumentTransform<TModel> TransformDocument<TModel>(string documentName)
+        where TModel : class
+    {
+        return App.FirestoreDatabase.Write().DocumentTransform<TModel>(Document(documentName));
+    }
+
+    /// <summary>
+    /// Creates a structured <see cref="QueryRoot"/>.
     /// </summary>
     /// <param name="allDescendants">
     /// If specified <c>true</c>, the query will select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </param>
     /// <returns>
-    /// The created structured <see cref="Queries.Query"/>
+    /// The created structured <see cref="QueryRoot"/>
     /// </returns>
     /// <exception cref="ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
-    public Query Query(bool allDescendants = false)
+    public QueryRoot Query(bool allDescendants = false)
     {
         if (allDescendants && Parent != null)
         {
-            throw new ArgumentException($"\"{nameof(allDescendants)}\" is only applicable from root query.");
+            ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        Query query = new(App, null, Parent);
+        QueryRoot query = new(App, null, Parent);
 
         query.From(allDescendants, Id);
 
@@ -325,7 +361,7 @@ public partial class CollectionReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="Queries.Query{TModel}"/>.
+    /// Creates a structured <see cref="QueryRoot{TModel}"/>.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
@@ -334,20 +370,20 @@ public partial class CollectionReference : Reference
     /// If specified <c>true</c>, the query will select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </param>
     /// <returns>
-    /// The created structured <see cref="Queries.Query{TModel}"/>
+    /// The created structured <see cref="QueryRoot{TModel}"/>
     /// </returns>
     /// <exception cref="ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
-    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)
+    public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)
         where TModel : class
     {
         if (allDescendants && Parent != null)
         {
-            throw new ArgumentException($"\"{nameof(allDescendants)}\" is only applicable from root query.");
+            ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        Query<TModel> query = new(App, Parent);
+        QueryRoot<TModel> query = new(App, Parent);
 
         query.From(allDescendants, Id);
 

@@ -29,15 +29,14 @@ namespace RestfulFirebase.FirestoreDatabase;
 public partial class FirestoreDatabaseApi
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocument<TQuery>(
+    internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocument(
         int page,
         int offset,
-        StructuredQuery<TQuery> query,
+        StructuredQuery query,
         Transaction? transaction,
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
-        where TQuery : BaseQuery<TQuery>
     {
         string url;
         if (query.DocumentReference != null)
@@ -236,6 +235,7 @@ public partial class FirestoreDatabaseApi
 
     private static async Task<HttpResponse<Document?>> GetLatestDocument(
         DocumentReference? docRef,
+        IEnumerable<Document>? cacheDocuments,
         Transaction? transaction,
         IAuthorization? authorization,
         CancellationToken cancellationToken)
@@ -244,7 +244,7 @@ public partial class FirestoreDatabaseApi
 
         if (docRef != null)
         {
-            var getDocumentResponse = await docRef.GetDocument(transaction, authorization, cancellationToken);
+            var getDocumentResponse = await docRef.GetDocument(cacheDocuments, transaction, authorization, cancellationToken);
             response.Append(getDocumentResponse);
             if (getDocumentResponse.IsError || getDocumentResponse.Result?.Found == null)
             {
@@ -258,6 +258,7 @@ public partial class FirestoreDatabaseApi
 
     private static async Task<(CursorQuery? cursorQuery, HttpResponse<Document?> response)> GetLatestDocument(
         IEnumerable<CursorQuery> cursorQueries,
+        IEnumerable<Document>? cacheDocuments,
         Transaction? transaction,
         IAuthorization? authorization,
         CancellationToken cancellationToken)
@@ -299,18 +300,17 @@ public partial class FirestoreDatabaseApi
             docRef = documentReferenceTimestamp.Reference;
         }
 
-        var getDocumentResponse = await GetLatestDocument(docRef, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetLatestDocument(docRef, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
 
         return (cursorQueryDoc, response);
     }
 
-    private static void BuildOrderCursor<TQuery>(
-        StructuredQuery<TQuery> structuredQuery,
+    private static void BuildOrderCursor(
+        StructuredQuery structuredQuery,
         Document? startDoc,
         Document? endDoc,
         JsonSerializerOptions jsonSerializerOptions)
-        where TQuery : BaseQuery<TQuery>
     {
         if (startDoc != null)
         {
@@ -326,10 +326,10 @@ public partial class FirestoreDatabaseApi
         {
             if (orderByHasDocumentNameIndicator)
             {
-                throw new ArgumentException($"OrderBy query has \"__name__\" and must be placed at the end.");
+                ArgumentException.Throw($"OrderBy query has \"__name__\" and must be placed at the end.");
             }
 
-            string fieldPath;
+            string? fieldPath = null;
             if (orderByQuery.NamePath.Length == 1 && orderByQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
             {
                 fieldPath = DocumentFieldHelpers.DocumentName;
@@ -346,7 +346,7 @@ public partial class FirestoreDatabaseApi
             }
             else
             {
-                throw new ArgumentException($"OrderBy query with property path enabled requires a query with types");
+                ArgumentException.Throw($"OrderBy query with property path enabled requires a query with types");
             }
 
             if (startDoc != null && !orderByHasDocumentNameIndicator)
@@ -378,17 +378,17 @@ public partial class FirestoreDatabaseApi
         }
     }
 
-    private static async Task<HttpResponse<StructuredQuery<TQuery>>> BuildStartingStructureQuery<TQuery>(
-        BaseQuery<TQuery> query,
+    private static async Task<HttpResponse<StructuredQuery>> BuildStartingStructureQuery(
+        Query query,
+        IEnumerable<Document>? cacheDocuments,
         Transaction? transaction,
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
-        where TQuery : BaseQuery<TQuery>
     {
-        HttpResponse<StructuredQuery<TQuery>> response = new();
+        HttpResponse<StructuredQuery> response = new();
 
-        StructuredQuery<TQuery> structuredQuery = new(query);
+        StructuredQuery structuredQuery = new(query);
 
         foreach (var fromQuery in query.FromQuery)
         {
@@ -400,10 +400,10 @@ public partial class FirestoreDatabaseApi
         {
             if (selectHasDocumentNameIndicator && query.SelectQuery.Count != 1)
             {
-                throw new ArgumentException($"Select query has \"__name__\" indicator and should not contain any other select query.");
+                ArgumentException.Throw($"Select query has \"__name__\" indicator and should not contain any other select query.");
             }
 
-            string fieldPath;
+            string? fieldPath = null;
             if (selectQuery.NamePath.Length == 1 && selectQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
             {
                 fieldPath = DocumentFieldHelpers.DocumentName;
@@ -420,7 +420,7 @@ public partial class FirestoreDatabaseApi
             }
             else
             {
-                throw new ArgumentException($"Select query with property path enabled requires a query with types");
+                ArgumentException.Throw($"Select query with property path enabled requires a query with types");
             }
 
             structuredQuery.Select.Add(new(selectQuery, fieldPath));
@@ -428,7 +428,7 @@ public partial class FirestoreDatabaseApi
 
         foreach (var whereQuery in query.WhereQuery)
         {
-            string fieldPath;
+            string? fieldPath = null;
             if (whereQuery.NamePath.Length == 1 && whereQuery.NamePath[0] == DocumentFieldHelpers.DocumentName)
             {
                 fieldPath = DocumentFieldHelpers.DocumentName;
@@ -444,13 +444,13 @@ public partial class FirestoreDatabaseApi
             }
             else
             {
-                throw new ArgumentException($"Where query with property path enabled requires a query with types");
+                ArgumentException.Throw($"Where query with property path enabled requires a query with types");
             }
 
             structuredQuery.Where.Add(new(whereQuery, fieldPath));
         }
 
-        var (startCursorRef, getLatestStartCursorDoc) = await GetLatestDocument(query.StartCursorQuery, transaction, authorization, cancellationToken);
+        var (startCursorRef, getLatestStartCursorDoc) = await GetLatestDocument(query.StartCursorQuery, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getLatestStartCursorDoc);
         if (getLatestStartCursorDoc.IsError)
         {
@@ -458,7 +458,7 @@ public partial class FirestoreDatabaseApi
         }
         Document? startDoc = getLatestStartCursorDoc.Result;
 
-        var (endCursorRef, getLatestEndCursorDoc) = await GetLatestDocument(query.EndCursorQuery, transaction, authorization, cancellationToken);
+        var (endCursorRef, getLatestEndCursorDoc) = await GetLatestDocument(query.EndCursorQuery, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getLatestEndCursorDoc);
         if (getLatestEndCursorDoc.IsError)
         {
@@ -560,18 +560,18 @@ public partial class FirestoreDatabaseApi
         return response;
     }
 
-    private static async Task<HttpResponse<StructuredQuery<TQuery>>> BuildStructureQuery<TQuery>(
-        StructuredQuery<TQuery> query,
+    private static async Task<HttpResponse<StructuredQuery>> BuildStructureQuery(
+        StructuredQuery query,
         Document? startDoc,
+        IEnumerable<Document>? cacheDocuments,
         Transaction? transaction,
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
-        where TQuery : BaseQuery<TQuery>
     {
-        HttpResponse<StructuredQuery<TQuery>> response = new();
+        HttpResponse<StructuredQuery> response = new();
 
-        StructuredQuery<TQuery> structuredQuery = new(query);
+        StructuredQuery structuredQuery = new(query);
 
         structuredQuery.OrderBy.Clear();
         structuredQuery.StartCursor.Clear();
@@ -579,7 +579,7 @@ public partial class FirestoreDatabaseApi
 
         if (startDoc == null)
         {
-            var (_, getLatestStartCursorDoc) = await GetLatestDocument(query.Query.StartCursorQuery, transaction, authorization, cancellationToken);
+            var (_, getLatestStartCursorDoc) = await GetLatestDocument(query.Query.StartCursorQuery, cacheDocuments, transaction, authorization, cancellationToken);
             response.Append(getLatestStartCursorDoc);
             if (getLatestStartCursorDoc.IsError)
             {
@@ -589,7 +589,7 @@ public partial class FirestoreDatabaseApi
         }
         else
         {
-            var getLatestStartCursorDoc = await GetLatestDocument(startDoc.Reference, transaction, authorization, cancellationToken);
+            var getLatestStartCursorDoc = await GetLatestDocument(startDoc.Reference, cacheDocuments, transaction, authorization, cancellationToken);
             response.Append(getLatestStartCursorDoc);
             if (getLatestStartCursorDoc.IsError)
             {
@@ -606,9 +606,9 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    private async Task<HttpResponse<QueryDocumentResult>> QueryDocumentPage<TQuery>(
+    private async Task<HttpResponse<QueryDocumentResult>> QueryDocumentPage(
         HttpResponse<QueryDocumentResult> response,
-        Task<HttpResponse<StructuredQuery<TQuery>>> queryTask,
+        Task<HttpResponse<StructuredQuery>> queryTask,
         int page,
         int offset,
         Transaction? transaction,
@@ -616,7 +616,6 @@ public partial class FirestoreDatabaseApi
         IAuthorization? authorization,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
-        where TQuery : BaseQuery<TQuery>
     {
         var queryResponse = await queryTask;
         response.Append(queryResponse);
@@ -703,7 +702,7 @@ public partial class FirestoreDatabaseApi
             {
                 return QueryDocumentPage(
                     response,
-                    BuildStructureQuery(query, lastDoc, transaction, authorization, jsonSerializerOptions, ct),
+                    BuildStructureQuery(query, lastDoc, cacheDocuments, transaction, authorization, jsonSerializerOptions, ct),
                     pageNum,
                     0,
                     transaction,
@@ -715,9 +714,9 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    private async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
+    private async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
         HttpResponse<QueryDocumentResult<T>> response,
-        Task<HttpResponse<StructuredQuery<TQuery>>> queryTask,
+        Task<HttpResponse<StructuredQuery>> queryTask,
         int page,
         int offset,
         Transaction? transaction,
@@ -726,7 +725,6 @@ public partial class FirestoreDatabaseApi
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
         where T : class
-        where TQuery : BaseQuery<TQuery>
     {
         var queryResponse = await queryTask;
         response.Append(queryResponse);
@@ -813,7 +811,7 @@ public partial class FirestoreDatabaseApi
             {
                 return QueryDocumentPage(
                     response,
-                    BuildStructureQuery(query, lastDoc, transaction, authorization, jsonSerializerOptions, ct),
+                    BuildStructureQuery(query, lastDoc, cacheDocuments, transaction, authorization, jsonSerializerOptions, ct),
                     pageNum,
                     0,
                     transaction,
@@ -825,19 +823,18 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<QueryDocumentResult>> QueryDocument<TQuery>(
-        BaseQuery<TQuery> query,
+    internal async Task<HttpResponse<QueryDocumentResult>> QueryDocument(
+        Query query,
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
-        where TQuery : BaseQuery<TQuery>
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
         return await QueryDocumentPage(
             new(),
-            BuildStartingStructureQuery(query, transaction, authorization, jsonSerializerOptions, cancellationToken),
+            BuildStartingStructureQuery(query, cacheDocuments, transaction, authorization, jsonSerializerOptions, cancellationToken),
             0,
             query.PagesToSkip * query.SizeOfPages,
             transaction,
@@ -848,20 +845,19 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T, TQuery>(
-        BaseQuery<TQuery> query,
+    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        Query query,
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
         where T : class
-        where TQuery : BaseQuery<TQuery>
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        return await QueryDocumentPage<T, TQuery>(
+        return await QueryDocumentPage<T>(
             new(),
-            BuildStartingStructureQuery(query, transaction, authorization, jsonSerializerOptions, cancellationToken),
+            BuildStartingStructureQuery(query, cacheDocuments, transaction, authorization, jsonSerializerOptions, cancellationToken),
             0,
             query.PagesToSkip * query.SizeOfPages,
             transaction,

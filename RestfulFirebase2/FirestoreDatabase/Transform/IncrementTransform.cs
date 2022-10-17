@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field "increment" transformation parameter for "increment" transform commit writes.

@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     /// <summary>
     /// Adds an instance of <see cref="CursorQuery"/> with the start at configuration to the query.
@@ -22,7 +22,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         IsStartAfter = false;
 
-        startCursorQuery.Add(new(value));
+        WritableStartCursorQuery.Add(new(value));
 
         return (TQuery)this;
     }
@@ -40,7 +40,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         IsStartAfter = true;
 
-        startCursorQuery.Add(new(value));
+        WritableStartCursorQuery.Add(new(value));
 
         return (TQuery)this;
     }
@@ -58,7 +58,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         IsEndBefore = false;
 
-        endCursorQuery.Add(new(value));
+        WritableEndCursorQuery.Add(new(value));
 
         return (TQuery)this;
     }
@@ -76,7 +76,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         IsEndBefore = true;
 
-        endCursorQuery.Add(new(value));
+        WritableEndCursorQuery.Add(new(value));
 
         return (TQuery)this;
     }

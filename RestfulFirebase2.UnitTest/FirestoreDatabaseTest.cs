@@ -6,7 +6,7 @@ using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.Transform;
+using RestfulFirebase.FirestoreDatabase.Transforms;
 using System;
 using RestfulFirebase.FirestoreDatabase.Enums;
 

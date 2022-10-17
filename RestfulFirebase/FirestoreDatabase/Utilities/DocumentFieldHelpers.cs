@@ -186,10 +186,7 @@ internal static class DocumentFieldHelpers
 
     public static TypedDocumentFieldPair[] GetDocumentFieldPath([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type objType, string[] propertyNamePath, JsonSerializerOptions? jsonSerializerOptions)
     {
-        if (!propertyNamePath.Any())
-        {
-            throw new ArgumentException($"{propertyNamePath} is empty.");
-        }
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyNamePath);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] static Type? getDictionaryValueType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
@@ -223,7 +220,7 @@ internal static class DocumentFieldHelpers
                 var documentField = GetDocumentField(currentType, propertyNamePath[i], jsonSerializerOptions);
                 if (documentField == null)
                 {
-                    throw new ArgumentException($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
+                    ArgumentException.Throw($"\"{currentType}\" does not have a writable property \"{propertyNamePath[i]}\"");
                 }
                 documentFields.Add(documentField);
                 currentType = documentField.Type;

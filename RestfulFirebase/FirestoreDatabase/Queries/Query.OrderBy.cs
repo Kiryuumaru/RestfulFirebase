@@ -7,10 +7,10 @@ using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     /// <summary>
-    /// Adds new instance of <see cref="Queries.OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
+    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
     /// </summary>
     /// <param name="documentFieldPath">
     /// The order based on the document field path to order.
@@ -24,22 +24,18 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
-    public virtual TQuery Ascending(params string[] documentFieldPath)
+    public TQuery Ascending(params string[] documentFieldPath)
     {
         ArgumentNullException.ThrowIfNull(documentFieldPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        if (documentFieldPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(documentFieldPath)}\" is empty.");
-        }
-
-        orderByQuery.Add(new(documentFieldPath, false, Direction.Ascending));
+        WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Ascending));
 
         return (TQuery)this;
     }
 
     /// <summary>
-    /// Adds new instance of <see cref="Queries.OrderByQuery"/> with <see cref="Direction.Descending"/> order to the query.
+    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Descending"/> order to the query.
     /// </summary>
     /// <param name="documentFieldPath">
     /// The order based on the document field path.
@@ -53,85 +49,45 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
-    public virtual TQuery Descending(params string[] documentFieldPath)
+    public TQuery Descending(params string[] documentFieldPath)
     {
         ArgumentNullException.ThrowIfNull(documentFieldPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        if (documentFieldPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(documentFieldPath)}\" is empty.");
-        }
-
-        orderByQuery.Add(new(documentFieldPath, false, Direction.Descending));
+        WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Descending));
 
         return (TQuery)this;
     }
 
     /// <summary>
-    /// Adds new instance of <see cref="Queries.OrderByQuery"/> with <see cref="Direction.Ascending"/> document name order to the query.
+    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> document name order to the query.
     /// </summary>
     /// <returns>
     /// The query with new added "orderBy" query.
     /// </returns>
     public TQuery AscendingDocumentName()
     {
-        orderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+        WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
 
         return (TQuery)this;
     }
 
     /// <summary>
-    /// Adds new instance of <see cref="Queries.OrderByQuery"/> with <see cref="Direction.Descending"/> document name order to the query.
+    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Descending"/> document name order to the query.
     /// </summary>
     /// <returns>
     /// The query with new added "orderBy" query.
     /// </returns>
     public TQuery DescendingDocumentName()
     {
-        orderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+        WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
 
         return (TQuery)this;
     }
 }
 
-public partial class Query<TModel> : BaseQuery<Query<TModel>>
+public partial class FluentQueryRoot<TQuery, TModel>
 {
-    /// <summary>
-    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
-    /// </summary>
-    /// <param name="propertyPath">
-    /// The order based on the property name of the model to order.
-    /// </param>
-    /// <returns>
-    /// The query with new added "orderBy" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="propertyPath"/> is empty.
-    /// </exception>
-    public override Query<TModel> Ascending(params string[] propertyPath)
-        => AscendingProperty(propertyPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
-    /// </summary>
-    /// <param name="documentFieldPath">
-    /// The order based on the document field path to order.
-    /// </param>
-    /// <returns>
-    /// The query with new added "orderBy" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="documentFieldPath"/> is empty.
-    /// </exception>
-    public Query<TModel> AscendingDocumentField(params string[] documentFieldPath)
-        => base.Ascending(documentFieldPath);
-
     /// <summary>
     /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
     /// </summary>
@@ -147,18 +103,14 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public Query<TModel> AscendingProperty(params string[] propertyPath)
+    public TQuery PropertyAscending(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        if (propertyPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(propertyPath)}\" is empty.");
-        }
+        WritableOrderByQuery.Add(new(propertyPath, true, Direction.Ascending));
 
-        orderByQuery.Add(new(propertyPath, true, Direction.Ascending));
-
-        return this;
+        return (TQuery)this;
     }
 
     /// <summary>
@@ -176,54 +128,14 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public override Query<TModel> Descending(params string[] propertyPath)
-        => DescendingProperty(propertyPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Descending"/> order to the query.
-    /// </summary>
-    /// <param name="documentFieldPath">
-    /// The order based on the document field path.
-    /// </param>
-    /// <returns>
-    /// The query with new added "orderBy" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="documentFieldPath"/> is empty.
-    /// </exception>
-    public Query<TModel> DescendingDocumentField(params string[] documentFieldPath)
-        => base.Descending(documentFieldPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Descending"/> order to the query.
-    /// </summary>
-    /// <param name="propertyPath">
-    /// The order based on the property path of the model.
-    /// </param>
-    /// <returns>
-    /// The query with new added "orderBy" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="propertyPath"/> is empty.
-    /// </exception>
-    public Query<TModel> DescendingProperty(params string[] propertyPath)
+    public TQuery PropertyDescending(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        if (propertyPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(propertyPath)}\" is empty.");
-        }
+        WritableOrderByQuery.Add(new(propertyPath, true, Direction.Descending));
 
-        orderByQuery.Add(new(propertyPath, true, Direction.Descending));
-
-        return this;
+        return (TQuery)this;
     }
 }
 

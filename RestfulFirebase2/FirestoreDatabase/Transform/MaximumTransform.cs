@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field "maximum" transformation parameter for "maximum" transform commit writes.

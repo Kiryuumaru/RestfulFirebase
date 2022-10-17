@@ -236,7 +236,7 @@ public partial class FirestoreDatabaseApi
     {
         if (transaction.Token == null)
         {
-            throw new ArgumentException($"\"{nameof(Transaction)}\" is provided but missing token. \"{nameof(Transaction)}\" must be created first by passing the parameter to any read operations.");
+            ArgumentException.Throw($"\"{nameof(Transaction)}\" is provided but missing token. \"{nameof(Transaction)}\" must be created first by passing the parameter to any read operations.");
         }
         writer.WritePropertyName("transaction");
         writer.WriteStringValue(transaction.Token);

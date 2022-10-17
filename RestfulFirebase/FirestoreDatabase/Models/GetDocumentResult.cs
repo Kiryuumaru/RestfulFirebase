@@ -9,7 +9,7 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
-/// The result of the <see cref="FirestoreDatabaseApi.GetDocument(IEnumerable{References.DocumentReference}, IEnumerable{Document}, Transaction?, IAuthorization?, CancellationToken)"/> request.
+/// The result for get document operations.
 /// </summary>
 public class GetDocumentResult
 {
@@ -31,7 +31,7 @@ public class GetDocumentResult
 }
 
 /// <summary>
-/// The result of the <see cref="FirestoreDatabaseApi.GetDocument{T}(IEnumerable{References.DocumentReference}, IEnumerable{Document{T}}, Transaction?, IAuthorization?, CancellationToken)"/> request.
+/// The result for get document operations.
 /// </summary>
 /// <typeparam name="T">
 /// The type of the model of the document.

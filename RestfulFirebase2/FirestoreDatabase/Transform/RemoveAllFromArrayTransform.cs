@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field "removeAllFromArray" transformation parameter for "removeAllFromArray" transform commit writes.

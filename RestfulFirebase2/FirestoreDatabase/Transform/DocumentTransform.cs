@@ -1,7 +1,7 @@
 ﻿using RestfulFirebase.FirestoreDatabase.References;
 using System.Collections.Generic;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The document transform parameter for write commits.

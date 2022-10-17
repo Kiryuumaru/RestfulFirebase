@@ -86,14 +86,8 @@ internal static class NumberSerializer
         {
             throw new ArgumentOutOfRangeException(nameof(baseSystem));
         }
-        if (arbitraryBaseNumber == null)
-        {
-            ArgumentNullException.ThrowIfNull(arbitraryBaseNumber);
-        }
-        if (arbitraryBaseNumber.Length == 0)
-        {
-            throw new ArgumentException(nameof(arbitraryBaseNumber) + " is empty.");
-        }
+        ArgumentNullException.ThrowIfNull(arbitraryBaseNumber);
+        ArgumentException.ThrowIfEmpty(arbitraryBaseNumber);
 
         bool isNegative = arbitraryBaseNumber[0] < 0;
         int floorLoop = isNegative ? 1 : 0;

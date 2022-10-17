@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field transformation parameter for transform commit writes to the <see cref="Builder"/>.

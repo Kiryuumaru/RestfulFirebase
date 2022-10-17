@@ -118,10 +118,7 @@ internal static class StringSerializer
     /// </exception>
     public static string Serialize(int startIndex, int count, params string?[] data)
     {
-        if (data == null)
-        {
-            ArgumentNullException.ThrowIfNull(data);
-        }
+        ArgumentNullException.ThrowIfNull(data);
         if (startIndex < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(startIndex));
@@ -132,7 +129,7 @@ internal static class StringSerializer
         }
         if (startIndex + count > data.Length)
         {
-            throw new ArgumentException(nameof(count) + " is greater than to " + nameof(data) + " length.");
+            ArgumentException.Throw(nameof(count) + " is greater than to " + nameof(data) + " length.");
         }
         if (data.Length == 0)
         {
@@ -238,7 +235,7 @@ internal static class StringSerializer
                 int indexOf = Base62Charset.IndexOf(number[i]);
                 if (indexOf < 0)
                 {
-                    throw new ArgumentException("The number is not a base62 value.");
+                    ArgumentException.Throw("The number is not a base62 value.");
                 }
                 indexes[i] = indexOf;
             }

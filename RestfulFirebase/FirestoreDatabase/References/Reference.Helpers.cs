@@ -8,10 +8,7 @@ public abstract partial class Reference
 {
     internal static Reference Parse(Reference reference, string[] path)
     {
-        if (path.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(path)}\" is empty");
-        }
+        ArgumentException.ThrowIfHasNullOrEmpty(path);
 
         Reference currentPath = reference;
 
@@ -32,10 +29,7 @@ public abstract partial class Reference
 
     internal static Reference Parse(FirebaseApp app, string[] path)
     {
-        if (path.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(path)}\" is empty");
-        }
+        ArgumentException.ThrowIfHasNullOrEmpty(path);
 
         Reference currentPath = app.FirestoreDatabase.Collection(path[0]);
 

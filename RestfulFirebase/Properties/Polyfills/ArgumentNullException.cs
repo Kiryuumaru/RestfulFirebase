@@ -56,7 +56,7 @@ internal static class ArgumentNullException
     /// </summary>
     /// <param name="paramName">The name of the parameter that failed validation.</param>
     [DoesNotReturn]
-    private static void Throw(string? paramName)
+    public static void Throw(string? paramName)
     {
         throw new System.ArgumentNullException(paramName);
     }

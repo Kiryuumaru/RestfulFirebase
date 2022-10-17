@@ -1,7 +1,7 @@
 ﻿using RestfulFirebase.FirestoreDatabase.Enums;
 using System;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field "setToServerValue" transformation parameter for "setToServerValue" transform commit writes.

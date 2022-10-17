@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RestfulFirebase.FirestoreDatabase.Transform;
+namespace RestfulFirebase.FirestoreDatabase.Transforms;
 
 /// <summary>
 /// The field "minimum" transformation parameter for "minimum" transform commit writes.

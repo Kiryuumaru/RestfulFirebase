@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     /// <summary>
     /// Sets the requested page size of pager async enumerator. Must be >= 1 if specified. Default is 20.
@@ -31,7 +31,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         if (pageSize <= 0)
         {
-            throw new ArgumentException($"\"{nameof(pageSize)}\" is less than or equal to zero.");
+            ArgumentException.Throw($"\"{nameof(pageSize)}\" is less than or equal to zero.");
         }
 
         SizeOfPages = pageSize;
@@ -55,7 +55,7 @@ public abstract partial class BaseQuery<TQuery>
     {
         if (skipPage < 0)
         {
-            throw new ArgumentException($"\"{nameof(skipPage)}\" is less than zero.");
+            ArgumentException.Throw($"\"{nameof(skipPage)}\" is less than zero.");
         }
 
         PagesToSkip = skipPage;
@@ -64,7 +64,7 @@ public abstract partial class BaseQuery<TQuery>
     }
 }
 
-public partial class Query
+public partial class QueryRoot
 {
     /// <summary>
     /// Runs the structured query.
@@ -94,7 +94,7 @@ public partial class Query
     }
 }
 
-public partial class Query<TModel>
+public partial class QueryRoot<TModel>
 {
     /// <summary>
     /// Runs the structured query.
@@ -120,6 +120,6 @@ public partial class Query<TModel>
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
     {
-        return App.FirestoreDatabase.QueryDocument<TModel, Query<TModel>>(this, cacheDocuments, transaction, authorization, cancellationToken);
+        return App.FirestoreDatabase.QueryDocument<TModel>(this, cacheDocuments, transaction, authorization, cancellationToken);
     }
 }

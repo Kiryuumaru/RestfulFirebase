@@ -703,7 +703,7 @@ internal static class ModelBuilderHelpers
 
         if (obj == null)
         {
-            throw new ArgumentException($"Both {nameof(obj)} and {nameof(document)} is a null reference. Provide at least one to populate.");
+            ArgumentException.Throw($"Both {nameof(obj)} and {nameof(document)} is a null reference. Provide at least one to populate.");
         }
 
         var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>

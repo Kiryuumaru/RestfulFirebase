@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     #region Main
 
@@ -27,16 +27,12 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
-    public virtual TQuery Where(UnaryOperator @operator, params string[] documentFieldPath)
+    public TQuery Where(UnaryOperator @operator, params string[] documentFieldPath)
     {
         ArgumentNullException.ThrowIfNull(documentFieldPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        if (documentFieldPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(documentFieldPath)}\" is empty.");
-        }
-
-        whereQuery.Add(new UnaryFilterQuery(documentFieldPath, false, @operator));
+        WritableWhereQuery.Add(new UnaryFilterQuery(documentFieldPath, false, @operator));
 
         return (TQuery)this;
     }
@@ -62,16 +58,12 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
-    public virtual TQuery Where(FieldOperator @operator, object? value, params string[] documentFieldPath)
+    public TQuery Where(FieldOperator @operator, object? value, params string[] documentFieldPath)
     {
         ArgumentNullException.ThrowIfNull(documentFieldPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        if (documentFieldPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(documentFieldPath)}\" is empty.");
-        }
-
-        whereQuery.Add(new FieldFilterQuery(documentFieldPath, false, @operator, value));
+        WritableWhereQuery.Add(new FieldFilterQuery(documentFieldPath, false, @operator, value));
 
         return (TQuery)this;
     }
@@ -95,7 +87,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentFieldName"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, UnaryOperator @operator) => Where(@operator, documentFieldName);
+    public TQuery Where(string documentFieldName, UnaryOperator @operator) => Where(@operator, documentFieldName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -116,7 +108,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <paramref name="documentFieldName"/> or
     /// <paramref name="subDocumentFieldName"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, string subDocumentFieldName, UnaryOperator @operator) => Where(@operator, documentFieldName, subDocumentFieldName);
+    public TQuery Where(string documentFieldName, string subDocumentFieldName, UnaryOperator @operator) => Where(@operator, documentFieldName, subDocumentFieldName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -141,7 +133,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <paramref name="subDocumentFieldName1"/> or
     /// <paramref name="subDocumentFieldName2"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, UnaryOperator @operator) => Where(@operator, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
+    public TQuery Where(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, UnaryOperator @operator) => Where(@operator, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -161,7 +153,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentFieldName"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName);
+    public TQuery Where(string documentFieldName, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -185,7 +177,7 @@ public abstract partial class BaseQuery<TQuery>
     /// <paramref name="documentFieldName"/> or
     /// <paramref name="subDocumentFieldName"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, string subDocumentFieldName, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName, subDocumentFieldName);
+    public TQuery Where(string documentFieldName, string subDocumentFieldName, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName, subDocumentFieldName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -213,56 +205,14 @@ public abstract partial class BaseQuery<TQuery>
     /// <paramref name="subDocumentFieldName1"/> or
     /// <paramref name="subDocumentFieldName2"/> is a null reference.
     /// </exception>
-    public virtual TQuery Where(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
+    public TQuery Where(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, FieldOperator @operator, object? value) => Where(@operator, value, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
 
     #endregion
 }
 
-public partial class Query<TModel> : BaseQuery<Query<TModel>>
+public partial class FluentQueryRoot<TQuery, TModel>
 {
     #region Main
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <param name="propertyPath">
-    /// The property path to which to apply the operator.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="propertyPath"/> is empty.
-    /// </exception>
-    public override Query<TModel> Where(UnaryOperator @operator, params string[] propertyPath)
-        => WhereProperty(@operator, propertyPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <param name="documentFieldPath">
-    /// The document field path to which to apply the operator.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="documentFieldPath"/> is empty.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(UnaryOperator @operator, params string[] documentFieldPath)
-        => base.Where(@operator, documentFieldPath);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -282,18 +232,14 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public Query<TModel> WhereProperty(UnaryOperator @operator, params string[] propertyPath)
+    public TQuery PropertyWhere(UnaryOperator @operator, params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        if (propertyPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(propertyPath)}\" is empty.");
-        }
+        WritableWhereQuery.Add(new UnaryFilterQuery(propertyPath, true, @operator));
 
-        whereQuery.Add(new UnaryFilterQuery(propertyPath, true, @operator));
-
-        return this;
+        return (TQuery)this;
     }
 
     /// <summary>
@@ -317,66 +263,14 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public override Query<TModel> Where(FieldOperator @operator, object? value, params string[] propertyPath)
-        => WhereProperty(@operator, value, propertyPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <param name="documentFieldPath">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="documentFieldPath"/> is empty.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(FieldOperator @operator, object? value, params string[] documentFieldPath)
-        => base.Where(@operator, value, documentFieldPath);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <param name="propertyPath">
-    /// The property path to which to apply the operator.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="propertyPath"/> is empty.
-    /// </exception>
-    public Query<TModel> WhereProperty(FieldOperator @operator, object? value, params string[] propertyPath)
+    public TQuery PropertyWhere(FieldOperator @operator, object? value, params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        if (propertyPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(propertyPath)}\" is empty.");
-        }
+        WritableWhereQuery.Add(new FieldFilterQuery(propertyPath, true, @operator, value));
 
-        whereQuery.Add(new FieldFilterQuery(propertyPath, true, @operator, value));
-
-        return this;
+        return (TQuery)this;
     }
 
     #endregion
@@ -398,8 +292,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName);
+    public TQuery PropertyWhere(string propertyName, UnaryOperator @operator)
+        => PropertyWhere(@operator, propertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -420,8 +314,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <paramref name="propertyName"/> or
     /// <paramref name="subPropertyName"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, string subPropertyName, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName, subPropertyName);
+    public TQuery PropertyWhere(string propertyName, string subPropertyName, UnaryOperator @operator)
+        => PropertyWhere(@operator, propertyName, subPropertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -446,140 +340,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <paramref name="subPropertyName1"/> or
     /// <paramref name="subPropertyName2"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, string subPropertyName1, string subPropertyName2, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName, subPropertyName1, subPropertyName2);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, UnaryOperator @operator)
-        => WhereDocumentField(@operator, documentFieldName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName">
-    /// The sub document field name of <paramref name="documentFieldName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/> or
-    /// <paramref name="subDocumentFieldName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, string subDocumentFieldName, UnaryOperator @operator)
-        => WhereDocumentField(@operator, documentFieldName, subDocumentFieldName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName1">
-    /// The sub document field name of <paramref name="documentFieldName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName2">
-    /// The sub document field name of <paramref name="subDocumentFieldName1"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/>,
-    /// <paramref name="subDocumentFieldName1"/> or
-    /// <paramref name="subDocumentFieldName2"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, UnaryOperator @operator)
-        => WhereDocumentField(@operator, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName">
-    /// The sub property name of <paramref name="propertyName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/> or
-    /// <paramref name="subPropertyName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, string subPropertyName, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName, subPropertyName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName1">
-    /// The sub property name of <paramref name="propertyName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName2">
-    /// The sub property name of <paramref name="subPropertyName1"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="UnaryOperator"/> to apply.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/>,
-    /// <paramref name="subPropertyName1"/> or
-    /// <paramref name="subPropertyName2"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, string subPropertyName1, string subPropertyName2, UnaryOperator @operator)
-        => WhereProperty(@operator, propertyName, subPropertyName1, subPropertyName2);
+    public TQuery PropertyWhere(string propertyName, string subPropertyName1, string subPropertyName2, UnaryOperator @operator)
+        => PropertyWhere(@operator, propertyName, subPropertyName1, subPropertyName2);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -599,8 +361,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName);
+    public TQuery PropertyWhere(string propertyName, FieldOperator @operator, object? value)
+        => PropertyWhere(@operator, value, propertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -624,8 +386,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <paramref name="propertyName"/> or
     /// <paramref name="subPropertyName"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, string subPropertyName, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName, subPropertyName);
+    public TQuery PropertyWhere(string propertyName, string subPropertyName, FieldOperator @operator, object? value)
+        => PropertyWhere(@operator, value, propertyName, subPropertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -653,158 +415,8 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <paramref name="subPropertyName1"/> or
     /// <paramref name="subPropertyName2"/> is a null reference.
     /// </exception>
-    public override Query<TModel> Where(string propertyName, string subPropertyName1, string subPropertyName2, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName, subPropertyName1, subPropertyName2);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, FieldOperator @operator, object? value)
-        => WhereDocumentField(@operator, value, documentFieldName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName">
-    /// The sub document field name of <paramref name="documentFieldName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/> or
-    /// <paramref name="subDocumentFieldName"/>is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, string subDocumentFieldName, FieldOperator @operator, object? value)
-        => WhereDocumentField(@operator, value, documentFieldName, subDocumentFieldName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldName">
-    /// The document field name to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName1">
-    /// The sub document field name of <paramref name="documentFieldName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="subDocumentFieldName2">
-    /// The sub document field name of <paramref name="subDocumentFieldName1"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldName"/>,
-    /// <paramref name="subDocumentFieldName1"/> or
-    /// <paramref name="subDocumentFieldName2"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereDocumentField(string documentFieldName, string subDocumentFieldName1, string subDocumentFieldName2, FieldOperator @operator, object? value)
-        => WhereDocumentField(@operator, value, documentFieldName, subDocumentFieldName1, subDocumentFieldName2);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName">
-    /// The sub property name of <paramref name="propertyName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/> or
-    /// <paramref name="subPropertyName"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, string subPropertyName, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName, subPropertyName);
-
-    /// <summary>
-    /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyName">
-    /// The property name to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName1">
-    /// The sub property name of <paramref name="propertyName"/> to which to apply the operator.
-    /// </param>
-    /// <param name="subPropertyName2">
-    /// The sub property name of <paramref name="subPropertyName1"/> to which to apply the operator.
-    /// </param>
-    /// <param name="operator">
-    /// The <see cref="FieldOperator"/> to apply.
-    /// </param>
-    /// <param name="value">
-    /// The value to compare to.
-    /// </param>
-    /// <returns>
-    /// The query with new added "where" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyName"/>,
-    /// <paramref name="subPropertyName1"/> or
-    /// <paramref name="subPropertyName2"/> is a null reference.
-    /// </exception>
-    public Query<TModel> WhereProperty(string propertyName, string subPropertyName1, string subPropertyName2, FieldOperator @operator, object? value)
-        => WhereProperty(@operator, value, propertyName, subPropertyName1, subPropertyName2);
+    public TQuery PropertyWhere(string propertyName, string subPropertyName1, string subPropertyName2, FieldOperator @operator, object? value)
+        => PropertyWhere(@operator, value, propertyName, subPropertyName1, subPropertyName2);
 
     #endregion
 }

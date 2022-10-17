@@ -84,7 +84,7 @@ public partial class FirestoreDatabaseApi
 
         if (!modelType.IsClass)
         {
-            throw new ArgumentException($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
+            ArgumentException.Throw($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
         }
 
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();

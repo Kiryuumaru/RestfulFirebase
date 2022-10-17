@@ -8,10 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class BaseQuery<TQuery>
+public abstract partial class FluentQueryRoot<TQuery>
 {
     /// <summary>
-    /// Adds the <see cref="Queries.SelectQuery"/> to the query.
+    /// Adds the <see cref="SelectQuery"/> to the query.
     /// </summary>
     /// <param name="documentFieldPath">
     /// The document field path to add.
@@ -25,22 +25,18 @@ public abstract partial class BaseQuery<TQuery>
     /// <exception cref="ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
-    public virtual TQuery Select(params string[] documentFieldPath)
+    public TQuery Select(params string[] documentFieldPath)
     {
         ArgumentNullException.ThrowIfNull(documentFieldPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        if (documentFieldPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(documentFieldPath)}\" is empty.");
-        }
-
-        selectQuery.Add(new(documentFieldPath, false));
+        WritableSelectQuery.Add(new(documentFieldPath, false));
 
         return (TQuery)this;
     }
 
     /// <summary>
-    /// Adds new instance of <see cref="Queries.SelectQuery"/> with '__name__' document name to only return the name of the document.
+    /// Adds new instance of <see cref="SelectQuery"/> with '__name__' document name to only return the name of the document.
     /// </summary>
     /// <returns>
     /// The query with new added "select" query.
@@ -52,16 +48,16 @@ public abstract partial class BaseQuery<TQuery>
     {
         if (SelectQuery.Count != 0)
         {
-            throw new ArgumentException("Select query already contains field projections.");
+            ArgumentException.Throw("Select query already contains field projections.");
         }
 
-        selectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false));
+        WritableSelectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false));
 
         return (TQuery)this;
     }
 }
 
-public partial class Query<TModel> : BaseQuery<Query<TModel>>
+public partial class FluentQueryRoot<TQuery, TModel>
 {
     /// <summary>
     /// Adds the <see cref="SelectQuery"/> to the query.
@@ -78,54 +74,14 @@ public partial class Query<TModel> : BaseQuery<Query<TModel>>
     /// <exception cref="ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public override Query<TModel> Select(params string[] propertyPath)
-        => SelectProperty(propertyPath);
-
-    /// <summary>
-    /// Adds the <see cref="SelectQuery"/> to the query.
-    /// </summary>
-    /// <param name="documentFieldPath">
-    /// The document field path to add.
-    /// </param>
-    /// <returns>
-    /// The query with new added "select" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documentFieldPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="documentFieldPath"/> is empty.
-    /// </exception>
-    public Query<TModel> SelectDocumentField(params string[] documentFieldPath)
-        => base.Select(documentFieldPath);
-
-    /// <summary>
-    /// Adds the <see cref="SelectQuery"/> to the query.
-    /// </summary>
-    /// <param name="propertyPath">
-    /// The property path to add.
-    /// </param>
-    /// <returns>
-    /// The query with new added "select" query.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="propertyPath"/> is a null reference.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// <paramref name="propertyPath"/> is empty.
-    /// </exception>
-    public Query<TModel> SelectProperty(params string[] propertyPath)
+    public TQuery PropertySelect(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
+        ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        if (propertyPath.Length == 0)
-        {
-            throw new ArgumentException($"\"{nameof(propertyPath)}\" is empty.");
-        }
+        WritableSelectQuery.Add(new(propertyPath, true));
 
-        selectQuery.Add(new(propertyPath, true));
-
-        return this;
+        return (TQuery)this;
     }
 }
 

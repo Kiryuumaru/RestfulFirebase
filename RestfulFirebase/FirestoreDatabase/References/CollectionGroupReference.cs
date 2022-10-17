@@ -27,16 +27,16 @@ public partial class CollectionGroupReference : Reference
     /// </summary>
     public DocumentReference? Parent { get; }
 
-    private readonly List<string> allDescendants;
-    private readonly List<string> directDescendants;
+    internal readonly List<string> WritableAllDescendants;
+    internal readonly List<string> WritableDirectDescendants;
 
     internal CollectionGroupReference(FirebaseApp app, DocumentReference? parent)
         : base(app)
     {
-        allDescendants = new();
-        directDescendants = new();
-        AllDescendants = allDescendants.AsReadOnly();
-        DirectDescendants = directDescendants.AsReadOnly();
+        WritableAllDescendants = new();
+        WritableDirectDescendants = new();
+        AllDescendants = WritableAllDescendants.AsReadOnly();
+        DirectDescendants = WritableDirectDescendants.AsReadOnly();
 
         Parent = parent;
     }

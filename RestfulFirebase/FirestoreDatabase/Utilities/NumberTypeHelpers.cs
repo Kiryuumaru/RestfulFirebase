@@ -31,11 +31,13 @@ internal static class NumberTypeHelpers
         else if (incrementType != typeof(object) &&
             incrementType.IsAssignableFrom(typeof(decimal)))
         {
-            throw new ArgumentException("Decimal number is not yet supported.");
+            ArgumentException.Throw("Decimal number is not yet supported.");
+            return default;
         }
         else
         {
-            throw new ArgumentException($"\"{incrementType}\" type is not supported.");
+            ArgumentException.Throw($"\"{incrementType}\" type is not supported.");
+            return default;
         }
     }
 }

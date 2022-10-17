@@ -569,7 +569,7 @@ public partial class Document
 
         if (obj == null)
         {
-            throw new ArgumentException($"Model is a null reference. Provide a model to build to writer.");
+            ArgumentException.Throw($"Model is a null reference. Provide a model to build to writer.");
         }
 
         Type objType = obj.GetType();
@@ -597,7 +597,7 @@ public partial class Document<T> : Document
     internal static Document<T>? Parse(
         FirebaseApp app,
         DocumentReference? reference,
-        T? obj,
+        object? obj,
         Document? document,
         JsonElement.ObjectEnumerator jsonElementEnumerator,
         JsonSerializerOptions jsonSerializerOptions)
@@ -627,7 +627,7 @@ public partial class Document<T> : Document
         }
         else
         {
-            throw new ArgumentException($"Mismatch type of {nameof(obj)} and {typeof(T)}");
+            ArgumentException.Throw($"Mismatch type of {nameof(obj)} and {typeof(T)}");
         }
     }
 }

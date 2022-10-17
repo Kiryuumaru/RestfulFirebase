@@ -6,7 +6,7 @@ namespace RestfulFirebase.Common.Exceptions;
 /// <summary>
 /// The base exception for all firebase exception.
 /// </summary>
-public class FirebaseException : ArgumentException
+public class FirebaseException : System.ArgumentException
 {
     /// <summary>
     /// Gets the request URL of the http operation.

@@ -5,7 +5,7 @@ using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.Transform;
+using RestfulFirebase.FirestoreDatabase.Writes;
 using System;
 using RestfulFirebase.FirestoreDatabase.Enums;
 
@@ -15,8 +15,7 @@ public class FirestoreDatabaseTest
 {
     internal static async Task Cleanup(CollectionReference collectionReference)
     {
-        var oldDataList = await collectionReference.Query()
-            .RunQuery();
+        var oldDataList = await collectionReference.Query().Run();
         Assert.NotNull(oldDataList.Result);
 
         List<Document> oldDocs = new();
@@ -31,6 +30,59 @@ public class FirestoreDatabaseTest
         }
         var cleanups = await collectionReference.DeleteDocuments(oldDocs.Select(i => i.Reference.Id));
         cleanups.ThrowIfError();
+    }
+
+
+    [Fact]
+    public async void TransformAppendMissingElementsGetAndDeleteModelTest()
+    {
+        FirebaseApp app = Helpers.GetFirebaseApp();
+
+        CollectionReference testCollectionReference = app.FirestoreDatabase
+            .Collection("public")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(TransformAppendMissingElementsGetAndDeleteModelTest));
+
+        await Cleanup(testCollectionReference);
+
+        var model1Reference = testCollectionReference.Document("model1");
+
+        var writeResult = await model1Reference.PatchAndGetDocument(new ArrayModel()
+        {
+            Val1 = new int[] { 1, 2, 3, 4, 5 }
+        });
+
+        var writeTest1Model1 = writeResult.Result?.Found?.Document;
+
+        Assert.NotNull(writeTest1Model1?.Model);
+
+        var transformTest1 = await model1Reference.TransformDocument<ArrayModel>()
+            .PropertyAppendMissingElements(new object[] { 6, 7 }, nameof(ArrayModel.Val1))
+            .Run();
+        transformTest1.ThrowIfError();
+        await model1Reference.GetDocument(new Document[] { writeTest1Model1 });
+
+        Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7 }, writeTest1Model1.Model.Val1);
+
+        var transformTest2 = await model1Reference.TransformDocument<ArrayModel>()
+            .PropertyAppendMissingElements(new object[] { 7, 8 }, nameof(ArrayModel.Val1))
+            .Run();
+        transformTest2.ThrowIfError();
+        await model1Reference.GetDocument(new Document[] { writeTest1Model1 });
+
+        Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, writeTest1Model1.Model.Val1);
+
+        var transformTest3 = await model1Reference.TransformDocument<ArrayModel>()
+            .PropertyAppendMissingElements(new object[] { 1, 2 }, nameof(ArrayModel.Val1))
+            .Run();
+        transformTest3.ThrowIfError();
+        await model1Reference.GetDocument(new Document[] { writeTest1Model1 });
+
+        Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, writeTest1Model1.Model.Val1);
+
+        await Cleanup(testCollectionReference);
+
+        Assert.True(true);
     }
 
     [Fact]
@@ -137,9 +189,9 @@ public class FirestoreDatabaseTest
         Assert.Equal(2, testDocs2.Length);
 
         var queryResponse1 = await testCollectionReference1.Query<MixedModel>()
-            .Select(nameof(MixedModel.Val2))
+            .PropertySelect(nameof(MixedModel.Val2))
             .PageSize(2)
-            .RunQuery();
+            .Run();
 
         var transaction1 = await queryResponse1.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse1.Result);
@@ -153,8 +205,8 @@ public class FirestoreDatabaseTest
         Assert.Null(docs1[1].Model?.Val3);
 
         var queryResponse2 = await testCollectionReference1.Query<MixedModel>()
-            .Where(nameof(MixedModel.Val1), FieldOperator.Equal, 1)
-            .RunQuery();
+            .PropertyWhere(nameof(MixedModel.Val1), FieldOperator.Equal, 1)
+            .Run();
 
         var transaction2 = await queryResponse2.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse2.Result);
@@ -164,8 +216,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs2[1], testDocs1[2]);
 
         var queryResponse3 = await testCollectionReference1.Query<MixedModel>()
-            .Where(nameof(MixedModel.Val1), FieldOperator.In, new object[] { 1, 2 })
-            .RunQuery();
+            .PropertyWhere(nameof(MixedModel.Val1), FieldOperator.In, new object[] { 1, 2 })
+            .Run();
 
         var transaction3 = await queryResponse3.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse3.Result);
@@ -181,8 +233,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs3[7], testDocs1[8]);
 
         var queryResponse4 = await testCollectionReference1.Query<MixedModel>()
-            .Where(nameof(MixedModel.Val3), UnaryOperator.IsNull)
-            .RunQuery();
+            .PropertyWhere(nameof(MixedModel.Val3), UnaryOperator.IsNull)
+            .Run();
 
         var transaction4 = await queryResponse4.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse4.Result);
@@ -191,8 +243,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs4[0], testDocs1[0]);
 
         var queryResponse5 = await testCollectionReference2.Query<ArrayModel>()
-            .Where(nameof(ArrayModel.Val1), FieldOperator.ArrayContains, 3)
-            .RunQuery();
+            .PropertyWhere(nameof(ArrayModel.Val1), FieldOperator.ArrayContains, 3)
+            .Run();
 
         var transaction5 = await queryResponse5.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse5.Result);
@@ -201,8 +253,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs5, testDocs2);
 
         var queryResponse6 = await testCollectionReference2.Query<ArrayModel>()
-            .Where(nameof(ArrayModel.Val1), FieldOperator.ArrayContainsAny, new object[] { 1, 5 })
-            .RunQuery();
+            .PropertyWhere(nameof(ArrayModel.Val1), FieldOperator.ArrayContainsAny, new object[] { 1, 5 })
+            .Run();
 
         var transaction6 = await queryResponse6.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse6.Result);
@@ -211,9 +263,9 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs6, testDocs2);
 
         var queryResponse7 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
+            .PropertyAscending(nameof(MixedModel.Val1))
             .AscendingDocumentName()
-            .RunQuery();
+            .Run();
 
         var transaction7 = await queryResponse7.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse7.Result);
@@ -231,11 +283,11 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs7[9], testDocs1[9]);
 
         var queryResponse8 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
+            .PropertyAscending(nameof(MixedModel.Val1))
             .AscendingDocumentName()
             .StartAt(2)
             .StartAt(testDocs1[5])
-            .RunQuery();
+            .Run();
 
         var transaction8 = await queryResponse8.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse8.Result);
@@ -248,10 +300,10 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs8[4], testDocs1[9]);
 
         var queryResponse9 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
+            .PropertyAscending(nameof(MixedModel.Val1))
             .AscendingDocumentName()
             .StartAfter(testDocs1[5])
-            .RunQuery();
+            .Run();
 
         var transaction9 = await queryResponse9.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse9.Result);
@@ -265,7 +317,7 @@ public class FirestoreDatabaseTest
         var queryResponse10 = await testCollectionReference1.Query<MixedModel>()
             .AscendingDocumentName()
             .StartAt(testDocs1[5])
-            .RunQuery();
+            .Run();
 
         var transaction10 = await queryResponse10.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse10.Result);
@@ -279,7 +331,7 @@ public class FirestoreDatabaseTest
 
         var queryResponse11 = await testCollectionReference1.Query<MixedModel>()
             .StartAfter(testDocs1[5])
-            .RunQuery();
+            .Run();
 
         var transaction11 = await queryResponse11.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse11.Result);
@@ -293,7 +345,7 @@ public class FirestoreDatabaseTest
         var queryResponse12 = await testCollectionReference1.Query<MixedModel>()
             .StartAfter(testDocs1[5])
             .EndAt(testDocs1[8])
-            .RunQuery();
+            .Run();
 
         var transaction12 = await queryResponse12.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse12.Result);
@@ -306,7 +358,7 @@ public class FirestoreDatabaseTest
         var queryResponse13 = await testCollectionReference1.Query<MixedModel>()
             .StartAfter(testDocs1[5])
             .EndBefore(testDocs1[9])
-            .RunQuery();
+            .Run();
 
         var transaction13 = await queryResponse13.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse13.Result);
@@ -317,9 +369,9 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs13[2], testDocs1[8]);
 
         var queryResponse14 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
-            .RunQuery();
+            .PropertyAscending(nameof(MixedModel.Val1))
+            .PropertyDescending(nameof(MixedModel.Val2))
+            .Run();
 
         var transaction14 = await queryResponse14.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse14.Result);
@@ -337,10 +389,10 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs14[9], testDocs1[9]);
 
         var queryResponse15 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
+            .PropertyAscending(nameof(MixedModel.Val1))
+            .PropertyDescending(nameof(MixedModel.Val2))
             .PageSize(2)
-            .RunQuery();
+            .Run();
 
         var transaction15 = await queryResponse15.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse15.Result);
@@ -361,11 +413,11 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs14, docs15);
 
         var queryResponse16 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
+            .PropertyAscending(nameof(MixedModel.Val1))
+            .PropertyDescending(nameof(MixedModel.Val2))
             .EndAt(testDocs1[4])
             .PageSize(2)
-            .RunQuery();
+            .Run();
 
         var transaction16 = await queryResponse16.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse16.Result);
@@ -393,11 +445,11 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs16[7], testDocs1[4]);
 
         var queryResponse17 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
+            .PropertyAscending(nameof(MixedModel.Val1))
+            .PropertyDescending(nameof(MixedModel.Val2))
             .PageSize(2)
             .SkipPage(3)
-            .RunQuery();
+            .Run();
 
         var transaction17 = await queryResponse17.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse17.Result);
@@ -422,12 +474,12 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs17[3], testDocs1[9]);
 
         var queryResponse18 = await testCollectionReference1.Query<MixedModel>()
-            .Ascending(nameof(MixedModel.Val1))
-            .Descending(nameof(MixedModel.Val2))
+            .PropertyAscending(nameof(MixedModel.Val1))
+            .PropertyDescending(nameof(MixedModel.Val2))
             .EndAt(testDocs1[3])
             .PageSize(2)
             .SkipPage(3)
-            .RunQuery();
+            .Run();
 
         var transaction18 = await queryResponse18.GetTransactionContentsAsString();
         Assert.NotNull(queryResponse18.Result);

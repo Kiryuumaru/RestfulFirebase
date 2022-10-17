@@ -71,16 +71,31 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<GetDocumentsResult>> GetDocument(IEnumerable<DocumentReference> documentReferences, IEnumerable<Document> documents, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<GetDocumentsResult>> GetDocument(IEnumerable<DocumentReference>? documentReferences, IEnumerable<Document>? documents, IEnumerable<Document>? cacheDocuments, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        List<DocumentReference> allDocRefs = new(documentReferences);
-        foreach (var doc in documents)
+        List<DocumentReference> allDocRefs = documentReferences == null ? new() : new(documentReferences);
+        if (documents != null)
         {
-            if (!allDocRefs.Contains(doc.Reference))
+            foreach (var doc in documents)
             {
-                allDocRefs.Add(doc.Reference);
+                if (!allDocRefs.Contains(doc.Reference))
+                {
+                    allDocRefs.Add(doc.Reference);
+                }
+            }
+        }
+
+        List<Document> allDocs = cacheDocuments == null ? new() : new(cacheDocuments);
+        if (documents != null)
+        {
+            foreach (var doc in documents)
+            {
+                if (!allDocs.Contains(doc))
+                {
+                    allDocs.Add(doc);
+                }
             }
         }
 
@@ -111,7 +126,7 @@ public partial class FirestoreDatabaseApi
                     {
                         parsedDocumentReference = docRef;
 
-                        if (documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document foundDocument)
+                        if (allDocs?.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document foundDocument)
                         {
                             parsedDocument = foundDocument;
                             parsedModel = foundDocument.GetModel();
@@ -141,17 +156,52 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<GetDocumentsResult<T>>> GetDocument<T>(IEnumerable<DocumentReference> documentReferences, IEnumerable<Document<T>> documents, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<GetDocumentsResult<T>>> GetDocument<T>(IEnumerable<DocumentReference>? documentReferences, IEnumerable<Document>? documents, IEnumerable<Document<T>>? typedDocuments, IEnumerable<Document>? cacheDocuments, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-        List<DocumentReference> allDocRefs = new(documentReferences);
-        foreach (var doc in documents)
+        List<DocumentReference> allDocRefs = documentReferences == null ? new() : new(documentReferences);
+        if (documents != null)
         {
-            if (!allDocRefs.Contains(doc.Reference))
+            foreach (var doc in documents)
             {
-                allDocRefs.Add(doc.Reference);
+                if (!allDocRefs.Contains(doc.Reference))
+                {
+                    allDocRefs.Add(doc.Reference);
+                }
+            }
+        }
+        if (typedDocuments != null)
+        {
+            foreach (var doc in typedDocuments)
+            {
+                if (!allDocRefs.Contains(doc.Reference))
+                {
+                    allDocRefs.Add(doc.Reference);
+                }
+            }
+        }
+
+        List<Document> allDocs = cacheDocuments == null ? new() : new(cacheDocuments);
+        if (documents != null)
+        {
+            foreach (var doc in documents)
+            {
+                if (!allDocs.Contains(doc))
+                {
+                    allDocs.Add(doc);
+                }
+            }
+        }
+        if (typedDocuments != null)
+        {
+            foreach (var doc in typedDocuments)
+            {
+                if (!allDocs.Contains(doc))
+                {
+                    allDocs.Add(doc);
+                }
             }
         }
 
@@ -173,8 +223,8 @@ public partial class FirestoreDatabaseApi
                 readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
             {
                 DocumentReference? parsedDocumentReference = null;
-                Document<T>? parsedDocument = null;
-                T? parsedModel = null;
+                Document? parsedDocument = null;
+                object? parsedModel = null;
                 if (doc.TryGetProperty("found", out JsonElement foundProperty))
                 {
                     if (foundProperty.TryGetProperty("name", out JsonElement foundNameProperty) &&
@@ -182,10 +232,10 @@ public partial class FirestoreDatabaseApi
                     {
                         parsedDocumentReference = docRef;
 
-                        if (documents.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                        if (allDocs?.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document foundTypedDocument)
                         {
-                            parsedDocument = foundDocument;
-                            parsedModel = foundDocument.Model;
+                            parsedDocument = foundTypedDocument;
+                            parsedModel = foundTypedDocument.GetModel();
                         }
                     }
 
@@ -217,6 +267,9 @@ public partial class FirestoreDatabaseApi
     /// <param name="document">
     /// The single or multiple documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -233,13 +286,13 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Document document, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult>> GetDocument(Document document, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(document);
 
         HttpResponse<GetDocumentResult> response = new();
 
-        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document[] { document }, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document[] { document }, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -257,6 +310,9 @@ public partial class FirestoreDatabaseApi
     /// <param name="documents">
     /// The single or multiple documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -273,13 +329,13 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<Document> documents, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<Document> documents, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(documents);
 
         HttpResponse<GetDocumentsResult> response = new();
 
-        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetDocument(null, documents, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -298,6 +354,9 @@ public partial class FirestoreDatabaseApi
     /// <param name="document">
     /// The single or multiple documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -314,14 +373,14 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="document"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Document<T> document, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<T>>> GetDocument<T>(Document<T> document, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(document);
 
         HttpResponse<GetDocumentResult<T>> response = new();
 
-        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), new Document<T>[] { document }, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetDocument(null, null, new Document<T>[] { document }, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {
@@ -342,6 +401,9 @@ public partial class FirestoreDatabaseApi
     /// <param name="documents">
     /// The single or multiple documents to get.
     /// </param>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
     /// </param>
@@ -358,14 +420,14 @@ public partial class FirestoreDatabaseApi
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult<T>>> GetDocuments<T>(IEnumerable<Document<T>> documents, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult<T>>> GetDocuments<T>(IEnumerable<Document<T>> documents, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(documents);
 
         HttpResponse<GetDocumentsResult<T>> response = new();
 
-        var getDocumentResponse = await GetDocument(Array.Empty<DocumentReference>(), documents, transaction, authorization, cancellationToken);
+        var getDocumentResponse = await GetDocument(null, null, documents, cacheDocuments, transaction, authorization, cancellationToken);
         response.Append(getDocumentResponse);
         if (getDocumentResponse.IsError)
         {

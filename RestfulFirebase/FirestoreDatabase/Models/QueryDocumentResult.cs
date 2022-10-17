@@ -13,7 +13,7 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
-/// The result of the <see cref="FirestoreDatabaseApi.QueryDocument{TQuery}(BaseQuery{TQuery}, IEnumerable{Document}?, Transaction?, IAuthorization?, CancellationToken)"/> request.
+/// The result for query operations.
 /// </summary>
 public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentResult>>
 {
@@ -119,7 +119,7 @@ public class QueryDocumentResult : IAsyncEnumerable<HttpResponse<QueryDocumentRe
 }
 
 /// <summary>
-/// The result of the <see cref="FirestoreDatabaseApi.QueryDocument{T, TQuery}(BaseQuery{TQuery}, IEnumerable{Document}?, Transaction?, IAuthorization?, CancellationToken)"/> request.
+/// The result for query operations.
 /// </summary>
 /// <typeparam name="T">
 /// The type of the model of the document.
