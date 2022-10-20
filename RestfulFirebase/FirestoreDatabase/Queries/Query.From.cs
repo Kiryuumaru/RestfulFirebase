@@ -19,7 +19,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="collectionIds"/> is a <c>null</c> reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="collectionIds"/> is empty.
     /// </exception>
     public TQuery From(params string[] collectionIds)
@@ -47,7 +47,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="collectionIds"/> is a <c>null</c> reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="collectionIds"/> is empty or
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>

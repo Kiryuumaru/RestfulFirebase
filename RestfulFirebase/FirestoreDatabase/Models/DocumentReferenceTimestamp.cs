@@ -18,9 +18,15 @@ public class DocumentReferenceTimestamp
     /// </summary>
     public DateTimeOffset ReadTime { get; }
 
-    internal DocumentReferenceTimestamp(DocumentReference reference, DateTimeOffset readTime)
+    /// <summary>
+    /// Gets <c>true</c> whether the <see cref="ReadTime"/> is a server time; otherwise, <c>false</c>.
+    /// </summary>
+    public bool IsReadTimeAServerTime { get; }
+
+    internal DocumentReferenceTimestamp(DocumentReference reference, DateTimeOffset readTime, bool isReadTimeAServerTime)
     {
         Reference = reference;
         ReadTime = readTime;
+        IsReadTimeAServerTime = isReadTimeAServerTime;
     }
 }

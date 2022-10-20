@@ -17,7 +17,7 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentFieldPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
     public TWrite SetToServerRequestTime(params string[] documentFieldPath)
@@ -45,7 +45,7 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
     public TWrite PropertySetToServerRequestTime(params string[] propertyPath)

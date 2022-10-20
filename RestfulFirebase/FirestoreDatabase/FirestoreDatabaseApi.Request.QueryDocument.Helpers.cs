@@ -671,7 +671,7 @@ public partial class FirestoreDatabaseApi
 
                     if (Document.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document found)
                     {
-                        foundDocuments.Add(new DocumentTimestamp(found, readTime));
+                        foundDocuments.Add(new DocumentTimestamp(found, readTime, true));
                     }
                 }
                 else if (
@@ -780,7 +780,7 @@ public partial class FirestoreDatabaseApi
 
                     if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                     {
-                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
+                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime, true));
                     }
                 }
                 else if (

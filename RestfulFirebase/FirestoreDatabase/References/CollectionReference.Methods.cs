@@ -74,12 +74,12 @@ public partial class CollectionReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="model"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public Task<HttpResponse<Document>> CreateDocument(object model, string? documentId = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        => App.FirestoreDatabase.CreateDocument(model, this, documentId, authorization, cancellationToken);
+        => App.FirestoreDatabase.ExecuteCreate(model, this, documentId, authorization, cancellationToken);
 
     /// <summary>
     /// Request to create a <see cref="Models.Document"/>.
@@ -105,12 +105,12 @@ public partial class CollectionReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="model"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public Task<HttpResponse<Document<T>>> CreateDocument<T>(T model, string? documentId = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        where T : class => App.FirestoreDatabase.CreateDocument(model, this, documentId, authorization, cancellationToken);
+        where T : class => App.FirestoreDatabase.ExecuteCreate(model, this, documentId, authorization, cancellationToken);
 
     /// <summary>
     /// Request to get the documents.
@@ -216,7 +216,7 @@ public partial class CollectionReference : Reference
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -251,7 +251,7 @@ public partial class CollectionReference : Reference
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -283,7 +283,7 @@ public partial class CollectionReference : Reference
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documentNames"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -343,7 +343,7 @@ public partial class CollectionReference : Reference
     /// <returns>
     /// The created structured <see cref="QueryRoot"/>
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
     public QueryRoot Query(bool allDescendants = false)
@@ -372,7 +372,7 @@ public partial class CollectionReference : Reference
     /// <returns>
     /// The created structured <see cref="QueryRoot{TModel}"/>
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
     public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)

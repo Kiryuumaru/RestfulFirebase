@@ -24,7 +24,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentFieldPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
     public TQuery Where(UnaryOperator @operator, params string[] documentFieldPath)
@@ -55,7 +55,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentFieldPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="documentFieldPath"/> is empty.
     /// </exception>
     public TQuery Where(FieldOperator @operator, object? value, params string[] documentFieldPath)
@@ -229,7 +229,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
     public TQuery PropertyWhere(UnaryOperator @operator, params string[] propertyPath)
@@ -260,7 +260,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyPath"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
     public TQuery PropertyWhere(FieldOperator @operator, object? value, params string[] propertyPath)

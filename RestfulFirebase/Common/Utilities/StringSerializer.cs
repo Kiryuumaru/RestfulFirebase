@@ -107,7 +107,7 @@ internal static class StringSerializer
     /// <returns>
     /// The serialized value of the provided <paramref name="data"/> parameter.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="startIndex"/> + <paramref name="count"/> is greater than to <paramref name="data"/> length.
     /// </exception>
     /// <exception cref="ArgumentNullException">
@@ -216,7 +216,7 @@ internal static class StringSerializer
     /// <returns>
     /// The value of the provided base62 representation <paramref name="number"/> parameter.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// Throws when the provided <paramref name="number"/> is not from a base62 value.
     /// </exception>
     public static long ExtractNumber(string number)

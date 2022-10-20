@@ -24,7 +24,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <returns>
     /// The query with custom page size configuration.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="pageSize"/> is less than or equal to 0.
     /// </exception>
     public TQuery PageSize(int pageSize)
@@ -48,7 +48,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <returns>
     /// The query with custom skip page configuration.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="skipPage"/> is less than 0.
     /// </exception>
     public TQuery SkipPage(int skipPage)

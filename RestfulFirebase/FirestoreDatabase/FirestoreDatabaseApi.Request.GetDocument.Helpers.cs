@@ -135,13 +135,13 @@ public partial class FirestoreDatabaseApi
 
                     if (Document.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document found)
                     {
-                        foundDocuments.Add(new DocumentTimestamp(found, readTime));
+                        foundDocuments.Add(new DocumentTimestamp(found, readTime, true));
                     }
                 }
                 else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
                     DocumentReference.Parse(App, missingProperty, jsonSerializerOptions) is DocumentReference missing)
                 {
-                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime, true));
                 }
             }
             else if (transaction != null &&
@@ -241,13 +241,13 @@ public partial class FirestoreDatabaseApi
 
                     if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                     {
-                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime));
+                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime, true));
                     }
                 }
                 else if (doc.TryGetProperty("missing", out JsonElement missingProperty) &&
                     DocumentReference.Parse(App, missingProperty, jsonSerializerOptions) is DocumentReference missing)
                 {
-                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime));
+                    missingDocuments.Add(new DocumentReferenceTimestamp(missing, readTime, true));
                 }
             }
             else if (transaction != null &&

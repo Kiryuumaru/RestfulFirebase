@@ -17,10 +17,16 @@ public class DocumentTimestamp
     /// </summary>
     public DateTimeOffset ReadTime { get; }
 
-    internal DocumentTimestamp(Document document, DateTimeOffset readTime)
+    /// <summary>
+    /// Gets <c>true</c> whether the <see cref="ReadTime"/> is a server time; otherwise, <c>false</c>.
+    /// </summary>
+    public bool IsReadTimeAServerTime { get; }
+
+    internal DocumentTimestamp(Document document, DateTimeOffset readTime, bool isReadTimeAServerTime)
     {
         Document = document;
         ReadTime = readTime;
+        IsReadTimeAServerTime = isReadTimeAServerTime;
     }
 }
 
@@ -38,8 +44,8 @@ public class DocumentTimestamp<T> : DocumentTimestamp
     /// </summary>
     public new Document<T> Document { get; }
 
-    internal DocumentTimestamp(Document<T> document, DateTimeOffset readTime)
-        : base(document, readTime)
+    internal DocumentTimestamp(Document<T> document, DateTimeOffset readTime, bool isReadTimeAServerTime)
+        : base(document, readTime, isReadTimeAServerTime)
     {
         Document = document;
     }

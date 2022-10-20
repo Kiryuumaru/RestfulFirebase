@@ -20,6 +20,11 @@ public abstract partial class Write
     public FirebaseApp App { get; }
 
     /// <summary>
+    /// Gets the list of <see cref="Document"/> to perform create.
+    /// </summary>
+    public IReadOnlyList<(object model, CollectionReference collectionReference, string? documentName)> CreateDocuments { get; }
+
+    /// <summary>
     /// Gets the list of <see cref="Document"/> to perform patch.
     /// </summary>
     public IReadOnlyList<Document> PatchDocuments { get; }
@@ -34,6 +39,7 @@ public abstract partial class Write
     /// </summary>
     public IReadOnlyList<DocumentTransform> TransformDocuments { get; }
 
+    internal readonly List<(object model, CollectionReference collectionReference, string? documentName)> WritableCreateDocuments;
     internal readonly List<Document> WritablePatchDocuments;
     internal readonly List<DocumentReference> WritableDeleteDocuments;
     internal readonly List<DocumentTransform> WritableTransformDocuments;
@@ -42,9 +48,11 @@ public abstract partial class Write
     {
         App = app;
 
+        WritableCreateDocuments = new();
         WritablePatchDocuments = new();
         WritableDeleteDocuments = new();
         WritableTransformDocuments = new();
+        CreateDocuments = WritableCreateDocuments.AsReadOnly();
         PatchDocuments = WritablePatchDocuments.AsReadOnly();
         DeleteDocuments = WritableDeleteDocuments.AsReadOnly();
         TransformDocuments = WritableTransformDocuments.AsReadOnly();
@@ -54,9 +62,11 @@ public abstract partial class Write
     {
         App = write.App;
 
+        WritableCreateDocuments = write.WritableCreateDocuments;
         WritablePatchDocuments = write.WritablePatchDocuments;
         WritableDeleteDocuments = write.WritableDeleteDocuments;
         WritableTransformDocuments = write.WritableTransformDocuments;
+        CreateDocuments = write.CreateDocuments;
         PatchDocuments = write.PatchDocuments;
         DeleteDocuments = write.DeleteDocuments;
         TransformDocuments = write.TransformDocuments;

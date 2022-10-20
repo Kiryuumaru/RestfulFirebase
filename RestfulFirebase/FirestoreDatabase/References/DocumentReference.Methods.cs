@@ -121,12 +121,12 @@ public partial class DocumentReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="model"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public Task<HttpResponse<Document>> CreateDocument(object model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, cancellationToken);
+        => App.FirestoreDatabase.ExecuteCreate(model, Parent, Id, authorization, cancellationToken);
 
     /// <summary>
     /// Request to create a <see cref="Document"/>.
@@ -149,12 +149,12 @@ public partial class DocumentReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="model"/> is a null reference.
     /// </exception>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public Task<HttpResponse<Document<TModel>>> CreateDocument<TModel>(TModel model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        where TModel : class => App.FirestoreDatabase.CreateDocument(model, Parent, Id, authorization, cancellationToken);
+        where TModel : class => App.FirestoreDatabase.ExecuteCreate(model, Parent, Id, authorization, cancellationToken);
 
     /// <summary>
     /// Request to get the document.

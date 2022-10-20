@@ -1000,22 +1000,22 @@ public class FirestoreDatabaseTest
             Val2 = "2test2"
         };
 
-        var createTest1 = await testCollectionReference.CreateDocument(model1);
+        var createTest1 = await app.FirestoreDatabase.Write()
+            .Create(model1, testCollectionReference)
+            .Create(model2, testCollectionReference, $"{nameof(FirestoreDatabaseTest)}{nameof(CreateGetDeleteTest)}documentIdSample")
+            .RunAndGet<NormalMVVMModel>();
         Assert.NotNull(createTest1.Result);
+        Assert.Equal(2, createTest1.Result.Found.Count);
 
-        var createTest2 = await testCollectionReference.CreateDocument(model2, $"{nameof(FirestoreDatabaseTest)}{nameof(CreateGetDeleteTest)}documentIdSample");
-        Assert.NotNull(createTest2.Result);
+        var getTest1 = await testCollectionReference.Query<NormalMVVMModel>()
+            .Run();
+        Assert.NotNull(getTest1.Result);
+        Assert.Equal(2, getTest1.Result.Documents.Count);
 
-        var getTest1 = await testCollectionReference.Document(createTest1.Result.Reference.Id).GetDocument<NormalMVVMModel>();
-        Assert.NotNull(getTest1.Result?.Found);
+        var orderedCreate = createTest1.Result.Found.Select(i => i.Document).OrderBy(i => i.Name);
+        var orderedGet = getTest1.Result.Documents.Select(i => i.Document).OrderBy(i => i.Name);
 
-        var getTest2 = await testCollectionReference.Document(createTest2.Result.Reference.Id).GetDocument<NormalMVVMModel>();
-        Assert.NotNull(getTest2.Result?.Found);
-
-        Assert.Equal(model1, createTest1.Result.Model);
-        Assert.Equal(model2, createTest2.Result.Model);
-        Assert.Equivalent(createTest1.Result, getTest1.Result.Found.Document);
-        Assert.Equivalent(createTest2.Result, getTest2.Result.Found.Document);
+        Assert.Equivalent(orderedCreate, orderedGet);
 
         await Cleanup(testCollectionReference);
 

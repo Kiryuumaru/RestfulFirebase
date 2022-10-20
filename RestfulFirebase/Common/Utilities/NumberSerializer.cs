@@ -71,7 +71,7 @@ internal static class NumberSerializer
     /// <returns>
     /// The number representation of the <paramref name="arbitraryBaseNumber"/> parameter.
     /// </returns>
-    /// <exception cref="ArgumentException">
+    /// <exception cref="System.ArgumentException">
     /// <paramref name="arbitraryBaseNumber"/> is empty.
     /// </exception>
     /// <exception cref="ArgumentNullException">
