@@ -386,8 +386,6 @@ public partial class FirestoreDatabaseApi
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfEmpty(query.FromQuery);
-
         HttpResponse<StructuredQuery> response = new();
 
         StructuredQuery structuredQuery = new(query);
@@ -832,6 +830,11 @@ public partial class FirestoreDatabaseApi
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
     {
+        if (query.FromQuery.Count == 0)
+        {
+            return new();
+        }
+
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
         return await QueryDocumentPage(
@@ -855,6 +858,11 @@ public partial class FirestoreDatabaseApi
         CancellationToken cancellationToken = default)
         where T : class
     {
+        if (query.FromQuery.Count == 0)
+        {
+            return new();
+        }
+
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
         return await QueryDocumentPage<T>(

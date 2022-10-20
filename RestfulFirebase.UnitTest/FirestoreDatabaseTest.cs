@@ -153,8 +153,8 @@ public class FirestoreDatabaseTest
 
         var writeResult = await model1Reference.PatchAndGetDocument(new NumberModel()
         {
-            Val1 = 1,
-            Val2 = 1,
+            Val1 = 3,
+            Val2 = 3,
         });
 
         var writeTest1Model1 = writeResult.Result?.Found?.Document;

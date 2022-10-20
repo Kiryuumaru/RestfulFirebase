@@ -30,22 +30,11 @@ public abstract partial class Write
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="System.ArgumentException">
-    /// There is no write operation.
-    /// </exception>
     public async Task<HttpResponse> Run(
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
     {
-        if (PatchDocuments.Count == 0 &&
-            DeleteDocuments.Count == 0 &&
-            TransformDocuments.Count == 0 &&
-            CreateDocuments.Count == 0)
-        {
-            ArgumentException.Throw($"There is no write operation to run.");
-        }
-
         HttpResponse response = new();
 
         if (PatchDocuments.Count != 0 ||
@@ -90,23 +79,12 @@ public abstract partial class Write
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="System.ArgumentException">
-    /// There is no write operation.
-    /// </exception>
     public async Task<HttpResponse<GetDocumentsResult>> RunAndGet(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
     {
-        if (PatchDocuments.Count == 0 &&
-            DeleteDocuments.Count == 0 &&
-            TransformDocuments.Count == 0 &&
-            CreateDocuments.Count == 0)
-        {
-            ArgumentException.Throw($"There is no write operation to run.");
-        }
-
         HttpResponse response = new();
         List<DocumentTimestamp> found = new();
         List<DocumentReferenceTimestamp> missing = new();
@@ -183,9 +161,6 @@ public abstract partial class Write
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="System.ArgumentException">
-    /// There is no write operation.
-    /// </exception>
     public async Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
@@ -193,14 +168,6 @@ public abstract partial class Write
         CancellationToken cancellationToken = default)
         where TModel : class
     {
-        if (PatchDocuments.Count == 0 &&
-            DeleteDocuments.Count == 0 &&
-            TransformDocuments.Count == 0 &&
-            CreateDocuments.Count == 0)
-        {
-            ArgumentException.Throw($"There is no write operation to run.");
-        }
-
         HttpResponse response = new();
         List<DocumentTimestamp<TModel>> found = new();
         List<DocumentReferenceTimestamp> missing = new();
@@ -281,9 +248,6 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    /// <exception cref="System.ArgumentException">
-    /// There is no write operation.
-    /// </exception>
     public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(
         IEnumerable<Document>? cacheDocuments = default,
         Transaction? transaction = default,
