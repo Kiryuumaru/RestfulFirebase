@@ -92,7 +92,7 @@ public partial class FirestoreDatabaseApi
         {
             foreach (var doc in documents)
             {
-                if (!allDocs.Contains(doc))
+                if (!allDocs.Any(i => i.Reference.Equals(doc.Reference)))
                 {
                     allDocs.Add(doc);
                 }
@@ -188,7 +188,7 @@ public partial class FirestoreDatabaseApi
         {
             foreach (var doc in documents)
             {
-                if (!allDocs.Contains(doc))
+                if (!allDocs.Any(i => i.Reference.Equals(doc.Reference)))
                 {
                     allDocs.Add(doc);
                 }
@@ -198,7 +198,7 @@ public partial class FirestoreDatabaseApi
         {
             foreach (var doc in typedDocuments)
             {
-                if (!allDocs.Contains(doc))
+                if (!allDocs.Any(i => i.Reference.Equals(doc.Reference)))
                 {
                     allDocs.Add(doc);
                 }
