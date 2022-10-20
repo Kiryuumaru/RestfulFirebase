@@ -21,6 +21,7 @@ using System.Xml.Linq;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.FirestoreDatabase.Writes;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
@@ -85,9 +86,47 @@ public partial class Document
 
         return response;
     }
+
+    /// <summary>
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
+    /// </summary>
+    /// <returns>
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
+    /// </returns>
+    public WriteWithCacheAndDocumentTransform Transform()
+    {
+        return new WriteWithCacheAndDocumentTransform(Reference.Transform())
+            .Cache(this);
+    }
+
+    /// <summary>
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
+    /// </summary>
+    /// <typeparam name="TModel">
+    /// The type of the model of the document to transform.
+    /// </typeparam>
+    /// <returns>
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
+    /// </returns>
+    public WriteWithCacheAndDocumentTransform<TModel> Transform<TModel>()
+        where TModel : class
+    {
+        return new WriteWithCacheAndDocumentTransform<TModel>(Reference.Transform<TModel>())
+            .Cache(this);
+    }
 }
 
-public partial class Document<T>
+public partial class Document<TModel>
 {
-
+    /// <summary>
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
+    /// </summary>
+    /// <returns>
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
+    /// </returns>
+    public new WriteWithCacheAndDocumentTransform<TModel> Transform()
+    {
+        return new WriteWithCacheAndDocumentTransform<TModel>(Reference.Transform<TModel>())
+            .Cache(this);
+    }
 }

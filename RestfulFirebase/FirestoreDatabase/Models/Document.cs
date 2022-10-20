@@ -80,23 +80,23 @@ public partial class Document
 /// <summary>
 /// Represents a document node of the firebase cloud firestore.
 /// </summary>
-/// <typeparam name="T">
+/// <typeparam name="TModel">
 /// The type of the model of the document.
 /// </typeparam>
-public partial class Document<T> : Document
-     where T : class
+public partial class Document<TModel> : Document
+     where TModel : class
 {
     /// <summary>
-    /// Gets the <typeparamref name="T"/> model of the document.
+    /// Gets the <typeparamref name="TModel"/> model of the document.
     /// </summary>
     [ObservableProperty(Access = AccessModifier.PublicWithInternalSetter)]
-    T? model;
+    TModel? model;
 
     /// <inheritdoc/>
-    public override Type? Type { get; } = typeof(T);
+    public override Type? Type { get; } = typeof(TModel);
 
     /// <summary>
-    /// Creates an instance of <see cref="Document{T}"/>.
+    /// Creates an instance of <see cref="Document{TModel}"/>.
     /// </summary>
     /// <param name="reference">
     /// The <see cref="DocumentReference"/> of the document.
@@ -104,7 +104,7 @@ public partial class Document<T> : Document
     /// <param name="model">
     /// The model of the document.
     /// </param>
-    public Document(DocumentReference reference, T? model)
+    public Document(DocumentReference reference, TModel? model)
         : base (reference)
     {
         this.model = model;

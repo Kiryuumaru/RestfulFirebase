@@ -597,13 +597,13 @@ public partial class Document
     }
 }
 
-public partial class Document<T> : Document
-     where T : class
+public partial class Document<TModel> : Document
+     where TModel : class
 {
 #if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
 #endif
-    internal static Document<T>? Parse(
+    internal static Document<TModel>? Parse(
         FirebaseApp app,
         DocumentReference? reference,
         object? obj,
@@ -611,8 +611,8 @@ public partial class Document<T> : Document
         JsonElement.ObjectEnumerator jsonElementEnumerator,
         JsonSerializerOptions jsonSerializerOptions)
     {
-        Document? newDocument = Parse(app, reference, typeof(T), obj, document, jsonElementEnumerator, jsonSerializerOptions);
-        if (newDocument is Document<T> typedDocument)
+        Document? newDocument = Parse(app, reference, typeof(TModel), obj, document, jsonElementEnumerator, jsonSerializerOptions);
+        if (newDocument is Document<TModel> typedDocument)
         {
             return typedDocument;
         }
@@ -630,13 +630,13 @@ public partial class Document<T> : Document
         {
             Model = null;
         }
-        else if (obj is T typedObj)
+        else if (obj is TModel typedObj)
         {
             Model = typedObj;
         }
         else
         {
-            ArgumentException.Throw($"Mismatch type of {nameof(obj)} and {typeof(T)}");
+            ArgumentException.Throw($"Mismatch type of {nameof(obj)} and {typeof(TModel)}");
         }
     }
 }

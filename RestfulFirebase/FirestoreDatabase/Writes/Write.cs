@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
+using System.ComponentModel;
 
 namespace RestfulFirebase.FirestoreDatabase.Writes;
 
@@ -125,6 +126,58 @@ public abstract partial class FluentWriteWithDocumentTransform<TWrite, TModel> :
     }
 }
 
+/// <inheritdoc/>
+public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite> : FluentWriteRoot<TWrite>
+    where TWrite : FluentWriteWithCacheAndDocumentTransform<TWrite>
+{
+    /// <summary>
+    /// Gets the list of cache <see cref="Document"/>.
+    /// </summary>
+    public IReadOnlyList<Document> CacheDocuments { get; }
+
+    internal readonly List<Document> WritableCacheDocuments;
+
+    internal FluentWriteWithCacheAndDocumentTransform(FirebaseApp app)
+        : base(app)
+    {
+        WritableCacheDocuments = new();
+        CacheDocuments = WritableCacheDocuments.AsReadOnly();
+    }
+
+    internal FluentWriteWithCacheAndDocumentTransform(Write write)
+        : base(write)
+    {
+        if (write is FluentWriteWithCacheAndDocumentTransform<TWrite> writeWithCache)
+        {
+            WritableCacheDocuments = writeWithCache.WritableCacheDocuments;
+            CacheDocuments = writeWithCache.CacheDocuments;
+        }
+        else
+        {
+            WritableCacheDocuments = new();
+            CacheDocuments = WritableCacheDocuments.AsReadOnly();
+        }
+    }
+}
+
+/// <inheritdoc/>
+public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel> : FluentWriteWithCacheAndDocumentTransform<TWrite>
+    where TWrite : FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
+    where TModel : class
+{
+    internal FluentWriteWithCacheAndDocumentTransform(FirebaseApp app)
+        : base(app)
+    {
+
+    }
+
+    internal FluentWriteWithCacheAndDocumentTransform(Write write)
+        : base(write)
+    {
+
+    }
+}
+
 #region Instantiable
 
 /// <inheritdoc/>
@@ -170,6 +223,39 @@ public partial class WriteWithDocumentTransform<TModel> : FluentWriteWithDocumen
     }
 
     internal WriteWithDocumentTransform(Write write)
+        : base(write)
+    {
+
+    }
+}
+
+/// <inheritdoc/>
+public partial class WriteWithCacheAndDocumentTransform : FluentWriteWithCacheAndDocumentTransform<WriteWithCacheAndDocumentTransform>
+{
+    internal WriteWithCacheAndDocumentTransform(FirebaseApp app)
+        : base(app)
+    {
+
+    }
+
+    internal WriteWithCacheAndDocumentTransform(Write write)
+        : base(write)
+    {
+
+    }
+}
+
+/// <inheritdoc/>
+public partial class WriteWithCacheAndDocumentTransform<TModel> : FluentWriteWithCacheAndDocumentTransform<WriteWithCacheAndDocumentTransform<TModel>, TModel>
+    where TModel : class
+{
+    internal WriteWithCacheAndDocumentTransform(FirebaseApp app)
+        : base(app)
+    {
+
+    }
+
+    internal WriteWithCacheAndDocumentTransform(Write write)
         : base(write)
     {
 
