@@ -127,7 +127,7 @@ public abstract partial class FluentWriteWithDocumentTransform<TWrite, TModel> :
 }
 
 /// <inheritdoc/>
-public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite> : FluentWriteRoot<TWrite>
+public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite> : FluentWriteWithDocumentTransform<TWrite>
     where TWrite : FluentWriteWithCacheAndDocumentTransform<TWrite>
 {
     /// <summary>
@@ -161,20 +161,37 @@ public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite> :
 }
 
 /// <inheritdoc/>
-public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel> : FluentWriteWithCacheAndDocumentTransform<TWrite>
+public abstract partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel> : FluentWriteWithDocumentTransform<TWrite, TModel>
     where TWrite : FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
     where TModel : class
 {
+    /// <summary>
+    /// Gets the list of cache <see cref="Document"/>.
+    /// </summary>
+    public IReadOnlyList<Document> CacheDocuments { get; }
+
+    internal readonly List<Document> WritableCacheDocuments;
+
     internal FluentWriteWithCacheAndDocumentTransform(FirebaseApp app)
         : base(app)
     {
-
+        WritableCacheDocuments = new();
+        CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
     internal FluentWriteWithCacheAndDocumentTransform(Write write)
         : base(write)
     {
-
+        if (write is FluentWriteWithCacheAndDocumentTransform<TWrite, TModel> writeWithCache)
+        {
+            WritableCacheDocuments = writeWithCache.WritableCacheDocuments;
+            CacheDocuments = writeWithCache.CacheDocuments;
+        }
+        else
+        {
+            WritableCacheDocuments = new();
+            CacheDocuments = WritableCacheDocuments.AsReadOnly();
+        }
     }
 }
 

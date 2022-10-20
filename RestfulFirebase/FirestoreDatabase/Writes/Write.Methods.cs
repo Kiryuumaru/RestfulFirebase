@@ -265,7 +265,7 @@ public abstract partial class Write
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
+    public virtual Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
@@ -371,10 +371,7 @@ public partial class FluentWriteWithCacheAndDocumentTransform<TWrite>
     {
         return RunAndGet(CacheDocuments, transaction, authorization, cancellationToken);
     }
-}
 
-public partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
-{
     /// <summary>
     /// Runs the write operation.
     /// </summary>
@@ -390,7 +387,102 @@ public partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public override Task<HttpResponse<GetDocumentsResult>> RunAndGet(
+    public override Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
+        Transaction? transaction = default,
+        IAuthorization? authorization = default,
+        CancellationToken cancellationToken = default)
+        where TModel : class
+    {
+        return RunAndGet<TModel>(CacheDocuments, transaction, authorization, cancellationToken);
+    }
+}
+
+public partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
+{
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The write with new added cache documents.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public TWrite Cache(params Document[] documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        WritableCacheDocuments.AddRange(documents);
+
+        return (TWrite)this;
+    }
+
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The write with new added cache documents.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="documents"/> is a null reference.
+    /// </exception>
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    public TWrite Cache(IEnumerable<Document> documents)
+    {
+        ArgumentNullException.ThrowIfNull(documents);
+
+        WritableCacheDocuments.AddRange(documents);
+
+        return (TWrite)this;
+    }
+
+    /// <summary>
+    /// Runs the write operation.
+    /// </summary>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    public override Task<HttpResponse<GetDocumentsResult<T>>> RunAndGet<T>(
+        Transaction? transaction = default,
+        IAuthorization? authorization = default,
+        CancellationToken cancellationToken = default)
+        where T : class
+    {
+        return RunAndGet<T>(CacheDocuments, transaction, authorization, cancellationToken);
+    }
+
+    /// <summary>
+    /// Runs the write operation.
+    /// </summary>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(
         Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
