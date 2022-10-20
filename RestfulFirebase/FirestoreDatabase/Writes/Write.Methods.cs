@@ -142,7 +142,57 @@ public abstract partial class Write
     }
 }
 
-public partial class FluentWriteRoot<TWrite>
+public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
 {
+    /// <summary>
+    /// Runs the write operation.
+    /// </summary>
+    /// <param name="cacheDocuments">
+    /// The cache of documents to recycle if it matched its reference.
+    /// </param>
+    /// <param name="transaction">
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </param>
+    /// <param name="authorization">
+    /// The authorization used for the operation.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
+    /// </returns>
+    public new async Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(
+        IEnumerable<Document>? cacheDocuments = default,
+        Transaction? transaction = default,
+        IAuthorization? authorization = default,
+        CancellationToken cancellationToken = default)
+    {
+        HttpResponse<GetDocumentsResult<TModel>> response = new();
 
+        var patchDocumentResponse = await App.FirestoreDatabase.ExecuteWrite(this, transaction, authorization, cancellationToken);
+
+        response.Append(patchDocumentResponse);
+        if (patchDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        List<DocumentReference> docRefs = new();
+        List<Document> docs = new();
+        List<Document<TModel>> typedDocs = new();
+
+        docs.AddRange(PatchDocuments);
+        docRefs.AddRange(DeleteDocuments);
+        docRefs.AddRange(TransformDocuments.Select(i => i.DocumentReference));
+
+        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(docRefs, docs, typedDocs, cacheDocuments, transaction, authorization, cancellationToken);
+        response.Append(getDocumentResponse);
+        if (getDocumentResponse.IsError)
+        {
+            return response;
+        }
+
+        return response;
+    }
 }
