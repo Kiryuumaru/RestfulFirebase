@@ -274,18 +274,21 @@ public partial class Document
         {
             List<object?> items = new();
 
-            int index = 0;
-
-            foreach (var fieldElement in element.EnumerateArray())
+            if (element.ValueKind == JsonValueKind.Array)
             {
-                string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $"{fieldName}.{index}";
-                object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
+                int index = 0;
 
-                documentFields.Add(subFieldName, parsedSubObj);
+                foreach (var fieldElement in element.EnumerateArray())
+                {
+                    string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $"{fieldName}.{index}";
+                    object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
 
-                items.Add(parsedSubObj);
+                    documentFields.Add(subFieldName, parsedSubObj);
 
-                index++;
+                    items.Add(parsedSubObj);
+
+                    index++;
+                }
             }
 
             Array obj;
@@ -319,20 +322,23 @@ public partial class Document
             {
                 clearMethod.Invoke(collectionObj, emptyParameterPlaceholder);
 
-                int index = 0;
-
-                foreach (var fieldElement in element.EnumerateArray())
+                if (element.ValueKind == JsonValueKind.Array)
                 {
-                    string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $"{fieldName}.{index}";
-                    object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
+                    int index = 0;
 
-                    documentFields.Add(subFieldName, parsedSubObj);
+                    foreach (var fieldElement in element.EnumerateArray())
+                    {
+                        string subFieldName = string.IsNullOrEmpty(fieldName) ? index.ToString() : $"{fieldName}.{index}";
+                        object? parsedSubObj = parseJsonElement(fieldElement, subFieldName, valueType);
 
-                    addMethodParameter[0] = parsedSubObj;
+                        documentFields.Add(subFieldName, parsedSubObj);
 
-                    addMethod.Invoke(collectionObj, addMethodParameter);
+                        addMethodParameter[0] = parsedSubObj;
 
-                    index++;
+                        addMethod.Invoke(collectionObj, addMethodParameter);
+
+                        index++;
+                    }
                 }
             }
         }
@@ -361,25 +367,28 @@ public partial class Document
                 List<object?> keysAdded = new();
                 List<object> keysToRemove = new();
 
-                foreach (var fieldProperty in element.EnumerateObject())
+                if (element.ValueKind == JsonValueKind.Object)
                 {
-                    string? documentFieldKey = $"\"{fieldProperty.Name}\"";
+                    foreach (var fieldProperty in element.EnumerateObject())
+                    {
+                        string? documentFieldKey = $"\"{fieldProperty.Name}\"";
 
-                    object? objKey = JsonSerializer.Deserialize(
-                        documentFieldKey,
-                        keyType,
-                        jsonSerializerOptions);
+                        object? objKey = JsonSerializer.Deserialize(
+                            documentFieldKey,
+                            keyType,
+                            jsonSerializerOptions);
 
-                    keyParameter[0] = objKey;
+                        keyParameter[0] = objKey;
 
-                    string subFieldName = string.IsNullOrEmpty(fieldName) ? fieldProperty.Name : $"{fieldName}.{fieldProperty.Name}";
-                    object? parsedSubObj = parseJsonElement(fieldProperty.Value, subFieldName, valueType);
+                        string subFieldName = string.IsNullOrEmpty(fieldName) ? fieldProperty.Name : $"{fieldName}.{fieldProperty.Name}";
+                        object? parsedSubObj = parseJsonElement(fieldProperty.Value, subFieldName, valueType);
 
-                    documentFields.Add(subFieldName, parsedSubObj);
+                        documentFields.Add(subFieldName, parsedSubObj);
 
-                    itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
+                        itemProperty.SetValue(dictionaryObj, parsedSubObj, keyParameter);
 
-                    keysAdded.Add(objKey);
+                        keysAdded.Add(objKey);
+                    }
                 }
 
                 foreach (object key in keysEnumerable)
