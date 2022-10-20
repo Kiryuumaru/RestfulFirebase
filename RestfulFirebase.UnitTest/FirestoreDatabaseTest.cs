@@ -60,10 +60,10 @@ public class FirestoreDatabaseTest
         Assert.NotNull(writeTest1Model3?.Model);
 
         var transformTest1 = await app.FirestoreDatabase.Write()
-            .DocumentTransform<TimestampModel>(model1Reference)
+            .Transform<TimestampModel>(model1Reference)
             .PropertySetToServerRequestTime(nameof(TimestampModel.Val1))
             .PropertySetToServerRequestTime(nameof(TimestampModel.Val2))
-            .DocumentTransform<TimestampModel>(model2Reference)
+            .Transform<TimestampModel>(model2Reference)
             .PropertySetToServerRequestTime(nameof(TimestampModel.Val1))
             .PropertySetToServerRequestTime(nameof(TimestampModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1, writeTest1Model2 });
@@ -103,28 +103,28 @@ public class FirestoreDatabaseTest
 
         Assert.NotNull(writeTest1Model1?.Model);
 
-        var transformTest1 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest1 = await model1Reference.Transform<ArrayModel>()
             .PropertyRemoveAllFromArray(new object[] { 4, 5 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest1.ThrowIfError();
 
         Assert.Equal(new int[] { 1, 2, 3 }, writeTest1Model1.Model.Val1);
 
-        var transformTest2 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest2 = await model1Reference.Transform<ArrayModel>()
             .PropertyRemoveAllFromArray(new object[] { 3, 4 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest2.ThrowIfError();
 
         Assert.Equal(new int[] { 1, 2 }, writeTest1Model1.Model.Val1);
 
-        var transformTest3 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest3 = await model1Reference.Transform<ArrayModel>()
             .PropertyRemoveAllFromArray(new object[] { 5, 6 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest3.ThrowIfError();
 
         Assert.Equal(new int[] { 1, 2 }, writeTest1Model1.Model.Val1);
 
-        var transformTest4 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest4 = await model1Reference.Transform<ArrayModel>()
             .PropertyRemoveAllFromArray(new object[] { 1, 2 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest4.ThrowIfError();
@@ -161,21 +161,21 @@ public class FirestoreDatabaseTest
 
         Assert.NotNull(writeTest1Model1?.Model);
 
-        var transformTest1 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest1 = await model1Reference.Transform<NumberModel>()
             .PropertyMinimum(2, nameof(NumberModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest1.ThrowIfError();
 
         Assert.Equal(2, writeTest1Model1.Model.Val1);
 
-        var transformTest2 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest2 = await model1Reference.Transform<NumberModel>()
             .PropertyMinimum(1.5, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest2.ThrowIfError();
 
         Assert.Equal(1.5, writeTest1Model1.Model.Val2);
 
-        var transformTest3 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest3 = await model1Reference.Transform<NumberModel>()
             .PropertyMinimum(1, nameof(NumberModel.Val1))
             .PropertyMinimum(1, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
@@ -184,7 +184,7 @@ public class FirestoreDatabaseTest
         Assert.Equal(1, writeTest1Model1.Model.Val1);
         Assert.Equal(1, writeTest1Model1.Model.Val2);
 
-        var transformTest4 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest4 = await model1Reference.Transform<NumberModel>()
             .PropertyMinimum(3, nameof(NumberModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest4.ThrowIfError();
@@ -220,21 +220,21 @@ public class FirestoreDatabaseTest
 
         Assert.NotNull(writeTest1Model1?.Model);
 
-        var transformTest1 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest1 = await model1Reference.Transform<NumberModel>()
             .PropertyMaximum(2, nameof(NumberModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest1.ThrowIfError();
 
         Assert.Equal(2, writeTest1Model1.Model.Val1);
 
-        var transformTest2 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest2 = await model1Reference.Transform<NumberModel>()
             .PropertyMaximum(1.5, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest2.ThrowIfError();
 
         Assert.Equal(1.5, writeTest1Model1.Model.Val2);
 
-        var transformTest3 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest3 = await model1Reference.Transform<NumberModel>()
             .PropertyMaximum(3, nameof(NumberModel.Val1))
             .PropertyMaximum(3, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
@@ -243,7 +243,7 @@ public class FirestoreDatabaseTest
         Assert.Equal(3, writeTest1Model1.Model.Val1);
         Assert.Equal(3, writeTest1Model1.Model.Val2);
 
-        var transformTest4 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest4 = await model1Reference.Transform<NumberModel>()
             .PropertyMaximum(2, nameof(NumberModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest4.ThrowIfError();
@@ -279,21 +279,21 @@ public class FirestoreDatabaseTest
 
         Assert.NotNull(writeTest1Model1?.Model);
 
-        var transformTest1 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest1 = await model1Reference.Transform<NumberModel>()
             .PropertyIncrement(1, nameof(NumberModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest1.ThrowIfError();
 
         Assert.Equal(2, writeTest1Model1.Model.Val1);
 
-        var transformTest2 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest2 = await model1Reference.Transform<NumberModel>()
             .PropertyIncrement(1.5, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest2.ThrowIfError();
 
         Assert.Equal(2.5, writeTest1Model1.Model.Val2);
 
-        var transformTest3 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest3 = await model1Reference.Transform<NumberModel>()
             .PropertyIncrement(1, nameof(NumberModel.Val1))
             .PropertyIncrement(0.5, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
@@ -302,7 +302,7 @@ public class FirestoreDatabaseTest
         Assert.Equal(3, writeTest1Model1.Model.Val1);
         Assert.Equal(3, writeTest1Model1.Model.Val2);
 
-        var transformTest4 = await model1Reference.TransformDocument<NumberModel>()
+        var transformTest4 = await model1Reference.Transform<NumberModel>()
             .PropertyIncrement(-0.5, nameof(NumberModel.Val2))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest4.ThrowIfError();
@@ -337,21 +337,21 @@ public class FirestoreDatabaseTest
 
         Assert.NotNull(writeTest1Model1?.Model);
 
-        var transformTest1 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest1 = await model1Reference.Transform<ArrayModel>()
             .PropertyAppendMissingElements(new object[] { 6, 7 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest1.ThrowIfError();
 
         Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7 }, writeTest1Model1.Model.Val1);
 
-        var transformTest2 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest2 = await model1Reference.Transform<ArrayModel>()
             .PropertyAppendMissingElements(new object[] { 7, 8 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest2.ThrowIfError();
 
         Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, writeTest1Model1.Model.Val1);
 
-        var transformTest3 = await model1Reference.TransformDocument<ArrayModel>()
+        var transformTest3 = await model1Reference.Transform<ArrayModel>()
             .PropertyAppendMissingElements(new object[] { 1, 2 }, nameof(ArrayModel.Val1))
             .RunAndGet(new Document[] { writeTest1Model1 });
         transformTest3.ThrowIfError();

@@ -282,7 +282,7 @@ public partial class DocumentReference : Reference
     }
 
     /// <summary>
-    /// Request to perform a patch operation to document.
+    /// Request to perform a patch and get operation to document.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
@@ -354,9 +354,9 @@ public partial class DocumentReference : Reference
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public WriteWithDocumentTransform TransformDocument()
+    public WriteWithDocumentTransform Transform()
     {
-        return App.FirestoreDatabase.Write().DocumentTransform(this);
+        return App.FirestoreDatabase.Write().Transform(this);
     }
 
     /// <summary>
@@ -368,10 +368,10 @@ public partial class DocumentReference : Reference
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public WriteWithDocumentTransform<TModel> TransformDocument<TModel>()
+    public WriteWithDocumentTransform<TModel> Transform<TModel>()
         where TModel : class
     {
-        return App.FirestoreDatabase.Write().DocumentTransform<TModel>(this);
+        return App.FirestoreDatabase.Write().Transform<TModel>(this);
     }
 
     /// <summary>

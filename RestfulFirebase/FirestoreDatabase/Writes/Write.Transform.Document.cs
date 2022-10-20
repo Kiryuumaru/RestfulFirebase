@@ -13,18 +13,18 @@ public abstract partial class Write
 public partial class FluentWriteRoot<TWrite>
 {
     /// <summary>
-    /// Adds new <see cref="Writes.DocumentTransform"/> to perform a transform operation.
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
     /// </summary>
     /// <param name="documentReference">
     /// The document reference of the document to transform.
     /// </param>
     /// <returns>
-    /// The write with new added <see cref="Writes.DocumentTransform"/> to transform.
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentReference"/> is a null reference.
     /// </exception>
-    public WriteWithDocumentTransform DocumentTransform(DocumentReference documentReference)
+    public WriteWithDocumentTransform Transform(DocumentReference documentReference)
     {
         ArgumentNullException.ThrowIfNull(documentReference);
 
@@ -36,7 +36,7 @@ public partial class FluentWriteRoot<TWrite>
     }
 
     /// <summary>
-    /// Adds new <see cref="Writes.DocumentTransform"/> to perform a transform operation.
+    /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the model of the document to transform.
@@ -45,12 +45,12 @@ public partial class FluentWriteRoot<TWrite>
     /// The document reference of the document to transform.
     /// </param>
     /// <returns>
-    /// The write with new added <see cref="Writes.DocumentTransform"/> to transform.
+    /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentReference"/> is a null reference.
     /// </exception>
-    public WriteWithDocumentTransform<TModel> DocumentTransform<TModel>(DocumentReference documentReference)
+    public WriteWithDocumentTransform<TModel> Transform<TModel>(DocumentReference documentReference)
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(documentReference);

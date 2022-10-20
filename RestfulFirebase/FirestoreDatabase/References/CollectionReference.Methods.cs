@@ -231,7 +231,7 @@ public partial class CollectionReference : Reference
     }
 
     /// <summary>
-    /// Request to perform a patch operation to documents.
+    /// Request to perform a patch and get operation to documents.
     /// </summary>
     /// <param name="documents">
     /// The requested document to patch.
@@ -308,9 +308,9 @@ public partial class CollectionReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentName"/> is a <c>null</c> reference.
     /// </exception>
-    public WriteWithDocumentTransform TransformDocument(string documentName)
+    public WriteWithDocumentTransform Transform(string documentName)
     {
-        return App.FirestoreDatabase.Write().DocumentTransform(Document(documentName));
+        return App.FirestoreDatabase.Write().Transform(Document(documentName));
     }
 
     /// <summary>
@@ -328,10 +328,10 @@ public partial class CollectionReference : Reference
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentName"/> is a <c>null</c> reference.
     /// </exception>
-    public WriteWithDocumentTransform<TModel> TransformDocument<TModel>(string documentName)
+    public WriteWithDocumentTransform<TModel> Transform<TModel>(string documentName)
         where TModel : class
     {
-        return App.FirestoreDatabase.Write().DocumentTransform<TModel>(Document(documentName));
+        return App.FirestoreDatabase.Write().Transform<TModel>(Document(documentName));
     }
 
     /// <summary>
