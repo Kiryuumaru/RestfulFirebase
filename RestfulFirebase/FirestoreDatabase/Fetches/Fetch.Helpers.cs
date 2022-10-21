@@ -1,9 +1,7 @@
 ﻿using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
-using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -24,8 +22,8 @@ public abstract partial class Fetch
         CancellationToken cancellationToken)
     {
         string url =
-            $"{FirestoreDatabaseV1Endpoint}/" +
-            $"{string.Format(FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":batchGet")}";
+            $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":batchGet")}";
 
         using MemoryStream stream = new();
         Utf8JsonWriter writer = new(stream);
@@ -43,18 +41,18 @@ public abstract partial class Fetch
             if (transaction.Token == null)
             {
                 writer.WritePropertyName("newTransaction");
-                BuildTransactionOption(writer, transaction);
+                FirestoreDatabaseApi.BuildTransactionOption(writer, transaction);
             }
             else
             {
-                BuildTransaction(writer, transaction);
+                FirestoreDatabaseApi.BuildTransaction(writer, transaction);
             }
         }
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await ExecutePost(authorization, stream, url, cancellationToken);
+        var response = await App.FirestoreDatabase.ExecutePost(authorization, stream, url, cancellationToken);
         if (response.IsError || response.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return (null, response);

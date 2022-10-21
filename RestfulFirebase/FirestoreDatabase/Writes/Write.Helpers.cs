@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using RestfulFirebase.FirestoreDatabase.Models;
-using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Utilities;
@@ -23,10 +22,10 @@ public abstract partial class Write
     internal async Task<HttpResponse> ExecuteCommit(Write write, CancellationToken cancellationToken)
     {
         string url =
-            $"{FirestoreDatabaseV1Endpoint}/" +
-            $"{string.Format(FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":commit")}";
+            $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
+            $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":commit")}";
 
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
         using MemoryStream stream = new();
         Utf8JsonWriter writer = new(stream);
@@ -268,13 +267,13 @@ public abstract partial class Write
         writer.WriteEndArray();
         if (write.TransactionUsed != null)
         {
-            BuildTransaction(writer, write.TransactionUsed);
+            FirestoreDatabaseApi.BuildTransaction(writer, write.TransactionUsed);
         }
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecutePost(write.AuthorizationUsed, stream, url, cancellationToken);
+        return await App.FirestoreDatabase.ExecutePost(write.AuthorizationUsed, stream, url, cancellationToken);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -296,7 +295,7 @@ public abstract partial class Write
                     ArgumentException.Throw($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
                 }
 
-                JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+                JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
                 var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, write.AuthorizationUsed, jsonSerializerOptions, cancellationToken);
                 response.Append(createDocumentResponse);
@@ -341,7 +340,7 @@ public abstract partial class Write
                     ArgumentException.Throw($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
                 }
 
-                JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+                JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
                 var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, write.AuthorizationUsed, jsonSerializerOptions, cancellationToken);
                 response.Append(createDocumentResponse);
@@ -405,7 +404,7 @@ public abstract partial class Write
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await ExecutePost(authorization, stream, url, cancellationToken);
+        var response = await App.FirestoreDatabase.ExecutePost(authorization, stream, url, cancellationToken);
         if (response.IsError || response.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return (null, response);

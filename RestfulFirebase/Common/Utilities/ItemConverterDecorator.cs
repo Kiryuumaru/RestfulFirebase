@@ -8,6 +8,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+#pragma warning disable IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.
+#pragma warning disable IL2092 // 'DynamicallyAccessedMemberTypes' on the parameter of method don't match overridden parameter of method. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
 internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
     where TItemConverter : JsonConverter, new()
 {
@@ -193,3 +195,6 @@ internal static class TypeExtensions
             type.GetInterfaces();
     }
 }
+
+#pragma warning restore IL2092 // 'DynamicallyAccessedMemberTypes' on the parameter of method don't match overridden parameter of method. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+#pragma warning restore IL2055 // Either the type on which the MakeGenericType is called can't be statically determined, or the type parameters to be used for generic arguments can't be statically determined.

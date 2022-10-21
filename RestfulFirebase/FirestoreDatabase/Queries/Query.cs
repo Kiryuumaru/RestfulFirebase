@@ -5,14 +5,13 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class Query : FluentRequest
+public abstract partial class Query
 {
     /// <summary>
     /// Gets the collections to query.
@@ -90,6 +89,11 @@ public abstract partial class Query : FluentRequest
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public Type? ModelType { get; }
 
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    public FirebaseApp App { get; }
+
     internal readonly List<FromQuery> WritableFromQuery;
     internal readonly List<SelectQuery> WritableSelectQuery;
     internal readonly List<FilterQuery> WritableWhereQuery;
@@ -99,8 +103,8 @@ public abstract partial class Query : FluentRequest
     internal readonly List<Document> WritableCacheDocuments;
 
     internal Query(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
-        : base(app)
     {
+        App = app;
         ModelType = modelType;
         DocumentReference = documentReference;
 
@@ -122,8 +126,8 @@ public abstract partial class Query : FluentRequest
     }
 
     internal Query(Query query)
-        : base(query.App)
     {
+        App = query.App;
         ModelType = query.ModelType;
         DocumentReference = query.DocumentReference;
         AuthorizationUsed = query.AuthorizationUsed;

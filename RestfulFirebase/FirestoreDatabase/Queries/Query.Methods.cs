@@ -2,9 +2,7 @@
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
-using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -141,7 +139,7 @@ public abstract partial class FluentQueryRoot<TQuery>
             return new();
         }
 
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
         return await QueryDocumentPage(
             new(),
@@ -171,7 +169,7 @@ public abstract partial class FluentQueryRoot<TQuery, TModel>
             return new();
         }
 
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
         return await QueryDocumentPage<TModel>(
             new(),

@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -168,7 +167,7 @@ public abstract partial class FluentFetchRoot<TFetch>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public async Task<HttpResponse<GetDocumentsResult>> Run(CancellationToken cancellationToken = default)
     {
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
         List<DocumentReference> allDocRefs = new(DocumentReferences);
         foreach (var doc in Documents)
@@ -292,7 +291,7 @@ public abstract partial class FluentFetchRoot<TFetch, TModel>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public new async Task<HttpResponse<GetDocumentsResult<TModel>>> Run(CancellationToken cancellationToken = default)
     {
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
 
         List<DocumentReference> allDocRefs = new(DocumentReferences);
         foreach (var doc in Documents)

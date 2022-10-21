@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using System.IO;
 using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Transactions;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.Common.Utilities;
 using System.Collections.Generic;
@@ -13,7 +12,6 @@ using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System.Data;
 using System.Threading;
-using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
@@ -36,8 +34,8 @@ public abstract partial class Query
         else
         {
             url =
-                $"{FirestoreDatabaseV1Endpoint}/" +
-                $"{string.Format(FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":runQuery")}";
+                $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
+                $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":runQuery")}";
         }
 
         using MemoryStream stream = new();
@@ -197,18 +195,18 @@ public abstract partial class Query
             if (TransactionUsed.Token == null)
             {
                 writer.WritePropertyName("newTransaction");
-                BuildTransactionOption(writer, TransactionUsed);
+                FirestoreDatabaseApi.BuildTransactionOption(writer, TransactionUsed);
             }
             else
             {
-                BuildTransaction(writer, TransactionUsed);
+                FirestoreDatabaseApi.BuildTransaction(writer, TransactionUsed);
             }
         }
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
 
-        var response = await ExecutePost(AuthorizationUsed, stream, url, cancellationToken);
+        var response = await App.FirestoreDatabase.ExecutePost(AuthorizationUsed, stream, url, cancellationToken);
         if (response.IsError || response.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
         {
             return (null, response);

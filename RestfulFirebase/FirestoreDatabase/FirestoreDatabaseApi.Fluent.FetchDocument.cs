@@ -1,14 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using RestfulFirebase.FirestoreDatabase.References;
-using System.Diagnostics.CodeAnalysis;
-using RestfulFirebase.FirestoreDatabase.Models;
-using System.Linq;
-using RestfulFirebase.FirestoreDatabase.Transactions;
-using System.Threading;
-using RestfulFirebase.Common.Http;
-using RestfulFirebase.Common.Abstractions;
+﻿using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Fetches;
 
 namespace RestfulFirebase.FirestoreDatabase;

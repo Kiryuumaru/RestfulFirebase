@@ -5,14 +5,13 @@ using RestfulFirebase.FirestoreDatabase.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 
 namespace RestfulFirebase.FirestoreDatabase.Fetches;
 
 /// <summary>
 /// Runs a fetch or get operation.
 /// </summary>
-public abstract partial class Fetch : FluentRequest
+public abstract partial class Fetch
 {
     /// <summary>
     /// Gets the list of document references to fetch.
@@ -45,13 +44,18 @@ public abstract partial class Fetch : FluentRequest
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public Type? ModelType { get; }
 
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    public FirebaseApp App { get; }
+
     internal readonly List<DocumentReference> WritableDocumentReferences;
     internal readonly List<Document> WritableDocuments;
     internal readonly List<Document> WritableCacheDocuments;
 
     internal Fetch(FirebaseApp app, Type? modelType)
-        : base(app)
     {
+        App = app;
         ModelType = modelType;
 
         WritableDocumentReferences = new();
@@ -64,8 +68,8 @@ public abstract partial class Fetch : FluentRequest
     }
 
     internal Fetch(Fetch fetch)
-        : base(fetch.App)
     {
+        App = fetch.App;
         ModelType = fetch.ModelType;
         AuthorizationUsed = fetch.AuthorizationUsed;
         TransactionUsed = fetch.TransactionUsed;

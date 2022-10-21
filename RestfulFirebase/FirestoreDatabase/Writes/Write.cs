@@ -10,7 +10,7 @@ namespace RestfulFirebase.FirestoreDatabase.Writes;
 /// <summary>
 /// The parameter for write commits.
 /// </summary>
-public abstract partial class Write : FluentRequest
+public abstract partial class Write
 {
     /// <summary>
     /// Gets the list of <see cref="Document"/> to perform create.
@@ -47,6 +47,11 @@ public abstract partial class Write : FluentRequest
     /// </summary>
     public IAuthorization? AuthorizationUsed { get; protected set; }
 
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    public FirebaseApp App { get; }
+
     internal readonly List<(object model, CollectionReference collectionReference, string? documentName)> WritableCreateDocuments;
     internal readonly List<Document> WritablePatchDocuments;
     internal readonly List<DocumentReference> WritableDeleteDocuments;
@@ -54,8 +59,9 @@ public abstract partial class Write : FluentRequest
     internal readonly List<Document> WritableCacheDocuments;
 
     internal Write(FirebaseApp app)
-        : base(app)
     {
+        App = app;
+
         WritableCreateDocuments = new();
         WritablePatchDocuments = new();
         WritableDeleteDocuments = new();
@@ -70,8 +76,11 @@ public abstract partial class Write : FluentRequest
     }
 
     internal Write(Write write)
-        : base(write.App)
     {
+        App = write.App;
+        TransactionUsed = write.TransactionUsed;
+        AuthorizationUsed = write.AuthorizationUsed;
+
         WritableCreateDocuments = write.WritableCreateDocuments;
         WritablePatchDocuments = write.WritablePatchDocuments;
         WritableDeleteDocuments = write.WritableDeleteDocuments;
@@ -83,9 +92,6 @@ public abstract partial class Write : FluentRequest
         DeleteDocuments = write.DeleteDocuments;
         TransformDocuments = write.TransformDocuments;
         CacheDocuments = write.CacheDocuments;
-
-        TransactionUsed = write.TransactionUsed;
-        AuthorizationUsed = write.AuthorizationUsed;
     }
 }
 
