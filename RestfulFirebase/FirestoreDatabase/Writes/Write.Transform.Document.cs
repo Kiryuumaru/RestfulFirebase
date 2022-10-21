@@ -50,7 +50,7 @@ public partial class FluentWriteRoot<TWrite>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="documentReference"/> is a null reference.
     /// </exception>
-    public WriteWithDocumentTransform<TModel> Transform<TModel>(DocumentReference documentReference)
+    public WriteWithDocumentTransform<TModel> Transform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(DocumentReference documentReference)
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(documentReference);

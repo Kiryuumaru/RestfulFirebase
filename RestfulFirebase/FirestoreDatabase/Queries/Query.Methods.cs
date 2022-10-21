@@ -2,7 +2,10 @@
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,64 +60,125 @@ public abstract partial class FluentQueryRoot<TQuery>
 
         return (TQuery)this;
     }
-}
 
-public partial class QueryRoot
-{
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The request with new added cache documents.
+    /// </returns>
+    public TQuery Cache(params Document[] documents)
+    {
+        if (documents != null)
+        {
+            WritableCacheDocuments.AddRange(documents);
+        }
+
+        return (TQuery)this;
+    }
+
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The request with new added cache documents.
+    /// </returns>
+    public TQuery Cache(IEnumerable<Document>? documents)
+    {
+        if (documents != null)
+        {
+            WritableCacheDocuments.AddRange(documents);
+        }
+
+        return (TQuery)this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="Transactions.Transaction"/> to optionally perform an atomic operation.
+    /// </summary>
+    /// <returns>
+    /// The request with new added transaction.
+    /// </returns>
+    public TQuery Transaction(Transaction? transaction)
+    {
+        TransactionUsed = transaction;
+
+        return (TQuery)this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="Query.AuthorizationUsed"/> by the request.
+    /// </summary>
+    /// <returns>
+    /// The request with new added authorization.
+    /// </returns>
+    public TQuery Authorization(IAuthorization? authorization)
+    {
+        AuthorizationUsed = authorization;
+
+        return (TQuery)this;
+    }
+
     /// <summary>
     /// Runs the structured query.
     /// </summary>
-    /// <param name="cacheDocuments">
-    /// The cached <see cref="Document"/> that will use to populate the instance of the documents.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult"/>.
     /// </returns>
-    public Task<HttpResponse<QueryDocumentResult>> Run(
-        IEnumerable<Document>? cacheDocuments = default,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<QueryDocumentResult>> Run(CancellationToken cancellationToken = default)
     {
-        return App.FirestoreDatabase.QueryDocument(this, cacheDocuments, transaction, authorization, cancellationToken);
+        if (FromQuery.Count == 0)
+        {
+            return new();
+        }
+
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+
+        return await QueryDocumentPage(
+            new(),
+            BuildStartingStructureQuery(jsonSerializerOptions, cancellationToken),
+            0,
+            PagesToSkip * SizeOfPages,
+            jsonSerializerOptions,
+            cancellationToken);
     }
 }
 
-public partial class QueryRoot<TModel>
+public abstract partial class FluentQueryRoot<TQuery, TModel>
 {
     /// <summary>
     /// Runs the structured query.
     /// </summary>
-    /// <param name="cacheDocuments">
-    /// The cached <see cref="Document"/> that will use to populate the instance of the documents.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult{TModel}"/>.
     /// </returns>
-    public Task<HttpResponse<QueryDocumentResult<TModel>>> Run(
-        IEnumerable<Document>? cacheDocuments = default,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    public new async Task<HttpResponse<QueryDocumentResult<TModel>>> Run(CancellationToken cancellationToken = default)
     {
-        return App.FirestoreDatabase.QueryDocument<TModel>(this, cacheDocuments, transaction, authorization, cancellationToken);
+        if (FromQuery.Count == 0)
+        {
+            return new();
+        }
+
+        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
+
+        return await QueryDocumentPage<TModel>(
+            new(),
+            BuildStartingStructureQuery(jsonSerializerOptions, cancellationToken),
+            0,
+            PagesToSkip * SizeOfPages,
+            jsonSerializerOptions,
+            cancellationToken);
     }
 }

@@ -14,18 +14,13 @@ using RestfulFirebase.Common.Http;
 using System.Threading;
 using RestfulFirebase.Common.Abstractions;
 using System.Collections.Generic;
-using RestfulFirebase.FirestoreDatabase.Writes;
 
-namespace RestfulFirebase.FirestoreDatabase;
+namespace RestfulFirebase.FirestoreDatabase.Writes;
 
-public partial class FirestoreDatabaseApi
+public abstract partial class Write
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse> ExecuteCommit(
-        Write write,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse> ExecuteCommit(Write write, CancellationToken cancellationToken)
     {
         string url =
             $"{FirestoreDatabaseV1Endpoint}/" +
@@ -271,30 +266,26 @@ public partial class FirestoreDatabaseApi
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
-        if (transaction != null)
+        if (write.TransactionUsed != null)
         {
-            BuildTransaction(writer, transaction);
+            BuildTransaction(writer, write.TransactionUsed);
         }
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
 
-        return await ExecutePost(authorization, stream, url, cancellationToken);
+        return await ExecutePost(write.AuthorizationUsed, stream, url, cancellationToken);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<GetDocumentsResult>> ExecuteCreate(
-        Write write,
-        IEnumerable<Document>? cacheDocuments,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<GetDocumentsResult>> ExecuteCreate(Write write, CancellationToken cancellationToken)
     {
         HttpResponse response = new();
         List<DocumentTimestamp> found = new();
         List<DocumentReferenceTimestamp> missing = new();
 
         List<Task> tasks = new();
-        foreach(var (model, collectionReference, documentName) in write.CreateDocuments)
+        foreach (var (model, collectionReference, documentName) in write.CreateDocuments)
         {
             tasks.Add(Task.Run(async delegate
             {
@@ -307,7 +298,7 @@ public partial class FirestoreDatabaseApi
 
                 JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-                var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, authorization, jsonSerializerOptions, cancellationToken);
+                var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, write.AuthorizationUsed, jsonSerializerOptions, cancellationToken);
                 response.Append(createDocumentResponse);
                 if (!createDocumentResponse.IsError &&
                     jsonDocument != null &&
@@ -316,7 +307,7 @@ public partial class FirestoreDatabaseApi
                         null,
                         modelType,
                         model,
-                        (documentName == null || cacheDocuments == null) ? null : cacheDocuments.FirstOrDefault(i => i.Reference.Id == documentName),
+                        documentName == null ? null : write.CacheDocuments.FirstOrDefault(i => i.Reference.Id == documentName),
                         jsonDocument.RootElement.EnumerateObject(),
                         jsonSerializerOptions) is Document document)
                 {
@@ -331,11 +322,7 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<GetDocumentsResult<TModel>>> ExecuteCreate<TModel>(
-        Write write,
-        IEnumerable<Document>? cacheDocuments,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    internal async Task<HttpResponse<GetDocumentsResult<TModel>>> ExecuteCreate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(Write write, CancellationToken cancellationToken)
         where TModel : class
     {
         HttpResponse response = new();
@@ -356,7 +343,7 @@ public partial class FirestoreDatabaseApi
 
                 JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
 
-                var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, authorization, jsonSerializerOptions, cancellationToken);
+                var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentName, write.AuthorizationUsed, jsonSerializerOptions, cancellationToken);
                 response.Append(createDocumentResponse);
                 if (!createDocumentResponse.IsError &&
                     jsonDocument != null &&
@@ -364,7 +351,7 @@ public partial class FirestoreDatabaseApi
                         App,
                         null,
                         model,
-                        (documentName == null || cacheDocuments == null) ? null : cacheDocuments.FirstOrDefault(i => i.Reference.Id == documentName),
+                        documentName == null ? null : write.CacheDocuments.FirstOrDefault(i => i.Reference.Id == documentName),
                         jsonDocument.RootElement.EnumerateObject(),
                         jsonSerializerOptions) is Document<TModel> document)
                 {
@@ -431,66 +418,5 @@ public partial class FirestoreDatabaseApi
 #endif
 
         return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<Document>> ExecuteCreate(
-        object model,
-        CollectionReference collectionReference,
-        string? documentId = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(collectionReference);
-
-        Type modelType = model.GetType();
-
-        if (!modelType.IsClass)
-        {
-            ArgumentException.Throw($"\"{nameof(model)}\" is not a class type. Document models should be a class type.");
-        }
-
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
-
-
-        HttpResponse<Document> response = new();
-
-        var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
-        response.Append(createDocumentResponse);
-        if (createDocumentResponse.IsError || jsonDocument == null)
-        {
-            return response;
-        }
-
-        return response.Append(Document.Parse(App, null, modelType, model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<Document<TModel>>> ExecuteCreate<TModel>(
-        TModel model,
-        CollectionReference collectionReference,
-        string? documentId = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        where TModel : class
-    {
-        ArgumentNullException.ThrowIfNull(model);
-        ArgumentNullException.ThrowIfNull(collectionReference);
-
-        JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();
-
-        Type modelType = typeof(TModel);
-
-        HttpResponse<Document<TModel>> response = new();
-
-        var (jsonDocument, createDocumentResponse) = await ExecuteCreate(modelType, model, null, collectionReference, documentId, authorization, jsonSerializerOptions, cancellationToken);
-        response.Append(createDocumentResponse);
-        if (createDocumentResponse.IsError || jsonDocument == null)
-        {
-            return response;
-        }
-
-        return response.Append(Document<TModel>.Parse(App, null, model, null, jsonDocument.RootElement.EnumerateObject(), jsonSerializerOptions));
     }
 }

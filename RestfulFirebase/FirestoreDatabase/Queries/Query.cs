@@ -1,14 +1,18 @@
-﻿using RestfulFirebase.FirestoreDatabase.References;
+﻿using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.FirestoreDatabase.Models;
+using RestfulFirebase.FirestoreDatabase.References;
+using RestfulFirebase.FirestoreDatabase.Transactions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class Query
+public abstract partial class Query : FluentRequest
 {
     /// <summary>
     /// Gets the collections to query.
@@ -41,6 +45,11 @@ public abstract partial class Query
     public IReadOnlyList<CursorQuery> EndCursorQuery { get; }
 
     /// <summary>
+    /// Gets the list of cache <see cref="Document"/>.
+    /// </summary>
+    public IReadOnlyList<Document> CacheDocuments { get; }
+
+    /// <summary>
     /// Gets <c>true</c> whether the position is on the given start values, relative to the sort order defined by the query; otherwise, <c>false</c> to skip the given start values. Default is <c>false</c>.
     /// </summary>
     public bool IsStartAfter { get; internal set; } = false;
@@ -61,14 +70,19 @@ public abstract partial class Query
     public int PagesToSkip { get; internal set; } = 0;
 
     /// <summary>
+    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
+    /// </summary>
+    public Transaction? TransactionUsed { get; internal set; }
+
+    /// <summary>
+    /// Gets the authorization used for the operation.
+    /// </summary>
+    public IAuthorization? AuthorizationUsed { get; internal set; }
+
+    /// <summary>
     /// Gets the document reference to run this query.
     /// </summary>
     public DocumentReference? DocumentReference { get; }
-
-    /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used.
-    /// </summary>
-    public FirebaseApp App { get; }
 
     /// <summary>
     /// Gets the type of the model to query.
@@ -82,10 +96,11 @@ public abstract partial class Query
     internal readonly List<OrderByQuery> WritableOrderByQuery;
     internal readonly List<CursorQuery> WritableStartCursorQuery;
     internal readonly List<CursorQuery> WritableEndCursorQuery;
+    internal readonly List<Document> WritableCacheDocuments;
 
     internal Query(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
+        : base(app)
     {
-        App = app;
         ModelType = modelType;
         DocumentReference = documentReference;
 
@@ -95,6 +110,7 @@ public abstract partial class Query
         WritableOrderByQuery = new();
         WritableStartCursorQuery = new();
         WritableEndCursorQuery = new();
+        WritableCacheDocuments = new();
 
         FromQuery = WritableFromQuery.AsReadOnly();
         SelectQuery = WritableSelectQuery.AsReadOnly();
@@ -102,13 +118,16 @@ public abstract partial class Query
         OrderByQuery = WritableOrderByQuery.AsReadOnly();
         StartCursorQuery = WritableStartCursorQuery.AsReadOnly();
         EndCursorQuery = WritableEndCursorQuery.AsReadOnly();
+        CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
     internal Query(Query query)
+        : base(query.App)
     {
-        App = query.App;
         ModelType = query.ModelType;
         DocumentReference = query.DocumentReference;
+        AuthorizationUsed = query.AuthorizationUsed;
+        TransactionUsed = query.TransactionUsed;
 
         WritableFromQuery = query.WritableFromQuery;
         WritableSelectQuery = query.WritableSelectQuery;
@@ -116,6 +135,7 @@ public abstract partial class Query
         WritableOrderByQuery = query.WritableOrderByQuery;
         WritableStartCursorQuery = query.WritableStartCursorQuery;
         WritableEndCursorQuery = query.WritableEndCursorQuery;
+        WritableCacheDocuments = query.WritableCacheDocuments;
 
         FromQuery = query.FromQuery;
         SelectQuery = query.SelectQuery;
@@ -123,6 +143,7 @@ public abstract partial class Query
         OrderByQuery = query.OrderByQuery;
         StartCursorQuery = query.StartCursorQuery;
         EndCursorQuery = query.EndCursorQuery;
+        CacheDocuments = query.CacheDocuments;
 
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
@@ -153,11 +174,12 @@ public abstract partial class FluentQueryRoot<TQuery> : Query
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery, TModel> : FluentQueryRoot<TQuery>
+public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<TQuery>
     where TQuery : FluentQueryRoot<TQuery, TModel>
+    where TModel : class
 {
-    internal FluentQueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
-        : base(app, modelType, documentReference)
+    internal FluentQueryRoot(FirebaseApp app, DocumentReference? documentReference)
+        : base(app, typeof(TModel), documentReference)
     {
 
     }
@@ -174,7 +196,7 @@ public abstract partial class FluentQueryRoot<TQuery, TModel> : FluentQueryRoot<
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public partial class QueryRoot : FluentQueryRoot<QueryRoot>
+public class QueryRoot : FluentQueryRoot<QueryRoot>
 {
     internal QueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
         : base(app, modelType, documentReference)
@@ -195,11 +217,11 @@ public partial class QueryRoot : FluentQueryRoot<QueryRoot>
 /// <typeparam name="TModel">
 /// The type of the document model.
 /// </typeparam>
-public partial class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<QueryRoot<TModel>, TModel>
+public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<QueryRoot<TModel>, TModel>
     where TModel : class
 {
     internal QueryRoot(FirebaseApp app, DocumentReference? documentReference)
-        : base(app, typeof(TModel), documentReference)
+        : base(app, documentReference)
     {
 
     }
@@ -227,6 +249,8 @@ internal class StructuredQuery
 
     public List<StructuredCursor> EndCursor { get; }
 
+    public List<Document> Cache { get; }
+
     public bool IsStartAfter { get; internal set; } = false;
 
     public bool IsEndBefore { get; internal set; } = false;
@@ -234,6 +258,10 @@ internal class StructuredQuery
     public int SizeOfPages { get; internal set; } = 20;
 
     public int PagesToSkip { get; internal set; } = 0;
+
+    public Transaction? TransactionUsed { get; internal set; }
+
+    public IAuthorization? AuthorizationUsed { get; internal set; }
 
     public DocumentReference? DocumentReference { get; }
 
@@ -245,37 +273,49 @@ internal class StructuredQuery
     public StructuredQuery(Query query)
     {
         Query = query;
+
         From = new();
         Select = new();
         Where = new();
         OrderBy = new();
         StartCursor = new();
         EndCursor = new();
+
+        Cache = new(query.CacheDocuments);
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
         SizeOfPages = query.SizeOfPages;
         PagesToSkip = query.PagesToSkip;
-        DocumentReference = query.DocumentReference;
+
         App = query.App;
         ModelType = query.ModelType;
+        DocumentReference = query.DocumentReference;
+        AuthorizationUsed = query.AuthorizationUsed;
+        TransactionUsed = query.TransactionUsed;
     }
 
     public StructuredQuery(StructuredQuery query)
     {
         Query = query.Query;
+
         From = new(query.From);
         Select = new(query.Select);
         Where = new(query.Where);
         OrderBy = new(query.OrderBy);
         StartCursor = new(query.StartCursor);
         EndCursor = new(query.EndCursor);
+
+        Cache = new(query.Cache);
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
         SizeOfPages = query.SizeOfPages;
         PagesToSkip = query.PagesToSkip;
-        DocumentReference = query.DocumentReference;
+
         App = query.App;
         ModelType = query.ModelType;
+        DocumentReference = query.DocumentReference;
+        AuthorizationUsed = query.AuthorizationUsed;
+        TransactionUsed = query.TransactionUsed;
     }
 }
 

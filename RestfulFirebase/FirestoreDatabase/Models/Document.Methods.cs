@@ -30,9 +30,13 @@ public partial class Document
     {
         HttpResponse response = new();
 
-        var writeResponse = await Reference.GetDocument(new Document[] { this }, transaction, authorization, cancellationToken);
-        response.Append(writeResponse);
-        if (writeResponse.IsError)
+        var getResponse = await Reference.App.FirestoreDatabase.Fetch()
+            .Document(this)
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .Run(cancellationToken);
+        response.Append(getResponse);
+        if (getResponse.IsError)
         {
             return response;
         }
@@ -60,7 +64,11 @@ public partial class Document
     {
         HttpResponse response = new();
 
-        var writeResponse = await Reference.PatchAndGetDocument(GetModel(), new Document[] { this }, transaction, authorization, cancellationToken);
+        var writeResponse = await Reference.App.FirestoreDatabase.Write()
+            .Patch(this)
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .RunAndGet(cancellationToken);
         response.Append(writeResponse);
         if (writeResponse.IsError)
         {
@@ -76,9 +84,9 @@ public partial class Document
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public WriteWithCacheAndDocumentTransform Transform()
+    public WriteWithDocumentTransform Transform()
     {
-        return new WriteWithCacheAndDocumentTransform(Reference.Transform())
+        return new WriteWithDocumentTransform(Reference.Transform())
             .Cache(this);
     }
 
@@ -91,15 +99,15 @@ public partial class Document
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public WriteWithCacheAndDocumentTransform<TModel> Transform<TModel>()
+    public WriteWithDocumentTransform<TModel> Transform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
-        return new WriteWithCacheAndDocumentTransform<TModel>(Reference.Transform<TModel>())
+        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>())
             .Cache(this);
     }
 }
 
-public partial class Document<TModel>
+public partial class Document<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>
 {
     /// <summary>
     /// Adds new <see cref="DocumentTransform"/> to perform a transform operation.
@@ -107,9 +115,9 @@ public partial class Document<TModel>
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public new WriteWithCacheAndDocumentTransform<TModel> Transform()
+    public new WriteWithDocumentTransform<TModel> Transform()
     {
-        return new WriteWithCacheAndDocumentTransform<TModel>(Reference.Transform<TModel>())
+        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>())
             .Cache(this);
     }
 }

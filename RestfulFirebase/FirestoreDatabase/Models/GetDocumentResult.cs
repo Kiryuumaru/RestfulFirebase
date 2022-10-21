@@ -1,4 +1,6 @@
-﻿namespace RestfulFirebase.FirestoreDatabase.Models;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
 /// The result for get document operations.
@@ -25,23 +27,23 @@ public class GetDocumentResult
 /// <summary>
 /// The result for get document operations.
 /// </summary>
-/// <typeparam name="T">
+/// <typeparam name="TModel">
 /// The type of the model of the document.
 /// </typeparam>
-public class GetDocumentResult<T>
-    where T : class
+public class GetDocumentResult<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>
+    where TModel : class
 {
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public DocumentTimestamp<T>? Found { get; }
+    public DocumentTimestamp<TModel>? Found { get; }
 
     /// <summary>
     /// Gets the missing document.
     /// </summary>
     public DocumentReferenceTimestamp? Missing { get; }
 
-    internal GetDocumentResult(DocumentTimestamp<T>? found, DocumentReferenceTimestamp? missing)
+    internal GetDocumentResult(DocumentTimestamp<TModel>? found, DocumentReferenceTimestamp? missing)
     {
         Found = found;
         Missing = missing;

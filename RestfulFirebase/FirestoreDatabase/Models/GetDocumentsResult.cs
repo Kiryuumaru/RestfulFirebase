@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
@@ -27,23 +28,23 @@ public class GetDocumentsResult
 /// <summary>
 /// The result for get documents operations.
 /// </summary>
-/// <typeparam name="T">
+/// <typeparam name="TModel">
 /// The type of the model of the document.
 /// </typeparam>
-public class GetDocumentsResult<T>
-    where T : class
+public class GetDocumentsResult<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>
+    where TModel : class
 {
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public IReadOnlyList<DocumentTimestamp<T>> Found { get; }
+    public IReadOnlyList<DocumentTimestamp<TModel>> Found { get; }
 
     /// <summary>
     /// Gets the missing document.
     /// </summary>
     public IReadOnlyList<DocumentReferenceTimestamp> Missing { get; }
 
-    internal GetDocumentsResult(IReadOnlyList<DocumentTimestamp<T>> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
+    internal GetDocumentsResult(IReadOnlyList<DocumentTimestamp<TModel>> found, IReadOnlyList<DocumentReferenceTimestamp> missing)
     {
         Found = found;
         Missing = missing;

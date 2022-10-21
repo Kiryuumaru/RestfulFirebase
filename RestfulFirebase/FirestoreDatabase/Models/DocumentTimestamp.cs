@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 
@@ -33,18 +34,18 @@ public class DocumentTimestamp
 /// <summary>
 /// The timestamp of the document.
 /// </summary>
-/// <typeparam name="T">
+/// <typeparam name="TModel">
 /// The type of the model of the document.
 /// </typeparam>
-public class DocumentTimestamp<T> : DocumentTimestamp
-    where T : class
+public class DocumentTimestamp<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : DocumentTimestamp
+    where TModel : class
 {
     /// <summary>
     /// Gets the found document.
     /// </summary>
-    public new Document<T> Document { get; }
+    public new Document<TModel> Document { get; }
 
-    internal DocumentTimestamp(Document<T> document, DateTimeOffset readTime, bool isReadTimeAServerTime)
+    internal DocumentTimestamp(Document<TModel> document, DateTimeOffset readTime, bool isReadTimeAServerTime)
         : base(document, readTime, isReadTimeAServerTime)
     {
         Document = document;

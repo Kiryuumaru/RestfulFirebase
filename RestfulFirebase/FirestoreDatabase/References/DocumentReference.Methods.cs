@@ -121,8 +121,24 @@ public partial class DocumentReference : Reference
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<Document>> CreateDocument(object model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        => App.FirestoreDatabase.ExecuteCreate(model, Parent, Id, authorization, cancellationToken);
+    public async Task<HttpResponse<Document>> CreateDocument(object model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    {
+        HttpResponse<Document> response = new();
+
+        var writeResponse = await App.FirestoreDatabase.Write()
+            .Create(model, Parent, Id)
+            .Authorization(authorization)
+            .RunAndGetSingle(cancellationToken);
+        response.Append(writeResponse);
+        if (writeResponse.IsError)
+        {
+            return response;
+        }
+
+        response.Append(writeResponse.Result?.Found?.Document);
+
+        return response;
+    }
 
     /// <summary>
     /// Request to create a <see cref="Document"/>.
@@ -149,8 +165,25 @@ public partial class DocumentReference : Reference
     /// <paramref name="model"/> is a value type.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<Document<TModel>>> CreateDocument<TModel>(TModel model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
-        where TModel : class => App.FirestoreDatabase.ExecuteCreate(model, Parent, Id, authorization, cancellationToken);
+    public async Task<HttpResponse<Document<TModel>>> CreateDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(TModel model, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+        where TModel : class
+    {
+        HttpResponse<Document<TModel>> response = new();
+
+        var writeResponse = await App.FirestoreDatabase.Write()
+            .Create(model, Parent, Id)
+            .Authorization(authorization)
+            .RunAndGetSingle<TModel>(cancellationToken);
+        response.Append(writeResponse);
+        if (writeResponse.IsError)
+        {
+            return response;
+        }
+
+        response.Append(writeResponse.Result?.Found?.Document);
+
+        return response;
+    }
 
     /// <summary>
     /// Request to get the document.
@@ -175,14 +208,17 @@ public partial class DocumentReference : Reference
     {
         HttpResponse<GetDocumentResult> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument(new DocumentReference[] { this }, null, cacheDocuments, transaction, authorization, cancellationToken);
-        response.Append(getDocumentResponse);
-        if (getDocumentResponse.IsError)
+        var getResponse = await App.FirestoreDatabase.Fetch()
+            .DocumentReference(this)
+            .Cache(cacheDocuments)
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .RunSingle(cancellationToken);
+        response.Append(getResponse);
+        if (getResponse.IsError)
         {
             return response;
         }
-
-        response.Append(new GetDocumentResult(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -209,19 +245,22 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="GetDocumentResult"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<TModel>>> GetDocument<TModel>(IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<TModel>>> GetDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where TModel : class
     {
         HttpResponse<GetDocumentResult<TModel>> response = new();
 
-        var getDocumentResponse = await App.FirestoreDatabase.GetDocument<TModel>(new DocumentReference[] { this }, null, null, cacheDocuments, transaction, authorization, cancellationToken);
-        response.Append(getDocumentResponse);
-        if (getDocumentResponse.IsError)
+        var getResponse = await App.FirestoreDatabase.Fetch<TModel>()
+            .DocumentReference(this)
+            .Cache(cacheDocuments)
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .RunSingle(cancellationToken);
+        response.Append(getResponse);
+        if (getResponse.IsError)
         {
             return response;
         }
-
-        response.Append(new GetDocumentResult<TModel>(getDocumentResponse.Result?.Found?.FirstOrDefault(), getDocumentResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -269,12 +308,14 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse> PatchDocument<TModel>(TModel? model, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse> PatchDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(TModel? model, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where TModel : class
     {
         return App.FirestoreDatabase.Write()
             .Patch(new Document<TModel>(this, model))
-            .Run(transaction, authorization, cancellationToken);
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .Run(cancellationToken);
     }
 
     /// <summary>
@@ -302,21 +343,22 @@ public partial class DocumentReference : Reference
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentResult<TModel>>> PatchAndGetDocument<TModel>(TModel? model, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentResult<TModel>>> PatchAndGetDocument<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(TModel? model, IEnumerable<Document>? cacheDocuments = default, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where TModel : class
     {
         HttpResponse<GetDocumentResult<TModel>> response = new();
 
         var writeResponse = await App.FirestoreDatabase.Write()
             .Patch(new Document<TModel>(this, model))
-            .RunAndGet<TModel>(cacheDocuments, transaction, authorization, cancellationToken);
+            .Cache(cacheDocuments)
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .RunAndGetSingle<TModel>(cancellationToken);
         response.Append(writeResponse);
         if (writeResponse.IsError)
         {
             return response;
         }
-
-        response.Append(new GetDocumentResult<TModel>(writeResponse.Result?.Found?.FirstOrDefault(), writeResponse.Result?.Missing?.FirstOrDefault()));
 
         return response;
     }
@@ -341,7 +383,9 @@ public partial class DocumentReference : Reference
     {
         return App.FirestoreDatabase.Write()
             .Delete(this)
-            .Run(transaction, authorization, cancellationToken);
+            .Transaction(transaction)
+            .Authorization(authorization)
+            .Run(cancellationToken);
     }
 
     /// <summary>
@@ -364,7 +408,7 @@ public partial class DocumentReference : Reference
     /// <returns>
     /// The write with new added <see cref="DocumentTransform"/> to transform.
     /// </returns>
-    public WriteWithDocumentTransform<TModel> Transform<TModel>()
+    public WriteWithDocumentTransform<TModel> Transform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
         return App.FirestoreDatabase.Write().Transform<TModel>(this);

@@ -11,27 +11,82 @@ using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Writes;
 
-public abstract partial class Write
+public abstract partial class FluentWriteRoot<TWrite>
 {
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The request with new added cache documents.
+    /// </returns>
+    public TWrite Cache(params Document[] documents)
+    {
+        if (documents != null)
+        {
+            WritableCacheDocuments.AddRange(documents);
+        }
+
+        return (TWrite)this;
+    }
+
+    /// <summary>
+    /// Adds a cache documents.
+    /// </summary>
+    /// <param name="documents">
+    /// The cache documents.
+    /// </param>
+    /// <returns>
+    /// The request with new added cache documents.
+    /// </returns>
+    public TWrite Cache(IEnumerable<Document>? documents)
+    {
+        if (documents != null)
+        {
+            WritableCacheDocuments.AddRange(documents);
+        }
+
+        return (TWrite)this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="Transactions.Transaction"/> to optionally perform an atomic operation.
+    /// </summary>
+    /// <returns>
+    /// The write with new added transaction.
+    /// </returns>
+    public TWrite Transaction(Transaction? transaction)
+    {
+        TransactionUsed = transaction;
+
+        return (TWrite)this;
+    }
+
+    /// <summary>
+    /// Sets the <see cref="Write.AuthorizationUsed"/> by the write.
+    /// </summary>
+    /// <returns>
+    /// The write with new added authorization.
+    /// </returns>
+    public TWrite Authorization(IAuthorization? authorization)
+    {
+        AuthorizationUsed = authorization;
+
+        return (TWrite)this;
+    }
+
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public async Task<HttpResponse> Run(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    public async Task<HttpResponse> Run(CancellationToken cancellationToken = default)
     {
         HttpResponse response = new();
 
@@ -39,7 +94,7 @@ public abstract partial class Write
             DeleteDocuments.Count != 0 ||
             TransformDocuments.Count != 0)
         {
-            var commitOperation = await App.FirestoreDatabase.ExecuteCommit(this, transaction, authorization, cancellationToken);
+            var commitOperation = await ExecuteCommit(this, cancellationToken);
             response.Append(commitOperation);
             if (commitOperation.IsError)
             {
@@ -48,7 +103,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, null, authorization, cancellationToken);
+            var createOperation = await ExecuteCreate(this, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {
@@ -62,26 +117,13 @@ public abstract partial class Write
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="cacheDocuments">
-    /// The cache of documents to recycle if it matched its reference.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public async Task<HttpResponse<GetDocumentsResult>> RunAndGet(
-        IEnumerable<Document>? cacheDocuments,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult>> RunAndGet(CancellationToken cancellationToken = default)
     {
         HttpResponse response = new();
         List<DocumentTimestamp> found = new();
@@ -91,7 +133,7 @@ public abstract partial class Write
             DeleteDocuments.Count != 0 ||
             TransformDocuments.Count != 0)
         {
-            var commitOperation = await App.FirestoreDatabase.ExecuteCommit(this, transaction, authorization, cancellationToken);
+            var commitOperation = await ExecuteCommit(this, cancellationToken);
             response.Append(commitOperation);
             if (commitOperation.IsError)
             {
@@ -105,7 +147,11 @@ public abstract partial class Write
             docRefs.AddRange(DeleteDocuments);
             docRefs.AddRange(TransformDocuments.Select(i => i.DocumentReference));
 
-            var getDocumentResponse = await App.FirestoreDatabase.GetDocument(docRefs, docs, cacheDocuments, transaction, authorization, cancellationToken);
+            var getDocumentResponse = await App.FirestoreDatabase.Fetch()
+                .DocumentReference(docRefs)
+                .Document(docs)
+                .Cache(CacheDocuments)
+                .Run(cancellationToken);
             response.Append(getDocumentResponse);
             if (getDocumentResponse.IsError)
             {
@@ -122,7 +168,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, cacheDocuments, authorization, cancellationToken);
+            var createOperation = await ExecuteCreate(this, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {
@@ -144,26 +190,13 @@ public abstract partial class Write
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="cacheDocuments">
-    /// The cache of documents to recycle if it matched its reference.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public async Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
-        IEnumerable<Document>? cacheDocuments,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(CancellationToken cancellationToken = default)
         where TModel : class
     {
         HttpResponse response = new();
@@ -174,7 +207,7 @@ public abstract partial class Write
             DeleteDocuments.Count != 0 ||
             TransformDocuments.Count != 0)
         {
-            var commitOperation = await App.FirestoreDatabase.ExecuteCommit(this, transaction, authorization, cancellationToken);
+            var commitOperation = await ExecuteCommit(this, cancellationToken);
             response.Append(commitOperation);
             if (commitOperation.IsError)
             {
@@ -189,7 +222,12 @@ public abstract partial class Write
             docRefs.AddRange(DeleteDocuments);
             docRefs.AddRange(TransformDocuments.Select(i => i.DocumentReference));
 
-            var getDocumentResponse = await App.FirestoreDatabase.GetDocument(docRefs, docs, typedDocs, cacheDocuments, transaction, authorization, cancellationToken);
+            var getDocumentResponse = await App.FirestoreDatabase.Fetch<TModel>()
+                .DocumentReference(docRefs)
+                .Document(docs)
+                .Document(typedDocs)
+                .Cache(CacheDocuments)
+                .Run(cancellationToken);
             response.Append(getDocumentResponse);
             if (getDocumentResponse.IsError)
             {
@@ -206,7 +244,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate<TModel>(this, cacheDocuments, authorization, cancellationToken);
+            var createOperation = await ExecuteCreate<TModel>(this, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {
@@ -228,48 +266,74 @@ public abstract partial class Write
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public virtual Task<HttpResponse<GetDocumentsResult>> RunAndGet(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    /// <exception cref="System.ArgumentException">
+    /// Write operation has multiple or empty document to execute.
+    /// </exception>
+    public async Task<HttpResponse<GetDocumentResult>> RunAndGetSingle(CancellationToken cancellationToken = default)
     {
-        return RunAndGet(null, transaction, authorization, cancellationToken);
+        if (PatchDocuments.Count +
+            DeleteDocuments.Count +
+            TransformDocuments.Count +
+            CreateDocuments.Count != 1)
+        {
+            ArgumentException.Throw($"Write operation has multiple or empty document to execute.");
+        }
+
+        HttpResponse<GetDocumentResult> response = new();
+
+        var runResponse = await RunAndGet(cancellationToken);
+        response.Append(runResponse);
+        if (runResponse.IsError)
+        {
+            return response;
+        }
+
+        response.Append(new GetDocumentResult(runResponse.Result?.Found.FirstOrDefault(), runResponse.Result?.Missing?.FirstOrDefault()));
+
+        return response;
     }
 
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public virtual Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
+    /// <exception cref="System.ArgumentException">
+    /// Write operation has multiple or empty document to execute.
+    /// </exception>
+    public async Task<HttpResponse<GetDocumentResult<TModel>>> RunAndGetSingle<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(CancellationToken cancellationToken = default)
         where TModel : class
     {
-        return RunAndGet<TModel>(null, transaction, authorization, cancellationToken);
+        if (PatchDocuments.Count +
+            DeleteDocuments.Count +
+            TransformDocuments.Count +
+            CreateDocuments.Count != 1)
+        {
+            ArgumentException.Throw($"Write operation has multiple or empty document to execute.");
+        }
+
+        HttpResponse<GetDocumentResult<TModel>> response = new();
+
+        var runResponse = await RunAndGet<TModel>(cancellationToken);
+        response.Append(runResponse);
+        if (runResponse.IsError)
+        {
+            return response;
+        }
+
+        response.Append(new GetDocumentResult<TModel>(runResponse.Result?.Found.FirstOrDefault(), runResponse.Result?.Missing?.FirstOrDefault()));
+
+        return response;
     }
 }
 
@@ -278,213 +342,27 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="cacheDocuments">
-    /// The cache of documents to recycle if it matched its reference.
-    /// </param>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(
-        IEnumerable<Document>? cacheDocuments = default,
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        => RunAndGet<TModel>(cacheDocuments, transaction, authorization, cancellationToken);
-}
-
-public partial class FluentWriteWithCacheAndDocumentTransform<TWrite>
-{
-    /// <summary>
-    /// Adds a cache documents.
-    /// </summary>
-    /// <param name="documents">
-    /// The cache documents.
-    /// </param>
-    /// <returns>
-    /// The write with new added cache documents.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documents"/> is a null reference.
-    /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public TWrite Cache(params Document[] documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-
-        WritableCacheDocuments.AddRange(documents);
-
-        return (TWrite)this;
-    }
-
-    /// <summary>
-    /// Adds a cache documents.
-    /// </summary>
-    /// <param name="documents">
-    /// The cache documents.
-    /// </param>
-    /// <returns>
-    /// The write with new added cache documents.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documents"/> is a null reference.
-    /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public TWrite Cache(IEnumerable<Document> documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-
-        WritableCacheDocuments.AddRange(documents);
-
-        return (TWrite)this;
-    }
+    public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(CancellationToken cancellationToken = default)
+        => RunAndGet<TModel>(cancellationToken);
 
     /// <summary>
     /// Runs the write operation.
     /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
     /// <param name="cancellationToken">
     /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
     /// </param>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public override Task<HttpResponse<GetDocumentsResult>> RunAndGet(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-    {
-        return RunAndGet(CacheDocuments, transaction, authorization, cancellationToken);
-    }
-
-    /// <summary>
-    /// Runs the write operation.
-    /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
-    /// </returns>
-    public override Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<TModel>(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        where TModel : class
-    {
-        return RunAndGet<TModel>(CacheDocuments, transaction, authorization, cancellationToken);
-    }
-}
-
-public partial class FluentWriteWithCacheAndDocumentTransform<TWrite, TModel>
-{
-    /// <summary>
-    /// Adds a cache documents.
-    /// </summary>
-    /// <param name="documents">
-    /// The cache documents.
-    /// </param>
-    /// <returns>
-    /// The write with new added cache documents.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documents"/> is a null reference.
+    /// <exception cref="System.ArgumentException">
+    /// Write operation has multiple or empty document to execute.
     /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public TWrite Cache(params Document[] documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-
-        WritableCacheDocuments.AddRange(documents);
-
-        return (TWrite)this;
-    }
-
-    /// <summary>
-    /// Adds a cache documents.
-    /// </summary>
-    /// <param name="documents">
-    /// The cache documents.
-    /// </param>
-    /// <returns>
-    /// The write with new added cache documents.
-    /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// <paramref name="documents"/> is a null reference.
-    /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public TWrite Cache(IEnumerable<Document> documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-
-        WritableCacheDocuments.AddRange(documents);
-
-        return (TWrite)this;
-    }
-
-    /// <summary>
-    /// Runs the write operation.
-    /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
-    /// </returns>
-    public override Task<HttpResponse<GetDocumentsResult<T>>> RunAndGet<T>(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-        where T : class
-    {
-        return RunAndGet<T>(CacheDocuments, transaction, authorization, cancellationToken);
-    }
-
-    /// <summary>
-    /// Runs the write operation.
-    /// </summary>
-    /// <param name="transaction">
-    /// The <see cref="Transaction"/> to optionally perform an atomic operation.
-    /// </param>
-    /// <param name="authorization">
-    /// The authorization used for the operation.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
-    /// </param>
-    /// <returns>
-    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
-    /// </returns>
-    public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(
-        Transaction? transaction = default,
-        IAuthorization? authorization = default,
-        CancellationToken cancellationToken = default)
-    {
-        return RunAndGet(CacheDocuments, transaction, authorization, cancellationToken);
-    }
+    public new Task<HttpResponse<GetDocumentResult<TModel>>> RunAndGetSingle(CancellationToken cancellationToken = default)
+        => RunAndGetSingle<TModel>(cancellationToken);
 }
