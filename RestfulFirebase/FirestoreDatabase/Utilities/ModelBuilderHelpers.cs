@@ -7,7 +7,6 @@ using RestfulFirebase.Common.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using RestfulFirebase.Common.Internals;
-using ObservableHelpers.ComponentModel;
 using System.Collections;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Abstractions;
@@ -575,10 +574,10 @@ internal static class ModelBuilderHelpers
             name = null;
             bool returnValue = false;
 
-            // Special exclude
-            if (propertyInfo.Name == nameof(ObservableObject.SyncOperation) ||
-                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangedEvent) ||
-                propertyInfo.Name == nameof(ObservableObject.SynchronizePropertyChangingEvent))
+            // Special exclude (for ObservableHelpers)
+            if (propertyInfo.Name == "SyncOperation" ||
+                propertyInfo.Name == "SynchronizePropertyChangedEvent" ||
+                propertyInfo.Name == "SynchronizePropertyChangingEvent")
             {
                 return false;
             }

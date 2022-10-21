@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ObservableHelpers" Version="2.0.9" />
     <ProjectReference Include="..\RestfulFirebase\RestfulFirebase.csproj" />
   </ItemGroup>
 

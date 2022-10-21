@@ -1,5 +1,8 @@
-﻿using ObservableHelpers.ComponentModel;
-using RestfulFirebase.Http;
+﻿using RestfulFirebase.Http;
+using System.Collections.Generic;
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace RestfulFirebase;
@@ -7,8 +10,7 @@ namespace RestfulFirebase;
 /// <summary>
 /// Provides configuration for all operation.
 /// </summary>
-[ObservableObject]
-public partial class FirebaseConfig
+public partial class FirebaseConfig : INotifyPropertyChanged, INotifyPropertyChanging
 {
     /// <summary>
     /// Gets or sets the firebase API key.
@@ -23,14 +25,44 @@ public partial class FirebaseConfig
     /// <summary>
     /// Gets or sets the <see cref="IHttpClientFactory"/>.
     /// </summary>
-    [ObservableProperty]
+    public IHttpClientFactory? HttpClientFactory
+    {
+        get => httpClientFactory;
+        set
+        {
+            if (!EqualityComparer<IHttpClientFactory?>.Default.Equals(httpClientFactory, value))
+            {
+                OnPropertyChanging();
+                httpClientFactory = value;
+                OnPropertyChanged();
+            }
+        }
+    }
     private IHttpClientFactory? httpClientFactory;
 
     /// <summary>
     /// Gets or sets the default <see cref="System.Text.Json.JsonSerializerOptions"/>.
     /// </summary>
-    [ObservableProperty]
+    public JsonSerializerOptions? JsonSerializerOptions
+    {
+        get => jsonSerializerOptions;
+        set
+        {
+            if (!EqualityComparer<JsonSerializerOptions?>.Default.Equals(jsonSerializerOptions, value))
+            {
+                OnPropertyChanging();
+                jsonSerializerOptions = value;
+                OnPropertyChanged();
+            }
+        }
+    }
     JsonSerializerOptions? jsonSerializerOptions;
+
+    /// <inheritdoc/>
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    /// <inheritdoc/>
+    public event PropertyChangingEventHandler? PropertyChanging;
 
     /// <summary>
     /// Creates new instance of <see cref="FirebaseConfig"/> with the default configurations.
@@ -52,5 +84,49 @@ public partial class FirebaseConfig
 
         ApiKey = apiKey;
         ProjectId = projectId;
+    }
+
+    /// <summary>
+    /// Raises the <see cref = "PropertyChanged"/> event.
+    /// </summary>
+    /// <param name = "propertyName">
+    /// (optional) The name of the property that changed.
+    /// </param>
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        OnPropertyChanged(new PropertyChangedEventArgs(propertyName));
+    }
+
+    /// <summary>
+    /// Raises the <see cref = "PropertyChanging"/> event.
+    /// </summary>
+    /// <param name = "propertyName">
+    /// (optional) The name of the property that changed.
+    /// </param>
+    protected void OnPropertyChanging([CallerMemberName] string? propertyName = null)
+    {
+        OnPropertyChanging(new PropertyChangingEventArgs(propertyName));
+    }
+
+    /// <summary>
+    /// Raises <see cref = "PropertyChanged"/>.
+    /// </summary>
+    /// <param name = "e">
+    /// The input <see cref = "PropertyChangedEventArgs"/> instance.
+    /// </param>
+    protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        PropertyChanged?.Invoke(this, e);
+    }
+
+    /// <summary>
+    /// Raises <see cref = "PropertyChanging"/>.
+    /// </summary>
+    /// <param name = "e">
+    /// The input <see cref = "PropertyChangingEventArgs"/> instance.
+    /// </param>
+    protected virtual void OnPropertyChanging(PropertyChangingEventArgs e)
+    {
+        PropertyChanging?.Invoke(this, e);
     }
 }
