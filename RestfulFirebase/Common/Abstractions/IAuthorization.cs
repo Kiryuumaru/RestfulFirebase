@@ -1,6 +1,4 @@
 ﻿using RestfulFirebase.Common.Http;
-using RestfulFirebase.Common.Models;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 

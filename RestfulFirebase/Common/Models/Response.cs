@@ -1,12 +1,5 @@
-﻿using RestfulFirebase.Common.Abstractions;
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.Common.Models;
 

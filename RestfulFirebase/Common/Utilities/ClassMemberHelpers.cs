@@ -1,14 +1,5 @@
-﻿using System;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using System.Reflection;
-using System.Text.Json.Serialization;
-using System.Text.Json;
-using RestfulFirebase.Common.Attributes;
-using System.Diagnostics.CodeAnalysis;
-using System.Collections.Generic;
-using RestfulFirebase.Common.Internals;
-using ObservableHelpers.ComponentModel;
 
 namespace RestfulFirebase.Common.Utilities;
 

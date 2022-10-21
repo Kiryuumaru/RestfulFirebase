@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Net.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.References;
@@ -14,7 +13,6 @@ using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.Common.Http;
 using System.Threading;
 using RestfulFirebase.Common.Abstractions;
-using System.Collections;
 using System.Collections.Generic;
 using RestfulFirebase.FirestoreDatabase.Writes;
 
@@ -288,7 +286,6 @@ public partial class FirestoreDatabaseApi
     internal async Task<HttpResponse<GetDocumentsResult>> ExecuteCreate(
         Write write,
         IEnumerable<Document>? cacheDocuments,
-        Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
     {
@@ -337,7 +334,6 @@ public partial class FirestoreDatabaseApi
     internal async Task<HttpResponse<GetDocumentsResult<TModel>>> ExecuteCreate<TModel>(
         Write write,
         IEnumerable<Document>? cacheDocuments,
-        Transaction? transaction = default,
         IAuthorization? authorization = default,
         CancellationToken cancellationToken = default)
         where TModel : class

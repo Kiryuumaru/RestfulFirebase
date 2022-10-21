@@ -1,12 +1,7 @@
 ﻿using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
-using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 

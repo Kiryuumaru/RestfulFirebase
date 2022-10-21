@@ -1,8 +1,4 @@
-﻿
-
-using System.Text.Json;
-
-namespace RestfulFirebase.FirestoreDatabase;
+﻿namespace RestfulFirebase.FirestoreDatabase;
 
 /// <summary>
 /// Provides firebase cloud firestore database implementations.

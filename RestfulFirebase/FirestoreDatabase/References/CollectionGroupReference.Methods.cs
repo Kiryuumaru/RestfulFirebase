@@ -1,15 +1,6 @@
-﻿using RestfulFirebase.Common.Internals;
-using RestfulFirebase.FirestoreDatabase.Models;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Threading;
-using RestfulFirebase.Common.Http;
-using RestfulFirebase.FirestoreDatabase.Transactions;
-using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Queries;
 
 namespace RestfulFirebase.FirestoreDatabase.References;

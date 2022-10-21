@@ -1,7 +1,6 @@
 ﻿using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Internals;
-using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Exceptions;

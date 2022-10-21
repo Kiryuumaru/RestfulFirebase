@@ -1,9 +1,4 @@
-﻿using RestfulFirebase.FirestoreDatabase.Models;
-using RestfulFirebase.FirestoreDatabase.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
+﻿using System;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 

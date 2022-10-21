@@ -1,8 +1,6 @@
 ﻿using RestfulFirebase.Authentication.Enums;
 using RestfulFirebase.Common.Utilities;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.Json.Serialization;
 
 namespace RestfulFirebase.Authentication.Models;

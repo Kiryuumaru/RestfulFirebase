@@ -8,10 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using RestfulFirebase.Common.Internals;
 using ObservableHelpers.ComponentModel;
-using System.Collections;
-using RestfulFirebase.FirestoreDatabase.References;
-using RestfulFirebase.FirestoreDatabase.Abstractions;
-using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.Common.Utilities;
 
 namespace RestfulFirebase.FirestoreDatabase.Utilities;

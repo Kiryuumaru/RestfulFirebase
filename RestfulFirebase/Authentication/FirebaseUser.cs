@@ -1,11 +1,8 @@
-﻿using RestfulFirebase.Common.Utilities;
-using System;
+﻿using System;
 using RestfulFirebase.Authentication.Internals;
 using RestfulFirebase.Common.Abstractions;
 using ObservableHelpers.ComponentModel;
 using ObservableHelpers.ComponentModel.Enums;
-using System.Threading.Tasks;
-using System.Threading;
 
 namespace RestfulFirebase.Authentication;
 

@@ -1,10 +1,4 @@
-﻿using RestfulFirebase.FirestoreDatabase.Enums;
-using RestfulFirebase.FirestoreDatabase.References;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-
-namespace RestfulFirebase.FirestoreDatabase.Writes;
+﻿namespace RestfulFirebase.FirestoreDatabase.Writes;
 
 /// <summary>
 /// The field transformation parameter for transform commit writes.

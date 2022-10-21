@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Text.Json;
-using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.FirestoreDatabase.Transactions;
-
-namespace RestfulFirebase.FirestoreDatabase.Models;
+﻿namespace RestfulFirebase.FirestoreDatabase.Models;
 
 /// <summary>
 /// The result for get document operations.

@@ -1,10 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-using RestfulFirebase.Common.Internals;
-using RestfulFirebase.FirestoreDatabase.Models;
-
-namespace RestfulFirebase.FirestoreDatabase.References;
+﻿namespace RestfulFirebase.FirestoreDatabase.References;
 
 /// <summary>
 /// The reference for documents.

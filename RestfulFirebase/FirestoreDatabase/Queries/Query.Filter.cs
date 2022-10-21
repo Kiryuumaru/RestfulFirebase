@@ -1,7 +1,4 @@
 ﻿using RestfulFirebase.FirestoreDatabase.Enums;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 

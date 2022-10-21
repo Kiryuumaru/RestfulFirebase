@@ -1,8 +1,4 @@
-﻿using RestfulFirebase.Common.Internals;
-using System;
-using System.Diagnostics.CodeAnalysis;
-
-namespace RestfulFirebase.FirestoreDatabase.References;
+﻿namespace RestfulFirebase.FirestoreDatabase.References;
 
 public abstract partial class Reference
 {

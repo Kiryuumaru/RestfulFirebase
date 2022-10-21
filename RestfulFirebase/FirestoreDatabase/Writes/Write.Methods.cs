@@ -1,5 +1,4 @@
 ﻿using RestfulFirebase.FirestoreDatabase.References;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
@@ -8,7 +7,6 @@ using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Models;
-using System.Reflection;
 using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Writes;
@@ -50,7 +48,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, null, transaction, authorization, cancellationToken);
+            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, null, authorization, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {
@@ -124,7 +122,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, cacheDocuments, transaction, authorization, cancellationToken);
+            var createOperation = await App.FirestoreDatabase.ExecuteCreate(this, cacheDocuments, authorization, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {
@@ -208,7 +206,7 @@ public abstract partial class Write
         }
         if (CreateDocuments.Count != 0)
         {
-            var createOperation = await App.FirestoreDatabase.ExecuteCreate<TModel>(this, cacheDocuments, transaction, authorization, cancellationToken);
+            var createOperation = await App.FirestoreDatabase.ExecuteCreate<TModel>(this, cacheDocuments, authorization, cancellationToken);
             response.Append(createOperation);
             if (createOperation.IsError)
             {

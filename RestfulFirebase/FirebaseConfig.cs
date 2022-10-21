@@ -1,6 +1,5 @@
 ﻿using ObservableHelpers.ComponentModel;
 using RestfulFirebase.Http;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace RestfulFirebase;

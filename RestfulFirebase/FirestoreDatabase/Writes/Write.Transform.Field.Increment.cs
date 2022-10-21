@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace RestfulFirebase.FirestoreDatabase.Writes;
+﻿namespace RestfulFirebase.FirestoreDatabase.Writes;
 
 public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<TWrite>
 {

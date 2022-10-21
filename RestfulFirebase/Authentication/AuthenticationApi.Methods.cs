@@ -1,14 +1,10 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Common.Models;
 using RestfulFirebase.Common.Http;
 using RestfulFirebase.Authentication.Models;
 using System.Threading;
-using System.Net.Http;
-using RestfulFirebase.Common.Utilities;
 using System.IO;
 using System.Text.Json;
-using System.Text;
 using RestfulFirebase.Authentication.Enums;
 using System.Diagnostics.CodeAnalysis;
 

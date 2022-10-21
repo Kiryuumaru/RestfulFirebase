@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
-using System.Text.Json;
-using RestfulFirebase.FirestoreDatabase.Models;
-using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.FirestoreDatabase.Transactions;
+﻿using System.Collections.Generic;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 

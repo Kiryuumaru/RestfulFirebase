@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RestfulFirebase.FirestoreDatabase.Transactions;
+﻿namespace RestfulFirebase.FirestoreDatabase.Transactions;
 
 /// <summary>
 /// The atomic operation token for firebase database.
