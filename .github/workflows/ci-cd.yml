@@ -50,6 +50,7 @@ jobs:
         env:
           WITH_V: true
           DEFAULT_BUMP: none
+          PRERELEASE: true
           PRERELEASE_SUFFIX: prerelease
 
   publish:
@@ -90,7 +91,7 @@ jobs:
           draft: false
       - name: Push package to Github
         run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.GITHUB_TOKEN }} -s ${{ env.GITHUB_SOURCE_URL }}
-      #- name: Push package to NuGet
-      #  run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
+      - name: Push package to NuGet
+        run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
 
 #awdawd
