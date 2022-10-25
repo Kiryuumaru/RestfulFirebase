@@ -37,6 +37,7 @@ jobs:
   version_bumper:
     name: Version Bumper
     needs: unit_test
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' 
     runs-on: ubuntu-latest
     outputs:
       new_tag: ${{ steps.bump.outputs.new_tag }}
