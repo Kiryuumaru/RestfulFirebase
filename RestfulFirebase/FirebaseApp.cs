@@ -1,5 +1,6 @@
 ﻿using RestfulFirebase.FirestoreDatabase;
 using RestfulFirebase.Authentication;
+using RestfulFirebase.RealtimeDatabase;
 
 namespace RestfulFirebase;
 
@@ -24,6 +25,11 @@ public partial class FirebaseApp
     public FirestoreDatabaseApi FirestoreDatabase { get; }
 
     /// <summary>
+    /// Gets the <see cref="AuthenticationApi"/> for firebase realtime database operations.
+    /// </summary>
+    public RealtimeDatabaseApi RealtimeDatabase { get; }
+
+    /// <summary>
     /// Creates new instance of <see cref="FirebaseApp"/> app.
     /// </summary>
     /// <param name="config">
@@ -34,5 +40,6 @@ public partial class FirebaseApp
         Config = config;
         Authentication = new(this);
         FirestoreDatabase = new(this);
+        RealtimeDatabase = new(this);
     }
 }

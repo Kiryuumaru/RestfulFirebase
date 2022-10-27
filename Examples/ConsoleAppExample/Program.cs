@@ -1,18 +1,14 @@
 ﻿using ConsoleAppExample;
 using RestfulFirebase;
+using RestfulFirebase.Authentication;
 using RestfulFirebase.Authentication.Models;
-using RestfulFirebase.Authentication.Requests;
 
-FirebaseConfig config = Credentials.Config(); // Your config
+FirebaseApp app = new(Credentials.Config());// Your config
 
 FirebaseUser? user;
 
-var loginRequest = await RestfulFirebase.Api.Authentication.SignInWithEmailAndPassword(new SignInWithEmailAndPasswordRequest()
-{
-    Config = config,
-    Email = "test@mail.com",
-    Password = "123123",
-});
+// Login to firebase auth
+var loginRequest = await app.Authentication.SignInWithEmailAndPassword("test@mail.com", "123123");
 
 if (loginRequest.IsSuccess)
 {
@@ -20,12 +16,8 @@ if (loginRequest.IsSuccess)
 }
 else
 {
-    var signupRequest = await RestfulFirebase.Api.Authentication.CreateUserWithEmailAndPassword(new CreateUserWithEmailAndPasswordRequest()
-    {
-        Config = config,
-        Email = "test@mail.com",
-        Password = "123123",
-    });
+    // Create firebase auth
+    var signupRequest = await app.Authentication.CreateUserWithEmailAndPassword("test@mail.com", "123123");
 
     signupRequest.ThrowIfError();
 

@@ -57,7 +57,7 @@ public partial class AuthenticationApi
 #endif
     internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.Execute<T>(App.GetClient(), HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await HttpHelpers.Execute<T>(App.GetHttpClient(), HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));
@@ -68,7 +68,7 @@ public partial class AuthenticationApi
 
     internal async Task<HttpResponse> ExecutePost(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.ExecuteWithContent(App.GetClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), cancellationToken);
+        var response = await HttpHelpers.ExecuteWithContent(App.GetHttpClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), cancellationToken);
         if (response.IsError)
         {
             return new(response, await GetHttpException(response));
@@ -82,7 +82,7 @@ public partial class AuthenticationApi
 #endif
     internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.ExecuteWithContent<T>(App.GetClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await HttpHelpers.ExecuteWithContent<T>(App.GetHttpClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));

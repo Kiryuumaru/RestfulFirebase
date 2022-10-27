@@ -1,4 +1,5 @@
 ﻿using RestfulFirebase.Common.Abstractions;
+using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
@@ -11,7 +12,7 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class Query
+public abstract partial class Query : ICloneable<Query>
 {
     /// <summary>
     /// Gets the collections to query.
@@ -125,7 +126,7 @@ public abstract partial class Query
         CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
-    internal Query(Query query)
+    internal Query(Query query, bool isClone)
     {
         App = query.App;
         ModelType = query.ModelType;
@@ -133,33 +134,64 @@ public abstract partial class Query
         AuthorizationUsed = query.AuthorizationUsed;
         TransactionUsed = query.TransactionUsed;
 
-        WritableFromQuery = query.WritableFromQuery;
-        WritableSelectQuery = query.WritableSelectQuery;
-        WritableWhereQuery = query.WritableWhereQuery;
-        WritableOrderByQuery = query.WritableOrderByQuery;
-        WritableStartCursorQuery = query.WritableStartCursorQuery;
-        WritableEndCursorQuery = query.WritableEndCursorQuery;
-        WritableCacheDocuments = query.WritableCacheDocuments;
-
-        FromQuery = query.FromQuery;
-        SelectQuery = query.SelectQuery;
-        WhereQuery = query.WhereQuery;
-        OrderByQuery = query.OrderByQuery;
-        StartCursorQuery = query.StartCursorQuery;
-        EndCursorQuery = query.EndCursorQuery;
-        CacheDocuments = query.CacheDocuments;
-
         IsStartAfter = query.IsStartAfter;
         IsEndBefore = query.IsEndBefore;
         SizeOfPages = query.SizeOfPages;
         PagesToSkip = query.PagesToSkip;
+
+        if (isClone)
+        {
+            WritableFromQuery = new(query.WritableFromQuery);
+            WritableSelectQuery = new(query.WritableSelectQuery);
+            WritableWhereQuery = new(query.WritableWhereQuery);
+            WritableOrderByQuery = new(query.WritableOrderByQuery);
+            WritableStartCursorQuery = new(query.WritableStartCursorQuery);
+            WritableEndCursorQuery = new(query.WritableEndCursorQuery);
+            WritableCacheDocuments = new(query.WritableCacheDocuments);
+
+            FromQuery = WritableFromQuery.AsReadOnly();
+            SelectQuery = WritableSelectQuery.AsReadOnly();
+            WhereQuery = WritableWhereQuery.AsReadOnly();
+            OrderByQuery = WritableOrderByQuery.AsReadOnly();
+            StartCursorQuery = WritableStartCursorQuery.AsReadOnly();
+            EndCursorQuery = WritableEndCursorQuery.AsReadOnly();
+            CacheDocuments = WritableCacheDocuments.AsReadOnly();
+        }
+        else
+        {
+            WritableFromQuery = query.WritableFromQuery;
+            WritableSelectQuery = query.WritableSelectQuery;
+            WritableWhereQuery = query.WritableWhereQuery;
+            WritableOrderByQuery = query.WritableOrderByQuery;
+            WritableStartCursorQuery = query.WritableStartCursorQuery;
+            WritableEndCursorQuery = query.WritableEndCursorQuery;
+            WritableCacheDocuments = query.WritableCacheDocuments;
+
+            FromQuery = query.FromQuery;
+            SelectQuery = query.SelectQuery;
+            WhereQuery = query.WhereQuery;
+            OrderByQuery = query.OrderByQuery;
+            StartCursorQuery = query.StartCursorQuery;
+            EndCursorQuery = query.EndCursorQuery;
+            CacheDocuments = query.CacheDocuments;
+        }
     }
+
+
+    /// <inheritdoc/>
+    public Query Clone() => (Query)CoreClone();
+
+    /// <inheritdoc/>
+    object ICloneable.Clone() => CoreClone();
+
+    /// <inheritdoc/>
+    protected abstract object CoreClone();
 }
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery> : Query
+public abstract partial class FluentQueryRoot<TQuery> : Query, ICloneable<FluentQueryRoot<TQuery>>
     where TQuery : FluentQueryRoot<TQuery>
 {
     internal FluentQueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
@@ -168,17 +200,20 @@ public abstract partial class FluentQueryRoot<TQuery> : Query
 
     }
 
-    internal FluentQueryRoot(Query query)
-        : base(query)
+    internal FluentQueryRoot(Query query, bool isClone)
+        : base(query, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentQueryRoot<TQuery> Clone() => (FluentQueryRoot<TQuery>)CoreClone();
 }
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<TQuery>
+public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<TQuery>, ICloneable<FluentQueryRoot<TQuery>>
     where TQuery : FluentQueryRoot<TQuery, TModel>
     where TModel : class
 {
@@ -188,11 +223,14 @@ public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMember
 
     }
 
-    internal FluentQueryRoot(Query query)
-        : base(query)
+    internal FluentQueryRoot(Query query, bool isClone)
+        : base(query, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentQueryRoot<TQuery, TModel> Clone() => (FluentQueryRoot<TQuery, TModel>)CoreClone();
 }
 
 #region Instantiable
@@ -200,7 +238,7 @@ public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMember
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public class QueryRoot : FluentQueryRoot<QueryRoot>
+public class QueryRoot : FluentQueryRoot<QueryRoot>, ICloneable<QueryRoot>
 {
     internal QueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
         : base(app, modelType, documentReference)
@@ -208,11 +246,17 @@ public class QueryRoot : FluentQueryRoot<QueryRoot>
 
     }
 
-    internal QueryRoot(Query query)
-        : base(query)
+    internal QueryRoot(Query query, bool isClone)
+        : base(query, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new QueryRoot Clone() => (QueryRoot)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new QueryRoot(this, true);
 }
 
 /// <summary>
@@ -221,7 +265,7 @@ public class QueryRoot : FluentQueryRoot<QueryRoot>
 /// <typeparam name="TModel">
 /// The type of the document model.
 /// </typeparam>
-public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<QueryRoot<TModel>, TModel>
+public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<QueryRoot<TModel>, TModel>, ICloneable<QueryRoot<TModel>>
     where TModel : class
 {
     internal QueryRoot(FirebaseApp app, DocumentReference? documentReference)
@@ -230,11 +274,17 @@ public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberType
 
     }
 
-    internal QueryRoot(Query query)
-        : base(query)
+    internal QueryRoot(Query query, bool isClone)
+        : base(query, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new QueryRoot<TModel> Clone() => (QueryRoot<TModel>)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new QueryRoot<TModel>(this, true);
 }
 
 internal class StructuredQuery

@@ -57,7 +57,7 @@ public partial class CollectionReference : Reference
     /// The model to create the document.
     /// </param>
     /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
+    /// The Client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
     /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.
@@ -104,7 +104,7 @@ public partial class CollectionReference : Reference
     /// The model to create the document.
     /// </param>
     /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
+    /// The Client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
     /// </param>
     /// <param name="authorization">
     /// The authorization used for the operation.

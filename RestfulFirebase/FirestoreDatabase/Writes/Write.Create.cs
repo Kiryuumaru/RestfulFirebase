@@ -19,7 +19,7 @@ public partial class FluentWriteRoot<TWrite>
     /// The <see cref="CollectionReference"/> to create document.
     /// </param>
     /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
+    /// The Client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
     /// </param>
     /// <returns>
     /// The write with new added documents to patch.
@@ -52,7 +52,7 @@ public partial class FluentWriteRoot<TWrite>
     /// The <see cref="CollectionReference"/> to create document.
     /// </param>
     /// <param name="documentId">
-    /// The client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
+    /// The Client-assigned document ID to use for this document. Optional. If not specified, an ID will be assigned by the service.
     /// </param>
     /// <returns>
     /// The write with new added documents to patch.

@@ -38,7 +38,61 @@ public partial class FirebaseConfig : INotifyPropertyChanged, INotifyPropertyCha
             }
         }
     }
-    private IHttpClientFactory? httpClientFactory;
+    IHttpClientFactory? httpClientFactory;
+
+    /// <summary>
+    /// Gets or sets the <see cref="IHttpStreamFactory"/>.
+    /// </summary>
+    public IHttpStreamFactory? HttpStreamFactory
+    {
+        get => httpStreamFactory;
+        set
+        {
+            if (!EqualityComparer<IHttpStreamFactory?>.Default.Equals(httpStreamFactory, value))
+            {
+                OnPropertyChanging();
+                httpStreamFactory = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    IHttpStreamFactory? httpStreamFactory;
+
+    /// <summary>
+    /// Gets or sets the <see cref="TimeSpan"/> timeout used for the firebase realtime database unresponsive streamers.
+    /// </summary>
+    public TimeSpan DatabaseColdStreamTimeout
+    {
+        get => databaseColdStreamTimeout;
+        set
+        {
+            if (!EqualityComparer<TimeSpan>.Default.Equals(databaseColdStreamTimeout, value))
+            {
+                OnPropertyChanging();
+                databaseColdStreamTimeout = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    TimeSpan databaseColdStreamTimeout = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Gets or sets the <see cref="TimeSpan"/> retry delay for the firebase realtime database failed requests.
+    /// </summary>
+    public TimeSpan DatabaseRetryDelay
+    {
+        get => databaseRetryDelay;
+        set
+        {
+            if (!EqualityComparer<TimeSpan>.Default.Equals(databaseRetryDelay, value))
+            {
+                OnPropertyChanging();
+                databaseRetryDelay = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    TimeSpan databaseRetryDelay = TimeSpan.FromSeconds(2);
 
     /// <summary>
     /// Gets or sets the default <see cref="System.Text.Json.JsonSerializerOptions"/>.
