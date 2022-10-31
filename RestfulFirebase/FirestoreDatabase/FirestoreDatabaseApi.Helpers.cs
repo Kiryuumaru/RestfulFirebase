@@ -73,12 +73,12 @@ public partial class FirestoreDatabaseApi
 
         var clientResponse = await GetHttpClient(authorization, cancellationToken);
         response.Append(clientResponse);
-        if (clientResponse.IsError)
+        if (clientResponse.IsError || clientResponse.Result == null)
         {
             return response;
         }
 
-        var getResponse = await HttpHelpers.Execute<T>(App.GetHttpClient(), HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
+        var getResponse = await HttpHelpers.Execute<T>(clientResponse.Result, HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
         response.Append(getResponse);
         if (getResponse.IsError)
         {
@@ -94,12 +94,12 @@ public partial class FirestoreDatabaseApi
 
         var clientResponse = await GetHttpClient(authorization, cancellationToken);
         response.Append(clientResponse);
-        if (clientResponse.IsError)
+        if (clientResponse.IsError || clientResponse.Result == null)
         {
             return response;
         }
 
-        var postResponse = await HttpHelpers.ExecuteWithContent(App.GetHttpClient(), stream, HttpMethod.Post, url, cancellationToken);
+        var postResponse = await HttpHelpers.ExecuteWithContent(clientResponse.Result, stream, HttpMethod.Post, url, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -118,12 +118,12 @@ public partial class FirestoreDatabaseApi
 
         var clientResponse = await GetHttpClient(authorization, cancellationToken);
         response.Append(clientResponse);
-        if (clientResponse.IsError)
+        if (clientResponse.IsError || clientResponse.Result == null)
         {
             return new HttpResponse<T>(default, clientResponse);
         }
 
-        var postResponse = await HttpHelpers.ExecuteWithContent<T>(App.GetHttpClient(), stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
+        var postResponse = await HttpHelpers.ExecuteWithContent<T>(clientResponse.Result, stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
