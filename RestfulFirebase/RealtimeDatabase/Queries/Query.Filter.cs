@@ -11,13 +11,13 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
-    internal TQuery FilterCore(string parameterName, Func<object> valueFactory)
+    internal TQuery FilterCore(string parameterName, Func<object?> valueFactory)
     {
         object query = new FilteredQuery(Reference, this, ct =>
         {
             HttpResponse<string> response = new();
 
-            object value = valueFactory();
+            object? value = valueFactory();
 
             string parameter;
 

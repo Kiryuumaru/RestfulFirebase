@@ -42,7 +42,7 @@ public partial class CollectionGroupReference : Reference
     {
         ArgumentNullException.ThrowIfNull(collectionIds);
 
-        this.WritableAllDescendants.AddRange(collectionIds);
+        WritableAllDescendants.AddRange(collectionIds);
 
         return this;
     }
@@ -68,7 +68,7 @@ public partial class CollectionGroupReference : Reference
 
         if (allDescendants)
         {
-            this.WritableAllDescendants.AddRange(collectionIds);
+            WritableAllDescendants.AddRange(collectionIds);
         }
         else
         {
@@ -90,11 +90,11 @@ public partial class CollectionGroupReference : Reference
 
         if (AllDescendants.Count != 0)
         {
-            query.From(true, AllDescendants.ToArray());
+            query = query.From(true, AllDescendants.ToArray());
         }
         if (DirectDescendants.Count != 0)
         {
-            query.From(false, DirectDescendants.ToArray());
+            query = query.From(false, DirectDescendants.ToArray());
         }
 
         return query;
@@ -116,11 +116,11 @@ public partial class CollectionGroupReference : Reference
 
         if (AllDescendants.Count != 0)
         {
-            query.From(true, AllDescendants.ToArray());
+            query = query.From(true, AllDescendants.ToArray());
         }
         if (DirectDescendants.Count != 0)
         {
-            query.From(false, DirectDescendants.ToArray());
+            query = query.From(false, DirectDescendants.ToArray());
         }
 
         return query;

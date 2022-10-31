@@ -23,9 +23,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(incrementValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new IncrementTransform(incrementValue, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new IncrementTransform(incrementValue, documentFieldPath, false));
+
+        return write;
     }
 }
 
@@ -52,9 +54,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(incrementValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new IncrementTransform(incrementValue, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new IncrementTransform(incrementValue, propertyPath, true));
+
+        return write;
     }
 }
 

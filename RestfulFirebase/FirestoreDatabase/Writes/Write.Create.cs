@@ -34,9 +34,11 @@ public partial class FluentWriteRoot<TWrite>
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
 
-        WritableCreateDocuments.Add((model, collectionReference, documentId));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableCreateDocuments.Add((model, collectionReference, documentId));
+
+        return write;
     }
 
     /// <summary>
@@ -68,8 +70,10 @@ public partial class FluentWriteRoot<TWrite>
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(collectionReference);
 
-        WritableCreateDocuments.Add((model, collectionReference, documentId));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableCreateDocuments.Add((model, collectionReference, documentId));
+
+        return write;
     }
 }

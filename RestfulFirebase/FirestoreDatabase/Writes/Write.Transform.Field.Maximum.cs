@@ -23,9 +23,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(maximumValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new MaximumTransform(maximumValue, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new MaximumTransform(maximumValue, documentFieldPath, false));
+
+        return write;
     }
 }
 
@@ -52,9 +54,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(maximumValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new MaximumTransform(maximumValue, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new MaximumTransform(maximumValue, propertyPath, true));
+
+        return write;
     }
 }
 

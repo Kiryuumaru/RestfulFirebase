@@ -8,6 +8,11 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
+    internal TQuery LimitToLastCore(Func<object?> valueFactory)
+    {
+        return FilterCore("limitToLast", valueFactory);
+    }
+
     /// <summary>
     /// Limits the result to last <paramref name="countFactory"/> items.
     /// </summary>
@@ -19,7 +24,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery LimitToLast(Func<int> countFactory)
     {
-        return FilterCore("limitToLast", () => countFactory());
+        return LimitToLastCore(() => countFactory());
     }
 
     /// <summary>
@@ -33,6 +38,6 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery LimitToLast(int count)
     {
-        return LimitToLast(() => count);
+        return LimitToLastCore(() => count);
     }
 }

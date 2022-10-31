@@ -11,6 +11,11 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
+    internal TQuery EndAtCore(Func<object?> valueFactory)
+    {
+        return FilterCore("endAt", valueFactory);
+    }
+
     /// <summary>
     /// Instructs firebase to send data lower or equal to the <paramref name="valueFactory"/>. This must be preceded by an OrderBy query.
     /// </summary>
@@ -22,7 +27,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(Func<string?> valueFactory)
     {
-        return FilterCore("endAt", () => valueFactory());
+        return EndAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -36,7 +41,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(Func<double> valueFactory)
     {
-        return FilterCore("endAt", () => valueFactory());
+        return EndAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -50,7 +55,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(Func<long> valueFactory)
     {
-        return FilterCore("endAt", () => valueFactory());
+        return EndAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -64,7 +69,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(string? value)
     {
-        return EndAt(() => value);
+        return EndAtCore(() => value);
     }
 
     /// <summary>
@@ -78,7 +83,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(double value)
     {
-        return EndAt(() => value);
+        return EndAtCore(() => value);
     }
 
     /// <summary>
@@ -92,6 +97,6 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EndAt(long value)
     {
-        return EndAt(() => value);
+        return EndAtCore(() => value);
     }
 }

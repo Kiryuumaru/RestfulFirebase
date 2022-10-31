@@ -24,9 +24,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        WritableSelectQuery.Add(new(documentFieldPath, false));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableSelectQuery.Add(new(documentFieldPath, false));
+
+        return query;
     }
 
     /// <summary>
@@ -45,9 +47,11 @@ public abstract partial class FluentQueryRoot<TQuery>
             ArgumentException.Throw("Select query already contains field projections.");
         }
 
-        WritableSelectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableSelectQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false));
+
+        return query;
     }
 }
 
@@ -73,9 +77,11 @@ public partial class FluentQueryRoot<TQuery, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        WritableSelectQuery.Add(new(propertyPath, true));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableSelectQuery.Add(new(propertyPath, true));
+
+        return query;
     }
 }
 

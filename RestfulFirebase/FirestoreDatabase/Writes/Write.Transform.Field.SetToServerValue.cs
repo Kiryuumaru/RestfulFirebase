@@ -24,9 +24,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new SetToServerValueTransform(ServerValue.RequestTime, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new SetToServerValueTransform(ServerValue.RequestTime, documentFieldPath, false));
+
+        return write;
     }
 }
 
@@ -52,9 +54,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new SetToServerValueTransform(ServerValue.RequestTime, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new SetToServerValueTransform(ServerValue.RequestTime, propertyPath, true));
+
+        return write;
     }
 }
 

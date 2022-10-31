@@ -29,9 +29,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        WritableWhereQuery.Add(new UnaryFilterQuery(documentFieldPath, false, @operator));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableWhereQuery.Add(new UnaryFilterQuery(documentFieldPath, false, @operator));
+
+        return query;
     }
 
     /// <summary>
@@ -60,9 +62,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        WritableWhereQuery.Add(new FieldFilterQuery(documentFieldPath, false, @operator, value));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableWhereQuery.Add(new FieldFilterQuery(documentFieldPath, false, @operator, value));
+
+        return query;
     }
 
     #endregion
@@ -234,9 +238,11 @@ public partial class FluentQueryRoot<TQuery, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        WritableWhereQuery.Add(new UnaryFilterQuery(propertyPath, true, @operator));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableWhereQuery.Add(new UnaryFilterQuery(propertyPath, true, @operator));
+
+        return query;
     }
 
     /// <summary>
@@ -265,9 +271,11 @@ public partial class FluentQueryRoot<TQuery, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        WritableWhereQuery.Add(new FieldFilterQuery(propertyPath, true, @operator, value));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableWhereQuery.Add(new FieldFilterQuery(propertyPath, true, @operator, value));
+
+        return query;
     }
 
     #endregion

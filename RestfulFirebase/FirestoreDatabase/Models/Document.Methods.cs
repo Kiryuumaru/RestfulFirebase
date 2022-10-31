@@ -86,7 +86,7 @@ public partial class Document
     /// </returns>
     public WriteWithDocumentTransform Transform()
     {
-        return new WriteWithDocumentTransform(Reference.Transform())
+        return new WriteWithDocumentTransform(Reference.Transform(), true)
             .Cache(this);
     }
 
@@ -102,7 +102,7 @@ public partial class Document
     public WriteWithDocumentTransform<TModel> Transform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
-        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>())
+        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>(), true)
             .Cache(this);
     }
 }
@@ -117,7 +117,7 @@ public partial class Document<[DynamicallyAccessedMembers(DynamicallyAccessedMem
     /// </returns>
     public new WriteWithDocumentTransform<TModel> Transform()
     {
-        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>())
+        return new WriteWithDocumentTransform<TModel>(Reference.Transform<TModel>(), true)
             .Cache(this);
     }
 }

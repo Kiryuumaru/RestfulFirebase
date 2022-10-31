@@ -25,9 +25,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(appendMissingElementsValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(appendMissingElementsValue, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(appendMissingElementsValue, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -51,9 +53,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(appendMissingElementValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue }, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -82,9 +86,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(appendMissingElementValue2);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2 }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2 }, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -118,9 +124,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(appendMissingElementValue3);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2, appendMissingElementValue3 }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2, appendMissingElementValue3 }, documentFieldPath, false));
+
+        return write;
     }
 }
 
@@ -147,9 +155,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(appendMissingElementsValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(appendMissingElementsValue, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(appendMissingElementsValue, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -173,9 +183,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(appendMissingElementValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue }, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -204,9 +216,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(appendMissingElementValue2);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2 }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2 }, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -240,9 +254,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(appendMissingElementValue3);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2, appendMissingElementValue3 }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new AppendMissingElementsTransform(new object[] { appendMissingElementValue1, appendMissingElementValue2, appendMissingElementValue3 }, propertyPath, true));
+
+        return write;
     }
 }
 

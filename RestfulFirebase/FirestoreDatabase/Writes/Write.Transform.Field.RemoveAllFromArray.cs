@@ -25,9 +25,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(removeAllFromArrayValue, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(removeAllFromArrayValue, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -51,9 +53,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(removeFromArrayValue);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue }, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -82,9 +86,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(removeFromArrayValue2);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2 }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2 }, documentFieldPath, false));
+
+        return write;
     }
 
     /// <summary>
@@ -118,9 +124,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<
         ArgumentNullException.ThrowIfNull(removeFromArrayValue3);
         ArgumentNullException.ThrowIfNull(documentFieldPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2, removeFromArrayValue3 }, documentFieldPath, false));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2, removeFromArrayValue3 }, documentFieldPath, false));
+
+        return write;
     }
 }
 
@@ -147,9 +155,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(removeAllFromArrayValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(removeAllFromArrayValue, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(removeAllFromArrayValue, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -173,9 +183,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(removeFromArrayValue);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue }, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -204,9 +216,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(removeFromArrayValue2);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2 }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2 }, propertyPath, true));
+
+        return write;
     }
 
     /// <summary>
@@ -240,9 +254,11 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
         ArgumentNullException.ThrowIfNull(removeFromArrayValue3);
         ArgumentNullException.ThrowIfNull(propertyPath);
 
-        GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2, removeFromArrayValue3 }, propertyPath, true));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.GetLastDocumentTransform().WritableFieldTransforms.Add(new RemoveAllFromArrayTransform(new object[] { removeFromArrayValue1, removeFromArrayValue2, removeFromArrayValue3 }, propertyPath, true));
+
+        return write;
     }
 }
 

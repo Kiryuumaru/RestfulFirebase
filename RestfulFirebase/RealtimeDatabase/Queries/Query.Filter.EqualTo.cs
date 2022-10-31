@@ -9,6 +9,11 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
+    internal TQuery EqualToCore(Func<object?> valueFactory)
+    {
+        return FilterCore("equalTo", valueFactory);
+    }
+
     /// <summary>
     /// Instructs firebase to send data equal to the <paramref name="valueFactory"/>. This must be preceded by an OrderBy query.
     /// </summary>
@@ -20,7 +25,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(Func<string?> valueFactory)
     {
-        return FilterCore("equalTo", () => valueFactory());
+        return EqualToCore(() => valueFactory());
     }
 
     /// <summary>
@@ -34,7 +39,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(Func<double> valueFactory)
     {
-        return FilterCore("equalTo", () => valueFactory());
+        return EqualToCore(() => valueFactory());
     }
 
     /// <summary>
@@ -48,7 +53,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(Func<long> valueFactory)
     {
-        return FilterCore("equalTo", () => valueFactory());
+        return EqualToCore(() => valueFactory());
     }
 
     /// <summary>
@@ -62,7 +67,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(Func<bool> valueFactory)
     {
-        return FilterCore("equalTo", () => valueFactory());
+        return EqualToCore(() => valueFactory());
     }
 
     /// <summary>
@@ -76,7 +81,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(string value)
     {
-        return EqualTo(() => value);
+        return EqualToCore(() => value);
     }
 
     /// <summary>
@@ -90,7 +95,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(double value)
     {
-        return EqualTo(() => value);
+        return EqualToCore(() => value);
     }
 
     /// <summary>
@@ -104,7 +109,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(long value)
     {
-        return EqualTo(() => value);
+        return EqualToCore(() => value);
     }
 
     /// <summary>
@@ -118,7 +123,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo(bool value)
     {
-        return EqualTo(() => value);
+        return EqualToCore(() => value);
     }
 
     /// <summary>
@@ -129,6 +134,6 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery EqualTo()
     {
-        return EqualTo(() => default(string));
+        return EqualToCore(() => default(string));
     }
 }

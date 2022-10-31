@@ -8,6 +8,11 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
+    internal TQuery LimitToFirstCore(Func<object?> valueFactory)
+    {
+        return FilterCore("limitToFirst", valueFactory);
+    }
+
     /// <summary>
     /// Limits the result to first <paramref name="countFactory"/> items.
     /// </summary>
@@ -19,7 +24,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery LimitToFirst(Func<int> countFactory)
     {
-        return FilterCore("limitToFirst", () => countFactory());
+        return LimitToFirstCore(() => countFactory());
     }
 
     /// <summary>
@@ -33,6 +38,6 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery LimitToFirst(int count)
     {
-        return LimitToFirst(() => count);
+        return LimitToFirstCore(() => count);
     }
 }

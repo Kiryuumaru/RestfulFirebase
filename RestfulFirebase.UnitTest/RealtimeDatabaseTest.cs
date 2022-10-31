@@ -43,25 +43,6 @@ public class RealtimeDatabaseTest
 
         await Cleanup(testReference);
 
-        FirebaseUser? user;
-
-        // Login to firebase auth
-        var loginRequest = await app.Authentication.SignInWithEmailAndPassword("test@mail.com", "123123");
-
-        if (loginRequest.IsSuccess)
-        {
-            user = loginRequest.Result;
-        }
-        else
-        {
-            // Create firebase auth
-            var signupRequest = await app.Authentication.CreateUserWithEmailAndPassword("test@mail.com", "123123");
-
-            signupRequest.ThrowIfError();
-
-            user = signupRequest.Result;
-        }
-
         var ss = await testReference.Query()
             .OrderByValue()
             .StartAt(1)

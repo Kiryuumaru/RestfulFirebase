@@ -67,7 +67,7 @@ public partial class DocumentReference : Reference
 
         CollectionGroupReference reference = new(App, this);
 
-        reference.AddCollection(collectionIds);
+        reference = reference.AddCollection(collectionIds);
 
         return reference;
     }
@@ -93,7 +93,7 @@ public partial class DocumentReference : Reference
 
         CollectionGroupReference reference = new(App, this);
 
-        reference.AddCollection(allDescendants, collectionIds);
+        reference = reference.AddCollection(allDescendants, collectionIds);
 
         return reference;
     }
@@ -426,7 +426,7 @@ public partial class DocumentReference : Reference
     {
         QueryRoot query = new(App, null, this);
 
-        query.From(false, collectionId);
+        query = query.From(false, collectionId);
 
         return query;
     }
@@ -448,7 +448,7 @@ public partial class DocumentReference : Reference
     {
         QueryRoot<TModel> query = new(App, this);
 
-        query.From(false, collectionId);
+        query = query.From(false, collectionId);
 
         return query;
     }

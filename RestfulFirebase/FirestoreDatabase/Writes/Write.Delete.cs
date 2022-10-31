@@ -29,9 +29,11 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        WritableDeleteDocuments.AddRange(documents.Select(i => i.Reference));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableDeleteDocuments.AddRange(documents.Select(i => i.Reference));
+
+        return write;
     }
 
     /// <summary>
@@ -51,9 +53,11 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        WritableDeleteDocuments.AddRange(documents.Select(i => i.Reference));
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableDeleteDocuments.AddRange(documents.Select(i => i.Reference));
+
+        return write;
     }
 
     /// <summary>
@@ -73,9 +77,11 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documentReferences);
 
-        WritableDeleteDocuments.AddRange(documentReferences);
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableDeleteDocuments.AddRange(documentReferences);
+
+        return write;
     }
 
     /// <summary>
@@ -95,8 +101,10 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documentReferences);
 
-        WritableDeleteDocuments.AddRange(documentReferences);
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritableDeleteDocuments.AddRange(documentReferences);
+
+        return write;
     }
 }

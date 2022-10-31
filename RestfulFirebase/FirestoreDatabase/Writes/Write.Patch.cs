@@ -27,9 +27,11 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        WritablePatchDocuments.AddRange(documents);
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritablePatchDocuments.AddRange(documents);
+
+        return write;
     }
 
     /// <summary>
@@ -49,8 +51,10 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documents);
 
-        WritablePatchDocuments.AddRange(documents);
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.WritablePatchDocuments.AddRange(documents);
+
+        return write;
     }
 }

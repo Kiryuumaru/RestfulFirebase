@@ -402,9 +402,7 @@ public partial class CollectionReference : Reference
 
         QueryRoot query = new(App, null, Parent);
 
-        query.From(allDescendants, Id);
-
-        return query;
+        return query.From(allDescendants, Id);
     }
 
     /// <summary>
@@ -432,8 +430,6 @@ public partial class CollectionReference : Reference
 
         QueryRoot<TModel> query = new(App, Parent);
 
-        query.From(allDescendants, Id);
-
-        return query;
+        return query.From(allDescendants, Id);
     }
 }

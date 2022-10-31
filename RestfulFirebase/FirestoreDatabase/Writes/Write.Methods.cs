@@ -24,12 +24,14 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// </returns>
     public TWrite Cache(params Document[] documents)
     {
+        TWrite write = (TWrite)Clone();
+
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            write.WritableCacheDocuments.AddRange(documents);
         }
 
-        return (TWrite)this;
+        return write;
     }
 
     /// <summary>
@@ -43,12 +45,14 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// </returns>
     public TWrite Cache(IEnumerable<Document>? documents)
     {
+        TWrite write = (TWrite)Clone();
+
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            write.WritableCacheDocuments.AddRange(documents);
         }
 
-        return (TWrite)this;
+        return write;
     }
 
     /// <summary>
@@ -59,9 +63,11 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// </returns>
     public TWrite Transaction(Transaction? transaction)
     {
-        TransactionUsed = transaction;
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.TransactionUsed = transaction;
+
+        return write;
     }
 
     /// <summary>
@@ -72,9 +78,11 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// </returns>
     public TWrite Authorization(IAuthorization? authorization)
     {
-        AuthorizationUsed = authorization;
+        TWrite write = (TWrite)Clone();
 
-        return (TWrite)this;
+        write.AuthorizationUsed = authorization;
+
+        return write;
     }
 
     /// <summary>

@@ -24,9 +24,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(collectionIds);
         ArgumentException.ThrowIfHasNullOrEmpty(collectionIds);
 
-        WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, DocumentReference == null)));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, DocumentReference == null)));
+
+        return query;
     }
 
     /// <summary>
@@ -57,9 +59,11 @@ public abstract partial class FluentQueryRoot<TQuery>
             ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, allDescendants)));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableFromQuery.AddRange(collectionIds.Select(id => new FromQuery(id, allDescendants)));
+
+        return query;
     }
 }
 

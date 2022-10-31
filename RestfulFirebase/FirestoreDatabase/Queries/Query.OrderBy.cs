@@ -25,9 +25,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Ascending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Ascending));
+
+        return query;
     }
 
     /// <summary>
@@ -50,9 +52,11 @@ public abstract partial class FluentQueryRoot<TQuery>
         ArgumentNullException.ThrowIfNull(documentFieldPath);
         ArgumentException.ThrowIfHasNullOrEmpty(documentFieldPath);
 
-        WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Descending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(documentFieldPath, false, Direction.Descending));
+
+        return query;
     }
 
     /// <summary>
@@ -63,9 +67,11 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery AscendingDocumentName()
     {
-        WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+
+        return query;
     }
 
     /// <summary>
@@ -76,9 +82,11 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery DescendingDocumentName()
     {
-        WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(new string[] { DocumentFieldHelpers.DocumentName }, false, Direction.Ascending));
+
+        return query;
     }
 }
 
@@ -104,9 +112,11 @@ public partial class FluentQueryRoot<TQuery, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        WritableOrderByQuery.Add(new(propertyPath, true, Direction.Ascending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(propertyPath, true, Direction.Ascending));
+
+        return query;
     }
 
     /// <summary>
@@ -129,9 +139,11 @@ public partial class FluentQueryRoot<TQuery, TModel>
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
 
-        WritableOrderByQuery.Add(new(propertyPath, true, Direction.Descending));
+        TQuery query = (TQuery)Clone();
 
-        return (TQuery)this;
+        query.WritableOrderByQuery.Add(new(propertyPath, true, Direction.Descending));
+
+        return query;
     }
 }
 

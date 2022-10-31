@@ -2,6 +2,7 @@
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,7 +11,7 @@ namespace RestfulFirebase.FirestoreDatabase.Writes;
 /// <summary>
 /// The parameter for write commits.
 /// </summary>
-public abstract partial class Write
+public abstract partial class Write : ICloneable<Write>
 {
     /// <summary>
     /// Gets the list of <see cref="Document"/> to perform create.
@@ -75,28 +76,54 @@ public abstract partial class Write
         CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
-    internal Write(Write write)
+    internal Write(Write write, bool isClone)
     {
         App = write.App;
         TransactionUsed = write.TransactionUsed;
         AuthorizationUsed = write.AuthorizationUsed;
 
-        WritableCreateDocuments = write.WritableCreateDocuments;
-        WritablePatchDocuments = write.WritablePatchDocuments;
-        WritableDeleteDocuments = write.WritableDeleteDocuments;
-        WritableTransformDocuments = write.WritableTransformDocuments;
-        WritableCacheDocuments = write.WritableCacheDocuments;
+        if (isClone)
+        {
+            WritableCreateDocuments = new(write.WritableCreateDocuments);
+            WritablePatchDocuments = new(write.WritablePatchDocuments);
+            WritableDeleteDocuments = new(write.WritableDeleteDocuments);
+            WritableTransformDocuments = new(write.WritableTransformDocuments);
+            WritableCacheDocuments = new(write.WritableCacheDocuments);
 
-        CreateDocuments = write.CreateDocuments;
-        PatchDocuments = write.PatchDocuments;
-        DeleteDocuments = write.DeleteDocuments;
-        TransformDocuments = write.TransformDocuments;
-        CacheDocuments = write.CacheDocuments;
+            CreateDocuments = WritableCreateDocuments.AsReadOnly();
+            PatchDocuments = WritablePatchDocuments.AsReadOnly();
+            DeleteDocuments = WritableDeleteDocuments.AsReadOnly();
+            TransformDocuments = WritableTransformDocuments.AsReadOnly();
+            CacheDocuments = WritableCacheDocuments.AsReadOnly();
+        }
+        else
+        {
+            WritableCreateDocuments = write.WritableCreateDocuments;
+            WritablePatchDocuments = write.WritablePatchDocuments;
+            WritableDeleteDocuments = write.WritableDeleteDocuments;
+            WritableTransformDocuments = write.WritableTransformDocuments;
+            WritableCacheDocuments = write.WritableCacheDocuments;
+
+            CreateDocuments = write.CreateDocuments;
+            PatchDocuments = write.PatchDocuments;
+            DeleteDocuments = write.DeleteDocuments;
+            TransformDocuments = write.TransformDocuments;
+            CacheDocuments = write.CacheDocuments;
+        }
     }
+
+    /// <inheritdoc/>
+    public Write Clone() => (Write)CoreClone();
+
+    /// <inheritdoc/>
+    object ICloneable.Clone() => CoreClone();
+
+    /// <inheritdoc/>
+    protected abstract object CoreClone();
 }
 
 /// <inheritdoc/>
-public abstract partial class FluentWriteRoot<TWrite> : Write
+public abstract partial class FluentWriteRoot<TWrite> : Write, ICloneable<FluentWriteRoot<TWrite>>
     where TWrite : FluentWriteRoot<TWrite>
 {
     internal FluentWriteRoot(FirebaseApp app)
@@ -105,15 +132,18 @@ public abstract partial class FluentWriteRoot<TWrite> : Write
 
     }
 
-    internal FluentWriteRoot(Write write)
-        : base(write)
+    internal FluentWriteRoot(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentWriteRoot<TWrite> Clone() => (FluentWriteRoot<TWrite>)CoreClone();
 }
 
 /// <inheritdoc/>
-public abstract partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<TWrite>
+public abstract partial class FluentWriteWithDocumentTransform<TWrite> : FluentWriteRoot<TWrite>, ICloneable<FluentWriteWithDocumentTransform<TWrite>>
     where TWrite : FluentWriteWithDocumentTransform<TWrite>
 {
     internal FluentWriteWithDocumentTransform(FirebaseApp app)
@@ -122,15 +152,18 @@ public abstract partial class FluentWriteWithDocumentTransform<TWrite> : FluentW
 
     }
 
-    internal FluentWriteWithDocumentTransform(Write write)
-        : base(write)
+    internal FluentWriteWithDocumentTransform(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentWriteWithDocumentTransform<TWrite> Clone() => (FluentWriteWithDocumentTransform<TWrite>)CoreClone();
 }
 
 /// <inheritdoc/>
-public abstract partial class FluentWriteWithDocumentTransform<TWrite, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentWriteWithDocumentTransform<TWrite>
+public abstract partial class FluentWriteWithDocumentTransform<TWrite, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentWriteWithDocumentTransform<TWrite>, ICloneable<FluentWriteWithDocumentTransform<TWrite, TModel>>
     where TWrite : FluentWriteWithDocumentTransform<TWrite, TModel>
     where TModel : class
 {
@@ -140,17 +173,20 @@ public abstract partial class FluentWriteWithDocumentTransform<TWrite, [Dynamica
 
     }
 
-    internal FluentWriteWithDocumentTransform(Write write)
-        : base(write)
+    internal FluentWriteWithDocumentTransform(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentWriteWithDocumentTransform<TWrite, TModel> Clone() => (FluentWriteWithDocumentTransform<TWrite, TModel>)CoreClone();
 }
 
 #region Instantiable
 
 /// <inheritdoc/>
-public class WriteRoot : FluentWriteRoot<WriteRoot>
+public class WriteRoot : FluentWriteRoot<WriteRoot>, ICloneable<WriteRoot>
 {
     internal WriteRoot(FirebaseApp app)
         : base(app)
@@ -158,15 +194,21 @@ public class WriteRoot : FluentWriteRoot<WriteRoot>
 
     }
 
-    internal WriteRoot(Write write)
-        : base(write)
+    internal WriteRoot(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new WriteRoot Clone() => (WriteRoot)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new WriteRoot(this, true);
 }
 
 /// <inheritdoc/>
-public class WriteWithDocumentTransform : FluentWriteWithDocumentTransform<WriteWithDocumentTransform>
+public class WriteWithDocumentTransform : FluentWriteWithDocumentTransform<WriteWithDocumentTransform>, ICloneable<WriteWithDocumentTransform>
 {
     internal WriteWithDocumentTransform(FirebaseApp app)
         : base(app)
@@ -174,15 +216,21 @@ public class WriteWithDocumentTransform : FluentWriteWithDocumentTransform<Write
 
     }
 
-    internal WriteWithDocumentTransform(Write write)
-        : base(write)
+    internal WriteWithDocumentTransform(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new WriteWithDocumentTransform Clone() => (WriteWithDocumentTransform)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new WriteWithDocumentTransform(this, true);
 }
 
 /// <inheritdoc/>
-public class WriteWithDocumentTransform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentWriteWithDocumentTransform<WriteWithDocumentTransform<TModel>, TModel>
+public class WriteWithDocumentTransform<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentWriteWithDocumentTransform<WriteWithDocumentTransform<TModel>, TModel>, ICloneable<WriteWithDocumentTransform<TModel>>
     where TModel : class
 {
     internal WriteWithDocumentTransform(FirebaseApp app)
@@ -191,11 +239,17 @@ public class WriteWithDocumentTransform<[DynamicallyAccessedMembers(DynamicallyA
 
     }
 
-    internal WriteWithDocumentTransform(Write write)
-        : base(write)
+    internal WriteWithDocumentTransform(Write write, bool isClone)
+        : base(write, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new WriteWithDocumentTransform<TModel> Clone() => (WriteWithDocumentTransform<TModel>)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new WriteWithDocumentTransform<TModel>(this, true);
 }
 
 #endregion

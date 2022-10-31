@@ -177,7 +177,6 @@ public abstract partial class Query : ICloneable<Query>
         }
     }
 
-
     /// <inheritdoc/>
     public Query Clone() => (Query)CoreClone();
 

@@ -28,11 +28,13 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documentReference);
 
+        TWrite write = (TWrite)Clone();
+
         DocumentTransform documentTransform = new(App, null, documentReference);
 
-        WritableTransformDocuments.Add(documentTransform);
+        write.WritableTransformDocuments.Add(documentTransform);
 
-        return new(this);
+        return new(write, true);
     }
 
     /// <summary>
@@ -55,11 +57,13 @@ public partial class FluentWriteRoot<TWrite>
     {
         ArgumentNullException.ThrowIfNull(documentReference);
 
+        TWrite write = (TWrite)Clone();
+
         DocumentTransform documentTransform = new(App, typeof(TModel), documentReference);
 
-        WritableTransformDocuments.Add(documentTransform);
+        write.WritableTransformDocuments.Add(documentTransform);
 
-        return new(this);
+        return new(write, true);
     }
 }
 

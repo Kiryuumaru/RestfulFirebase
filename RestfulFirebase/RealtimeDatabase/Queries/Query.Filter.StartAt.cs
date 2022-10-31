@@ -8,6 +8,11 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 
 public partial class FluentFilteredQuery<TQuery>
 {
+    internal TQuery StartAtCore(Func<object?> valueFactory)
+    {
+        return FilterCore("startAt", valueFactory);
+    }
+
     /// <summary>
     /// Instructs firebase to send data greater or equal to the <paramref name="valueFactory"/>. This must be preceded by an OrderBy query.
     /// </summary>
@@ -19,7 +24,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(Func<string> valueFactory)
     {
-        return FilterCore("startAt", () => valueFactory());
+        return StartAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -33,7 +38,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(Func<double> valueFactory)
     {
-        return FilterCore("startAt", () => valueFactory());
+        return StartAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -47,7 +52,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(Func<long> valueFactory)
     {
-        return FilterCore("startAt", () => valueFactory());
+        return StartAtCore(() => valueFactory());
     }
 
     /// <summary>
@@ -61,7 +66,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(string value)
     {
-        return StartAt(() => value);
+        return StartAtCore(() => value);
     }
 
     /// <summary>
@@ -75,7 +80,7 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(double value)
     {
-        return StartAt(() => value);
+        return StartAtCore(() => value);
     }
 
     /// <summary>
@@ -89,6 +94,6 @@ public partial class FluentFilteredQuery<TQuery>
     /// </returns>
     public TQuery StartAt(long value)
     {
-        return StartAt(() => value);
+        return StartAtCore(() => value);
     }
 }

@@ -11,7 +11,7 @@ namespace RestfulFirebase.FirestoreDatabase.Fetches;
 /// <summary>
 /// Runs a fetch or get operation.
 /// </summary>
-public abstract partial class Fetch
+public abstract partial class Fetch : ICloneable<Fetch>
 {
     /// <summary>
     /// Gets the list of document references to fetch.
@@ -67,27 +67,49 @@ public abstract partial class Fetch
         CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
-    internal Fetch(Fetch fetch)
+    internal Fetch(Fetch fetch, bool isClone)
     {
         App = fetch.App;
         ModelType = fetch.ModelType;
         AuthorizationUsed = fetch.AuthorizationUsed;
         TransactionUsed = fetch.TransactionUsed;
 
-        WritableDocumentReferences = fetch.WritableDocumentReferences;
-        WritableDocuments = fetch.WritableDocuments;
-        WritableCacheDocuments = fetch.WritableCacheDocuments;
+        if (isClone)
+        {
+            WritableDocumentReferences = new (fetch.WritableDocumentReferences);
+            WritableDocuments = new(fetch.WritableDocuments);
+            WritableCacheDocuments = new(fetch.WritableCacheDocuments);
 
-        DocumentReferences = fetch.DocumentReferences;
-        Documents = fetch.Documents;
-        CacheDocuments = fetch.CacheDocuments;
+            DocumentReferences = WritableDocumentReferences.AsReadOnly();
+            Documents = WritableDocuments.AsReadOnly();
+            CacheDocuments = WritableCacheDocuments.AsReadOnly();
+        }
+        else
+        {
+            WritableDocumentReferences = fetch.WritableDocumentReferences;
+            WritableDocuments = fetch.WritableDocuments;
+            WritableCacheDocuments = fetch.WritableCacheDocuments;
+
+            DocumentReferences = fetch.DocumentReferences;
+            Documents = fetch.Documents;
+            CacheDocuments = fetch.CacheDocuments;
+        }
     }
+
+    /// <inheritdoc/>
+    public Fetch Clone() => (Fetch)CoreClone();
+
+    /// <inheritdoc/>
+    object ICloneable.Clone() => CoreClone();
+
+    /// <inheritdoc/>
+    protected abstract object CoreClone();
 }
 
 /// <summary>
 /// Runs a structured fetch.
 /// </summary>
-public abstract partial class FluentFetchRoot<TFetch> : Fetch
+public abstract partial class FluentFetchRoot<TFetch> : Fetch, ICloneable<FluentFetchRoot<TFetch>>
     where TFetch : FluentFetchRoot<TFetch>
 {
     internal FluentFetchRoot(FirebaseApp app, Type? modelType)
@@ -96,17 +118,20 @@ public abstract partial class FluentFetchRoot<TFetch> : Fetch
 
     }
 
-    internal FluentFetchRoot(Fetch fetch)
-        : base(fetch)
+    internal FluentFetchRoot(Fetch fetch, bool isClone)
+        : base(fetch, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentFetchRoot<TFetch> Clone() => (FluentFetchRoot<TFetch>)CoreClone();
 }
 
 /// <summary>
 /// Runs a structured fetch.
 /// </summary>
-public abstract partial class FluentFetchRoot<TFetch, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentFetchRoot<TFetch>
+public abstract partial class FluentFetchRoot<TFetch, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentFetchRoot<TFetch>, ICloneable<FluentFetchRoot<TFetch, TModel>>
     where TFetch : FluentFetchRoot<TFetch, TModel>
     where TModel : class
 {
@@ -116,11 +141,14 @@ public abstract partial class FluentFetchRoot<TFetch, [DynamicallyAccessedMember
 
     }
 
-    internal FluentFetchRoot(Fetch fetch)
-        : base(fetch)
+    internal FluentFetchRoot(Fetch fetch, bool isClone)
+        : base(fetch, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FluentFetchRoot<TFetch, TModel> Clone() => (FluentFetchRoot<TFetch, TModel>)CoreClone();
 }
 
 #region Instantiable
@@ -128,7 +156,7 @@ public abstract partial class FluentFetchRoot<TFetch, [DynamicallyAccessedMember
 /// <summary>
 /// Runs a structured fetch.
 /// </summary>
-public partial class FetchRoot : FluentFetchRoot<FetchRoot>
+public class FetchRoot : FluentFetchRoot<FetchRoot>, ICloneable<FetchRoot>
 {
     internal FetchRoot(FirebaseApp app, Type? modelType)
         : base(app, modelType)
@@ -136,11 +164,17 @@ public partial class FetchRoot : FluentFetchRoot<FetchRoot>
 
     }
 
-    internal FetchRoot(Fetch fetch)
-        : base(fetch)
+    internal FetchRoot(Fetch fetch, bool isClone)
+        : base(fetch, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FetchRoot Clone() => (FetchRoot)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new FetchRoot(this, true);
 }
 
 /// <summary>
@@ -149,7 +183,7 @@ public partial class FetchRoot : FluentFetchRoot<FetchRoot>
 /// <typeparam name="TModel">
 /// The type of the document model.
 /// </typeparam>
-public partial class FetchRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentFetchRoot<FetchRoot<TModel>, TModel>
+public class FetchRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentFetchRoot<FetchRoot<TModel>, TModel>, ICloneable<FetchRoot<TModel>>
     where TModel : class
 {
     internal FetchRoot(FirebaseApp app)
@@ -158,11 +192,17 @@ public partial class FetchRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMe
 
     }
 
-    internal FetchRoot(Fetch fetch)
-        : base(fetch)
+    internal FetchRoot(Fetch fetch, bool isClone)
+        : base(fetch, isClone)
     {
 
     }
+
+    /// <inheritdoc/>
+    public new FetchRoot<TModel> Clone() => (FetchRoot<TModel>)CoreClone();
+
+    /// <inheritdoc/>
+    protected override object CoreClone() => new FetchRoot<TModel>(this, true);
 }
 
 #endregion

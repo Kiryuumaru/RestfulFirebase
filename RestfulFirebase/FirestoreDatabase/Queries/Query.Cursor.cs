@@ -15,11 +15,12 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery StartAt(object? value)
     {
-        IsStartAfter = false;
+        TQuery query = (TQuery)Clone();
 
-        WritableStartCursorQuery.Add(new(value));
+        query.IsStartAfter = false;
+        query.WritableStartCursorQuery.Add(new(value));
 
-        return (TQuery)this;
+        return query;
     }
 
     /// <summary>
@@ -33,11 +34,12 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery StartAfter(object? value)
     {
-        IsStartAfter = true;
+        TQuery query = (TQuery)Clone();
 
-        WritableStartCursorQuery.Add(new(value));
+        query.IsStartAfter = true;
+        query.WritableStartCursorQuery.Add(new(value));
 
-        return (TQuery)this;
+        return query;
     }
 
     /// <summary>
@@ -51,11 +53,12 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery EndAt(object? value)
     {
-        IsEndBefore = false;
+        TQuery query = (TQuery)Clone();
 
-        WritableEndCursorQuery.Add(new(value));
+        query.IsEndBefore = false;
+        query.WritableEndCursorQuery.Add(new(value));
 
-        return (TQuery)this;
+        return query;
     }
 
     /// <summary>
@@ -69,11 +72,12 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// </returns>
     public TQuery EndBefore(object? value)
     {
-        IsEndBefore = true;
+        TQuery query = (TQuery)Clone();
 
-        WritableEndCursorQuery.Add(new(value));
+        query.IsEndBefore = true;
+        query.WritableEndCursorQuery.Add(new(value));
 
-        return (TQuery)this;
+        return query;
     }
 }
 

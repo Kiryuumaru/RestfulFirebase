@@ -26,12 +26,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch DocumentReference(params DocumentReference[] documentReferences)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documentReferences != null)
         {
-            WritableDocumentReferences.AddRange(documentReferences);
+            fetch.WritableDocumentReferences.AddRange(documentReferences);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -45,12 +47,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch DocumentReference(IEnumerable<DocumentReference> documentReferences)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documentReferences != null)
         {
-            WritableDocumentReferences.AddRange(documentReferences);
+            fetch.WritableDocumentReferences.AddRange(documentReferences);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -64,12 +68,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Document(params Document[] documents)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documents != null)
         {
-            WritableDocuments.AddRange(documents);
+            fetch.WritableDocuments.AddRange(documents);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -83,12 +89,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Document(IEnumerable<Document> documents)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documents != null)
         {
-            WritableDocuments.AddRange(documents);
+            fetch.WritableDocuments.AddRange(documents);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -102,12 +110,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Cache(params Document[] documents)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            fetch.WritableCacheDocuments.AddRange(documents);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -121,12 +131,14 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Cache(IEnumerable<Document>? documents)
     {
+        TFetch fetch = (TFetch)Clone();
+
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            fetch.WritableCacheDocuments.AddRange(documents);
         }
 
-        return (TFetch)this;
+        return fetch;
     }
 
     /// <summary>
@@ -137,9 +149,11 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Transaction(Transaction? transaction)
     {
-        TransactionUsed = transaction;
+        TFetch fetch = (TFetch)Clone();
 
-        return (TFetch)this;
+        fetch.TransactionUsed = transaction;
+
+        return fetch;
     }
 
     /// <summary>
@@ -150,9 +164,11 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// </returns>
     public TFetch Authorization(IAuthorization? authorization)
     {
-        AuthorizationUsed = authorization;
+        TFetch fetch = (TFetch)Clone();
 
-        return (TFetch)this;
+        fetch.AuthorizationUsed = authorization;
+
+        return fetch;
     }
 
     /// <summary>
