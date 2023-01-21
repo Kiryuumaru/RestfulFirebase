@@ -35,13 +35,14 @@ jobs:
           TEST='[]'
           while read -r json_file; do
             while read -r item; do
-              echo "***************************************************************"
-              echo "${item}"
               PRESENTATION=$(jq --argjson item "$item" '. += [$item]' <<< "${PRESENTATION}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
-          echo "sssssssssssssssssssssssssssssssssssssssssssssssssssssss"
-          echo "${PRESENTATION}"
+          while read -r json_file; do
+            while read -r item; do
+              TEST=$(jq --argjson item "$item" '. += [$item]' <<< "${TEST}")
+            done <<< $(jq -c '.[]' "$json_file")
+          done <<< $(find . -name "test.cicd.json")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████ Polyfill presentation values █████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
