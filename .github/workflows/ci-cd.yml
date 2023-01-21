@@ -35,11 +35,10 @@ jobs:
           TEST='[]'
           while read -r json_file; do
             json_array=$(jq -c '.' $json_file)
-            for item in $(echo $json_array | jq -c '.'); do
-              PRESENTATION=$(echo "$PRESENTATION" | jq --arg item "$item" '. += $item')
+            for item in $json_array; do
+              echo "${item}"
             done
           done <<< $(find . -name "presentation.cicd.json")
-          echo "${PRESENTATION}"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████ Polyfill presentation values █████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
