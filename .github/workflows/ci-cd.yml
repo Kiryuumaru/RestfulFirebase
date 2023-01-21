@@ -37,7 +37,7 @@ jobs:
             while read -r item; do
               echo "***************************************************************"
               echo "${item}"
-              PRESENTATION=$(jq --argjson item $item '. += [$item]' <<< "${PRESENTATION}")
+              PRESENTATION=$(jq --argjson item "$item" '. += [$item]' <<< "${PRESENTATION}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
           echo "sssssssssssssssssssssssssssssssssssssssssssssssssssssss"
