@@ -31,12 +31,12 @@ jobs:
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████ Fetch project matrix █████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
-          PRESENTATION='[]'
-          TEST='[]'
+          PRESENTATION='{}'
+          TEST='{}'
           while read -r json_file; do
             json_array=$(jq -c '.' $json_file)
             for item in $json_array; do
-              PRESENTATION=$(echo "$PRESENTATION" | jq --arg item "$item" '. += $item')
+              PRESENTATION=$(echo "$PRESENTATION" | jq --arg item "$item" '. += [$item]')
             done
           done <<< $(find . -name "presentation.cicd.json")
           echo "${PRESENTATION}"
