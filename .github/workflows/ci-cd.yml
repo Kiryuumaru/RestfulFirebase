@@ -39,7 +39,6 @@ jobs:
             echo "${assc}"
             echo "*****"
             while read -r $item ; do
-              validateAndNotify "${$item}"
               PRESENTATION=$(jq -r --arg item "$item" '.[] += $item' <<< "${PRESENTATION}")
               echo "***************************************************************"
               echo "${item}"
