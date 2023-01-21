@@ -38,7 +38,7 @@ jobs:
               PRESENTATION=$(jq -r --arg item "$item" '.[] += $item' <<< "${PRESENTATION}")
               echo "***************************************************************"
               echo "${item}"
-            done <<< $(jq -c '.' "$json_file")
+            done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
           echo "${PRESENTATION}"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
