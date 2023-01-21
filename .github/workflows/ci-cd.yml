@@ -1,122 +1,16 @@
 ﻿name: CI CD Pipeline
 
-on: push
-
-env:
-  PROJECT_NAME: RestfulFirebase
-  PROJECT_PATH: RestfulFirebase/RestfulFirebase.csproj
-  PROJECT_UNIT_TEST_NAME: RestfulFirebase.UnitTest
-  PROJECT_UNIT_TEST_PATH: RestfulFirebase.UnitTest/RestfulFirebase.UnitTest.csproj
-  PACKAGE_OUTPUT_DIRECTORY: ${{ github.workspace }}/output
-  NUGET_SOURCE_URL: https://api.nuget.org/v3/index.json
-  GITHUB_SOURCE_URL: https://nuget.pkg.github.com/kiryuumaru/index.json
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NUGET_AUTH_TOKEN: ${{ secrets.NUGET_AUTH_TOKEN }}
-  FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-  FIREBASE_APIKEY: ${{ secrets.FIREBASE_APIKEY }}
-
-jobs:
-
-  unit_test:
-    name: Unit Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup .NET SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 7.0.x
-          dotnet-quality: 'preview'
-      - name: Install dependencies
-        run: dotnet restore ${{ env.PROJECT_UNIT_TEST_PATH }}
-      - name: Build
-        run: dotnet build ${{ env.PROJECT_UNIT_TEST_PATH }} --configuration Release --no-restore
-      - name: Test
-        run: dotnet test ${{ env.PROJECT_UNIT_TEST_PATH }} --no-restore --verbosity normal
-
-  version_bumper:
-    name: Version Bumper
-    needs: unit_test
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' 
-    runs-on: ubuntu-latest
-    outputs:
-      new_tag: ${{ steps.bump.outputs.new_tag }}
-      part: ${{ steps.bump.outputs.part }}
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Bump version and push tag
-        id: bump
-        uses: anothrNick/github-tag-action@1.52.0
-        env:
-          WITH_V: true
-          PRERELEASE: true
-          PRERELEASE_SUFFIX: prerelease
-
-  publish:
-    name: Publish
-    needs: version_bumper
-    if: needs.version_bumper.outputs.part != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Get Version
-        id: version
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const ver = '${{ needs.version_bumper.outputs.new_tag }}'
-            const ver_no_v = ver.replace('v', '')
-            const is_prerelease = ver_no_v.lastIndexOf('-') > -1
-            core.setOutput('ver', ver)
-            core.setOutput('ver-no-v', ver_no_v)
-            core.setOutput('is-prerelease', is_prerelease)
-      - name: Install dotnet
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 7.0.x
-          dotnet-quality: 'preview'
-      - name: Restore packages
-        run: dotnet restore ${{ env.PROJECT_PATH }}
-      - name: Build project
-        run: dotnet build ${{ env.PROJECT_PATH }} --no-restore --configuration Release
-      - name: Pack project
-        run: dotnet pack ${{ env.PROJECT_PATH }} --no-restore --no-build --configuration Release --include-symbols -p:SymbolPackageFormat=snupkg -p:PackageVersion=${{ steps.version.outputs.ver-no-v }} --output ${{ env.PACKAGE_OUTPUT_DIRECTORY }}
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.version.outputs.ver }}
-          files: ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*
-          prerelease: ${{ steps.version.outputs.is-prerelease }}
-          generate_release_notes: true
-          draft: false
-      - name: Push package to Github
-        run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.GITHUB_TOKEN }} -s ${{ env.GITHUB_SOURCE_URL }}
-      - name: Push package to NuGet
-        run: dotnet nuget push ${{ env.PACKAGE_OUTPUT_DIRECTORY }}/*.nupkg -k ${{ env.NUGET_AUTH_TOKEN }} -s ${{ env.NUGET_SOURCE_URL }}
-        
-        
-        
-        
-        
-name: CI CD Pipeline
-
 on:
   push:
     branches:
       - 'master'
-      - 'develop'
+      - 'dev'
 
 env:
   DOTNET_VERSION: "7.0"
   DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
-  NUGET_SOURCE_URL: https://api.nuget.org/v3/index.json
-  GITHUB_SOURCE_URL: https://nuget.pkg.github.com/kiryuumaru/index.json
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NUGET_AUTH_TOKEN: ${{ secrets.NUGET_AUTH_TOKEN }}
   FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
   FIREBASE_APIKEY: ${{ secrets.FIREBASE_APIKEY }}
 
@@ -132,80 +26,41 @@ jobs:
       - name: Setup matrix combinations
         id: setup_matrix
         run: |
-          #
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          # ███████████████████████████████████████ Project matrix ████████████████████████████████████████
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          ##
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ███████████████████████████████████████ Project matrix ████████████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
           PRESENTATION='[
             {
-              "id": "android_client",
-              "name": "Android Client",
-              "project_dir": "Src/Presentation/Presentation.Client.Maui",
-              "version_file": "Platforms/Android/version.txt",
-              "platform_version_format": "full_version",
-              "builds_on": "ubuntu-22.04",
-              "type": "maui",
-              "maui_platform": "android",
-              "maui_package_name": "com.pasabay.client.maui",
-              "maui_android_signing_key_store": "ANDROID_CLIENT_SIGNING_KEY_STORE",
-              "maui_android_signing_key_alias": "ANDROID_CLIENT_SIGNING_KEY_ALIAS",
-              "maui_android_signing_key_pass": "ANDROID_CLIENT_SIGNING_KEY_PASS",
-              "maui_android_signing_store_pass": "ANDROID_CLIENT_SIGNING_STORE_PASS",
-              "maui_android_play_store_service_account_json": "ANDROID_CLIENT_PLAY_STORE_SERVICE_ACCOUNT_JSON"
-            },
-            {
-              "id": "windows_client",
-              "name": "Windows Client",
-              "project_dir": "Src/Presentation/Presentation.Client.Maui",
-              "version_file": "Platforms/Windows/version.txt",
-              "platform_version_format": "version_release_part",
-              "builds_on": "windows-2022",
-              "type": "maui",
-              "maui_platform": "windows",
-              "maui_package_name": "com.pasabay.client.maui"
-            },
-            {
-              "id": "web_client_ui",
-              "name": "Web Client UI",
-              "project_dir": "Src/Presentation/Presentation.Client.WebUI",
+              "id": "restfulfirebase_nuget",
+              "name": "RestfulFirebase NuGet",
+              "project_dir": "RestfulFirebase",
               "version_file": "version.txt",
-              "platform_version_format": "version_with_v",
+              "platform_version_format": "version",
               "builds_on": "ubuntu-22.04",
-              "type": "web_static",
-              "web_static_firebase_project_id": "FIREBASE_PROJECT_ID",
-              "web_static_firebase_service_account": "FIREBASE_SERVICE_ACCOUNT"
-            },
-            {
-              "id": "web_server_api",
-              "name": "Web Server API",
-              "project_dir": "Src/Presentation/Presentation.Server.WebApi",
-              "version_file": "version.txt",
-              "platform_version_format": "version_with_v",
-              "builds_on": "ubuntu-22.04",
-              "type": "web_server"
+              "type": "nuget",
+              "nuget_source_url": "https://api.nuget.org/v3/index.json",
+              "nuget_github_source_url": "https://nuget.pkg.github.com/kiryuumaru/index.json",
+              "nuget_auth_token": "NUGET_AUTH_TOKEN",
+              "nuget_firebase_project_id": "FIREBASE_PROJECT_ID",
+              "nuget_firebase_api_key": "FIREBASE_APIKEY"
             }
           ]'
           TEST='[
             {
-              "id": "application_client",
-              "name": "Application Client",
-              "project_dir": "Src/Test/Test.Client",
-              "builds_on": "ubuntu-22.04"
-            },
-            {
-              "id": "application_server",
-              "name": "Application Server",
-              "project_dir": "Src/Test/Test.Server",
+              "id": "restfulfirebase_nuget_test",
+              "name": "RestfulFirebase Test",
+              "project_dir": "RestfulFirebase.UnitTest",
               "builds_on": "ubuntu-22.04"
             }
           ]'
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          # ████████████████████████████████ Polyfill Presentation values █████████████████████████████████
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ████████████████████████████████ Polyfill Presentation values █████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
           wget -q -O /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
           chmod +x /usr/local/bin/semver
           has_release=false
-          # ██████████████████████ Get build number ██████████████████████████
+          ## ██████████████████████ Get build number ██████████████████████████
           last_build=0
           for tag in $(git tag -l --sort=-v:refname "build.*"); do
             last_build=$(echo $tag | sed 's/build\.//')
@@ -213,7 +68,7 @@ jobs:
           done
           let "build = $last_build + 1"
           while read -r id type project_dir version_file platform_version_format builds_on maui_platform; do
-            # ████████████████████ Resolve names and paths █████████████████████
+            ## ████████████████████ Resolve names and paths █████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
@@ -224,16 +79,16 @@ jobs:
               project_dir_os_path="${project_dir_os_path//\//\\}"
               version_file_os_path="${version_file_os_path//\//\\}"
             fi
-            # █████████████████████ Get version from file ██████████████████████
+            ## █████████████████████ Get version from file ██████████████████████
             version_file="${project_dir}/${version_file}"
             version_file_content=$(cat ${version_file})
             version=${version_file_content//[$'\t\r\n']}
-            # ███████████████████████ Validate version █████████████████████████
+            ## ███████████████████████ Validate version █████████████████████████
             if [ $(semver validate "${version}") != 'valid' ]; then
               echo "::error file=${version_file},title=Version Control::Version file is not valid."
               exit 1
             fi
-            # ██████████████████ Get latest version from tags ██████████████████
+            ## ██████████████████ Get latest version from tags ██████████████████
             latest_version="0.0.0"
             for tag in $(git tag -l --sort=-v:refname "${id}/*"); do
               tag_split=(${tag//// })
@@ -243,13 +98,13 @@ jobs:
                 break
               fi
             done
-            # █████████ Compare latest version with version from file ██████████
+            ## █████████ Compare latest version with version from file ██████████
             version_changed=false
             if [ $(semver compare "${version}" "${latest_version}") -gt 0 ]; then
               version_changed=true
               has_release=true
             fi
-            # ████████████████████ Create version types ████████████████████████
+            ## ████████████████████ Create version types ████████████████████████
             arrVersion=(${version//-/ })
             version_release_part=${arrVersion[0]}
             version_prerelease_part=${arrVersion[1]}
@@ -264,7 +119,7 @@ jobs:
             if [ "$version_prerelease_part" != "" ];then
               is_prerelease=true
             fi
-            # █████████████████ Create platform version types ██████████████████
+            ## █████████████████ Create platform version types ██████████████████
             platform_version=${full_version}
             case ${platform_version_format} in
               version)
@@ -289,7 +144,7 @@ jobs:
                 platform_version=${full_version_with_v}
                 ;;
             esac
-            # ████████████ Update matrix with general polyfills ████████████████
+            ## ████████████ Update matrix with general polyfills ████████████████
             PRESENTATION=$(jq \
               --arg id "$id" \
               --arg project_name "$project_name" \
@@ -330,7 +185,7 @@ jobs:
                 .platform_version=$platform_version |
                 .version_changed=$version_changed)' \
               <<< "${PRESENTATION}")
-            # █████████████████████ Per platform polyfills █████████████████████
+            ## █████████████████████ Per platform polyfills █████████████████████
             case ${type} in
               maui)
                 maui_framework=""
@@ -376,11 +231,11 @@ jobs:
             esac
           done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
           PRESENTATION_PUBLISH=$(jq 'del(.[] | select(.version_changed == "false"))' <<< "${PRESENTATION}")
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
           while read -r id project_dir builds_on; do
-            # ████████████████████████ Resolve paths ███████████████████████████
+            ## ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
@@ -388,7 +243,7 @@ jobs:
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
             fi
-            # █████████████████████████ Update matrix ██████████████████████████
+            ## █████████████████████████ Update matrix ██████████████████████████
             TEST=$(jq \
               --arg id "$id" \
               --arg project_name "$project_name" \
@@ -400,31 +255,31 @@ jobs:
                 .project_os_path=$project_os_path)' \
               <<< "${TEST}")
           done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          # ████████████████████████████████████████ Print output █████████████████████████████████████████
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          echo "# █████████████████████████████████████████████████████████"
-          echo "# ██████████████████████ Presentation █████████████████████"
-          echo "# █████████████████████████████████████████████████████████"
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ████████████████████████████████████████ Print output █████████████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          echo "## █████████████████████████████████████████████████████████"
+          echo "## ██████████████████████ Presentation █████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
           echo "\"presentation\": ${PRESENTATION}"
-          echo "# █████████████████████████████████████████████████████████"
-          echo "# ██████████████████ Presentation Publish █████████████████"
-          echo "# █████████████████████████████████████████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
+          echo "## ██████████████████ Presentation Publish █████████████████"
+          echo "## █████████████████████████████████████████████████████████"
           echo "\"presentation_publish\": ${PRESENTATION_PUBLISH}"
-          echo "# █████████████████████████████████████████████████████████"
-          echo "# ███████████████████████ Unit Test ███████████████████████"
-          echo "# █████████████████████████████████████████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
+          echo "## ███████████████████████ Unit Test ███████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
           echo "\"test\": ${TEST}"
-          echo "# █████████████████████████████████████████████████████████"
-          echo "# ████████████████████████ Others █████████████████████████"
-          echo "# █████████████████████████████████████████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
+          echo "## ████████████████████████ Others █████████████████████████"
+          echo "## █████████████████████████████████████████████████████████"
           echo "\"build\": ${build}"
           echo "\"last_build\": ${last_build}"
           echo "\"has_release\": ${has_release}"
-          echo "# █████████████████████████████████████████████████████████"
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
-          # ████████████████████████████████████████ Export output ████████████████████████████████████████
-          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          echo "## █████████████████████████████████████████████████████████"
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          ## ████████████████████████████████████████ Export output ████████████████████████████████████████
+          ## ███████████████████████████████████████████████████████████████████████████████████████████████
           echo "presentation=${PRESENTATION//[$'\t\r\n']}" >> $GITHUB_OUTPUT
           echo "presentation_matrix={\"include\":${PRESENTATION//[$'\t\r\n']}}" >> $GITHUB_OUTPUT
           echo "presentation_publish_matrix={\"include\":${PRESENTATION_PUBLISH//[$'\t\r\n']}}" >> $GITHUB_OUTPUT
@@ -481,25 +336,25 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.type }}" in
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ██████████████████████████████████████████ Maui type ██████████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ██████████████████████████████████████████ Maui type ██████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             maui)
               case "${{ matrix.maui_platform }}" in
-                # ████████████████████████ Maui - Android ██████████████████████████
+                ## ████████████████████████ Maui - Android ██████████████████████████
                 android)
                   echo -n "${{ secrets[matrix.maui_android_signing_key_store] }}" | openssl base64 -d -out key.keystore
                   dotnet workload install maui-android
                   ;;
-                # ████████████████████████ Maui - Windows ██████████████████████████
+                ## ████████████████████████ Maui - Windows ██████████████████████████
                 windows)
                   dotnet workload install maui-windows
                   ;;
-                # ██████████████████████████ Maui - iOS ████████████████████████████
+                ## ██████████████████████████ Maui - iOS ████████████████████████████
                 ios)
                   dotnet workload install maui
                   ;;
-                # ██████████████████████ Maui - MacCatalyst ████████████████████████
+                ## ██████████████████████ Maui - MacCatalyst ████████████████████████
                 maccatalyst)
                   dotnet workload install maui
                   ;;
@@ -510,31 +365,37 @@ jobs:
               npm run tailwind:build 
               cd '${{ github.workspace }}'
               ;;
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ███████████████████████████████████████ Web Static Type ███████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████ Web Static Type ███████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             web_static)
               cd '${{ matrix.project_dir_os_path }}'
               npm install
               npm run tailwind:build 
               cd '${{ github.workspace }}'
               ;;
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ███████████████████████████████████████ Web Server Type ███████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████ Web Server Type ███████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             web_server)
+              ;;
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## █████████████████████████████████████████ NuGet Type ██████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            nuget)
+              dotnet restore '${{ matrix.project_os_path }}'
               ;;
           esac
       - name: Build ${{ matrix.name }}
         shell: bash
         run: |
           case "${{ matrix.type }}" in
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ██████████████████████████████████████████ Maui type ██████████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ██████████████████████████████████████████ Maui type ██████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             maui)
               case "${{ matrix.maui_platform }}" in
-                # ████████████████████████ Maui - Android ██████████████████████████
+                ## ████████████████████████ Maui - Android ██████████████████████████
                 android)
                   dotnet publish '${{ matrix.project_os_path }}' -o output -c Release \
                     -f ${{ matrix.maui_framework }} \
@@ -547,7 +408,7 @@ jobs:
                     -p AndroidSigningKeyPass="${{ secrets[matrix.maui_android_signing_key_pass] }}" \
                     -p AndroidSigningStorePass="${{ secrets[matrix.maui_android_signing_store_pass] }}"
                   ;;
-                # ████████████████████████ Maui - Windows ██████████████████████████
+                ## ████████████████████████ Maui - Windows ██████████████████████████
                 windows)
                   dotnet publish '${{ matrix.project_os_path }}' -o output -c Release \
                     -f ${{ matrix.maui_framework }} \
@@ -555,7 +416,7 @@ jobs:
                     -p ApplicationDisplayVersion="${{ matrix.platform_version }}" \
                     -p ApplicationVersion="${{ matrix.build }}"
                   ;;
-                # ██████████████████████████ Maui - iOS ████████████████████████████
+                ## ██████████████████████████ Maui - iOS ████████████████████████████
                 ios)
                   dotnet publish '${{ matrix.project_os_path }}' -o output -c Release \
                     -f ${{ matrix.maui_framework }} \
@@ -563,7 +424,7 @@ jobs:
                     -p ApplicationDisplayVersion="${{ matrix.platform_version }}" \
                     -p ApplicationVersion="${{ matrix.build }}"
                   ;;
-                # ██████████████████████ Maui - MacCatalyst ████████████████████████
+                ## ██████████████████████ Maui - MacCatalyst ████████████████████████
                 maccatalyst)
                   dotnet publish '${{ matrix.project_os_path }}' -o output -c Release \
                     -f ${{ matrix.maui_framework }} \
@@ -573,22 +434,31 @@ jobs:
                   ;;
               esac
               ;;
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ███████████████████████████████████████ Web Static Type ███████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████ Web Static Type ███████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             web_static)
               dotnet publish '${{ matrix.project_os_path }}' -o output -c Release
               ;;
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
-            # ███████████████████████████████████████ Web Server Type ███████████████████████████████████████
-            # ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## ███████████████████████████████████████ Web Server Type ███████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
             web_server)
               dotnet publish '${{ matrix.project_os_path }}' -o output -c Release \
-                 -r linux-x64 \
-                 --self-contained \
-                 -p PublishProfile=DefaultContainer \
-                 -p ContainerImageName=${{ matrix.id }} \
-                 -p ContainerImageTags='"build.${{ matrix.build }};${{ matrix.platform_version }};latest"'
+                -r linux-x64 \
+                --self-contained \
+                -p PublishProfile=DefaultContainer \
+                -p ContainerImageName=${{ matrix.id }} \
+                -p ContainerImageTags='"build.${{ matrix.build }};${{ matrix.platform_version }};latest"'
+              ;;
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            ## █████████████████████████████████████████ NuGet Type ██████████████████████████████████████████
+            ## ███████████████████████████████████████████████████████████████████████████████████████████████
+            nuget)
+              dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release
+              dotnet pack '${{ matrix.project_os_path }}' -o output --no-restore --no-build --configuration Release --include-symbols \
+                -p SymbolPackageFormat=snupkg \
+                -p PackageVersion=${{ matrix.platform_version }}
               ;;
           esac
       - name: Upload artifacts
@@ -652,6 +522,9 @@ jobs:
         with:
           name: ${{ matrix.id }}_${{ matrix.full_version_with_v }}
           path: ${{ matrix.id }}_${{ matrix.full_version_with_v }}
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### ██████████████████████████████████████████ Android ████████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Publish android
         if: ${{ (matrix.type == 'maui') && (matrix.maui_platform == 'android') }}
         uses: r0adkll/upload-google-play@v1
@@ -661,9 +534,15 @@ jobs:
           releaseFiles: ${{ matrix.id }}_${{ matrix.full_version_with_v }}/${{ matrix.maui_package_name }}-Signed.aab
           track: ${{ matrix.maui_android_release_track }}
           status: completed
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### ████████████████████████████████████████████ iOS ██████████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Publish ios
         if: ${{ (matrix.type == 'maui') && (matrix.maui_platform == 'ios') }}
         run: echo "Test"
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### ████████████████████████████████████████ Web Static ███████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Publish web static
         if: ${{ matrix.type == 'web_static' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -673,10 +552,24 @@ jobs:
           projectId: ${{ secrets[matrix.web_static_firebase_project_id] }}
           entryPoint: ${{ matrix.id }}_${{ matrix.full_version_with_v }}
           channelId: live
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### ████████████████████████████████████████ Web Server ███████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Publish web server
         if: ${{ matrix.type == 'web_server' }}
         #uses: google-github-actions/deploy-appengine@v1
         run: echo "Test"
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### █████████████████████████████████████ NuGet and GitHub ████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      - name: Push package to NuGet and GitHub
+        if: ${{ matrix.type == 'nuget' }}
+        run: |
+            dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s ${{ secrets[matrix.nuget_github_source_url] }}
+            dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets[matrix.nuget_auth_token] }} -s ${{ secrets[matrix.nuget_source_url] }}
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
+      ### ████████████████████████████████████████ Tag Release ██████████████████████████████████████████
+      ### ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Tag release
         run: |
           git tag -f ${{ matrix.id }}/${{ matrix.version_with_v }}
