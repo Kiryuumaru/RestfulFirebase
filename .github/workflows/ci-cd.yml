@@ -33,10 +33,9 @@ jobs:
           PRESENTATION='[]'
           TEST='[]'
           while read -r file; do
-            echo "${file}"
+            json_array=$(jq -c '.[]' $file)
+            echo "${json_array}"
           done <<< $(find . -name "presentation.cicd.json")
-          find . -name "presentation.cicd.json"
-          find . -name "test.cicd.json"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████ Polyfill presentation values █████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
