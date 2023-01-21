@@ -36,9 +36,9 @@ jobs:
           while read -r json_file; do
             for item in $(jq -c '.' $json_file); do
               PRESENTATION=$(jq --arg item "$item" '.[] += $item' <<< "${PRESENTATION}")
+              echo "${PRESENTATION}"
             done
           done <<< $(find . -name "presentation.cicd.json")
-          echo "${PRESENTATION}"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████ Polyfill presentation values █████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
