@@ -1,0 +1,8 @@
+[
+  {
+    "id": "restfulfirebase_nuget_test",
+    "name": "RestfulFirebase Test",
+    "project_dir": "RestfulFirebase.UnitTest",
+    "builds_on": "ubuntu-22.04"
+  }
+]
