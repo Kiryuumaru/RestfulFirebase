@@ -34,7 +34,7 @@ jobs:
           PRESENTATION='[]'
           TEST='[]'
           while read -r json_file; do
-            for item in $(jq -r -c '.' $json_file); do
+            for item in $(jq -r -c '.' "$json_file"); do
               PRESENTATION=$(jq -r --arg item "$item" '.[] += $item' <<< "${PRESENTATION}")
               echo "***************************************************************"
               echo "${item}"
