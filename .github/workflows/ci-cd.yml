@@ -27,13 +27,14 @@ jobs:
       - name: Setup matrix combinations
         id: setup_matrix
         run: |
+          #
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████ Fetch project matrix █████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           PRESENTATION='[]'
           TEST='[]'
-          while read -r file; do
-            PRESENTATION=$(echo "$PRESENTATION" | jq '. += $file')
+          while read -r json_file; do
+            PRESENTATION=$(echo "$PRESENTATION" | jq --arg json_file "$json_file" '. += $json_file')
           done <<< $(find . -name "presentation.cicd.json")
           echo "${PRESENTATION}"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
