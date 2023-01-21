@@ -37,6 +37,7 @@ jobs:
               "project_dir": "RestfulFirebase",
               "version_file": "version.txt",
               "platform_version_format": "version",
+              "release_tagging": "with_id",
               "builds_on": "ubuntu-22.04",
               "type": "nuget",
               "nuget_source_url": "https://api.nuget.org/v3/index.json",
@@ -54,13 +55,13 @@ jobs:
               "builds_on": "ubuntu-22.04"
             }
           ]'
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
-          ## ████████████████████████████████ Polyfill Presentation values █████████████████████████████████
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ████████████████████████████████ Polyfill Presentation values █████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
           wget -q -O /usr/local/bin/semver https://raw.githubusercontent.com/fsaintjacques/semver-tool/master/src/semver
           chmod +x /usr/local/bin/semver
           has_release=false
-          ## ██████████████████████ Get build number ██████████████████████████
+          # ██████████████████████ Get build number ██████████████████████████
           last_build=0
           for tag in $(git tag -l --sort=-v:refname "build.*"); do
             last_build=$(echo $tag | sed 's/build\.//')
@@ -68,7 +69,7 @@ jobs:
           done
           let "build = $last_build + 1"
           while read -r id type project_dir version_file platform_version_format builds_on maui_platform; do
-            ## ████████████████████ Resolve names and paths █████████████████████
+            # ████████████████████ Resolve names and paths █████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
@@ -79,18 +80,27 @@ jobs:
               project_dir_os_path="${project_dir_os_path//\//\\}"
               version_file_os_path="${version_file_os_path//\//\\}"
             fi
-            ## █████████████████████ Get version from file ██████████████████████
+            # █████████████████████ Get version from file ██████████████████████
             version_file="${project_dir}/${version_file}"
             version_file_content=$(cat ${version_file})
             version=${version_file_content//[$'\t\r\n']}
-            ## ███████████████████████ Validate version █████████████████████████
+            # ███████████████████████ Validate version █████████████████████████
             if [ $(semver validate "${version}") != 'valid' ]; then
               echo "::error file=${version_file},title=Version Control::Version file is not valid."
               exit 1
             fi
-            ## ██████████████████ Get latest version from tags ██████████████████
+            # ██████████████████ Get latest version from tags ██████████████████
             latest_version="0.0.0"
-            for tag in $(git tag -l --sort=-v:refname "${id}/*"); do
+            release_tagging="*"
+            case "${{ matrix.release_tagging }}" in
+              with_id)
+                release_tagging="*"
+                ;;
+              no_id)
+                release_tagging="${id}/*"
+                ;;
+            esac
+            for tag in $(git tag -l --sort=-v:refname "${release_tagging}"); do
               tag_split=(${tag//// })
               tag_version=${tag_split[1]}
               if [ $(semver validate "${tag_version}") == 'valid' ]; then
@@ -98,13 +108,13 @@ jobs:
                 break
               fi
             done
-            ## █████████ Compare latest version with version from file ██████████
+            # █████████ Compare latest version with version from file ██████████
             version_changed=false
             if [ $(semver compare "${version}" "${latest_version}") -gt 0 ]; then
               version_changed=true
               has_release=true
             fi
-            ## ████████████████████ Create version types ████████████████████████
+            # ████████████████████ Create version types ████████████████████████
             arrVersion=(${version//-/ })
             version_release_part=${arrVersion[0]}
             version_prerelease_part=${arrVersion[1]}
@@ -119,7 +129,7 @@ jobs:
             if [ "$version_prerelease_part" != "" ];then
               is_prerelease=true
             fi
-            ## █████████████████ Create platform version types ██████████████████
+            # █████████████████ Create platform version types ██████████████████
             platform_version=${full_version}
             case ${platform_version_format} in
               version)
@@ -144,7 +154,7 @@ jobs:
                 platform_version=${full_version_with_v}
                 ;;
             esac
-            ## ████████████ Update matrix with general polyfills ████████████████
+            # ████████████ Update matrix with general polyfills ████████████████
             PRESENTATION=$(jq \
               --arg id "$id" \
               --arg project_name "$project_name" \
@@ -185,7 +195,7 @@ jobs:
                 .platform_version=$platform_version |
                 .version_changed=$version_changed)' \
               <<< "${PRESENTATION}")
-            ## █████████████████████ Per platform polyfills █████████████████████
+            # █████████████████████ Per platform polyfills █████████████████████
             case ${type} in
               maui)
                 maui_framework=""
@@ -231,11 +241,11 @@ jobs:
             esac
           done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
           PRESENTATION_PUBLISH=$(jq 'del(.[] | select(.version_changed == "false"))' <<< "${PRESENTATION}")
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
-          ## ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
           while read -r id project_dir builds_on; do
-            ## ████████████████████████ Resolve paths ███████████████████████████
+            # ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
@@ -243,7 +253,7 @@ jobs:
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
             fi
-            ## █████████████████████████ Update matrix ██████████████████████████
+            # █████████████████████████ Update matrix ██████████████████████████
             TEST=$(jq \
               --arg id "$id" \
               --arg project_name "$project_name" \
@@ -255,31 +265,31 @@ jobs:
                 .project_os_path=$project_os_path)' \
               <<< "${TEST}")
           done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
-          ## ████████████████████████████████████████ Print output █████████████████████████████████████████
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
-          echo "## █████████████████████████████████████████████████████████"
-          echo "## ██████████████████████ Presentation █████████████████████"
-          echo "## █████████████████████████████████████████████████████████"
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ████████████████████████████████████████ Print output █████████████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          echo "# █████████████████████████████████████████████████████████"
+          echo "# ██████████████████████ Presentation █████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
           echo "\"presentation\": ${PRESENTATION}"
-          echo "## █████████████████████████████████████████████████████████"
-          echo "## ██████████████████ Presentation Publish █████████████████"
-          echo "## █████████████████████████████████████████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
+          echo "# ██████████████████ Presentation Publish █████████████████"
+          echo "# █████████████████████████████████████████████████████████"
           echo "\"presentation_publish\": ${PRESENTATION_PUBLISH}"
-          echo "## █████████████████████████████████████████████████████████"
-          echo "## ███████████████████████ Unit Test ███████████████████████"
-          echo "## █████████████████████████████████████████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
+          echo "# ███████████████████████ Unit Test ███████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
           echo "\"test\": ${TEST}"
-          echo "## █████████████████████████████████████████████████████████"
-          echo "## ████████████████████████ Others █████████████████████████"
-          echo "## █████████████████████████████████████████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
+          echo "# ████████████████████████ Others █████████████████████████"
+          echo "# █████████████████████████████████████████████████████████"
           echo "\"build\": ${build}"
           echo "\"last_build\": ${last_build}"
           echo "\"has_release\": ${has_release}"
-          echo "## █████████████████████████████████████████████████████████"
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
-          ## ████████████████████████████████████████ Export output ████████████████████████████████████████
-          ## ███████████████████████████████████████████████████████████████████████████████████████████████
+          echo "# █████████████████████████████████████████████████████████"
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
+          # ████████████████████████████████████████ Export output ████████████████████████████████████████
+          # ███████████████████████████████████████████████████████████████████████████████████████████████
           echo "presentation=${PRESENTATION//[$'\t\r\n']}" >> $GITHUB_OUTPUT
           echo "presentation_matrix={\"include\":${PRESENTATION//[$'\t\r\n']}}" >> $GITHUB_OUTPUT
           echo "presentation_publish_matrix={\"include\":${PRESENTATION_PUBLISH//[$'\t\r\n']}}" >> $GITHUB_OUTPUT
@@ -572,8 +582,15 @@ jobs:
       ## ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Tag release
         run: |
-          git tag -f ${{ matrix.id }}/${{ matrix.version_with_v }}
-          git tag -f ${{ matrix.id }}/latest
+          case "${{ matrix.release_tagging }}" in
+            with_id)
+              git tag -f ${{ matrix.id }}/${{ matrix.version_with_v }}
+              git tag -f ${{ matrix.id }}/latest
+              ;;
+            no_id)
+              git tag -f ${{ matrix.version_with_v }}
+              ;;
+          esac
           git push -f --tags
           
   cleanup:
