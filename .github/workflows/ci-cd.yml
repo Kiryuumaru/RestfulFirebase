@@ -34,8 +34,10 @@ jobs:
           PRESENTATION='[]'
           TEST='[]'
           while read -r json_file; do
-            json_content=$(jq -c '.' $json_file)
-            PRESENTATION=$(echo "$PRESENTATION" | jq --arg json_content "$json_content" '. += $json_content')
+            json_array=$(jq -c '.' $json_file)
+            for item in $(echo $json_array | jq -c '.[]'); do
+              PRESENTATION=$(echo "$PRESENTATION" | jq --arg item "$item" '. += $item')
+            done
           done <<< $(find . -name "presentation.cicd.json")
           echo "${PRESENTATION}"
           # ███████████████████████████████████████████████████████████████████████████████████████████████
