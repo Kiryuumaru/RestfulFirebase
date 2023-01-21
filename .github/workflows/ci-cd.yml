@@ -41,7 +41,6 @@ jobs:
               "release_tagging": "with_id",
               "builds_on": "ubuntu-22.04",
               "type": "nuget",
-              "nuget_source_url": "https://api.nuget.org/v3/index.json",
               "nuget_github_source_url": "https://nuget.pkg.github.com/kiryuumaru/index.json",
               "nuget_auth_token": "NUGET_AUTH_TOKEN",
               "nuget_firebase_project_id": "FIREBASE_PROJECT_ID",
@@ -577,7 +576,7 @@ jobs:
         if: ${{ matrix.type == 'nuget' }}
         run: |
             dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s ${{ matrix.nuget_github_source_url }}
-            dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets[matrix.nuget_auth_token] }} -s ${{ matrix.nuget_source_url }}
+            dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets[matrix.nuget_auth_token] }} -s "https://api.nuget.org/v3/index.json"
       ## ███████████████████████████████████████████████████████████████████████████████████████████████
       ## ████████████████████████████████████████ Tag Release ██████████████████████████████████████████
       ## ███████████████████████████████████████████████████████████████████████████████████████████████
