@@ -63,12 +63,6 @@ public class HttpResponse : Response, IHttpResponse
         return this;
     }
 
-    internal HttpResponse Append(Exception? error)
-    {
-        Error = error;
-        return this;
-    }
-
     /// <summary>
     /// Gets the string representation of the HTTP transactions.
     /// </summary>
@@ -174,18 +168,6 @@ public class HttpResponse<TResult> : Response<TResult>, IHttpResponse
         {
             httpTransactions.AddRange(response.HttpTransactions);
         }
-        return this;
-    }
-
-    internal HttpResponse<TResult> Append(TResult? result)
-    {
-        Result = result;
-        return this;
-    }
-
-    internal HttpResponse<TResult> Append(Exception? error)
-    {
-        Error = error;
         return this;
     }
 

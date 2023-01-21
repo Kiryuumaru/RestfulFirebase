@@ -82,7 +82,9 @@ public partial class FirestoreDatabaseApi
         response.Append(getResponse);
         if (getResponse.IsError)
         {
-            return response.Append(await GetHttpException(response));
+            response.Append(await GetHttpException(response));
+
+            return response;
         }
 
         return response;
@@ -103,7 +105,9 @@ public partial class FirestoreDatabaseApi
         response.Append(postResponse);
         if (postResponse.IsError)
         {
-            return response.Append(await GetHttpException(response));
+            response.Append(await GetHttpException(response));
+
+            return response;
         }
 
         return response;
@@ -127,7 +131,9 @@ public partial class FirestoreDatabaseApi
         response.Append(postResponse);
         if (postResponse.IsError)
         {
-            return response.Append(await GetHttpException(response));
+            response.Append(await GetHttpException(response));
+
+            return response;
         }
 
         return response;

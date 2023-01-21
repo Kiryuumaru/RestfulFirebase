@@ -51,6 +51,8 @@ public partial class FirestoreDatabaseApi
             transaction.Token = transactionToken;
         }
 
-        return response.Append(transaction);
+        response.Append(transaction);
+
+        return response;
     }
 }

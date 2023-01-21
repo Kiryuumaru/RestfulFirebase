@@ -292,7 +292,7 @@ public partial class DocumentReference : Reference
     /// The type of the document model.
     /// </typeparam>
     /// <param name="model">
-    /// The model to patch the document fields. If it is a null reference, operation will delete the document.
+    /// The model to patch the document WritableFields. If it is a null reference, operation will delete the document.
     /// </param>
     /// <param name="transaction">
     /// The <see cref="Transaction"/> to optionally perform an atomic operation.
@@ -324,7 +324,7 @@ public partial class DocumentReference : Reference
     /// The type of the document model.
     /// </typeparam>
     /// <param name="model">
-    /// The model to patch the document fields. If it is a null reference, operation will delete the document.
+    /// The model to patch the document WritableFields. If it is a null reference, operation will delete the document.
     /// </param>
     /// <param name="cacheDocuments">
     /// The cache of documents to recycle if it matched its reference.

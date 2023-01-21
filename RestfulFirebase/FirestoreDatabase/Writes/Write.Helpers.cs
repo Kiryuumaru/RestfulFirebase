@@ -85,8 +85,8 @@ public abstract partial class Write
                 }
                 else if (documentTransform.ModelType != null)
                 {
-                    var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(documentTransform.ModelType, fieldTransform.NamePath, jsonSerializerOptions);
-                    fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+                    var documentFieldPath = ModelFieldHelpers.GetModelFieldPath(documentTransform.ModelType, fieldTransform.NamePath, jsonSerializerOptions);
+                    fieldPath = string.Join(".", documentFieldPath.Select(i => i.ModelFieldName));
                     fieldType = documentFieldPath.LastOrDefault()?.Type;
                 }
                 else
@@ -301,7 +301,7 @@ public abstract partial class Write
                 response.Append(createDocumentResponse);
                 if (!createDocumentResponse.IsError &&
                     jsonDocument != null &&
-                    Document.Parse(
+                    ModelBuilderHelpers.Parse(
                         App,
                         null,
                         modelType,
@@ -346,7 +346,7 @@ public abstract partial class Write
                 response.Append(createDocumentResponse);
                 if (!createDocumentResponse.IsError &&
                     jsonDocument != null &&
-                    Document<TModel>.Parse(
+                    ModelBuilderHelpers.Parse<TModel>(
                         App,
                         null,
                         model,

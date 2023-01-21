@@ -37,14 +37,15 @@ internal class NodeStreamer : IDisposable
         FirebaseApp app,
         QueryRoot query,
         Action<StreamObject> onNext,
-        Action<StreamError> onError)
+        Action<StreamError> onError,
+        CancellationToken cancellationToken)
     {
         App = app;
         this.query = query;
         this.onNext = onNext;
         this.onError = onError;
 
-        cancel = new CancellationTokenSource();
+        cancel = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var httpClient = App.GetStreamHttpClient();
 
@@ -79,21 +80,17 @@ internal class NodeStreamer : IDisposable
 
                 CancellationToken initToken = GetTrancientToken();
 
-                string requestUrl = string.Empty;
+                var requestUrlResponse = await query.BuildUrl(initToken);
+                if (requestUrlResponse.IsError)
+                {
+                    if (requestUrlResponse.Error is not OperationCanceledException)
+                    {
+                        onError?.Invoke(new StreamError(absoluteUrl, requestUrlResponse.Error));
+                    }
+                    continue;
+                }
 
-                try
-                {
-                    //requestUrl = await query.BuildUrl(initToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    continue;
-                }
-                catch (Exception ex)
-                {
-                    onError?.Invoke(new StreamError(absoluteUrl, ex));
-                    continue;
-                }
+                string requestUrl = requestUrlResponse.Result;
 
                 if (initToken.IsCancellationRequested) break;
 
@@ -189,8 +186,8 @@ internal class NodeStreamer : IDisposable
                 var result = JsonDocument.Parse(serverData);
                 var pathToken = result.RootElement.GetProperty("path");
                 var dataToken = result.RootElement.GetProperty("data");
-                var path = pathToken.ToString();
-                onNext?.Invoke(new StreamObject(dataToken, url, path[1..]));
+                var path = pathToken.ToString().Trim('/').Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                onNext?.Invoke(new StreamObject(dataToken, url, path));
                 break;
             case ServerEventType.KeepAlive:
                 break;

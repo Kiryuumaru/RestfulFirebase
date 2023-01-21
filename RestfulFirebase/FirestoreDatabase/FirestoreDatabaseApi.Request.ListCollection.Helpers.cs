@@ -86,7 +86,7 @@ public partial class FirestoreDatabaseApi
             nextPageToken = nextPageTokenProperty.Deserialize<string>(jsonSerializerOptions);
         }
 
-        return response.Append(new ListCollectionResult(
+        response.Append(new ListCollectionResult(
             collectionReferences.AsReadOnly(),
             nextPageToken,
             response,
@@ -94,5 +94,7 @@ public partial class FirestoreDatabaseApi
             {
                 return ExecuteListCollectionNextPage(response, nextPageTok, pageSize, documentReference, authorization, jsonSerializerOptions, ct);
             }));
+
+        return response;
     }
 }

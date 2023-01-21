@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace RestfulFirebase.Common.Models;
 
@@ -20,7 +21,7 @@ public class Response
     public virtual bool IsSuccess { get => Error == null; }
 
     /// <summary>
-    /// Gets <c>true</c> whether the operation is successful; otherwise, <c>false</c>.
+    /// Gets <c>true</c> whether the operation is unsuccessful; otherwise, <c>false</c>.
     /// </summary>
     [MemberNotNullWhen(true, nameof(Error))]
     public virtual bool IsError { get => Error != null; }
@@ -44,6 +45,19 @@ public class Response
         {
             throw Error;
         }
+    }
+
+    internal virtual void Append(params Response[] responses)
+    {
+        if (responses.LastOrDefault() is Response lastResponse)
+        {
+            Error = lastResponse.Error;
+        }
+    }
+
+    internal virtual void Append(Exception? error)
+    {
+        Error = error;
     }
 }
 
@@ -95,9 +109,30 @@ public class Response<TResult> : Response
     [MemberNotNull(nameof(Result))]
     public override void ThrowIfError()
     {
-        if (Result == null)
+        if (Error != null)
         {
-            throw Error!;
+            throw Error;
         }
+        else if (Result == null)
+        {
+            throw new NullReferenceException($"Response has no \"{nameof(Result)}\".");
+        }
+    }
+
+    internal override void Append(params Response[] responses)
+    {
+        if (responses.LastOrDefault() is Response lastResponse)
+        {
+            Error = lastResponse.Error;
+            if (lastResponse is Response<TResult> lastTypedResponse)
+            {
+                Result = lastTypedResponse.Result;
+            }
+        }
+    }
+
+    internal virtual void Append(TResult? result)
+    {
+        Result = result;
     }
 }

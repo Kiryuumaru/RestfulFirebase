@@ -328,8 +328,8 @@ public abstract partial class Query
             }
             else if (structuredQuery.ModelType != null)
             {
-                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(structuredQuery.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
-                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+                var documentFieldPath = ModelFieldHelpers.GetModelFieldPath(structuredQuery.ModelType, orderByQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.ModelFieldName));
             }
             else
             {
@@ -398,8 +398,8 @@ public abstract partial class Query
             }
             else if (ModelType != null)
             {
-                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(ModelType, selectQuery.NamePath, jsonSerializerOptions);
-                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+                var documentFieldPath = ModelFieldHelpers.GetModelFieldPath(ModelType, selectQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.ModelFieldName));
             }
             else
             {
@@ -422,8 +422,8 @@ public abstract partial class Query
             }
             else if (ModelType != null)
             {
-                var documentFieldPath = DocumentFieldHelpers.GetDocumentFieldPath(ModelType, whereQuery.NamePath, jsonSerializerOptions);
-                fieldPath = string.Join(".", documentFieldPath.Select(i => i.DocumentFieldName));
+                var documentFieldPath = ModelFieldHelpers.GetModelFieldPath(ModelType, whereQuery.NamePath, jsonSerializerOptions);
+                fieldPath = string.Join(".", documentFieldPath.Select(i => i.ModelFieldName));
             }
             else
             {
@@ -641,7 +641,7 @@ public abstract partial class Query
                         }
                     }
 
-                    if (Document.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document found)
+                    if (ModelBuilderHelpers.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document found)
                     {
                         foundDocuments.Add(new DocumentTimestamp(found, readTime, true));
                     }
@@ -665,7 +665,7 @@ public abstract partial class Query
 
         Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
 
-        return response.Append(new QueryDocumentResult(
+        response.Append(new QueryDocumentResult(
             foundDocuments.AsReadOnly(),
             skippedResults,
             skippedReadTime,
@@ -682,6 +682,8 @@ public abstract partial class Query
                     jsonSerializerOptions,
                     ct);
             }));
+
+        return response;
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
@@ -741,7 +743,7 @@ public abstract partial class Query
                         }
                     }
 
-                    if (Document<T>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                    if (ModelBuilderHelpers.Parse<T>(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
                     {
                         foundDocuments.Add(new DocumentTimestamp<T>(found, readTime, true));
                     }
@@ -765,7 +767,7 @@ public abstract partial class Query
 
         Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
 
-        return response.Append(new QueryDocumentResult<T>(
+        response.Append(new QueryDocumentResult<T>(
             foundDocuments.AsReadOnly(),
             skippedResults,
             skippedReadTime,
@@ -782,5 +784,7 @@ public abstract partial class Query
                     jsonSerializerOptions,
                     ct);
             }));
+
+        return response;
     }
 }

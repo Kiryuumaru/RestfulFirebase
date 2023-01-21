@@ -57,7 +57,9 @@ public partial class AuthenticationApi
             return response;
         }
 
-        return response.Append(getResponse.Result.RecaptchaSiteKey);
+        response.Append(getResponse.Result.RecaptchaSiteKey);
+
+        return response;
     }
 
     /// <summary>
@@ -109,7 +111,9 @@ public partial class AuthenticationApi
             return response;
         }
 
-        return response.Append(postResponse.Result.SessionInfo);
+        response.Append(postResponse.Result.SessionInfo);
+
+        return response;
     }
 
     /// <summary>

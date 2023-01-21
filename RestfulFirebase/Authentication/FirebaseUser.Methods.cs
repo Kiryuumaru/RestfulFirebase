@@ -130,7 +130,9 @@ public partial class FirebaseUser
 
         if (!IsExpired())
         {
-            return response.Append(idToken);
+            response.Append(idToken);
+
+            return response;
         }
 
         using MemoryStream stream = new();
@@ -161,7 +163,9 @@ public partial class FirebaseUser
             return response;
         }
 
-        return response.Append(idToken);
+        response.Append(idToken);
+
+        return response;
     }
 
     /// <summary>

@@ -7,17 +7,17 @@ internal class StreamObject
 {
     public JsonElement JsonElement { get; }
 
-    public string AbsoluteUrl { get; }
-
-    public string Path { get; }
+    public string StreamUrl { get; }
 
     public string Url { get; }
 
-    public StreamObject(JsonElement jsonElement, string absoluteUrl, string path)
+    public string[] Path { get; }
+
+    public StreamObject(JsonElement jsonElement, string streamUrl, string[] path)
     {
         JsonElement = jsonElement;
-        AbsoluteUrl = absoluteUrl;
+        StreamUrl = streamUrl;
         Path = path;
-        Url = string.IsNullOrEmpty(path) ? absoluteUrl : UrlUtilities.Combine(absoluteUrl, path);
+        Url = path.Length == 0 ? streamUrl : UrlUtilities.Combine(streamUrl, path);
     }
 }

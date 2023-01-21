@@ -38,16 +38,16 @@ public class RealtimeDatabaseTest
         Reference testReference = app.RealtimeDatabase
             .Database()
             .Child("public")
-            .Child(nameof(FirestoreDatabaseTest))
-            .Child(nameof(TransformSetToServerValueTest));
+            .Child("test1");
 
         await Cleanup(testReference);
 
         var ss = await testReference.Query()
-            .OrderByValue()
-            .StartAt(1)
-            .EndAt(5)
-            .Build();
+            .Run();
+
+        var asd = await ss.GetTransactionContentsAsString();
+
+        //await Task.Delay(1000000);
 
         await Cleanup(testReference);
 

@@ -8,7 +8,7 @@ namespace RestfulFirebase.FirestoreDatabase.Enums;
 public enum ServerValue
 {
     /// <summary>
-    /// The time at which the server processed the request, with millisecond precision. If used on multiple fields (same or different documents) in a transaction, all the fields will get the same server timestamp.
+    /// The time at which the server processed the request, with millisecond precision. If used on multiple WritableFields (same or different documents) in a transaction, all the WritableFields will get the same server timestamp.
     /// </summary>
     [EnumMember(Value = "REQUEST_TIME")]
     RequestTime,

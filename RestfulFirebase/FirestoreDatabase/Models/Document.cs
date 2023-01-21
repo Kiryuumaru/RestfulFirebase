@@ -101,7 +101,7 @@ public partial class Document : INotifyPropertyChanged, INotifyPropertyChanging
     /// <inheritdoc/>
     public event PropertyChangingEventHandler? PropertyChanging;
 
-    private readonly ConcurrentDictionary<string, object?> fields;
+    internal readonly ConcurrentDictionary<string, object?> WritableFields;
 
     /// <summary>
     /// Creates an instance of <see cref="Document{T}"/>.
@@ -113,8 +113,8 @@ public partial class Document : INotifyPropertyChanged, INotifyPropertyChanging
     {
         this.reference = reference;
 
-        fields = new();
-        Fields = fields.AsReadOnly();
+        WritableFields = new();
+        Fields = WritableFields.AsReadOnly();
     }
 
     /// <summary>

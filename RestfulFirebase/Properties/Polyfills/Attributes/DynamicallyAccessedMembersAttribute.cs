@@ -46,12 +46,12 @@ namespace System.Diagnostics.CodeAnalysis
         NonPublicMethods = 16,
 
         /// <summary>
-        /// Specifies all public fields.
+        /// Specifies all public WritableFields.
         /// </summary>
         PublicFields = 32,
 
         /// <summary>
-        /// Specifies all non-public fields.
+        /// Specifies all non-public WritableFields.
         /// </summary>
         NonPublicFields = 64,
 

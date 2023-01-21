@@ -3,6 +3,7 @@ using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using RestfulFirebase.FirestoreDatabase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -236,7 +237,7 @@ public abstract partial class FluentFetchRoot<TFetch>
                         }
                     }
 
-                    if (Models.Document.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document found)
+                    if (ModelBuilderHelpers.Parse(App, parsedDocumentReference, parsedDocument?.Type, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document found)
                     {
                         foundDocuments.Add(new DocumentTimestamp(found, readTime, true));
                     }
@@ -255,7 +256,9 @@ public abstract partial class FluentFetchRoot<TFetch>
             }
         }
 
-        return response.Append(new GetDocumentsResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        response.Append(new GetDocumentsResult(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+
+        return response;
     }
 
     /// <summary>
@@ -361,7 +364,7 @@ public abstract partial class FluentFetchRoot<TFetch, TModel>
                         }
                     }
 
-                    if (Document<TModel>.Parse(App, parsedDocumentReference, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<TModel> found)
+                    if (ModelBuilderHelpers.Parse<TModel>(App, parsedDocumentReference, parsedModel, parsedDocument, foundProperty.EnumerateObject(), jsonSerializerOptions) is Document<TModel> found)
                     {
                         foundDocuments.Add(new DocumentTimestamp<TModel>(found, readTime, true));
                     }
@@ -380,7 +383,9 @@ public abstract partial class FluentFetchRoot<TFetch, TModel>
             }
         }
 
-        return response.Append(new GetDocumentsResult<TModel>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+        response.Append(new GetDocumentsResult<TModel>(foundDocuments.AsReadOnly(), missingDocuments.AsReadOnly()));
+
+        return response;
     }
 
     /// <summary>
