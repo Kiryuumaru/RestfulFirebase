@@ -34,7 +34,7 @@ jobs:
           TEST='[]'
           while read -r file; do
             while read -r project; do
-              PRESENTATION="$PRESENTATION $project"
+              PRESENTATION+=$project
             done <<< $(jq -c '.[]' $file)
           done <<< $(find . -name "presentation.cicd.json")
           echo "${PRESENTATION}"
