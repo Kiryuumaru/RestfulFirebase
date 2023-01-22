@@ -561,8 +561,7 @@ jobs:
       # █████████████████████████████████████ NuGet and GitHub ████████████████████████████████████████
       # ███████████████████████████████████████████████████████████████████████████████████████████████
       - name: Push package to NuGet and GitHub
-        if: false
-        #if: ${{ matrix.type == 'nuget' }}
+        if: ${{ matrix.type == 'nuget' }}
         run: |
             dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets.GITHUB_TOKEN }} -s ${{ matrix.nuget_github_source_url }}
             dotnet nuget push ${{ matrix.id }}_${{ matrix.full_version_with_v }}/*.nupkg -k ${{ secrets[matrix.nuget_auth_token] }} -s "https://api.nuget.org/v3/index.json"
