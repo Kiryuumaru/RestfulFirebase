@@ -56,7 +56,7 @@ jobs:
             break
           done
           let "build = $last_build + 1"
-          while read -r id type project_dir version_file platform_version_format builds_on maui_platform; do
+          while read -r id type project_dir version_file platform_version_format release_tagging builds_on maui_platform; do
             # ████████████████████ Resolve names and paths █████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
@@ -79,16 +79,16 @@ jobs:
             fi
             # ██████████████████ Get latest version from tags ██████████████████
             latest_version="0.0.0"
-            release_tagging="*"
-            case "${{ matrix.release_tagging }}" in
+            release_tag="*"
+            case "${release_tagging}" in
               with_id)
-                release_tagging="*"
+                release_tag="${id}/*"
                 ;;
               no_id)
-                release_tagging="${id}/*"
+                release_tag="*"
                 ;;
             esac
-            for tag in $(git tag -l --sort=-v:refname "${release_tagging}"); do
+            for tag in $(git tag -l --sort=-v:refname "${release_tag}"); do
               tag_split=(${tag//// })
               tag_version=${tag_split[1]}
               if [ $(semver validate "${tag_version}") == 'valid' ]; then
@@ -227,7 +227,7 @@ jobs:
               web_server)
                 ;;
             esac
-          done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
+          done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .release_tagging + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
           PRESENTATION_PUBLISH=$(jq 'del(.[] | select(.version_changed == "false"))' <<< "${PRESENTATION}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
