@@ -1,10 +1,10 @@
-﻿using RestfulFirebase.Common.Http;
-using RestfulFirebase.FirestoreDatabase.References;
+﻿using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.Common.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase.Models;
 

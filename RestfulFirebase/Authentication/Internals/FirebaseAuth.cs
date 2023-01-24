@@ -1,4 +1,6 @@
-﻿namespace RestfulFirebase.Authentication.Internals;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace RestfulFirebase.Authentication.Internals;
 
 internal class FirebaseAuth
 {

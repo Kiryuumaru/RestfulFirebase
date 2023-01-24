@@ -1,5 +1,6 @@
 ﻿namespace RestfulFirebase.Common.Utilities;
 
+using RestfulFirebase.Common.Internals;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -116,9 +117,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
             modifiedOptions.Converters.Insert(0, converter);
         }
 
-#if NET5_0_OR_GREATER
         [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
         protected TCollection BaseRead<TCollection>(ref Utf8JsonReader reader) where TCollection : ICollection<TItem>, new()
         {
             if (reader.TokenType != JsonTokenType.StartArray)
@@ -139,9 +138,7 @@ internal class ItemConverterDecorator<TItemConverter> : JsonConverterFactory
             return list;
         }
 
-#if NET5_0_OR_GREATER
         [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
         public sealed override void Write(Utf8JsonWriter writer, TEnumerable value, JsonSerializerOptions options)
         {
             writer.WriteStartArray();

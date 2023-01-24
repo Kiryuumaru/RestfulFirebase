@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Utilities;
 using System.Text.Json;
 using System.Net.Http;
@@ -13,15 +12,14 @@ using System.Threading;
 using RestfulFirebase.Common.Abstractions;
 using System.IO;
 using System.Linq;
+using RestfulHelpers.Interface;
 
 namespace RestfulFirebase.Authentication;
 
 public partial class AuthenticationApi
 {
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ErrorData))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ErrorData))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     internal static async Task<Exception> GetHttpException(IHttpResponse response)
     {
         var lastTransaction = response.HttpTransactions.LastOrDefault();

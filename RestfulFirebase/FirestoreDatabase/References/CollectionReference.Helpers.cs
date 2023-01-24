@@ -6,9 +6,6 @@ namespace RestfulFirebase.FirestoreDatabase.References;
 
 public partial class CollectionReference : Reference
 {
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static CollectionReference? Parse(FirebaseApp app, string? json)
     {
         if (json != null && !string.IsNullOrEmpty(json))
@@ -37,9 +34,7 @@ public partial class CollectionReference : Reference
         return null;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal static CollectionReference? Parse(FirebaseApp app, JsonElement jsonElement, JsonSerializerOptions jsonSerializerOptions)
     {
         return Parse(app, jsonElement.Deserialize<string>(jsonSerializerOptions));

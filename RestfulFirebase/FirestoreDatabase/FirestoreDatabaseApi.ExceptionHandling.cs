@@ -1,10 +1,10 @@
 ﻿using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using RestfulHelpers.Interface;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -21,6 +21,7 @@ namespace RestfulFirebase.FirestoreDatabase;
 
 public partial class FirestoreDatabaseApi
 {
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ErrorData))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal static async Task<Exception> GetHttpException(IHttpResponse response)
     {

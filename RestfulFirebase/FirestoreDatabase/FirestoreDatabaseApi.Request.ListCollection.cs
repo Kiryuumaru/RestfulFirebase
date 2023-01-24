@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Threading;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Abstractions;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase;
 
@@ -29,7 +29,6 @@ public partial class FirestoreDatabaseApi
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the result <see cref="ListCollectionResult"/>.
     /// </returns>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     public async Task<HttpResponse<ListCollectionResult>> ListCollection(int? pageSize = null, DocumentReference? documentReference = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         JsonSerializerOptions jsonSerializerOptions = ConfigureJsonSerializerOption();

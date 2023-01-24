@@ -3,13 +3,13 @@ using System;
 using RestfulFirebase.Authentication.Internals;
 using System.Threading.Tasks;
 using System.Threading;
-using RestfulFirebase.Common.Http;
 using System.Text.Json;
 using RestfulFirebase.Authentication.Exceptions;
 using RestfulFirebase.Authentication.Enums;
 using System.Linq;
 using System.IO;
 using System.Diagnostics.CodeAnalysis;
+using RestfulHelpers.Common;
 using static RestfulFirebase.Authentication.AuthenticationApi;
 
 namespace RestfulFirebase.Authentication;
@@ -19,10 +19,8 @@ namespace RestfulFirebase.Authentication;
 /// </summary>
 public partial class FirebaseUser
 {
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(FirebaseAuth))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     internal async Task<HttpResponse> RefreshUserInfo(CancellationToken cancellationToken)
     {
         HttpResponse response = new();
@@ -52,10 +50,15 @@ public partial class FirebaseUser
         }
 
 #if NET6_0_OR_GREATER
-        var responseData = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        var responseData = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        var responseData = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+        var responseData = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
+        if (responseData == null)
+        {
+            return new(lastHttpTransaction.RequestMessage, lastHttpTransaction.ResponseMessage, lastHttpTransaction.StatusCode,
+                new FirebaseAuthenticationException(AuthErrorType.UndefinedException, "Unknown error occured.", default, default, default, default, default));
+        }
 
         JsonDocument resultJson = JsonDocument.Parse(responseData);
         if (!resultJson.RootElement.TryGetProperty("users", out JsonElement userJson))
@@ -78,10 +81,6 @@ public partial class FirebaseUser
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     private async Task<HttpResponse> ExecuteUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
         HttpResponse response = new();

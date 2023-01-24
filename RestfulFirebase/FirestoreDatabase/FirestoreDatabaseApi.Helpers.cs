@@ -1,10 +1,11 @@
 ﻿using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Exceptions;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using RestfulHelpers;
+using RestfulHelpers.Common;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -64,10 +65,8 @@ public partial class FirestoreDatabaseApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
-    internal async Task<HttpResponse<T>> ExecuteGet<T>(IAuthorization? authorization, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<T>> ExecuteGet<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(IAuthorization? authorization, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
         HttpResponse<T> response = new();
 
@@ -78,7 +77,7 @@ public partial class FirestoreDatabaseApi
             return response;
         }
 
-        var getResponse = await HttpHelpers.Execute<T>(clientResponse.Result, HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
+        var getResponse = await clientResponse.Result.Execute<T>(HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
         response.Append(getResponse);
         if (getResponse.IsError)
         {
@@ -101,33 +100,7 @@ public partial class FirestoreDatabaseApi
             return response;
         }
 
-        var postResponse = await HttpHelpers.ExecuteWithContent(clientResponse.Result, stream, HttpMethod.Post, url, cancellationToken);
-        response.Append(postResponse);
-        if (postResponse.IsError)
-        {
-            response.Append(await GetHttpException(response));
-
-            return response;
-        }
-
-        return response;
-    }
-
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
-    internal async Task<HttpResponse<T>> ExecutePost<T>(IAuthorization? authorization, MemoryStream stream, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
-    {
-        HttpResponse<T> response = new();
-
-        var clientResponse = await GetHttpClient(authorization, cancellationToken);
-        response.Append(clientResponse);
-        if (clientResponse.IsError || clientResponse.Result == null)
-        {
-            return new HttpResponse<T>(default, clientResponse);
-        }
-
-        var postResponse = await HttpHelpers.ExecuteWithContent<T>(clientResponse.Result, stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
+        var postResponse = await clientResponse.Result.ExecuteWithContent(stream, HttpMethod.Post, url, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -140,6 +113,29 @@ public partial class FirestoreDatabaseApi
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<T>> ExecutePost<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(IAuthorization? authorization, MemoryStream stream, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
+    {
+        HttpResponse<T> response = new();
+
+        var clientResponse = await GetHttpClient(authorization, cancellationToken);
+        response.Append(clientResponse);
+        if (clientResponse.IsError || clientResponse.Result == null)
+        {
+            return new HttpResponse<T>(default, clientResponse);
+        }
+
+        var postResponse = await clientResponse.Result.ExecuteWithContent<T>(stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
+        response.Append(postResponse);
+        if (postResponse.IsError)
+        {
+            response.Append(await GetHttpException(response));
+
+            return response;
+        }
+
+        return response;
+    }
+
     internal static void BuildTransactionOption<TTransaction>(Utf8JsonWriter writer, TTransaction transaction)
         where TTransaction : Transaction
     {
@@ -171,7 +167,6 @@ public partial class FirestoreDatabaseApi
         }
     }
 
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal static void BuildTransaction<TTransaction>(Utf8JsonWriter writer, TTransaction transaction)
         where TTransaction : Transaction
     {

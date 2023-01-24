@@ -20,8 +20,4 @@
     </PackageReference>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RestfulFirebase\RestfulFirebase2.csproj" />
-  </ItemGroup>
-
 </Project>

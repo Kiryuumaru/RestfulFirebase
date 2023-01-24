@@ -9,7 +9,7 @@ using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System.Linq;
 using RestfulFirebase.FirestoreDatabase.Enums;
-using RestfulFirebase.Common.Http;
+using RestfulHelpers.Common;
 using System.Threading;
 using RestfulFirebase.Common.Abstractions;
 using System.Collections.Generic;
@@ -411,11 +411,11 @@ public abstract partial class Write
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
 
-        return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
+        return contentStream == null ? (null, response) : (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 }

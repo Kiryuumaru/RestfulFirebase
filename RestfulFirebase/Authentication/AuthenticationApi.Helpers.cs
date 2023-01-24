@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Utilities;
 using System.Text.Json;
 using System.Net.Http;
@@ -13,6 +12,8 @@ using System.Threading;
 using RestfulFirebase.Common.Abstractions;
 using System.IO;
 using System.Linq;
+using RestfulHelpers.Common;
+using RestfulHelpers;
 
 namespace RestfulFirebase.Authentication;
 
@@ -52,12 +53,10 @@ public partial class AuthenticationApi
         };
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.Execute<T>(App.GetHttpClient(), HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await App.GetHttpClient().Execute<T>(HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));
@@ -68,7 +67,7 @@ public partial class AuthenticationApi
 
     internal async Task<HttpResponse> ExecutePost(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.ExecuteWithContent(App.GetHttpClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), cancellationToken);
+        var response = await App.GetHttpClient().ExecuteWithContent(stream, HttpMethod.Post, BuildUrl(googleUrl), cancellationToken);
         if (response.IsError)
         {
             return new(response, await GetHttpException(response));
@@ -77,12 +76,10 @@ public partial class AuthenticationApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
-        var response = await HttpHelpers.ExecuteWithContent<T>(App.GetHttpClient(), stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await App.GetHttpClient().ExecuteWithContent<T>(stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));
@@ -91,10 +88,8 @@ public partial class AuthenticationApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     internal async Task<HttpResponse<FirebaseUser>> StartUser(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
     {
         HttpResponse<FirebaseUser> response = new();

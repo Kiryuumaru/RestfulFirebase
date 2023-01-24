@@ -6,9 +6,9 @@ using System.IO;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Threading;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Abstractions;
 using System.Linq;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase;
 
@@ -60,10 +60,15 @@ public partial class FirestoreDatabaseApi
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
+        if (contentStream == null)
+        {
+            return response;
+        }
+
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
         List<CollectionReference> collectionReferences = new();
