@@ -1,5 +1,5 @@
 using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
+using RestfulHelpers.Common;
 using RestfulFirebase.RealtimeDatabase.References;
 using System;
 using System.Net;

@@ -25,7 +25,11 @@ internal class NonBlockingStreamReader : TextReader
         cachedData = string.Empty;
     }
 
+#if  NET7_0_OR_GREATER
+    public async override ValueTask<string?> ReadLineAsync(CancellationToken token)
+#else
     public async Task<string?> ReadLineAsync(CancellationToken token)
+#endif
     {
         string? currentString = TryGetNewLine();
 

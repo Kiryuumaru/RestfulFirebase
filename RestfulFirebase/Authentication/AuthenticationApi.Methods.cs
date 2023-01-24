@@ -1,12 +1,12 @@
 ﻿using System.Threading.Tasks;
 using RestfulFirebase.Authentication.Internals;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Authentication.Models;
 using System.Threading;
 using System.IO;
 using System.Text.Json;
 using RestfulFirebase.Authentication.Enums;
 using System.Diagnostics.CodeAnalysis;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.Authentication;
 
@@ -42,10 +42,8 @@ public partial class AuthenticationApi
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the reCaptcha site key <see cref="string"/>.
     /// </returns>
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(RecaptchaSiteKeyDefinition))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     public async Task<HttpResponse<string>> GetRecaptchaSiteKey(CancellationToken cancellationToken = default)
     {
         HttpResponse<string> response = new();
@@ -81,10 +79,8 @@ public partial class AuthenticationApi
     /// <paramref name="phoneNumber"/> or
     /// <paramref name="recaptchaToken"/> is a null reference.
     /// </exception>
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(SessionInfoDefinition))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     public async Task<HttpResponse<string>> SendVerificationCode(string phoneNumber, string recaptchaToken, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(phoneNumber);
@@ -165,10 +161,8 @@ public partial class AuthenticationApi
     /// <exception cref="ArgumentNullException">
     /// <paramref name="email"/> is a null reference.
     /// </exception>
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ProviderQuery))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     public async Task<HttpResponse<ProviderQuery>> GetLinkedAccounts(string email, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(email);
@@ -218,10 +212,8 @@ public partial class AuthenticationApi
     /// <paramref name="email"/> or
     /// <paramref name="password"/> is a null reference.
     /// </exception>
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     public async Task<HttpResponse<FirebaseUser>> CreateUserWithEmailAndPassword(string email, string password, bool sendVerificationEmail = true, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(email);

@@ -1,5 +1,5 @@
 ﻿using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
+using RestfulHelpers.Common;
 using RestfulFirebase.Common.Internals;
 using RestfulFirebase.Common.Utilities;
 using RestfulFirebase.FirestoreDatabase.Enums;
@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulHelpers;
 
 namespace RestfulFirebase.RealtimeDatabase;
 
@@ -46,7 +47,7 @@ public partial class RealtimeDatabaseApi
     {
         HttpResponse response = new();
 
-        var getResponse = await HttpHelpers.Execute(GetHttpClient(), HttpMethod.Get, url, cancellationToken);
+        var getResponse = await GetHttpClient().Execute(HttpMethod.Get, url, cancellationToken);
         response.Append(getResponse);
         if (getResponse.IsError)
         {
@@ -56,14 +57,12 @@ public partial class RealtimeDatabaseApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<HttpResponse<T>> ExecuteGet<T>(string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
         HttpResponse<T> response = new();
 
-        var getResponse = await HttpHelpers.Execute<T>(GetHttpClient(), HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
+        var getResponse = await GetHttpClient().Execute<T>(HttpMethod.Get, url, jsonSerializerOptions, cancellationToken);
         response.Append(getResponse);
         if (getResponse.IsError)
         {
@@ -77,7 +76,7 @@ public partial class RealtimeDatabaseApi
     {
         HttpResponse response = new();
 
-        var postResponse = await HttpHelpers.ExecuteWithContent(GetHttpClient(), stream, HttpMethod.Put, url, cancellationToken);
+        var postResponse = await GetHttpClient().ExecuteWithContent(stream, HttpMethod.Put, url, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -87,14 +86,12 @@ public partial class RealtimeDatabaseApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<HttpResponse<T>> ExecutePut<T>(MemoryStream stream, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
         HttpResponse<T> response = new();
 
-        var postResponse = await HttpHelpers.ExecuteWithContent<T>(GetHttpClient(), stream, HttpMethod.Put, url, jsonSerializerOptions, cancellationToken);
+        var postResponse = await GetHttpClient().ExecuteWithContent<T>(stream, HttpMethod.Put, url, jsonSerializerOptions, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -108,7 +105,7 @@ public partial class RealtimeDatabaseApi
     {
         HttpResponse response = new();
 
-        var postResponse = await HttpHelpers.ExecuteWithContent(GetHttpClient(), stream, HttpMethod.Post, url, cancellationToken);
+        var postResponse = await GetHttpClient().ExecuteWithContent(stream, HttpMethod.Post, url, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -118,14 +115,12 @@ public partial class RealtimeDatabaseApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
         HttpResponse<T> response = new();
 
-        var postResponse = await HttpHelpers.ExecuteWithContent<T>(GetHttpClient(), stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
+        var postResponse = await GetHttpClient().ExecuteWithContent<T>(stream, HttpMethod.Post, url, jsonSerializerOptions, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
@@ -139,7 +134,7 @@ public partial class RealtimeDatabaseApi
     {
         HttpResponse response = new();
 
-        var patchResponse = await HttpHelpers.ExecuteWithContent(GetHttpClient(), stream, new HttpMethod("PATCH"), url, cancellationToken);
+        var patchResponse = await GetHttpClient().ExecuteWithContent(stream, new HttpMethod("PATCH"), url, cancellationToken);
         response.Append(patchResponse);
         if (patchResponse.IsError)
         {
@@ -149,14 +144,12 @@ public partial class RealtimeDatabaseApi
         return response;
     }
 
-#if NET5_0_OR_GREATER
-    [RequiresUnreferencedCode("Calls RestfulFirebase.Common.Http.HttpHelpers.ExecuteWithContent<T>(HttpClient, Stream, HttpMethod, String, JsonSerializerOptions, CancellationToken)")]
-#endif
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<T>> ExecutePatch<T>(MemoryStream stream, string url, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
         HttpResponse<T> response = new();
 
-        var patchResponse = await HttpHelpers.ExecuteWithContent<T>(GetHttpClient(), stream, new HttpMethod("PATCH"), url, jsonSerializerOptions, cancellationToken);
+        var patchResponse = await GetHttpClient().ExecuteWithContent<T>(stream, new HttpMethod("PATCH"), url, jsonSerializerOptions, cancellationToken);
         response.Append(patchResponse);
         if (patchResponse.IsError)
         {
@@ -170,7 +163,7 @@ public partial class RealtimeDatabaseApi
     {
         HttpResponse response = new();
 
-        var deleteResponse = await HttpHelpers.Execute(GetHttpClient(), HttpMethod.Delete, url, cancellationToken);
+        var deleteResponse = await GetHttpClient().Execute(HttpMethod.Delete, url, cancellationToken);
         response.Append(deleteResponse);
         if (deleteResponse.IsError)
         {

@@ -16,9 +16,7 @@ namespace RestfulFirebase.FirestoreDatabase.Models;
 
 public partial class Document
 {
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal void BuildUtf8JsonWriter(FirebaseConfig config, Utf8JsonWriter writer, JsonSerializerOptions? jsonSerializerOptions)
     {
         object? obj = GetModel();

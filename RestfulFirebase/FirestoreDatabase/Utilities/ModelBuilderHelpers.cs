@@ -19,9 +19,7 @@ internal static class ModelBuilderHelpers
 {
     private static readonly object?[] emptyParameterPlaceholder = Array.Empty<object?>();
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static Document? Parse(
         FirebaseApp app,
         DocumentReference? reference,
@@ -33,9 +31,7 @@ internal static class ModelBuilderHelpers
     {
         Dictionary<string, object?> documentFields = new();
 
-#if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
         object? parseJsonElement(JsonElement jsonElement, string fieldName, Type? objType)
         {
             object? obj = null;
@@ -263,9 +259,7 @@ internal static class ModelBuilderHelpers
             return obj;
         }
 
-#if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
         object? parseArrayFields(Type? valueType, string fieldName, JsonElement element)
         {
             List<object?> items = new();
@@ -305,9 +299,7 @@ internal static class ModelBuilderHelpers
             return obj;
         }
 
-#if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
         void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, string fieldName, JsonElement element)
         {
             var addMethod = collectionInterfaceType.GetMethod("Add");
@@ -339,9 +331,7 @@ internal static class ModelBuilderHelpers
             }
         }
 
-#if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
         void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, string fieldName, JsonElement element)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
@@ -403,9 +393,7 @@ internal static class ModelBuilderHelpers
             }
         }
 
-#if NET5_0_OR_GREATER
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
         void parseObjectFields(Type? objType, object? obj, string fieldName, JsonElement element)
         {
             List<string> alreadyAdded = new();
@@ -565,9 +553,7 @@ internal static class ModelBuilderHelpers
         return document;
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static Document<TModel>? Parse<TModel>(
         FirebaseApp app,
         DocumentReference? reference,
@@ -585,9 +571,7 @@ internal static class ModelBuilderHelpers
         return null;
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriterObject(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1013,9 +997,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriterArrayFields(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1045,9 +1027,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriterCollectionFields(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1077,9 +1057,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriterDictionaryFields(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1125,9 +1103,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriterObjectFields(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1255,9 +1231,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriter(
         FirebaseConfig config,
         Utf8JsonWriter writer,
@@ -1310,9 +1284,7 @@ internal static class ModelBuilderHelpers
         }
     }
 
-#if NET5_0_OR_GREATER
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-#endif
     internal static void BuildUtf8JsonWriter<T>(
         FirebaseConfig config,
         Utf8JsonWriter writer,

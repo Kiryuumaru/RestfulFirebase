@@ -8,10 +8,12 @@ using System.Threading.Tasks;
 using System.Text.Json;
 using RestfulFirebase.RealtimeDatabase.Utilities;
 using RestfulFirebase.RealtimeDatabase.Models;
-using RestfulFirebase.Common.Http;
+using RestfulHelpers.Common;
 using RestfulFirebase.RealtimeDatabase.Queries;
 using RestfulFirebase.RealtimeDatabase.Exceptions;
 using RestfulFirebase.RealtimeDatabase.Enums;
+using static System.Net.WebRequestMethods;
+using RestfulHelpers;
 
 namespace RestfulFirebase.RealtimeDatabase.Streaming;
 
@@ -94,7 +96,7 @@ internal class NodeStreamer : IDisposable
 
                 if (initToken.IsCancellationRequested) break;
 
-                var streamResponse = await HttpHelpers.Execute(http, App.GetStreamHttpRequestMessage(HttpMethod.Get, requestUrl), HttpCompletionOption.ResponseHeadersRead, GetTrancientToken());
+                var streamResponse = await http.Execute(App.GetStreamHttpRequestMessage(HttpMethod.Get, requestUrl), HttpCompletionOption.ResponseHeadersRead, GetTrancientToken());
                 if (streamResponse.IsError || streamResponse.HttpTransactions.FirstOrDefault() is not HttpTransaction httpTransaction)
                 {
                     onError?.Invoke(new StreamError(absoluteUrl, await RealtimeDatabaseApi.GetHttpException(streamResponse)));
@@ -109,7 +111,12 @@ internal class NodeStreamer : IDisposable
                 {
                     var serverEvent = ServerEventType.KeepAlive;
 
-                    using var stream = await httpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+                    using var stream = httpTransaction.ResponseMessage == null ? null : await httpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+                    if (stream == null)
+                    {
+                        continue;
+                    }
+
                     using var reader = new NonBlockingStreamReader(stream);
                     try
                     {

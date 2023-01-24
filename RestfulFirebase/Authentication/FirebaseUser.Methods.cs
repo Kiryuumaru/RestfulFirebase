@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
 using System.Text.Json;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Authentication.Enums;
 using System.Diagnostics.CodeAnalysis;
+using RestfulHelpers.Common;
 using static RestfulFirebase.Authentication.AuthenticationApi;
 
 namespace RestfulFirebase.Authentication;
@@ -120,10 +120,8 @@ public partial class FirebaseUser
     }
 
     /// <inheritdoc/>
-#if NET5_0_OR_GREATER
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-#endif
     public async ValueTask<HttpResponse<string>> GetFreshToken(CancellationToken cancellationToken = default)
     {
         HttpResponse<string> response = new();
@@ -200,7 +198,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken));
+        response.Append(await App.Authentication.ExecutePost(stream, GoogleGetConfirmationCodeUrl, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -245,7 +245,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -290,7 +292,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleUpdateUser, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -364,7 +368,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -397,7 +403,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken));
+        response.Append(await App.Authentication.ExecutePost(stream, GoogleDeleteUserUrl, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -449,7 +457,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -501,7 +511,9 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleIdentityUrl, cancellationToken));
+
+        return response;
     }
 
     /// <summary>
@@ -549,6 +561,8 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        return response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+        response.Append(await ExecuteUser(stream, GoogleSetAccountUrl, cancellationToken));
+
+        return response;
     }
 }

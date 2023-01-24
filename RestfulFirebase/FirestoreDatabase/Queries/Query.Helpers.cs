@@ -12,7 +12,7 @@ using RestfulFirebase.FirestoreDatabase.Enums;
 using RestfulFirebase.FirestoreDatabase.Utilities;
 using System.Data;
 using System.Threading;
-using RestfulFirebase.Common.Http;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -213,12 +213,12 @@ public abstract partial class Query
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
 
-        return (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
+        return contentStream == null ? (null, response) : (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
     internal async Task<HttpResponse<Document?>> GetLatestDocument(

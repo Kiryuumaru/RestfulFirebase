@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Threading;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.Common.Abstractions;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase;
 

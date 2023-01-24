@@ -6,9 +6,9 @@ using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Queries;
 using RestfulFirebase.FirestoreDatabase.Writes;
+using RestfulHelpers.Common;
 
 namespace RestfulFirebase.FirestoreDatabase.References;
 

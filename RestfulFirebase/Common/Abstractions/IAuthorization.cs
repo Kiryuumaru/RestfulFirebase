@@ -1,4 +1,4 @@
-﻿using RestfulFirebase.Common.Http;
+﻿using RestfulHelpers.Common;
 using System.Threading;
 using System.Threading.Tasks;
 

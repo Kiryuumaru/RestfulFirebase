@@ -1,9 +1,10 @@
 ﻿using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
+using RestfulFirebase.Common.Internals;
 using RestfulFirebase.FirestoreDatabase.Models;
 using RestfulFirebase.FirestoreDatabase.References;
 using RestfulFirebase.FirestoreDatabase.Transactions;
 using RestfulFirebase.FirestoreDatabase.Utilities;
+using RestfulHelpers.Common;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -181,7 +182,7 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="GetDocumentsResult"/>.
     /// </returns>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentsResult>> Run(CancellationToken cancellationToken = default)
     {
         JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
@@ -270,7 +271,7 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="GetDocumentsResult"/>.
     /// </returns>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentResult>> RunSingle(CancellationToken cancellationToken = default)
     {
         if (Documents.Count + DocumentReferences.Count != 1)
@@ -307,7 +308,7 @@ public abstract partial class FluentFetchRoot<TFetch, TModel>
     /// <exception cref="System.ArgumentException">
     /// Fetch operation has multiple or empty document to execute.
     /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public new async Task<HttpResponse<GetDocumentsResult<TModel>>> Run(CancellationToken cancellationToken = default)
     {
         JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
@@ -400,7 +401,7 @@ public abstract partial class FluentFetchRoot<TFetch, TModel>
     /// <exception cref="System.ArgumentException">
     /// Fetch operation has multiple or empty document to execute.
     /// </exception>
-    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public new async Task<HttpResponse<GetDocumentResult<TModel>>> RunSingle(CancellationToken cancellationToken = default)
     {
         if (Documents.Count + DocumentReferences.Count != 1)

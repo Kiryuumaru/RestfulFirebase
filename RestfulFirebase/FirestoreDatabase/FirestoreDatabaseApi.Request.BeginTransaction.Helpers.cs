@@ -1,6 +1,6 @@
 ﻿using RestfulFirebase.Common.Abstractions;
-using RestfulFirebase.Common.Http;
 using RestfulFirebase.FirestoreDatabase.Transactions;
+using RestfulHelpers.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -39,10 +39,15 @@ public partial class FirestoreDatabaseApi
         }
 
 #if NET6_0_OR_GREATER
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
 #else
-        using Stream contentStream = await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
 #endif
+        if (contentStream == null)
+        {
+            return response;
+        }
+
         JsonDocument jsonDocument = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
 
         if (jsonDocument.RootElement.TryGetProperty("transaction", out JsonElement transactionElement) &&
