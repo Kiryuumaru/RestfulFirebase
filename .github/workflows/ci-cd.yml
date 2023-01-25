@@ -344,10 +344,10 @@ jobs:
       - name: Set environment variables
         run: |
           while read -r key; do
-            value=$(jq -r ".$key" "${{ matrix.secret_env }}")
+            value=$(jq -r ".$key" "${{ matrix.env }}")
             echo "$key: $value"
             echo "${key}=${value}" >> $GITHUB_ENV
-          done <<< $(jq 'keys[]' <<< "${{ matrix.secret_env }}")
+          done <<< $(jq 'keys[]' <<< "${{ matrix.env }}")
       - name: Run Test - ${{ matrix.name }}
         run: |
           dotnet test '${{ matrix.project_os_path }}' --no-restore --verbosity normal
