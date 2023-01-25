@@ -169,6 +169,7 @@ jobs:
               --arg project_os_path "$project_os_path" \
               --arg project_dir_os_path "$project_dir_os_path" \
               --arg version_file_os_path "$version_file_os_path" \
+              --arg config_file_os_path "$config_file_os_path" \
               --arg version "$version" \
               --arg version_release_part "$version_release_part" \
               --arg version_prerelease_part "$version_prerelease_part" \
@@ -189,6 +190,7 @@ jobs:
                 .project_os_path=$project_os_path |
                 .project_dir_os_path=$project_dir_os_path |
                 .version_file_os_path=$version_file_os_path |
+                .config_file_os_path=$config_file_os_path |
                 .version=$version |
                 .version_release_part=$version_release_part |
                 .version_prerelease_part=$version_prerelease_part |
@@ -269,10 +271,12 @@ jobs:
               --arg project_name "$project_name" \
               --arg project "$project" \
               --arg project_os_path "$project_os_path" \
+              --arg config_file_os_path "$config_file_os_path" \
               '(.[] | select(.id == $id)) |= (
                 .project_name=$project_name |
                 .project=$project |
-                .project_os_path=$project_os_path)' \
+                .project_os_path=$project_os_path)' |
+                .config_file_os_path=$config_file_os_path \
               <<< "${TEST}")
           done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
