@@ -345,7 +345,7 @@ jobs:
         run: |
           while read -r name value secret; do
             if [ "$secret" != "" ]; then
-              value=${{ secrets[$secret] }}
+              value=$secret
             fi
             echo "$key: $value"
             echo "${name}=${value}" >> $GITHUB_ENV
