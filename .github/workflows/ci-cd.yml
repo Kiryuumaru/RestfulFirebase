@@ -345,8 +345,8 @@ jobs:
         env:
           envs: '${{ matrix.env }}'
         run: |
-          for i in "${$env.envs[@]}"; do
-            echo "$env.envs[$i]"
+          for i in "${envs[@]}"; do
+            echo "$envs[$i]"
           done
           while read -r key; do
             value=$(jq -r ".$key" "${{ matrix.env }}")
