@@ -33,13 +33,13 @@ jobs:
           TEST='[]'
           while read -r json_file; do
             while read -r item; do
-              item=$(jq --arg config_path "$json_file" '. |= (.config_path=$config_path)' <<< "${item}")
+              item=$(jq --arg config_file "$json_file" '. |= (.config_file=$config_file)' <<< "${item}")
               PRESENTATION=$(jq --argjson item "$item" '. += [$item]' <<< "${PRESENTATION}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
           while read -r json_file; do
             while read -r item; do
-              item=$(jq --arg config_path "$json_file" '. |= (.config_path=$config_path)' <<< "${item}")
+              item=$(jq --arg config_file "$json_file" '. |= (.config_file=$config_file)' <<< "${item}")
               TEST=$(jq --argjson item "$item" '. += [$item]' <<< "${TEST}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "test.cicd.json")
@@ -58,17 +58,19 @@ jobs:
             break
           done
           let "build = $last_build + 1"
-          while read -r id type project_dir version_file platform_version_format release_tagging builds_on maui_platform; do
+          while read -r config_file id type project_dir version_file platform_version_format release_tagging builds_on maui_platform; do
             # ████████████████████ Resolve names and paths █████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
             project_dir_os_path="${project_dir}"
             version_file_os_path="${version_file}"
+            config_file_os_path="${config_file}"
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
               project_dir_os_path="${project_dir_os_path//\//\\}"
               version_file_os_path="${version_file_os_path//\//\\}"
+              config_file_os_path="${config_file_os_path//\//\\}"
             fi
             # █████████████████████ Get version and notes from file ██████████████████████
             version_file="${project_dir}/${version_file}"
@@ -246,19 +248,20 @@ jobs:
               web_server)
                 ;;
             esac
-          done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .release_tagging + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
+          done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .release_tagging + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
           PRESENTATION_PUBLISH=$(jq 'del(.[] | select(.version_changed == "false"))' <<< "${PRESENTATION}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
-          while read -r id project_dir builds_on; do
+          while read -r config_file id project_dir builds_on; do
             # ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
-            version_file_os_path="${version_file}"
+            config_file_os_path="${config_file}"
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
+              config_file_os_path="${config_file_os_path//\//\\}"
             fi
             # █████████████████████████ Update matrix ██████████████████████████
             TEST=$(jq \
@@ -271,7 +274,7 @@ jobs:
                 .project=$project |
                 .project_os_path=$project_os_path)' \
               <<< "${TEST}")
-          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
+          done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████████ Print output █████████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
