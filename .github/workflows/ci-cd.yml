@@ -249,7 +249,7 @@ jobs:
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
-          while read -r id project_dir builds_on; do
+          while read -r id project_dir builds_on env secret_env; do
             # ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
@@ -269,7 +269,7 @@ jobs:
                 .project=$project |
                 .project_os_path=$project_os_path)' \
               <<< "${TEST}")
-          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
+          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on + " " + .env + " " + .secret_env' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████████ Print output █████████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
@@ -332,6 +332,13 @@ jobs:
         run: |
           dotnet restore '${{ matrix.project_os_path }}'
           dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release --no-restore
+      - name: Set environment variables
+        run: |
+          while read -r key; do
+            value=$(jq -r ".$key" "${{ matrix.secret_env }}")
+            echo "$key: $value"
+            echo "${key}=${value}" >> $GITHUB_ENV
+          done <<< $(jq 'keys[]' <<< "${{ matrix.secret_env }}")
       - name: Run Test - ${{ matrix.name }}
         run: |
           dotnet test '${{ matrix.project_os_path }}' --no-restore --verbosity normal

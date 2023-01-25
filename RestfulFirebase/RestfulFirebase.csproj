@@ -23,10 +23,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageReleaseNotes>* Changed auth signout to not to remove local database on signout.</PackageReleaseNotes>
-  </PropertyGroup>
-
   <ItemGroup>
     <None Include="..\.editorconfig" Link=".editorconfig" />
     <None Include="..\LICENSE" Pack="true" PackagePath="" />
