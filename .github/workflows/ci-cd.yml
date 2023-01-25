@@ -342,17 +342,12 @@ jobs:
           dotnet restore '${{ matrix.project_os_path }}'
           dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release --no-restore
       - name: Set environment variables
-        env:
-          envs: '${{ matrix.env }}'
         run: |
-          for i in "${envs[@]}"; do
-            echo "$envs[$i]"
-          done
           while read -r key; do
-            value=$(jq -r ".$key" "${{ matrix.env }}")
+            value=$(jq -r ".$key" "${{ toJson(matrix.env) }}")
             echo "$key: $value"
             echo "${key}=${value}" >> $GITHUB_ENV
-          done <<< $(jq 'keys[]' <<< "${{ matrix.env }}")
+          done <<< $(jq 'keys[]' <<< "${{ toJson(matrix.env) }}")
       - name: Run Test - ${{ matrix.name }}
         run: |
           dotnet test '${{ matrix.project_os_path }}' --no-restore --verbosity normal
