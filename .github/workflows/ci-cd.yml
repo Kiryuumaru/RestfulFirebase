@@ -249,7 +249,7 @@ jobs:
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
-          while read -r id project_dir builds_on env secret_env; do
+          while read -r id project_dir builds_on; do
             # ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
@@ -269,7 +269,7 @@ jobs:
                 .project=$project |
                 .project_os_path=$project_os_path)' \
               <<< "${TEST}")
-          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on + " " + .env + " " + .secret_env' <<< "${TEST}")
+          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████████ Print output █████████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
@@ -320,7 +320,7 @@ jobs:
     needs: [setup]
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test_matrix) }}
-    name: Unit Test - ${{ matrix.name }}
+    name: Test - ${{ matrix.name }}
     runs-on: ${{ matrix.builds_on }}
     steps:
       - uses: actions/checkout@v3
