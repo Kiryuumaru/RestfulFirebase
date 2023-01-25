@@ -343,13 +343,14 @@ jobs:
           dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release --no-restore
       - name: Set environment variables
         run: |
+          env_content=${{ toJson(matrix.env) }}
           while read -r name value secret; do
             if [ "$secret" != "" ]; then
               value=$secret
             fi
             echo "$name: $value"
             echo "${name}=${value}" >> $GITHUB_ENV
-          done <<< $(jq -r '.[] | .name + " " + .value + " " + .secret' <<< "${{ toJson(matrix.env) }}")
+          done <<< $(jq -r '.[] | .name + " " + .value + " " + .secret' <<< "${env_content}")
       - name: Run Test - ${{ matrix.name }}
         run: |
           dotnet test '${{ matrix.project_os_path }}' --no-restore --verbosity normal
