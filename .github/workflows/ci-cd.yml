@@ -347,7 +347,7 @@ jobs:
             if [ "$secret" != "" ]; then
               value=$secret
             fi
-            echo "$key: $value"
+            echo "$name: $value"
             echo "${name}=${value}" >> $GITHUB_ENV
           done <<< $(jq -r '.[] | .name + " " + .value + " " + .secret' <<< "${{ toJson(matrix.env) }}")
       - name: Run Test - ${{ matrix.name }}
