@@ -33,13 +33,13 @@ jobs:
           TEST='[]'
           while read -r json_file; do
             while read -r item; do
-              item=$(jq --arg config_path "$json_file" '. += .config_path=$config_path' <<< "${item}")
+              item=$(jq --arg config_path "$json_file" '. |= (.config_path=$config_path)' <<< "${item}")
               PRESENTATION=$(jq --argjson item "$item" '. += [$item]' <<< "${PRESENTATION}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
           while read -r json_file; do
             while read -r item; do
-              item=$(jq --arg config_path "$json_file" '. += .config_path=$config_path' <<< "${item}")
+              item=$(jq --arg config_path "$json_file" '. |= (.config_path=$config_path)' <<< "${item}")
               TEST=$(jq --argjson item "$item" '. += [$item]' <<< "${TEST}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "test.cicd.json")
