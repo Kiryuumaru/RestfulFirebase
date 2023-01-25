@@ -83,6 +83,7 @@ jobs:
                 version_notes="$(echo -e "${version_notes}" | sed -e 's/^[ \t]*//;s/[ \t]*$//')"
               fi
             fi
+            echo "${lines}"
             echo "${version}"
             echo "${version_notes}"
             # ███████████████████████ Validate version █████████████████████████
