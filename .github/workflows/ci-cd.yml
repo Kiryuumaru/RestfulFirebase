@@ -275,8 +275,8 @@ jobs:
               '(.[] | select(.id == $id)) |= (
                 .project_name=$project_name |
                 .project=$project |
-                .project_os_path=$project_os_path)' |
-                .config_file_os_path=$config_file_os_path \
+                .project_os_path=$project_os_path |
+                .config_file_os_path=$config_file_os_path)' \
               <<< "${TEST}")
           done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
