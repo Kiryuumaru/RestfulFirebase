@@ -342,7 +342,7 @@ jobs:
           dotnet restore '${{ matrix.project_os_path }}'
           dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release --no-restore
       - name: Set environment variables
-        env: ${{ matrix.env }}
+        env: ${{ fromJson(matrix.env) }}
         run: |
           echo "$FIREBASE_PROJECT_ID"
           echo "$FIREBASE_PROJECT_ID.secret"
