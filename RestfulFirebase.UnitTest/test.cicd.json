@@ -4,19 +4,16 @@
     "name": "RestfulFirebase Test",
     "project_dir": "RestfulFirebase.UnitTest",
     "builds_on": "ubuntu-22.04",
-    "env": [
-      {
-        "name": "FIREBASE_PROJECT_ID",
+    "env": {
+      "FIREBASE_PROJECT_ID": {
         "secret": "FIREBASE_PROJECT_ID"
       },
-      {
-        "name": "FIREBASE_APIKEY",
+      "FIREBASE_APIKEY": {
         "secret": "FIREBASE_APIKEY"
       },
-      {
-        "name": "TESTTT",
+      "TESTTT": {
         "value": "aumoyfin,if."
       }
-    ]
+    }
   }
 ]
