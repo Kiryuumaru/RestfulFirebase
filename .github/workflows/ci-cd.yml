@@ -353,7 +353,7 @@ jobs:
             fi
             echo "$name: $value"
             echo "${name}=${value}" >> $GITHUB_ENV
-          done <<< $(jq -r '.[] | .name + " " + .value + " " + .secret' <<< "${env_content}")
+          done <<< ${env_content}
       - name: Run Test - ${{ matrix.name }}
         run: |
           dotnet test '${{ matrix.project_os_path }}' --no-restore --verbosity normal
