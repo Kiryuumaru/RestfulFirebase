@@ -3,6 +3,17 @@
     "id": "restfulfirebase_nuget_test",
     "name": "RestfulFirebase Test",
     "project_dir": "RestfulFirebase.UnitTest",
-    "builds_on": "ubuntu-22.04"
+    "builds_on": "ubuntu-22.04",
+    "env": {
+      "FIREBASE_PROJECT_ID": {
+        "secret": "FIREBASE_PROJECT_ID"
+      },
+      "FIREBASE_APIKEY": {
+        "secret": "FIREBASE_APIKEY"
+      },
+      "TESTTT": {
+        "value": "aumoyfin,if."
+      }
+    }
   }
 ]

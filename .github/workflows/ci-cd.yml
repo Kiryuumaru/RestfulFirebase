@@ -35,11 +35,13 @@ jobs:
           TEST='[]'
           while read -r json_file; do
             while read -r item; do
+              item=$(jq --arg config_file "$json_file" '. |= (.config_file=$config_file)' <<< "${item}")
               PRESENTATION=$(jq --argjson item "$item" '. += [$item]' <<< "${PRESENTATION}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "presentation.cicd.json")
           while read -r json_file; do
             while read -r item; do
+              item=$(jq --arg config_file "$json_file" '. |= (.config_file=$config_file)' <<< "${item}")
               TEST=$(jq --argjson item "$item" '. += [$item]' <<< "${TEST}")
             done <<< $(jq -c '.[]' "$json_file")
           done <<< $(find . -name "test.cicd.json")
@@ -58,22 +60,33 @@ jobs:
             break
           done
           let "build = $last_build + 1"
-          while read -r id type project_dir version_file platform_version_format release_tagging builds_on maui_platform; do
+          while read -r config_file id type project_dir version_file platform_version_format release_tagging builds_on maui_platform; do
             # ████████████████████ Resolve names and paths █████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
             project_dir_os_path="${project_dir}"
             version_file_os_path="${version_file}"
+            config_file_os_path="${config_file}"
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
               project_dir_os_path="${project_dir_os_path//\//\\}"
               version_file_os_path="${version_file_os_path//\//\\}"
+              config_file_os_path="${config_file_os_path//\//\\}"
             fi
-            # █████████████████████ Get version from file ██████████████████████
+            # █████████████████████ Get version and notes from file ██████████████████████
             version_file="${project_dir}/${version_file}"
-            version_file_content=$(cat ${version_file})
-            version=${version_file_content//[$'\t\r\n']}
+            version=""
+            version_notes=""
+            lines=$(wc -l < ${version_file})
+            if [ "$lines" -ge 0 ]; then
+              version=$(head -n1 ${version_file})
+              version="$(echo -e "${version}" | sed -e 's/^[ \t]*//;s/[ \t]*$//')"
+              if [ "$lines" -ge 1 ]; then
+                version_notes=$(tail -n +2 ${version_file})
+                version_notes="$(echo -e "${version_notes}" | sed -e 's/^[ \t]*//;s/[ \t]*$//')"
+              fi
+            fi
             # ███████████████████████ Validate version █████████████████████████
             if [ $(semver validate "${version}") != 'valid' ]; then
               echo "::error file=${version_file},title=Version Control::Version file is not valid."
@@ -158,6 +171,7 @@ jobs:
               --arg project_os_path "$project_os_path" \
               --arg project_dir_os_path "$project_dir_os_path" \
               --arg version_file_os_path "$version_file_os_path" \
+              --arg config_file_os_path "$config_file_os_path" \
               --arg version "$version" \
               --arg version_release_part "$version_release_part" \
               --arg version_prerelease_part "$version_prerelease_part" \
@@ -165,6 +179,7 @@ jobs:
               --arg version_prerelease_number "$version_prerelease_number" \
               --arg version_with_v "$version_with_v" \
               --arg version_release_part_with_v "$version_release_part_with_v" \
+              --arg version_notes "$version_notes" \
               --arg build "$build" \
               --arg full_version "$full_version" \
               --arg full_version_with_v "$full_version_with_v" \
@@ -177,6 +192,7 @@ jobs:
                 .project_os_path=$project_os_path |
                 .project_dir_os_path=$project_dir_os_path |
                 .version_file_os_path=$version_file_os_path |
+                .config_file_os_path=$config_file_os_path |
                 .version=$version |
                 .version_release_part=$version_release_part |
                 .version_prerelease_part=$version_prerelease_part |
@@ -184,6 +200,7 @@ jobs:
                 .version_prerelease_number=$version_prerelease_number |
                 .version_with_v=$version_with_v |
                 .version_release_part_with_v=$version_release_part_with_v |
+                .version_notes=$version_notes |
                 .build=$build |
                 .full_version=$full_version |
                 .full_version_with_v=$full_version_with_v |
@@ -235,19 +252,20 @@ jobs:
               web_server)
                 ;;
             esac
-          done <<< $(jq -r '.[] | .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .release_tagging + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
+          done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .type + " " + .project_dir + " " + .version_file + " " + .platform_version_format + " " + .release_tagging + " " + .builds_on + " " + .maui_platform' <<< "${PRESENTATION}")
           PRESENTATION_PUBLISH=$(jq 'del(.[] | select(.version_changed == "false"))' <<< "${PRESENTATION}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ██████████████████████████████████ Polyfill unit test values ██████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
-          while read -r id project_dir builds_on; do
+          while read -r config_file id project_dir builds_on; do
             # ████████████████████████ Resolve paths ███████████████████████████
             project_name="${project_dir##**/}.csproj"
             project="${project_dir}/${project_name}"
             project_os_path="${project}"
-            version_file_os_path="${version_file}"
+            config_file_os_path="${config_file}"
             if [ ${builds_on} == 'windows-2022' ]; then
               project_os_path="${project_os_path//\//\\}"
+              config_file_os_path="${config_file_os_path//\//\\}"
             fi
             # █████████████████████████ Update matrix ██████████████████████████
             TEST=$(jq \
@@ -255,12 +273,14 @@ jobs:
               --arg project_name "$project_name" \
               --arg project "$project" \
               --arg project_os_path "$project_os_path" \
+              --arg config_file_os_path "$config_file_os_path" \
               '(.[] | select(.id == $id)) |= (
                 .project_name=$project_name |
                 .project=$project |
-                .project_os_path=$project_os_path)' \
+                .project_os_path=$project_os_path |
+                .config_file_os_path=$config_file_os_path)' \
               <<< "${TEST}")
-          done <<< $(jq -r '.[] | .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
+          done <<< $(jq -r '.[] | .config_file + " " + .id + " " + .project_dir + " " + .builds_on' <<< "${TEST}")
           # ███████████████████████████████████████████████████████████████████████████████████████████████
           # ████████████████████████████████████████ Print output █████████████████████████████████████████
           # ███████████████████████████████████████████████████████████████████████████████████████████████
@@ -311,7 +331,7 @@ jobs:
     needs: [setup]
     strategy:
       matrix: ${{ fromJson(needs.setup.outputs.test_matrix) }}
-    name: Unit Test - ${{ matrix.name }}
+    name: Test - ${{ matrix.name }}
     runs-on: ${{ matrix.builds_on }}
     steps:
       - uses: actions/checkout@v3
@@ -467,7 +487,8 @@ jobs:
               dotnet build '${{ matrix.project_os_path }}' --no-restore --configuration Release
               dotnet pack '${{ matrix.project_os_path }}' -o output --no-restore --no-build --configuration Release --include-symbols \
                 -p SymbolPackageFormat=snupkg \
-                -p PackageVersion=${{ matrix.platform_version }}
+                -p PackageVersion=${{ matrix.platform_version }} \
+                -p PackageReleaseNotes="${{ matrix.version_notes }}"
               ;;
           esac
       - name: Upload artifacts
