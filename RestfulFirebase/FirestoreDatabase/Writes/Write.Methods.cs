@@ -8,6 +8,7 @@ using RestfulFirebase.Common.Abstractions;
 using RestfulFirebase.FirestoreDatabase.Models;
 using System.Linq;
 using RestfulHelpers.Common;
+using RestfulFirebase.Common.Internals;
 
 namespace RestfulFirebase.FirestoreDatabase.Writes;
 
@@ -131,6 +132,7 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentsResult>> RunAndGet(CancellationToken cancellationToken = default)
     {
         HttpResponse response = new();
@@ -204,6 +206,7 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(CancellationToken cancellationToken = default)
         where TModel : class
     {
@@ -283,6 +286,7 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <exception cref="System.ArgumentException">
     /// Write operation has multiple or empty document to execute.
     /// </exception>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentResult>> RunAndGetSingle(CancellationToken cancellationToken = default)
     {
         if (PatchDocuments.Count +
@@ -319,6 +323,7 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <exception cref="System.ArgumentException">
     /// Write operation has multiple or empty document to execute.
     /// </exception>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<GetDocumentResult<TModel>>> RunAndGetSingle<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(CancellationToken cancellationToken = default)
         where TModel : class
     {
@@ -356,6 +361,7 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public new Task<HttpResponse<GetDocumentsResult<TModel>>> RunAndGet(CancellationToken cancellationToken = default)
         => RunAndGet<TModel>(cancellationToken);
 
@@ -371,6 +377,7 @@ public partial class FluentWriteWithDocumentTransform<TWrite, TModel>
     /// <exception cref="System.ArgumentException">
     /// Write operation has multiple or empty document to execute.
     /// </exception>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public new Task<HttpResponse<GetDocumentResult<TModel>>> RunAndGetSingle(CancellationToken cancellationToken = default)
         => RunAndGetSingle<TModel>(cancellationToken);
 }

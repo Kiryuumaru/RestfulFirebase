@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using RestfulFirebase.Common.Internals;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -132,6 +134,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult"/>.
     /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public async Task<HttpResponse<QueryDocumentResult>> Run(CancellationToken cancellationToken = default)
     {
         if (FromQuery.Count == 0)
@@ -162,6 +165,7 @@ public abstract partial class FluentQueryRoot<TQuery, TModel>
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult{TModel}"/>.
     /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     public new async Task<HttpResponse<QueryDocumentResult<TModel>>> Run(CancellationToken cancellationToken = default)
     {
         if (FromQuery.Count == 0)

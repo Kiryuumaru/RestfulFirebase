@@ -35,7 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="RestfulHelpers" Version="0.1.0-prerelease.6" />
+    <PackageReference Include="RestfulHelpers" Version="0.1.0-prerelease.13" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

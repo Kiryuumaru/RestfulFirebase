@@ -13,6 +13,7 @@ using RestfulFirebase.FirestoreDatabase.Utilities;
 using System.Data;
 using System.Threading;
 using RestfulHelpers.Common;
+using RestfulFirebase.Common.Internals;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -221,6 +222,7 @@ public abstract partial class Query
         return contentStream == null ? (null, response) : (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
     }
 
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<Document?>> GetLatestDocument(
         DocumentReference? docRef,
         CancellationToken cancellationToken)
@@ -246,6 +248,7 @@ public abstract partial class Query
         return response;
     }
 
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<(CursorQuery? cursorQuery, HttpResponse<Document?> response)> GetLatestDocument(
         IEnumerable<CursorQuery> cursorQueries,
         CancellationToken cancellationToken)
@@ -365,6 +368,7 @@ public abstract partial class Query
         }
     }
 
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<StructuredQuery>> BuildStartingStructureQuery(
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
@@ -433,21 +437,31 @@ public abstract partial class Query
             structuredQuery.Where.Add(new(whereQuery, fieldPath));
         }
 
-        var (startCursorRef, getLatestStartCursorDoc) = await GetLatestDocument(StartCursorQuery, cancellationToken);
-        response.Append(getLatestStartCursorDoc);
-        if (getLatestStartCursorDoc.IsError)
+        CursorQuery? startCursorRef = null;
+        Document? startDoc = null;
+        if (StartCursorQuery.Count > 0)
         {
-            return response;
+            (startCursorRef, var getLatestStartCursorDoc) = await GetLatestDocument(StartCursorQuery, cancellationToken);
+            response.Append(getLatestStartCursorDoc);
+            if (getLatestStartCursorDoc.IsError)
+            {
+                return response;
+            }
+            startDoc = getLatestStartCursorDoc.Result;
         }
-        Document? startDoc = getLatestStartCursorDoc.Result;
 
-        var (endCursorRef, getLatestEndCursorDoc) = await GetLatestDocument(EndCursorQuery, cancellationToken);
-        response.Append(getLatestEndCursorDoc);
-        if (getLatestEndCursorDoc.IsError)
+        CursorQuery? endCursorRef = null;
+        Document? endDoc = null;
+        if (EndCursorQuery.Count > 0)
         {
-            return response;
+            (endCursorRef, var getLatestEndCursorDoc) = await GetLatestDocument(EndCursorQuery, cancellationToken);
+            response.Append(getLatestEndCursorDoc);
+            if (getLatestEndCursorDoc.IsError)
+            {
+                return response;
+            }
+            endDoc = getLatestEndCursorDoc.Result;
         }
-        Document? endDoc = getLatestEndCursorDoc.Result;
 
         BuildOrderCursor(structuredQuery, startDoc, endDoc, jsonSerializerOptions);
 
@@ -543,6 +557,7 @@ public abstract partial class Query
         return response;
     }
 
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
     internal async Task<HttpResponse<StructuredQuery>> BuildStructureQuery(
         StructuredQuery query,
         Document? startDoc,
