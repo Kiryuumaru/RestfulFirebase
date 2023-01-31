@@ -231,16 +231,16 @@ public partial class FirebaseUser : IAuthorization, INotifyPropertyChanged, INot
     /// <inheritdoc/>
     public bool IsAccessToken => false;
 
-    /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used.
-    /// </summary>
-    public FirebaseApp App { get; }
-
     /// <inheritdoc/>
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <inheritdoc/>
     public event PropertyChangingEventHandler? PropertyChanging;
+
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    internal FirebaseApp App { get; }
 
     private string idToken;
 

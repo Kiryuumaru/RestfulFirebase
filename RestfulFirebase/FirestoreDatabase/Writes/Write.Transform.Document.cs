@@ -86,11 +86,6 @@ public class DocumentTransform
     public DocumentReference DocumentReference { get; }
 
     /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used.
-    /// </summary>
-    public FirebaseApp App { get; }
-
-    /// <summary>
     /// Gets the type of the model to transform.
     /// </summary>
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -100,6 +95,11 @@ public class DocumentTransform
     /// Gets the <see cref="FieldTransform"/> for document field transforms.
     /// </summary>
     public IReadOnlyList<FieldTransform> FieldTransforms { get; }
+
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    internal FirebaseApp App { get; }
 
     internal readonly List<FieldTransform> WritableFieldTransforms;
 

@@ -8,7 +8,7 @@ public abstract partial class Reference
     /// <summary>
     /// Gets the <see cref="FirebaseApp"/> used.
     /// </summary>
-    public FirebaseApp App { get; }
+    internal FirebaseApp App { get; }
 
     internal Reference(FirebaseApp app)
     {

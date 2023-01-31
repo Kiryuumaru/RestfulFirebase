@@ -47,7 +47,7 @@ public abstract partial class Fetch : ICloneable<Fetch>
     /// <summary>
     /// Gets the <see cref="FirebaseApp"/> used.
     /// </summary>
-    public FirebaseApp App { get; }
+    internal FirebaseApp App { get; }
 
     internal readonly List<DocumentReference> WritableDocumentReferences;
     internal readonly List<Document> WritableDocuments;

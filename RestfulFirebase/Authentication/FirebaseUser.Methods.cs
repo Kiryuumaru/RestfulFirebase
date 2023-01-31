@@ -312,7 +312,7 @@ public partial class FirebaseUser
     /// <returns>
     /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/>.
     /// </returns>
-    public async Task<HttpResponse> UpdateProfile(string displayName, string photoUrl, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse> UpdateProfile(string? displayName, string? photoUrl, CancellationToken cancellationToken = default)
     {
         HttpResponse response = new();
 

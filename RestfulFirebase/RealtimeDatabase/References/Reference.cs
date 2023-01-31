@@ -9,11 +9,6 @@ namespace RestfulFirebase.RealtimeDatabase.References;
 public partial class Reference
 {
     /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used.
-    /// </summary>
-    public FirebaseApp App { get; }
-
-    /// <summary>
     /// Gets the <see cref="RestfulFirebase.RealtimeDatabase.RealtimeDatabase"/> used.
     /// </summary>
     public RealtimeDatabase RealtimeDatabase { get; }
@@ -37,6 +32,11 @@ public partial class Reference
     /// Gets the URL of the reference.
     /// </summary>
     public string Url { get; }
+
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    internal FirebaseApp App { get; }
 
     internal Reference(RealtimeDatabase realtimeDatabase, Reference? parent, string segement)
     {

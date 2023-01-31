@@ -8,7 +8,7 @@ public partial class AuthenticationApi
     /// <summary>
     /// Gets the <see cref="FirebaseApp"/> used.
     /// </summary>
-    public FirebaseApp App { get; }
+    internal FirebaseApp App { get; }
 
     internal AuthenticationApi(FirebaseApp app)
     {

@@ -11,14 +11,14 @@ namespace RestfulFirebase.RealtimeDatabase;
 public class RealtimeDatabase
 {
     /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used by this instance.
-    /// </summary>
-    public FirebaseApp App { get; }
-
-    /// <summary>
     /// Gets the database URL used by this instance.
     /// </summary>
     public string DatabaseUrl { get; }
+
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used by this instance.
+    /// </summary>
+    internal FirebaseApp App { get; }
 
     internal RealtimeDatabase(FirebaseApp app, string databaseUrl)
     {

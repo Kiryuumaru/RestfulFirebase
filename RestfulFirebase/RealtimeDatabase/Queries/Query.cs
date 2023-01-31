@@ -17,11 +17,6 @@ namespace RestfulFirebase.RealtimeDatabase.Queries;
 public abstract partial class QueryRoot
 {
     /// <summary>
-    /// Gets the <see cref="FirebaseApp"/> used.
-    /// </summary>
-    public FirebaseApp App { get; }
-
-    /// <summary>
     /// Gets the <see cref="References.Reference"/> used.
     /// </summary>
     public Reference Reference { get; }
@@ -30,6 +25,11 @@ public abstract partial class QueryRoot
     /// Gets the last <see cref="QueryRoot"/> of the fluent calls.
     /// </summary>
     public QueryRoot? LastQuery { get; }
+
+    /// <summary>
+    /// Gets the <see cref="FirebaseApp"/> used.
+    /// </summary>
+    internal FirebaseApp App { get; }
 
     internal Func<CancellationToken, ValueTask<HttpResponse<string>>> SegementFactory;
     internal HttpClient? Client;

@@ -51,7 +51,7 @@ public abstract partial class Write : ICloneable<Write>
     /// <summary>
     /// Gets the <see cref="FirebaseApp"/> used.
     /// </summary>
-    public FirebaseApp App { get; }
+    internal FirebaseApp App { get; }
 
     internal readonly List<(object model, CollectionReference collectionReference, string? documentName)> WritableCreateDocuments;
     internal readonly List<Document> WritablePatchDocuments;
