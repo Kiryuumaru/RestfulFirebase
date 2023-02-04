@@ -167,7 +167,7 @@ public partial class CollectionReference : Reference
     /// <paramref name="documentNames"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<string> documentNames, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult>> GetDocuments(IEnumerable<string> documentNames, IEnumerable<Document?>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(documentNames);
 
@@ -216,7 +216,7 @@ public partial class CollectionReference : Reference
     /// <paramref name="documentNames"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public async Task<HttpResponse<GetDocumentsResult<TModel>>> GetDocuments<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(IEnumerable<string> documentNames, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public async Task<HttpResponse<GetDocumentsResult<TModel>>> GetDocuments<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(IEnumerable<string> documentNames, IEnumerable<Document?>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(documentNames);
@@ -297,7 +297,7 @@ public partial class CollectionReference : Reference
     /// <paramref name="documents"/> is a null reference.
     /// </exception>
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    public Task<HttpResponse<GetDocumentsResult<TModel>>> PatchAndGetDocuments<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(IEnumerable<(string documentName, TModel? model)> documents, IEnumerable<Document>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
+    public Task<HttpResponse<GetDocumentsResult<TModel>>> PatchAndGetDocuments<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(IEnumerable<(string documentName, TModel? model)> documents, IEnumerable<Document?>? cacheDocuments = null, Transaction? transaction = default, IAuthorization? authorization = default, CancellationToken cancellationToken = default)
         where TModel : class
     {
         ArgumentNullException.ThrowIfNull(documents);

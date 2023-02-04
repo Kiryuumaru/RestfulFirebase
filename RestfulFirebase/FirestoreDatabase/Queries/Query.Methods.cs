@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using RestfulFirebase.Common.Internals;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
@@ -70,11 +71,17 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TQuery Cache(params Document[] documents)
+    public TQuery Cache(params Document?[]? documents)
     {
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return (TQuery)this;
@@ -89,11 +96,17 @@ public abstract partial class FluentQueryRoot<TQuery>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TQuery Cache(IEnumerable<Document>? documents)
+    public TQuery Cache(IEnumerable<Document?>? documents)
     {
         if (documents != null)
         {
-            WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return (TQuery)this;

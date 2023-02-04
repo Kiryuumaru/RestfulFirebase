@@ -1,2 +1,2 @@
-2.0.0-prerelease.9
-* Cleanups
+2.0.0-prerelease.10
+* Nullable document cache

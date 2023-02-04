@@ -23,13 +23,19 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TWrite Cache(params Document[] documents)
+    public TWrite Cache(params Document?[]? documents)
     {
         TWrite write = (TWrite)Clone();
 
         if (documents != null)
         {
-            write.WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    write.WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return write;
@@ -44,13 +50,19 @@ public abstract partial class FluentWriteRoot<TWrite>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TWrite Cache(IEnumerable<Document>? documents)
+    public TWrite Cache(IEnumerable<Document?>? documents)
     {
         TWrite write = (TWrite)Clone();
 
         if (documents != null)
         {
-            write.WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    write.WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return write;

@@ -110,13 +110,19 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TFetch Cache(params Document[] documents)
+    public TFetch Cache(params Document?[]? documents)
     {
         TFetch fetch = (TFetch)Clone();
 
         if (documents != null)
         {
-            fetch.WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    fetch.WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return fetch;
@@ -131,13 +137,19 @@ public abstract partial class FluentFetchRoot<TFetch>
     /// <returns>
     /// The request with new added cache documents.
     /// </returns>
-    public TFetch Cache(IEnumerable<Document>? documents)
+    public TFetch Cache(IEnumerable<Document?>? documents)
     {
         TFetch fetch = (TFetch)Clone();
 
         if (documents != null)
         {
-            fetch.WritableCacheDocuments.AddRange(documents);
+            foreach (var doc in documents)
+            {
+                if (doc != null)
+                {
+                    fetch.WritableCacheDocuments.Add(doc);
+                }
+            }
         }
 
         return fetch;
