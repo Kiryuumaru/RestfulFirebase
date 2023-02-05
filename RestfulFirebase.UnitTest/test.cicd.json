@@ -1,5 +1,6 @@
 [
   {
+    "enable": true,
     "id": "restfulfirebase_nuget_test",
     "name": "RestfulFirebase Test",
     "project_dir": "RestfulFirebase.UnitTest",

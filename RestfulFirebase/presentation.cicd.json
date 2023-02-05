@@ -1,5 +1,6 @@
 [
   {
+    "enable": true,
     "id": "restfulfirebase_nuget",
     "name": "RestfulFirebase NuGet",
     "project_dir": "RestfulFirebase",
