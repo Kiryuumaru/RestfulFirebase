@@ -55,7 +55,7 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.0.0-preview4" />
     <PackageReference Include="DisposableHelpers" Version="1.0.2" />
-    <PackageReference Include="LockerHelpers" Version="1.0.2" />
+    <PackageReference Include="LockerHelpers" Version="1.0.6" />
     <PackageReference Include="SerializerHelpers" Version="1.0.4" />
     <PackageReference Include="System.Text.Json" Version="6.0.5" />
   </ItemGroup>
