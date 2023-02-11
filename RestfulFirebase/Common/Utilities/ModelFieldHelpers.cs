@@ -41,23 +41,27 @@ internal static class ModelFieldHelpers
                 return false;
             }
 
-            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
+            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseIgnoreAttribute)) is null &&
+                memberToCheckAttribute.GetCustomAttribute(typeof(JsonIgnoreAttribute)) is null)
             {
-                nameToCompare = firebaseValueAttribute.Name;
-                isValueIncluded = true;
-            }
-            else if (!includeOnlyWithAttribute)
-            {
-                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
                 {
-                    nameToCompare = jsonPropertyNameAttribute.Name;
+                    nameToCompare = firebaseValueAttribute.Name;
+                    isValueIncluded = true;
                 }
-                isValueIncluded = true;
-            }
+                else if (!includeOnlyWithAttribute)
+                {
+                    if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                    {
+                        nameToCompare = jsonPropertyNameAttribute.Name;
+                    }
+                    isValueIncluded = true;
+                }
 
-            if (!isValueIncluded)
-            {
-                return false;
+                if (!isValueIncluded)
+                {
+                    return false;
+                }
             }
 
             if (nameToCompare == null || string.IsNullOrWhiteSpace(nameToCompare))
@@ -122,18 +126,22 @@ internal static class ModelFieldHelpers
                 return null;
             }
 
-            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
+            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseIgnoreAttribute)) is null &&
+                memberToCheckAttribute.GetCustomAttribute(typeof(JsonIgnoreAttribute)) is null)
             {
-                modelFieldName = firebaseValueAttribute.Name;
-                isValueIncluded = true;
-            }
-            else if (!includeOnlyWithAttribute)
-            {
-                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
                 {
-                    modelFieldName = jsonPropertyNameAttribute.Name;
+                    modelFieldName = firebaseValueAttribute.Name;
+                    isValueIncluded = true;
                 }
-                isValueIncluded = true;
+                else if (!includeOnlyWithAttribute)
+                {
+                    if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                    {
+                        modelFieldName = jsonPropertyNameAttribute.Name;
+                    }
+                    isValueIncluded = true;
+                }
             }
 
             if (!isValueIncluded)

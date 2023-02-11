@@ -1131,18 +1131,22 @@ internal static class ModelBuilderHelpers
                 return false;
             }
 
-            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
+            if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseIgnoreAttribute)) is null &&
+                memberToCheckAttribute.GetCustomAttribute(typeof(JsonIgnoreAttribute)) is null)
             {
-                name = firebaseValueAttribute.Name;
-                returnValue = true;
-            }
-            else if (!onlyWithAttribute)
-            {
-                if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                if (memberToCheckAttribute.GetCustomAttribute(typeof(FirebaseValueAttribute)) is FirebaseValueAttribute firebaseValueAttribute)
                 {
-                    name = jsonPropertyNameAttribute.Name;
+                    name = firebaseValueAttribute.Name;
+                    returnValue = true;
                 }
-                returnValue = true;
+                else if (!onlyWithAttribute)
+                {
+                    if (memberToCheckAttribute.GetCustomAttribute(typeof(JsonPropertyNameAttribute)) is JsonPropertyNameAttribute jsonPropertyNameAttribute)
+                    {
+                        name = jsonPropertyNameAttribute.Name;
+                    }
+                    returnValue = true;
+                }
             }
 
             if (returnValue && string.IsNullOrWhiteSpace(name))
