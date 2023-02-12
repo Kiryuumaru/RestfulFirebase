@@ -1,2 +1,2 @@
-2.0.0-prerelease.19
-* Added ignore property attributes
+2.0.0-prerelease.20
+* Fix bugs

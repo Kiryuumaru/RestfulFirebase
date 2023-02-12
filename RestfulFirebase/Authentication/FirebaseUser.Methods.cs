@@ -126,37 +126,9 @@ public partial class FirebaseUser
     {
         HttpResponse<string> response = new();
 
-        if (!IsExpired())
-        {
-            response.Append(idToken);
-
-            return response;
-        }
-
-        using MemoryStream stream = new();
-        Utf8JsonWriter writer = new(stream);
-
-        writer.WriteStartObject();
-        writer.WritePropertyName("grant_type");
-        writer.WriteStringValue("refresh_token");
-        writer.WritePropertyName("refresh_token");
-        writer.WriteStringValue(RefreshToken);
-        writer.WriteEndObject();
-
-        await writer.FlushAsync(cancellationToken);
-
-        var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
-        response.Append(postResponse);
-        if (postResponse.IsError)
-        {
-            return response;
-        }
-
-        UpdateAuth(postResponse.Result);
-
-        var refreshResponse = await RefreshUserInfo(cancellationToken);
-        response.Append(refreshResponse);
-        if (refreshResponse.IsError)
+        var refreshUserInfoResponse = await RefreshUserInfo(cancellationToken);
+        response.Append(refreshUserInfoResponse);
+        if (refreshUserInfoResponse.IsError)
         {
             return response;
         }

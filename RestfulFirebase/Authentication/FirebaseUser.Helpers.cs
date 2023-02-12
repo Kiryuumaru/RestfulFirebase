@@ -21,11 +21,50 @@ public partial class FirebaseUser
 {
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async ValueTask<HttpResponse<string>> GetFreshTokenInternal(CancellationToken cancellationToken = default)
+    {
+        HttpResponse<string> response = new();
+
+        if (!IsExpired())
+        {
+            response.Append(idToken);
+
+            return response;
+        }
+
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("grant_type");
+        writer.WriteStringValue("refresh_token");
+        writer.WritePropertyName("refresh_token");
+        writer.WriteStringValue(RefreshToken);
+        writer.WriteEndObject();
+
+        await writer.FlushAsync(cancellationToken);
+
+        var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
+        response.Append(postResponse);
+        if (postResponse.IsError)
+        {
+            return response;
+        }
+
+        UpdateAuth(postResponse.Result);
+
+        response.Append(idToken);
+
+        return response;
+    }
+
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<HttpResponse> RefreshUserInfo(CancellationToken cancellationToken)
     {
         HttpResponse response = new();
 
-        var tokenResponse = await GetFreshToken(cancellationToken);
+        var tokenResponse = await GetFreshTokenInternal(cancellationToken);
         response.Append(tokenResponse);
         if (tokenResponse.IsError)
         {
