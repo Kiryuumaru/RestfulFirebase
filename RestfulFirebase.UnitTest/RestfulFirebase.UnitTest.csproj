@@ -26,4 +26,10 @@
     <ProjectReference Include="..\RestfulFirebase\RestfulFirebase.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="image.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

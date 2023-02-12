@@ -1,2 +1,2 @@
-2.0.0-prerelease.21
-* Fix bugs
+2.0.0-prerelease.22
+* Initial storage implementation
