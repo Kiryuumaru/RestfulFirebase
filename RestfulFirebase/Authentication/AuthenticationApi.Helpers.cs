@@ -54,15 +54,21 @@ public partial class AuthenticationApi
     }
 
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-    internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
+    internal async Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
-        var response = await App.GetHttpClient().Execute<T>(HttpMethod.Get, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await App.GetHttpClient().Execute<T>(HttpMethod.Get, BuildUrl(googleUrl), jsonSerializerOptions, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));
         }
 
         return response;
+    }
+
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+    internal Task<HttpResponse<T>> ExecuteGet<T>(string googleUrl, CancellationToken cancellationToken)
+    {
+        return ExecuteGet<T>(googleUrl, JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
     }
 
     internal async Task<HttpResponse> ExecutePost(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
@@ -77,15 +83,21 @@ public partial class AuthenticationApi
     }
 
     [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-    internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    internal async Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, JsonSerializerOptions jsonSerializerOptions, CancellationToken cancellationToken)
     {
-        var response = await App.GetHttpClient().ExecuteWithContent<T>(stream, HttpMethod.Post, BuildUrl(googleUrl), JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
+        var response = await App.GetHttpClient().ExecuteWithContent<T>(stream, HttpMethod.Post, BuildUrl(googleUrl), jsonSerializerOptions, cancellationToken);
         if (response.IsError)
         {
             return new(default, response, await GetHttpException(response));
         }
 
         return response;
+    }
+
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+    internal Task<HttpResponse<T>> ExecutePost<T>(MemoryStream stream, string googleUrl, CancellationToken cancellationToken)
+    {
+        return ExecutePost<T>(stream, googleUrl, JsonSerializerHelpers.CamelCaseJsonSerializerOption, cancellationToken);
     }
 
     [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(FirebaseAuth))]

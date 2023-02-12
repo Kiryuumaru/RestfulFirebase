@@ -44,7 +44,7 @@ public partial class FirebaseUser
 
         await writer.FlushAsync(cancellationToken);
 
-        var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, cancellationToken);
+        var postResponse = await App.Authentication.ExecutePost<FirebaseAuth>(stream, GoogleRefreshAuth, JsonSerializerHelpers.SnakeCaseJsonSerializerOption, cancellationToken);
         response.Append(postResponse);
         if (postResponse.IsError)
         {
