@@ -1,0 +1,2 @@
+* Decode model on undecodable types should throw
+* IEnumerable based types decodable problem
