@@ -1,2 +1,2 @@
-2.0.0-prerelease.23
+2.0.0-prerelease.24
 * Added document aggregated count.

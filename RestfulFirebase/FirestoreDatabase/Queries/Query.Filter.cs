@@ -233,7 +233,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public TQuery PropertyWhere(UnaryOperator @operator, params string[] propertyPath)
+    public TQuery WhereProperty(UnaryOperator @operator, params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
@@ -266,7 +266,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public TQuery PropertyWhere(FieldOperator @operator, object? value, params string[] propertyPath)
+    public TQuery WhereProperty(FieldOperator @operator, object? value, params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
@@ -297,8 +297,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, UnaryOperator @operator)
-        => PropertyWhere(@operator, propertyName);
+    public TQuery WhereProperty(string propertyName, UnaryOperator @operator)
+        => WhereProperty(@operator, propertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -319,8 +319,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <paramref name="propertyName"/> or
     /// <paramref name="subPropertyName"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, string subPropertyName, UnaryOperator @operator)
-        => PropertyWhere(@operator, propertyName, subPropertyName);
+    public TQuery WhereProperty(string propertyName, string subPropertyName, UnaryOperator @operator)
+        => WhereProperty(@operator, propertyName, subPropertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="UnaryFilterQuery"/> to the query.
@@ -345,8 +345,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <paramref name="subPropertyName1"/> or
     /// <paramref name="subPropertyName2"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, string subPropertyName1, string subPropertyName2, UnaryOperator @operator)
-        => PropertyWhere(@operator, propertyName, subPropertyName1, subPropertyName2);
+    public TQuery WhereProperty(string propertyName, string subPropertyName1, string subPropertyName2, UnaryOperator @operator)
+        => WhereProperty(@operator, propertyName, subPropertyName1, subPropertyName2);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -366,8 +366,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="ArgumentNullException">
     /// <paramref name="propertyName"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, FieldOperator @operator, object? value)
-        => PropertyWhere(@operator, value, propertyName);
+    public TQuery WhereProperty(string propertyName, FieldOperator @operator, object? value)
+        => WhereProperty(@operator, value, propertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -391,8 +391,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <paramref name="propertyName"/> or
     /// <paramref name="subPropertyName"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, string subPropertyName, FieldOperator @operator, object? value)
-        => PropertyWhere(@operator, value, propertyName, subPropertyName);
+    public TQuery WhereProperty(string propertyName, string subPropertyName, FieldOperator @operator, object? value)
+        => WhereProperty(@operator, value, propertyName, subPropertyName);
 
     /// <summary>
     /// Adds new instance of <see cref="FieldFilterQuery"/> to the query.
@@ -420,8 +420,8 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <paramref name="subPropertyName1"/> or
     /// <paramref name="subPropertyName2"/> is a null reference.
     /// </exception>
-    public TQuery PropertyWhere(string propertyName, string subPropertyName1, string subPropertyName2, FieldOperator @operator, object? value)
-        => PropertyWhere(@operator, value, propertyName, subPropertyName1, subPropertyName2);
+    public TQuery WhereProperty(string propertyName, string subPropertyName1, string subPropertyName2, FieldOperator @operator, object? value)
+        => WhereProperty(@operator, value, propertyName, subPropertyName1, subPropertyName2);
 
     #endregion
 }

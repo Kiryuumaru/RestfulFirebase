@@ -72,7 +72,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public TQuery PropertySelect(params string[] propertyPath)
+    public TQuery SelectProperty(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);

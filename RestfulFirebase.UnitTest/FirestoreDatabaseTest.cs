@@ -529,7 +529,7 @@ public class FirestoreDatabaseTest
         Assert.Equal(0, queryCountResponse3.Result.Count);
 
         var queryResponse1 = await testCollectionReference1.Query<MixedModel>()
-            .PropertySelect(nameof(MixedModel.Val2))
+            .SelectProperty(nameof(MixedModel.Val2))
             .PageSize(2)
             .Run();
 
@@ -545,7 +545,7 @@ public class FirestoreDatabaseTest
         Assert.Null(docs1[1].Model?.Val3);
 
         var queryResponse2 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyWhere(nameof(MixedModel.Val1), FieldOperator.Equal, 1)
+            .WhereProperty(nameof(MixedModel.Val1), FieldOperator.Equal, 1)
             .Run();
 
         var transaction2 = await queryResponse2.GetTransactionContentsAsString();
@@ -556,7 +556,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs2[1], testDocs1[2]);
 
         var queryResponse3 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyWhere(nameof(MixedModel.Val1), FieldOperator.In, new object[] { 1, 2 })
+            .WhereProperty(nameof(MixedModel.Val1), FieldOperator.In, new object[] { 1, 2 })
             .Run();
 
         var transaction3 = await queryResponse3.GetTransactionContentsAsString();
@@ -573,7 +573,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs3[7], testDocs1[8]);
 
         var queryResponse4 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyWhere(nameof(MixedModel.Val3), UnaryOperator.IsNull)
+            .WhereProperty(nameof(MixedModel.Val3), UnaryOperator.IsNull)
             .Run();
 
         var transaction4 = await queryResponse4.GetTransactionContentsAsString();
@@ -583,7 +583,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs4[0], testDocs1[0]);
 
         var queryResponse5 = await testCollectionReference2.Query<ArrayModel>()
-            .PropertyWhere(nameof(ArrayModel.Val1), FieldOperator.ArrayContains, 3)
+            .WhereProperty(nameof(ArrayModel.Val1), FieldOperator.ArrayContains, 3)
             .Run();
 
         var transaction5 = await queryResponse5.GetTransactionContentsAsString();
@@ -593,7 +593,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs5, testDocs2);
 
         var queryResponse6 = await testCollectionReference2.Query<ArrayModel>()
-            .PropertyWhere(nameof(ArrayModel.Val1), FieldOperator.ArrayContainsAny, new object[] { 1, 5 })
+            .WhereProperty(nameof(ArrayModel.Val1), FieldOperator.ArrayContainsAny, new object[] { 1, 5 })
             .Run();
 
         var transaction6 = await queryResponse6.GetTransactionContentsAsString();
@@ -603,7 +603,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs6, testDocs2);
 
         var queryResponse7 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
+            .AscendingProperty(nameof(MixedModel.Val1))
             .AscendingDocumentName()
             .Run();
 
@@ -623,7 +623,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs7[9], testDocs1[9]);
 
         var queryResponse8 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
+            .AscendingProperty(nameof(MixedModel.Val1))
             .AscendingDocumentName()
             .StartAt(2)
             .StartAt(testDocs1[5])
@@ -640,7 +640,7 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs8[4], testDocs1[9]);
 
         var queryResponse9 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
+            .AscendingProperty(nameof(MixedModel.Val1))
             .AscendingDocumentName()
             .StartAfter(testDocs1[5])
             .Run();
@@ -709,8 +709,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs13[2], testDocs1[8]);
 
         var queryResponse14 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
-            .PropertyDescending(nameof(MixedModel.Val2))
+            .AscendingProperty(nameof(MixedModel.Val1))
+            .DescendingProperty(nameof(MixedModel.Val2))
             .Run();
 
         var transaction14 = await queryResponse14.GetTransactionContentsAsString();
@@ -729,8 +729,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs14[9], testDocs1[9]);
 
         var queryResponse15 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
-            .PropertyDescending(nameof(MixedModel.Val2))
+            .AscendingProperty(nameof(MixedModel.Val1))
+            .DescendingProperty(nameof(MixedModel.Val2))
             .PageSize(2)
             .Run();
 
@@ -753,8 +753,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs14, docs15);
 
         var queryResponse16 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
-            .PropertyDescending(nameof(MixedModel.Val2))
+            .AscendingProperty(nameof(MixedModel.Val1))
+            .DescendingProperty(nameof(MixedModel.Val2))
             .EndAt(testDocs1[4])
             .PageSize(2)
             .Run();
@@ -785,8 +785,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs16[7], testDocs1[4]);
 
         var queryResponse17 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
-            .PropertyDescending(nameof(MixedModel.Val2))
+            .AscendingProperty(nameof(MixedModel.Val1))
+            .DescendingProperty(nameof(MixedModel.Val2))
             .PageSize(2)
             .SkipPage(3)
             .Run();
@@ -814,8 +814,8 @@ public class FirestoreDatabaseTest
         Assert.Equivalent(docs17[3], testDocs1[9]);
 
         var queryResponse18 = await testCollectionReference1.Query<MixedModel>()
-            .PropertyAscending(nameof(MixedModel.Val1))
-            .PropertyDescending(nameof(MixedModel.Val2))
+            .AscendingProperty(nameof(MixedModel.Val1))
+            .DescendingProperty(nameof(MixedModel.Val2))
             .EndAt(testDocs1[3])
             .PageSize(2)
             .SkipPage(3)

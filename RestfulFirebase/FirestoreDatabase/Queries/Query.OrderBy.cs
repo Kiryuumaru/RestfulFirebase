@@ -107,7 +107,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public TQuery PropertyAscending(params string[] propertyPath)
+    public TQuery AscendingProperty(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
@@ -134,7 +134,7 @@ public partial class FluentQueryRoot<TQuery, TModel>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="propertyPath"/> is empty.
     /// </exception>
-    public TQuery PropertyDescending(params string[] propertyPath)
+    public TQuery DescendingProperty(params string[] propertyPath)
     {
         ArgumentNullException.ThrowIfNull(propertyPath);
         ArgumentException.ThrowIfHasNullOrEmpty(propertyPath);
