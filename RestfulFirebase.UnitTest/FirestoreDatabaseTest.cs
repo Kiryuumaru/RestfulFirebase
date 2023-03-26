@@ -414,6 +414,12 @@ public class FirestoreDatabaseTest
             .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(QueryDocumentTest) + "1");
+        CollectionReference testCollectionReference3 = app.FirestoreDatabase
+            .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
+            .Document(nameof(FirestoreDatabaseTest))
+            .Collection(nameof(QueryDocumentTest) + "2");
 
         await Cleanup(testCollectionReference1);
         await Cleanup(testCollectionReference2);
@@ -513,10 +519,14 @@ public class FirestoreDatabaseTest
         var queryCountResponse2 = await testCollectionReference1.Query()
             .Count(writeDocuments1.Result.Found.Count - 1);
 
-        var asd = await queryCountResponse2.GetTransactionContentsAsString();
-
         Assert.NotNull(queryCountResponse2.Result);
         Assert.Equal(writeDocuments1.Result.Found.Count - 1, queryCountResponse2.Result.Count);
+
+        var queryCountResponse3 = await testCollectionReference3.Query()
+            .Count();
+
+        Assert.NotNull(queryCountResponse3.Result);
+        Assert.Equal(0, queryCountResponse3.Result.Count);
 
         var queryResponse1 = await testCollectionReference1.Query<MixedModel>()
             .PropertySelect(nameof(MixedModel.Val2))
