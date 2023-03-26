@@ -20,29 +20,12 @@ namespace RestfulFirebase.FirestoreDatabase.Queries;
 public abstract partial class Query
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocument(
-        int page,
+    internal void BuildStructuredQueryDocument(
+        Utf8JsonWriter writer,
         int offset,
         StructuredQuery query,
-        JsonSerializerOptions jsonSerializerOptions,
-        CancellationToken cancellationToken)
+        JsonSerializerOptions jsonSerializerOptions)
     {
-        string url;
-        if (query.DocumentReference != null)
-        {
-            url = query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
-        }
-        else
-        {
-            url =
-                $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
-                $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":runQuery")}";
-        }
-
-        using MemoryStream stream = new();
-        Utf8JsonWriter writer = new(stream);
-
-        writer.WriteStartObject();
         writer.WritePropertyName("structuredQuery");
         writer.WriteStartObject();
         writer.WritePropertyName("from");
@@ -191,18 +174,97 @@ public abstract partial class Query
         writer.WritePropertyName("limit");
         writer.WriteNumberValue(query.SizeOfPages);
         writer.WriteEndObject();
-        if (TransactionUsed != null)
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocument(
+        int offset,
+        StructuredQuery query,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
+    {
+        string url;
+        if (query.DocumentReference != null)
         {
-            if (TransactionUsed.Token == null)
-            {
-                writer.WritePropertyName("newTransaction");
-                FirestoreDatabaseApi.BuildTransactionOption(writer, TransactionUsed);
-            }
-            else
-            {
-                FirestoreDatabaseApi.BuildTransaction(writer, TransactionUsed);
-            }
+            url = query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runQuery");
         }
+        else
+        {
+            url =
+                $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
+                $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":runQuery")}";
+        }
+
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        BuildStructuredQueryDocument(writer, offset, query, jsonSerializerOptions);
+        FirestoreDatabaseApi.BuildTransaction(writer, TransactionUsed, true);
+        writer.WriteEndObject();
+
+        await writer.FlushAsync(cancellationToken);
+
+        var response = await App.FirestoreDatabase.ExecutePost(AuthorizationUsed, stream, url, cancellationToken);
+        if (response.IsError || response.HttpTransactions.LastOrDefault() is not HttpTransaction lastHttpTransaction)
+        {
+            return (null, response);
+        }
+
+#if NET6_0_OR_GREATER
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync(cancellationToken);
+#else
+        using Stream? contentStream = lastHttpTransaction.ResponseMessage == null ? null : await lastHttpTransaction.ResponseMessage.Content.ReadAsStreamAsync();
+#endif
+
+        return contentStream == null ? (null, response) : (await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken), response);
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocumentCount(
+        int offset,
+        string? alias,
+        long upTo,
+        StructuredQuery query,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
+    {
+        string url;
+        if (query.DocumentReference != null)
+        {
+            url = query.DocumentReference.BuildUrl(App.Config.ProjectId, ":runAggregationQuery");
+        }
+        else
+        {
+            url =
+                $"{FirestoreDatabaseApi.FirestoreDatabaseV1Endpoint}/" +
+                $"{string.Format(FirestoreDatabaseApi.FirestoreDatabaseDocumentsEndpoint, App.Config.ProjectId, ":runAggregationQuery")}";
+        }
+
+        using MemoryStream stream = new();
+        Utf8JsonWriter writer = new(stream);
+
+        writer.WriteStartObject();
+        writer.WritePropertyName("structuredAggregationQuery");
+        writer.WriteStartObject();
+        if (!string.IsNullOrEmpty(alias) && upTo > 0)
+        {
+            writer.WritePropertyName("aggregations");
+            writer.WriteStartArray();
+            writer.WriteStartObject();
+            writer.WritePropertyName("alias");
+            writer.WriteStringValue(alias);
+            writer.WritePropertyName("count");
+            writer.WriteStartObject();
+            writer.WritePropertyName("upTo");
+            writer.WriteStringValue(upTo.ToString());
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+            writer.WriteEndArray();
+        }
+        BuildStructuredQueryDocument(writer, offset, query, jsonSerializerOptions);
+        writer.WriteEndObject();
+        FirestoreDatabaseApi.BuildTransaction(writer, TransactionUsed, true);
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
@@ -619,7 +681,6 @@ public abstract partial class Query
         var query = queryResponse.Result;
 
         var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
-            page,
             offset,
             query,
             jsonSerializerOptions,
@@ -721,7 +782,107 @@ public abstract partial class Query
         var query = queryResponse.Result;
 
         var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
+            offset,
+            query,
+            jsonSerializerOptions,
+            cancellationToken);
+        response.Append(queryDocumentResponse);
+        if (queryDocumentResponse.IsError || jsonDocument == null)
+        {
+            return response;
+        }
+
+        List<DocumentTimestamp<T>> foundDocuments = new();
+        int? skippedResults = null;
+        DateTimeOffset? skippedReadTime = null;
+
+        foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        {
+            if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
+                readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
+            {
+                DocumentReference? parsedDocumentReference = null;
+                Document<T>? parsedDocument = null;
+                T? parsedModel = null;
+                if (doc.TryGetProperty("document", out JsonElement foundPropertyDocument))
+                {
+                    if (foundPropertyDocument.TryGetProperty("name", out JsonElement foundNameProperty) &&
+                        DocumentReference.Parse(App, foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
+                    {
+                        parsedDocumentReference = docRef;
+
+                        if (CacheDocuments.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
+                        {
+                            parsedDocument = foundDocument;
+                            parsedModel = foundDocument.Model;
+                        }
+                    }
+
+                    if (ModelBuilderHelpers.Parse<T>(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
+                    {
+                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime, true));
+                    }
+                }
+                else if (
+                    doc.TryGetProperty("skippedResults", out JsonElement skippedResultsProperty) &&
+                    skippedResultsProperty.TryGetInt32(out int parsedSkippedResults))
+                {
+                    skippedResults = parsedSkippedResults;
+                    skippedReadTime = readTime;
+                }
+            }
+            else if (
+                TransactionUsed != null &&
+                doc.TryGetProperty("transaction", out JsonElement transactionElement) &&
+                transactionElement.GetString() is string transactionToken)
+            {
+                TransactionUsed.Token = transactionToken;
+            }
+        }
+
+        Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
+
+        response.Append(new QueryDocumentResult<T>(
+            foundDocuments.AsReadOnly(),
+            skippedResults,
+            skippedReadTime,
             page,
+            query.SizeOfPages,
+            response,
+            (pageNum, ct) =>
+            {
+                return QueryDocumentPage(
+                    response,
+                    BuildStructureQuery(query, lastDoc, jsonSerializerOptions, ct),
+                    pageNum,
+                    0,
+                    jsonSerializerOptions,
+                    ct);
+            }));
+
+        return response;
+    }
+
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
+    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPageCount<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
+        HttpResponse<QueryDocumentResult<T>> response,
+        Task<HttpResponse<StructuredQuery>> queryTask,
+        int page,
+        int offset,
+        JsonSerializerOptions jsonSerializerOptions,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        var queryResponse = await queryTask;
+        response.Append(queryResponse);
+        if (queryResponse.IsError)
+        {
+            return response;
+        }
+
+        var query = queryResponse.Result;
+
+        var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
             offset,
             query,
             jsonSerializerOptions,

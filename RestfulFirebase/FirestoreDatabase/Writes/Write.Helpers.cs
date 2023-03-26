@@ -265,10 +265,7 @@ public abstract partial class Write
             writer.WriteEndObject();
         }
         writer.WriteEndArray();
-        if (write.TransactionUsed != null)
-        {
-            FirestoreDatabaseApi.BuildTransaction(writer, write.TransactionUsed);
-        }
+        FirestoreDatabaseApi.BuildTransaction(writer, write.TransactionUsed, false);
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);

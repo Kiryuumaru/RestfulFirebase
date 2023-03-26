@@ -167,14 +167,25 @@ public partial class FirestoreDatabaseApi
         }
     }
 
-    internal static void BuildTransaction<TTransaction>(Utf8JsonWriter writer, TTransaction transaction)
+    internal static void BuildTransaction<TTransaction>(Utf8JsonWriter writer, TTransaction? transaction, bool newTransactionIfEmptyToken)
         where TTransaction : Transaction
     {
-        if (transaction.Token == null)
+        if (transaction != null)
         {
-            ArgumentException.Throw($"\"{nameof(Transaction)}\" is provided but missing token. \"{nameof(Transaction)}\" must be created first by passing the parameter to any read operations.");
+            if (transaction.Token == null && newTransactionIfEmptyToken)
+            {
+                writer.WritePropertyName("newTransaction");
+                BuildTransactionOption(writer, transaction);
+            }
+            else
+            {
+                if (transaction.Token == null)
+                {
+                    ArgumentException.Throw($"\"{nameof(Transaction)}\" is provided but missing token. \"{nameof(Transaction)}\" must be created first by passing the parameter to any read operations.");
+                }
+                writer.WritePropertyName("transaction");
+                writer.WriteStringValue(transaction.Token);
+            }
         }
-        writer.WritePropertyName("transaction");
-        writer.WriteStringValue(transaction.Token);
     }
 }

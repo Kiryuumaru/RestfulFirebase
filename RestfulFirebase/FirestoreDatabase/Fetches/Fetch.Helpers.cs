@@ -35,18 +35,7 @@ public abstract partial class Fetch
             writer.WriteStringValue(documentReference.BuildUrlCascade(App.Config.ProjectId));
         }
         writer.WriteEndArray();
-        if (transaction != null)
-        {
-            if (transaction.Token == null)
-            {
-                writer.WritePropertyName("newTransaction");
-                FirestoreDatabaseApi.BuildTransactionOption(writer, transaction);
-            }
-            else
-            {
-                FirestoreDatabaseApi.BuildTransaction(writer, transaction);
-            }
-        }
+        FirestoreDatabaseApi.BuildTransaction(writer, transaction, true);
         writer.WriteEndObject();
 
         await writer.FlushAsync(cancellationToken);
