@@ -165,6 +165,37 @@ public abstract partial class FluentQueryRoot<TQuery>
             jsonSerializerOptions,
             cancellationToken);
     }
+
+    /// <summary>
+    /// Runs the structured query.
+    /// </summary>
+    /// <param name="upTo">
+    /// Optional constraint on the maximum number of documents to count. This provides a way to set an upper bound on the number of documents to scan, limiting latency and cost.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// The <see cref="CancellationToken"/> that propagates notification if the operations should be canceled.
+    /// </param>
+    /// <returns>
+    /// The <see cref="Task"/> proxy that represents the <see cref="HttpResponse"/> with the created result <see cref="QueryDocumentResult"/>.
+    /// </returns>
+    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
+    public async Task<HttpResponse<QueryDocumentCountResult>> Count(long upTo = -1, CancellationToken cancellationToken = default)
+    {
+        if (FromQuery.Count == 0)
+        {
+            return new();
+        }
+
+        JsonSerializerOptions jsonSerializerOptions = App.FirestoreDatabase.ConfigureJsonSerializerOption();
+
+        return await QueryDocumentCount(
+            BuildStartingStructureQuery(jsonSerializerOptions, cancellationToken),
+            PagesToSkip * SizeOfPages,
+            upTo,
+            null,
+            jsonSerializerOptions,
+            cancellationToken);
+    }
 }
 
 public abstract partial class FluentQueryRoot<TQuery, TModel>

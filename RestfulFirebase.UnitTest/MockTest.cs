@@ -20,6 +20,20 @@ public class MockTest
     //{
     //    FirebaseApp app = Helpers.GetFirebaseApp();
 
+    //    CollectionReference testCollectionReference = app.FirestoreDatabase
+    //        .Collection("public")
+    //        .Document(nameof(MockTest))
+    //        .Collection(nameof(Test1));
+
+    //    await FirestoreDatabaseTest.Cleanup(testCollectionReference);
+
+    //    await testCollectionReference.PatchDocuments(new (string documentName, NestedType? model)[]
+    //    {
+    //        ("model1", NestedType.Filled1(app)),
+    //        ("model2", NestedType.Filled2(app)),
+    //        ("model3", NestedType.Filled1(app)),
+    //        ("model4", NestedType.Filled1(app))
+    //    });
 
     //    await Task.Delay(1);
     //}

@@ -223,8 +223,8 @@ public abstract partial class Query
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal async Task<(JsonDocument?, HttpResponse)> ExecuteQueryDocumentCount(
         int offset,
-        string? alias,
         long upTo,
+        string? alias,
         StructuredQuery query,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
@@ -247,21 +247,21 @@ public abstract partial class Query
         writer.WriteStartObject();
         writer.WritePropertyName("structuredAggregationQuery");
         writer.WriteStartObject();
-        if (!string.IsNullOrEmpty(alias) && upTo > 0)
+        writer.WritePropertyName("aggregations");
+        writer.WriteStartArray();
+        writer.WriteStartObject();
+        if (!string.IsNullOrEmpty(alias))
         {
-            writer.WritePropertyName("aggregations");
-            writer.WriteStartArray();
-            writer.WriteStartObject();
             writer.WritePropertyName("alias");
             writer.WriteStringValue(alias);
-            writer.WritePropertyName("count");
-            writer.WriteStartObject();
-            writer.WritePropertyName("upTo");
-            writer.WriteStringValue(upTo.ToString());
-            writer.WriteEndObject();
-            writer.WriteEndObject();
-            writer.WriteEndArray();
         }
+        writer.WritePropertyName("count");
+        writer.WriteStartObject();
+        writer.WritePropertyName("upTo");
+        writer.WriteStringValue((upTo > 0 ? upTo : long.MaxValue).ToString());
+        writer.WriteEndObject();
+        writer.WriteEndObject();
+        writer.WriteEndArray();
         BuildStructuredQueryDocument(writer, offset, query, jsonSerializerOptions);
         writer.WriteEndObject();
         FirestoreDatabaseApi.BuildTransaction(writer, TransactionUsed, true);
@@ -864,15 +864,16 @@ public abstract partial class Query
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
-    internal async Task<HttpResponse<QueryDocumentResult<T>>> QueryDocumentPageCount<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(
-        HttpResponse<QueryDocumentResult<T>> response,
+    internal async Task<HttpResponse<QueryDocumentCountResult>> QueryDocumentCount(
         Task<HttpResponse<StructuredQuery>> queryTask,
-        int page,
         int offset,
+        long upTo,
+        string? alias,
         JsonSerializerOptions jsonSerializerOptions,
         CancellationToken cancellationToken)
-        where T : class
     {
+        HttpResponse<QueryDocumentCountResult> response = new();
+
         var queryResponse = await queryTask;
         response.Append(queryResponse);
         if (queryResponse.IsError)
@@ -882,84 +883,36 @@ public abstract partial class Query
 
         var query = queryResponse.Result;
 
-        var (jsonDocument, queryDocumentResponse) = await ExecuteQueryDocument(
+        var (jsonDocument, queryDocumentCountResponse) = await ExecuteQueryDocumentCount(
             offset,
+            upTo,
+            alias,
             query,
             jsonSerializerOptions,
             cancellationToken);
-        response.Append(queryDocumentResponse);
-        if (queryDocumentResponse.IsError || jsonDocument == null)
+        response.Append(queryDocumentCountResponse);
+        if (queryDocumentCountResponse.IsError || jsonDocument == null)
         {
             return response;
         }
 
-        List<DocumentTimestamp<T>> foundDocuments = new();
-        int? skippedResults = null;
-        DateTimeOffset? skippedReadTime = null;
+        var result = jsonDocument.RootElement.EnumerateArray().First();
+        var countString = result
+            .GetProperty("result")
+            .GetProperty("aggregateFields")
+            .GetProperty(alias == null || string.IsNullOrEmpty(alias) ? "field_1" : alias)
+            .GetProperty("integerValue")
+            .GetString();
+        var readTime = result
+            .GetProperty("readTime")
+            .GetDateTimeOffset();
 
-        foreach (var doc in jsonDocument.RootElement.EnumerateArray())
+        if (!long.TryParse(countString, out long count))
         {
-            if (doc.TryGetProperty("readTime", out JsonElement readTimeProperty) &&
-                readTimeProperty.GetDateTimeOffset() is DateTimeOffset readTime)
-            {
-                DocumentReference? parsedDocumentReference = null;
-                Document<T>? parsedDocument = null;
-                T? parsedModel = null;
-                if (doc.TryGetProperty("document", out JsonElement foundPropertyDocument))
-                {
-                    if (foundPropertyDocument.TryGetProperty("name", out JsonElement foundNameProperty) &&
-                        DocumentReference.Parse(App, foundNameProperty, jsonSerializerOptions) is DocumentReference docRef)
-                    {
-                        parsedDocumentReference = docRef;
-
-                        if (CacheDocuments.FirstOrDefault(i => i.Reference.Equals(docRef)) is Document<T> foundDocument)
-                        {
-                            parsedDocument = foundDocument;
-                            parsedModel = foundDocument.Model;
-                        }
-                    }
-
-                    if (ModelBuilderHelpers.Parse<T>(App, parsedDocumentReference, parsedModel, parsedDocument, foundPropertyDocument.EnumerateObject(), jsonSerializerOptions) is Document<T> found)
-                    {
-                        foundDocuments.Add(new DocumentTimestamp<T>(found, readTime, true));
-                    }
-                }
-                else if (
-                    doc.TryGetProperty("skippedResults", out JsonElement skippedResultsProperty) &&
-                    skippedResultsProperty.TryGetInt32(out int parsedSkippedResults))
-                {
-                    skippedResults = parsedSkippedResults;
-                    skippedReadTime = readTime;
-                }
-            }
-            else if (
-                TransactionUsed != null &&
-                doc.TryGetProperty("transaction", out JsonElement transactionElement) &&
-                transactionElement.GetString() is string transactionToken)
-            {
-                TransactionUsed.Token = transactionToken;
-            }
+            throw new Exception("Aggregated count request error.");
         }
 
-        Document? lastDoc = foundDocuments.LastOrDefault()?.Document;
-
-        response.Append(new QueryDocumentResult<T>(
-            foundDocuments.AsReadOnly(),
-            skippedResults,
-            skippedReadTime,
-            page,
-            query.SizeOfPages,
-            response,
-            (pageNum, ct) =>
-            {
-                return QueryDocumentPage(
-                    response,
-                    BuildStructureQuery(query, lastDoc, jsonSerializerOptions, ct),
-                    pageNum,
-                    0,
-                    jsonSerializerOptions,
-                    ct);
-            }));
+        response.Append(new QueryDocumentCountResult(count, readTime));
 
         return response;
     }

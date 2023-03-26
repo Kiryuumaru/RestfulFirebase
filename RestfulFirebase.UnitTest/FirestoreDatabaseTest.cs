@@ -13,6 +13,8 @@ namespace RestfulFirebase.UnitTest;
 
 public class FirestoreDatabaseTest
 {
+    internal static string TestInstanceId = Guid.NewGuid().ToString();
+
     internal static async Task Cleanup(CollectionReference collectionReference)
     {
         var oldDataList = await collectionReference.Query().Run();
@@ -39,6 +41,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformSetToServerValueTest));
 
@@ -88,6 +92,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformRemoveAllFromArrayTest));
 
@@ -149,6 +155,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformMinimumTest));
 
@@ -212,6 +220,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformMaximumTest));
 
@@ -275,6 +285,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformIncrementTest));
 
@@ -338,6 +350,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(TransformAppendMissingElementsTest));
 
@@ -390,10 +404,14 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference1 = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(QueryDocumentTest));
         CollectionReference testCollectionReference2 = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(QueryDocumentTest) + "1");
 
@@ -485,6 +503,20 @@ public class FirestoreDatabaseTest
         Assert.Equal(2, writeDocuments2.Result.Found.Count);
         var testDocs2 = writeDocuments2.Result.Found.Select(i => i.Document).OrderBy(i => i.Reference.Id).ToArray();
         Assert.Equal(2, testDocs2.Length);
+
+        var queryCountResponse1 = await testCollectionReference1.Query()
+            .Count();
+
+        Assert.NotNull(queryCountResponse1.Result);
+        Assert.Equal(writeDocuments1.Result.Found.Count, queryCountResponse1.Result.Count);
+
+        var queryCountResponse2 = await testCollectionReference1.Query()
+            .Count(writeDocuments1.Result.Found.Count - 1);
+
+        var asd = await queryCountResponse2.GetTransactionContentsAsString();
+
+        Assert.NotNull(queryCountResponse2.Result);
+        Assert.Equal(writeDocuments1.Result.Found.Count - 1, queryCountResponse2.Result.Count);
 
         var queryResponse1 = await testCollectionReference1.Query<MixedModel>()
             .PropertySelect(nameof(MixedModel.Val2))
@@ -813,6 +845,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(PatchGetAndDeleteMVVMModelTest));
 
@@ -864,6 +898,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(PatchGetAndDeleteMVVMDocumentTest));
 
@@ -914,6 +950,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(PatchGetAndDeleteModelTest));
 
@@ -954,6 +992,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(PatchGetAndDeleteDictionaryTest));
 
@@ -1003,6 +1043,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(CreateGetDeleteTest));
 
@@ -1049,6 +1091,8 @@ public class FirestoreDatabaseTest
 
         CollectionReference testCollectionReference = app.FirestoreDatabase
             .Collection("public")
+            .Document(TestInstanceId)
+            .Collection("test")
             .Document(nameof(FirestoreDatabaseTest))
             .Collection(nameof(BatchWriteGetDeleteTest));
 

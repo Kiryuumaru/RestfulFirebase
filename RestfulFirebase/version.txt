@@ -1,2 +1,2 @@
-2.0.0-prerelease.22
-* Initial storage implementation
+2.0.0-prerelease.23
+* Added document aggregated count.
