@@ -34,8 +34,6 @@ internal static class ModelBuilderHelpers
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
         object? parseJsonElement(JsonElement jsonElement, string fieldName, Type? objType)
         {
-            object? obj = null;
-
             if (objType == null)
             {
                 var documentField = jsonElement.EnumerateObject().FirstOrDefault();
@@ -44,105 +42,57 @@ internal static class ModelBuilderHelpers
                 switch (documentFieldType)
                 {
                     case "nullValue":
-                        break;
+                        return null;
                     case "booleanValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<bool>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<bool>(jsonSerializerOptions);
                     case "integerValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<long>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<long>(jsonSerializerOptions);
                     case "doubleValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<double>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<double>(jsonSerializerOptions);
                     case "timestampValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<DateTimeOffset>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<DateTimeOffset>(jsonSerializerOptions);
                     case "stringValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<string>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<string>(jsonSerializerOptions);
                     case "bytesValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize<byte[]>(jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize<byte[]>(jsonSerializerOptions);
                     case "referenceValue":
-                        try
-                        {
-                            obj = DocumentReference.Parse(app, documentFieldValue, jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return DocumentReference.Parse(app, documentFieldValue, jsonSerializerOptions);
                     case "geoPointValue":
-                        try
+                        double? latitude = default;
+                        double? longitude = default;
+                        foreach (var geoProperty in documentFieldValue.EnumerateObject())
                         {
-                            double? latitude = default;
-                            double? longitude = default;
-                            foreach (var geoProperty in documentFieldValue.EnumerateObject())
+                            if (geoProperty.Name == "latitude")
                             {
-                                if (geoProperty.Name == "latitude")
-                                {
-                                    latitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
-                                }
-                                else if (geoProperty.Name == "longitude")
-                                {
-                                    longitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
-                                }
+                                latitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                             }
-
-                            if (latitude.HasValue && longitude.HasValue)
+                            else if (geoProperty.Name == "longitude")
                             {
-                                obj = new GeoPoint()
-                                {
-                                    Latitude = latitude.Value,
-                                    Longitude = longitude.Value
-                                };
+                                longitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                             }
                         }
-                        catch { }
-                        break;
+                        return new GeoPoint()
+                        {
+                            Latitude = latitude ?? 0,
+                            Longitude = longitude ?? 0
+                        };
                     case "arrayValue":
-                        if (documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement arrayProperty)
+                        if (documentFieldValue.EnumerateObject().FirstOrDefault() is JsonProperty arrayProperty)
                         {
-                            obj = parseArrayFields(null, fieldName, arrayProperty);
+                            return parseArrayFields(null, fieldName, arrayProperty.Value);
                         }
-                        break;
+                        return null;
                     case "mapValue":
-                        if (documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement mapProperty)
+                        if (documentFieldValue.EnumerateObject().FirstOrDefault() is JsonProperty mapProperty)
                         {
-                            parseObjectFields(objType, obj, fieldName, mapProperty);
+                            return parseObjectFields(objType, null, fieldName, mapProperty.Value);
                         }
-                        break;
+                        return null;
                 }
             }
             else if (jsonSerializerOptions.Converters.Any(i => i.CanConvert(objType)))
             {
-                try
-                {
-                    obj = jsonElement.Deserialize(objType, jsonSerializerOptions);
-                }
-                catch { }
+                return jsonElement.Deserialize(objType, jsonSerializerOptions);
             }
             else
             {
@@ -152,62 +102,50 @@ internal static class ModelBuilderHelpers
                 switch (documentFieldType)
                 {
                     case "nullValue":
-                        break;
+                        return null;
                     case "booleanValue":
                     case "integerValue":
                     case "doubleValue":
                     case "timestampValue":
                     case "stringValue":
                     case "bytesValue":
-                        try
-                        {
-                            obj = documentFieldValue.Deserialize(objType, jsonSerializerOptions);
-                        }
-                        catch { }
-                        break;
+                        return documentFieldValue.Deserialize(objType, jsonSerializerOptions);
                     case "referenceValue":
-                        if (objType == typeof(DocumentReference))
-                        {
-                            obj = DocumentReference.Parse(app, documentFieldValue, jsonSerializerOptions);
-                        }
-                        break;
+                        return DocumentReference.Parse(app, documentFieldValue, jsonSerializerOptions);
                     case "geoPointValue":
-                        if (objType.GetInterfaces().Any(i => i == typeof(IGeoPoint)))
+
+                        double? latitude = default;
+                        double? longitude = default;
+
+                        foreach (var geoProperty in documentFieldValue.EnumerateObject())
                         {
-                            double? latitude = default;
-                            double? longitude = default;
-                            foreach (var geoProperty in documentFieldValue.EnumerateObject())
+                            if (geoProperty.Name == "latitude")
                             {
-                                if (geoProperty.Name == "latitude")
-                                {
-                                    latitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
-                                }
-                                else if (geoProperty.Name == "longitude")
-                                {
-                                    longitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
-                                }
+                                latitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                             }
-
-                            obj = Activator.CreateInstance(objType);
-
-                            if (latitude.HasValue && longitude.HasValue)
+                            else if (geoProperty.Name == "longitude")
                             {
-                                objType.GetProperty(nameof(IGeoPoint.Latitude))?.SetValue(obj, latitude.Value);
-                                objType.GetProperty(nameof(IGeoPoint.Longitude))?.SetValue(obj, longitude.Value);
+                                longitude = geoProperty.Value.Deserialize<double>(jsonSerializerOptions);
                             }
                         }
-                        break;
+
+                        object? geoPointObj = Activator.CreateInstance(objType);
+
+                        if (latitude.HasValue && longitude.HasValue)
+                        {
+                            objType.GetProperty(nameof(IGeoPoint.Latitude))?.SetValue(geoPointObj, latitude.Value);
+                            objType.GetProperty(nameof(IGeoPoint.Longitude))?.SetValue(geoPointObj, longitude.Value);
+                        }
+
+                        return geoPointObj;
+
                     case "arrayValue":
-                        if (documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement arrayProperty)
+
+                        if (documentFieldValue.EnumerateObject().FirstOrDefault() is JsonProperty arrayProperty)
                         {
                             if (objType.IsArray && objType.GetArrayRank() == 1)
                             {
-                                Type? arrayElementType = objType.GetElementType();
-
-                                if (arrayElementType != null)
-                                {
-                                    obj = parseArrayFields(arrayElementType, fieldName, arrayProperty);
-                                }
+                                return parseArrayFields(objType.GetElementType(), fieldName, arrayProperty.Value);
                             }
                             else
                             {
@@ -215,48 +153,47 @@ internal static class ModelBuilderHelpers
                                     i.IsGenericType &&
                                     i.GetGenericTypeDefinition() == typeof(ICollection<>));
 
-                                if (collectionInterfaceType != null)
+                                object? arrayObj = Activator.CreateInstance(objType);
+
+                                if (collectionInterfaceType != null && arrayObj != null)
                                 {
-                                    obj = Activator.CreateInstance(objType);
-
-                                    if (obj != null)
-                                    {
-                                        Type[] collectionGenericArgsType = collectionInterfaceType.GetGenericArguments();
-
-                                        parseCollectionFields(collectionInterfaceType, collectionGenericArgsType[0], obj, fieldName, arrayProperty);
-                                    }
+                                    return parseCollectionFields(collectionInterfaceType, collectionInterfaceType.GetGenericArguments()[0], arrayObj, fieldName, arrayProperty.Value);
                                 }
                             }
                         }
-                        break;
+
+                        return null;
+
                     case "mapValue":
+
                         if (documentFieldValue.EnumerateObject().FirstOrDefault().Value is JsonElement mapProperty)
                         {
                             var dictionaryInterfaceType = objType.GetInterfaces().FirstOrDefault(i =>
                                 i.IsGenericType &&
                                 i.GetGenericTypeDefinition() == typeof(IDictionary<,>));
 
-                            obj = Activator.CreateInstance(objType);
+                            object? mapObj = Activator.CreateInstance(objType);
 
-                            if (obj != null)
+                            if (mapObj != null)
                             {
                                 if (dictionaryInterfaceType != null)
                                 {
                                     Type[] dictionaryGenericArgsType = dictionaryInterfaceType.GetGenericArguments();
 
-                                    parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], obj, fieldName, mapProperty);
+                                    return parseDictionaryFields(dictionaryInterfaceType, dictionaryGenericArgsType[0], dictionaryGenericArgsType[1], mapObj, fieldName, mapProperty);
                                 }
                                 else
                                 {
-                                    parseObjectFields(objType, obj, fieldName, mapProperty);
+                                    return parseObjectFields(objType, mapObj, fieldName, mapProperty);
                                 }
                             }
                         }
-                        break;
+
+                        return null;
                 }
             }
 
-            return obj;
+            throw new NotSupportedException($"Invalid parsing \"{objType}\" type.");
         }
 
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
@@ -281,26 +218,27 @@ internal static class ModelBuilderHelpers
                 }
             }
 
-            Array obj;
+            Array arrayObj;
+
             if (valueType == null)
             {
-                obj = Array.CreateInstance(typeof(object), items.Count);
+                arrayObj = Array.CreateInstance(typeof(object), items.Count);
             }
             else
             {
-                obj = Array.CreateInstance(valueType, items.Count);
+                arrayObj = Array.CreateInstance(valueType, items.Count);
             }
 
             for (int i = 0; i < items.Count; i++)
             {
-                obj.SetValue(items[i], i);
+                arrayObj.SetValue(items[i], i);
             }
 
-            return obj;
+            return arrayObj;
         }
 
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-        void parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, string fieldName, JsonElement element)
+        object parseCollectionFields(Type collectionInterfaceType, Type valueType, object collectionObj, string fieldName, JsonElement element)
         {
             var addMethod = collectionInterfaceType.GetMethod("Add");
             var clearMethod = collectionInterfaceType.GetMethod("Clear");
@@ -329,10 +267,12 @@ internal static class ModelBuilderHelpers
                     }
                 }
             }
+
+            return collectionObj;
         }
 
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-        void parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, string fieldName, JsonElement element)
+        object parseDictionaryFields(Type dictionaryInterfaceType, Type keyType, Type valueType, object dictionaryObj, string fieldName, JsonElement element)
         {
             var itemProperty = dictionaryInterfaceType.GetProperty("Item");
             var keysProperty = dictionaryInterfaceType.GetProperty("Keys");
@@ -391,10 +331,12 @@ internal static class ModelBuilderHelpers
                     removeMethod.Invoke(dictionaryObj, keyParameter);
                 }
             }
+
+            return dictionaryObj;
         }
 
         [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
-        void parseObjectFields(Type? objType, object? obj, string fieldName, JsonElement element)
+        object? parseObjectFields(Type? objType, object? obj, string fieldName, JsonElement element)
         {
             List<string> alreadyAdded = new();
 
@@ -442,6 +384,8 @@ internal static class ModelBuilderHelpers
 
                 documentFields.Add(subFieldName, parsedSubObj);
             }
+
+            return obj;
         }
 
         string? name = default;

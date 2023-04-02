@@ -138,11 +138,9 @@ public class Coordinates : IGeoPoint
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 public class AllType
 {
-    public object? NullValue1 { get; set; }
+    public string? NullValue1 { get; set; }
 
-    public string? NullValue2 { get; set; }
-
-    public int? NullValue3 { get; set; }
+    public int? NullValue2 { get; set; }
 
     public bool BooleanValue1 { get; set; }
 
@@ -344,7 +342,6 @@ public class AllType
         {
             NullValue1 = null,
             NullValue2 = null,
-            NullValue3 = null,
             BooleanValue1 = false,
             BooleanValue2 = false,
             BooleanValue1Null = false,
@@ -448,7 +445,6 @@ public class AllType
         {
             NullValue1 = null,
             NullValue2 = null,
-            NullValue3 = null,
             BooleanValue1 = true,
             BooleanValue2 = false,
             BooleanValue1Null = false,
@@ -652,7 +648,6 @@ public class AllType
         {
             NullValue1 = null,
             NullValue2 = null,
-            NullValue3 = null,
             BooleanValue1 = false,
             BooleanValue2 = true,
             BooleanValue1Null = true,
