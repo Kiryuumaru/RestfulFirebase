@@ -10,22 +10,24 @@ using System.Linq;
 using RestfulFirebase.Common.Utilities;
 using System.Threading.Tasks;
 using System.IO;
+using RestfulFirebase;
+using RestfulFirebase.UnitTest;
 
-namespace RestfulFirebase.UnitTest;
+namespace StorageTest;
 
-public class StorageTest
+public class UploadGetDeleteTest
 {
     [Fact]
-    public async void UploadGetDeleteTest()
+    public async void Test1()
     {
-        FirebaseApp app = Helpers.GetFirebaseApp();
+        FirebaseApp app = FirebaseHelpers.GetFirebaseApp();
 
         var fileLocation = app.Storage.Bucket()
             .Child(nameof(StorageTest))
             .Child(nameof(UploadGetDeleteTest))
             .Child("image.jpg");
 
-        FileStream img = File.OpenRead("image.jpg");
+        FileStream img = File.OpenRead(Path.Combine(nameof(StorageTest), "image.jpg"));
 
         int percent = 0;
         var writeTask = fileLocation.Write(img);

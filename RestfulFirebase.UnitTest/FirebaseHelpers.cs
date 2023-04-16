@@ -5,8 +5,10 @@ using Xunit;
 
 namespace RestfulFirebase.UnitTest;
 
-internal class Helpers
+internal class FirebaseHelpers
 {
+    internal static string TestInstanceId = Guid.NewGuid().ToString();
+
     public static JsonSerializerOptions JsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -24,7 +26,7 @@ internal class Helpers
         if (firebaseConfig == null)
         {
             var secrets = new ConfigurationBuilder()
-                .AddUserSecrets<Helpers>()
+                .AddUserSecrets<FirebaseHelpers>()
                 .Build();
 
             string? projectId = secrets["FIREBASE_PROJECT_ID"] ?? Environment.GetEnvironmentVariable("FIREBASE_PROJECT_ID");
