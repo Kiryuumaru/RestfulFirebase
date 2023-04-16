@@ -9,7 +9,7 @@ using System.Text.Json;
 using RestfulFirebase.RealtimeDatabase.Utilities;
 using RestfulFirebase.RealtimeDatabase.Models;
 using RestfulHelpers.Common;
-using RestfulFirebase.RealtimeDatabase.Queries;
+using RestfulFirebase.RealtimeDatabase.Queries2;
 using RestfulFirebase.RealtimeDatabase.Exceptions;
 using RestfulFirebase.RealtimeDatabase.Enums;
 using static System.Net.WebRequestMethods;

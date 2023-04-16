@@ -11,7 +11,7 @@
 ///// <summary>
 ///// Represents a node of the firebase cloud firestore.
 ///// </summary>
-//public partial class Snapshot : INotifyPropertyChanged, INotifyPropertyChanging
+//public partial class Node : INotifyPropertyChanged, INotifyPropertyChanging
 //{
 //    /// <summary>
 //    /// Gets the name of the node.
@@ -104,12 +104,12 @@
 //    private readonly ConcurrentDictionary<string, object?> fields;
 
 //    /// <summary>
-//    /// Creates an instance of <see cref="Snapshot{T}"/>.
+//    /// Creates an instance of <see cref="Node{T}"/>.
 //    /// </summary>
 //    /// <param name="reference">
 //    /// The <see cref="Reference"/> of the model.
 //    /// </param>
-//    public Snapshot(Reference reference)
+//    public Node(Reference reference)
 //    {
 //        this.reference = reference;
 
@@ -168,7 +168,7 @@
 ///// <typeparam name="TModel">
 ///// The type of the model.
 ///// </typeparam>
-//public partial class Snapshot<TModel> : Snapshot
+//public partial class Node<TModel> : Node
 //     where TModel : class
 //{
 //    /// <summary>
@@ -193,7 +193,7 @@
 //    public override Type? Type { get; } = typeof(TModel);
 
 //    /// <summary>
-//    /// Creates an instance of <see cref="Snapshot{TModel}"/>.
+//    /// Creates an instance of <see cref="Node{TModel}"/>.
 //    /// </summary>
 //    /// <param name="reference">
 //    /// The <see cref="Reference"/>.
@@ -201,8 +201,8 @@
 //    /// <param name="model">
 //    /// The model.
 //    /// </param>
-//    public Snapshot(Reference reference, TModel? model)
-//        : base (reference)
+//    public Node(Reference reference, TModel? model)
+//        : base(reference)
 //    {
 //        this.model = model;
 //    }

@@ -12,7 +12,7 @@
 
 //namespace RestfulFirebase.RealtimeDatabase.Models;
 
-//public partial class Snapshot
+//public partial class Node
 //{
 //#if NET5_0_OR_GREATER
 //    [RequiresUnreferencedCode(Message.RequiresUnreferencedCodeMessage)]
@@ -42,7 +42,7 @@
 //    }
 //}
 
-//public partial class Snapshot<TModel> : Snapshot
+//public partial class Node<TModel> : Node
 //     where TModel : class
 //{
 //    internal override object? GetModel()

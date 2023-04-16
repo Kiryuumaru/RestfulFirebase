@@ -4,7 +4,7 @@ namespace RestfulFirebase.RealtimeDatabase.References;
 
 public partial class Reference
 {
-    internal static Reference Create(RealtimeDatabase realtimeDatabase, Reference? parent, string path)
+    internal static ChildReference Create(RealtimeDatabase realtimeDatabase, Reference? parent, string path)
     {
         ArgumentNullException.ThrowIfNull(path);
         ArgumentException.ThrowIfEmpty(path);
@@ -33,7 +33,7 @@ public partial class Reference
 
         path = path.Trim().Trim('/');
 
-        return new Reference(realtimeDatabase, parent, path);
+        return new ChildReference(realtimeDatabase, parent, path);
     }
 
     internal static Reference Parse(Reference reference, string[] path)

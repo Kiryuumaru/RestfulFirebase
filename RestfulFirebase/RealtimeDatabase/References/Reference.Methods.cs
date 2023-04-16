@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Text;
-using RestfulFirebase.RealtimeDatabase.Queries;
+using RestfulFirebase.RealtimeDatabase.Queries2;
 using RestfulHelpers.Common;
 
 namespace RestfulFirebase.RealtimeDatabase.References;
@@ -11,7 +11,7 @@ namespace RestfulFirebase.RealtimeDatabase.References;
 public partial class Reference
 {
     /// <summary>
-    /// Creates new instance of <see cref="Queries.Query"/>.
+    /// Creates new instance of <see cref="Queries2.Query"/>.
     /// </summary>
     /// <returns>
     /// The created <see cref="Reference"/> node.
@@ -36,7 +36,7 @@ public partial class Reference
     /// <exception cref="ArgumentException">
     /// <paramref name="path"/> is empty or has forbidden character.
     /// </exception>
-    public Reference Child(string path)
+    public ChildReference Child(string path)
     {
         return Create(RealtimeDatabase, this, path);
     }

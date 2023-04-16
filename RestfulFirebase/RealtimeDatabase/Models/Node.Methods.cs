@@ -8,7 +8,7 @@
 
 //namespace RestfulFirebase.RealtimeDatabase.Models;
 
-//public partial class Snapshot
+//public partial class Node
 //{
 //    /// <summary>
 //    /// Request to perform a get operation to document.

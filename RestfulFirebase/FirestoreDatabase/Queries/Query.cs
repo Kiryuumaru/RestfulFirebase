@@ -128,7 +128,7 @@ public abstract partial class QueryRoot : ICloneable<QueryRoot>
         CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
-    internal QueryRoot(QueryRoot query, bool isClone)
+    internal QueryRoot(QueryRoot query)
     {
         App = query.App;
         ModelType = query.ModelType;
@@ -141,42 +141,21 @@ public abstract partial class QueryRoot : ICloneable<QueryRoot>
         SizeOfPages = query.SizeOfPages;
         PagesToSkip = query.PagesToSkip;
 
-        if (isClone)
-        {
-            WritableFromQuery = new(query.WritableFromQuery);
-            WritableSelectQuery = new(query.WritableSelectQuery);
-            WritableWhereQuery = new(query.WritableWhereQuery);
-            WritableOrderByQuery = new(query.WritableOrderByQuery);
-            WritableStartCursorQuery = new(query.WritableStartCursorQuery);
-            WritableEndCursorQuery = new(query.WritableEndCursorQuery);
-            WritableCacheDocuments = new(query.WritableCacheDocuments);
+        WritableFromQuery = new(query.WritableFromQuery);
+        WritableSelectQuery = new(query.WritableSelectQuery);
+        WritableWhereQuery = new(query.WritableWhereQuery);
+        WritableOrderByQuery = new(query.WritableOrderByQuery);
+        WritableStartCursorQuery = new(query.WritableStartCursorQuery);
+        WritableEndCursorQuery = new(query.WritableEndCursorQuery);
+        WritableCacheDocuments = new(query.WritableCacheDocuments);
 
-            FromQuery = WritableFromQuery.AsReadOnly();
-            SelectQuery = WritableSelectQuery.AsReadOnly();
-            WhereQuery = WritableWhereQuery.AsReadOnly();
-            OrderByQuery = WritableOrderByQuery.AsReadOnly();
-            StartCursorQuery = WritableStartCursorQuery.AsReadOnly();
-            EndCursorQuery = WritableEndCursorQuery.AsReadOnly();
-            CacheDocuments = WritableCacheDocuments.AsReadOnly();
-        }
-        else
-        {
-            WritableFromQuery = query.WritableFromQuery;
-            WritableSelectQuery = query.WritableSelectQuery;
-            WritableWhereQuery = query.WritableWhereQuery;
-            WritableOrderByQuery = query.WritableOrderByQuery;
-            WritableStartCursorQuery = query.WritableStartCursorQuery;
-            WritableEndCursorQuery = query.WritableEndCursorQuery;
-            WritableCacheDocuments = query.WritableCacheDocuments;
-
-            FromQuery = query.FromQuery;
-            SelectQuery = query.SelectQuery;
-            WhereQuery = query.WhereQuery;
-            OrderByQuery = query.OrderByQuery;
-            StartCursorQuery = query.StartCursorQuery;
-            EndCursorQuery = query.EndCursorQuery;
-            CacheDocuments = query.CacheDocuments;
-        }
+        FromQuery = WritableFromQuery.AsReadOnly();
+        SelectQuery = WritableSelectQuery.AsReadOnly();
+        WhereQuery = WritableWhereQuery.AsReadOnly();
+        OrderByQuery = WritableOrderByQuery.AsReadOnly();
+        StartCursorQuery = WritableStartCursorQuery.AsReadOnly();
+        EndCursorQuery = WritableEndCursorQuery.AsReadOnly();
+        CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
     /// <inheritdoc/>
@@ -201,8 +180,8 @@ public abstract partial class FluentQuery<TQuery> : QueryRoot, ICloneable<Fluent
 
     }
 
-    internal FluentQuery(QueryRoot query, bool isClone)
-        : base(query, isClone)
+    internal FluentQuery(QueryRoot query)
+        : base(query)
     {
 
     }
@@ -214,7 +193,7 @@ public abstract partial class FluentQuery<TQuery> : QueryRoot, ICloneable<Fluent
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQuery<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQuery<TQuery>, ICloneable<FluentQuery<TQuery>>
+public abstract partial class FluentQuery<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQuery<TQuery>, ICloneable<FluentQuery<TQuery, TModel>>
     where TQuery : FluentQuery<TQuery, TModel>
     where TModel : class
 {
@@ -224,8 +203,8 @@ public abstract partial class FluentQuery<TQuery, [DynamicallyAccessedMembers(Dy
 
     }
 
-    internal FluentQuery(QueryRoot query, bool isClone)
-        : base(query, isClone)
+    internal FluentQuery(QueryRoot query)
+        : base(query)
     {
 
     }
@@ -249,8 +228,8 @@ public class Query : FluentQuery<Query>, ICloneable<Query>
 
     }
 
-    internal Query(QueryRoot query, bool isClone)
-        : base(query, isClone)
+    internal Query(QueryRoot query)
+        : base(query)
     {
 
     }
@@ -259,7 +238,7 @@ public class Query : FluentQuery<Query>, ICloneable<Query>
     public new Query Clone() => (Query)CoreClone();
 
     /// <inheritdoc/>
-    protected override object CoreClone() => new Query(this, true);
+    protected override object CoreClone() => new Query(this);
 }
 
 /// <summary>
@@ -277,8 +256,8 @@ public class Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Al
 
     }
 
-    internal Query(QueryRoot query, bool isClone)
-        : base(query, isClone)
+    internal Query(QueryRoot query)
+        : base(query)
     {
 
     }
@@ -287,7 +266,7 @@ public class Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Al
     public new Query<TModel> Clone() => (Query<TModel>)CoreClone();
 
     /// <inheritdoc/>
-    protected override object CoreClone() => new Query<TModel>(this, true);
+    protected override object CoreClone() => new Query<TModel>(this);
 }
 
 internal class StructuredQuery

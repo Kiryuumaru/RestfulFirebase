@@ -19,11 +19,6 @@ public partial class Reference
     public Reference? Parent { get; }
 
     /// <summary>
-    /// Gets the name of the reference.
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
     /// Gets the path of the reference.
     /// </summary>
     public string[] Path { get; }
@@ -38,14 +33,18 @@ public partial class Reference
     /// </summary>
     internal FirebaseApp App { get; }
 
-    internal Reference(RealtimeDatabase realtimeDatabase, Reference? parent, string segement)
+    internal Reference(RealtimeDatabase realtimeDatabase, Reference? parent, string? segement)
     {
         App = realtimeDatabase.App;
         RealtimeDatabase = realtimeDatabase;
         Parent = parent;
-        Name = segement;
 
-        if (parent == null)
+        if (segement == null || string.IsNullOrEmpty(segement))
+        {
+            Path = Array.Empty<string>();
+            Url = $"{realtimeDatabase.DatabaseUrl}";
+        }
+        else if (parent == null)
         {
             Path = new string[] { segement };
             Url = $"{realtimeDatabase.DatabaseUrl}/{segement}";

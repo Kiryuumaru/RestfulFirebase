@@ -1,52 +1,48 @@
-using RestfulFirebase.Common.Abstractions;
-using RestfulHelpers.Common;
-using RestfulFirebase.RealtimeDatabase.References;
-using System;
-using System.Globalization;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using RestfulFirebase.RealtimeDatabase.Enums;
 
 namespace RestfulFirebase.RealtimeDatabase.Queries;
 
-public partial class FluentFilteredQuery<TQuery>
+public partial class FluentQuery<TQuery>
 {
-    internal TQuery FilterCore(string parameterName, Func<object?> valueFactory)
+
+}
+
+public partial class FluentQuery<TQuery, TModel>
+{
+
+}
+
+/// <summary>
+/// The "where" parameter for query.
+/// </summary>
+public abstract class FilterQuery
+{
+    /// <summary>
+    /// Gets the path of the property or document field to filter.
+    /// </summary>
+    public string[] NamePath { get; internal set; }
+
+    /// <summary>
+    /// Gets <c>true</c> if the <see cref="NamePath"/> is a property name; otherwise <c>false</c> if it is a document field name.
+    /// </summary>
+    public bool IsNamePathAPropertyPath { get; internal set; }
+
+    internal FilterQuery(string[] namePath, bool isPathPropertyName)
     {
-        object query = new FilteredQuery(Reference, this, ct =>
-        {
-            HttpResponse<string> response = new();
+        NamePath = namePath;
+        IsNamePathAPropertyPath = isPathPropertyName;
+    }
+}
 
-            object? value = valueFactory();
+internal class StructuredFilter
+{
+    public FilterQuery FilterQuery { get; internal set; }
 
-            string parameter;
+    public string DocumentFieldPath { get; internal set; }
 
-            if (value is string strValue)
-            {
-                parameter = $"\"{strValue}\"";
-            }
-            else if (value is double doubleValue)
-            {
-                parameter = doubleValue.ToString(CultureInfo.InvariantCulture);
-            }
-            else if (value is long longValue)
-            {
-                parameter = longValue.ToString();
-            }
-            else if (value is bool boolValue)
-            {
-                parameter = $"{boolValue.ToString().ToLower()}";
-            }
-            else
-            {
-                parameter = $"null";
-            }
-
-            response.Append($"{parameterName}={parameter}");
-
-            return new(response);
-        });
-
-        return (TQuery)query;
+    internal StructuredFilter(FilterQuery filterQuery, string documentFieldPath)
+    {
+        FilterQuery = filterQuery;
+        DocumentFieldPath = documentFieldPath;
     }
 }

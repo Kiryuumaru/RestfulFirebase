@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RestfulFirebase.RealtimeDatabase.Queries;
+namespace RestfulFirebase.RealtimeDatabase.Queries2;
 
 public partial class FluentFilteredQuery<TQuery>
 {

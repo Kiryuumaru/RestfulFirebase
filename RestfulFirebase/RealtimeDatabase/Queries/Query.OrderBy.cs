@@ -1,50 +1,10 @@
-using RestfulFirebase.Common.Abstractions;
-using RestfulHelpers.Common;
-using RestfulFirebase.RealtimeDatabase.References;
+﻿using RestfulFirebase.RealtimeDatabase.Enums;
 using System;
-using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RestfulFirebase.RealtimeDatabase.Queries;
 
-public partial class FluentOrderedQuery<TQuery>
+public partial class FluentQuery<TQuery>
 {
-    /// <summary>
-    /// Order data by given <paramref name="propertyNameFactory"/>. Note that this is used mainly for following filtering queries and due to firebase implementation
-    /// the data may actually not be ordered.
-    /// </summary>
-    /// <param name="propertyNameFactory">
-    /// The property name factory.
-    /// </param>
-    /// <returns>
-    /// The query with new added order.
-    /// </returns>
-    public FilteredQuery OrderBy(Func<string> propertyNameFactory)
-    {
-        ArgumentNullException.ThrowIfNull(propertyNameFactory);
-
-        FilteredQuery query = new(Reference, this, ct =>
-        {
-            HttpResponse<string> response = new();
-
-            string propertyName = propertyNameFactory();
-
-            if (string.IsNullOrEmpty(propertyName))
-            {
-                response.Append($"");
-            }
-            else
-            {
-                response.Append($"orderBy={propertyName}");
-            }
-
-            return new(response);
-        });
-
-        return query;
-    }
-
     /// <summary>
     /// Order data by given <paramref name="propertyName"/>. Note that this is used mainly for following filtering queries and due to firebase implementation
     /// the data may actually not be ordered.
@@ -55,9 +15,15 @@ public partial class FluentOrderedQuery<TQuery>
     /// <returns>
     /// The query with new added order.
     /// </returns>
-    public FilteredQuery OrderBy(string propertyName)
+    public TQuery OrderBy(string propertyName)
     {
-        return OrderBy(() => propertyName);
+        ArgumentNullException.ThrowIfNull(propertyName);
+
+        TQuery query = (TQuery)Clone();
+
+        query.WritableOrderByQuery.Add(new OrderByQuery(propertyName));
+
+        return query;
     }
 
     /// <summary>
@@ -67,7 +33,7 @@ public partial class FluentOrderedQuery<TQuery>
     /// <returns>
     /// The query with new added order.
     /// </returns>
-    public FilteredQuery OrderByKey()
+    public TQuery OrderByKey()
     {
         return OrderBy("$key");
     }
@@ -79,7 +45,7 @@ public partial class FluentOrderedQuery<TQuery>
     /// <returns>
     /// The query with new added order.
     /// </returns>
-    public FilteredQuery OrderByValue()
+    public TQuery OrderByValue()
     {
         return OrderBy("$value");
     }
@@ -91,8 +57,29 @@ public partial class FluentOrderedQuery<TQuery>
     /// <returns>
     /// The query with new added order.
     /// </returns>
-    public FilteredQuery OrderByPriority()
+    public TQuery OrderByPriority()
     {
         return OrderBy("$priority");
+    }
+}
+
+public partial class FluentQuery<TQuery, TModel>
+{
+
+}
+
+/// <summary>
+/// The "where" parameter for query.
+/// </summary>
+public class OrderByQuery
+{
+    /// <summary>
+    /// Gets the path of the property name to order.
+    /// </summary>
+    public string PropertyName { get; internal set; }
+
+    internal OrderByQuery(string propertyName)
+    {
+        PropertyName = propertyName;
     }
 }

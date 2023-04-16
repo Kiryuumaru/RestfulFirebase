@@ -11,31 +11,45 @@ using RestfulFirebase.UnitTest;
 
 namespace RealtimeDatabaseTest;
 
-public class RealtimeDatabaseTest
+public class TransformSetToServerValueTest
 {
     [Fact]
-    public async void TransformSetToServerValueTest()
+    public async void Test1()
     {
         FirebaseApp app = FirebaseHelpers.GetFirebaseApp();
 
-        Reference testReference = app.RealtimeDatabase
-            .Database()
-            .Child("public")
-            .Child("test1");
+        //var userRequest = await app.Authentication.SignInAnonymously();
+        //userRequest.ThrowIfError();
+        //var user = userRequest.Result;
 
-        await RealtimeDatabaseHelpers.Cleanup(testReference);
+        //var database = app.RealtimeDatabase
+        //    .Database();
 
+        //Reference testReference = database
+        //    .Child("public")
+        //    .Child(nameof(TransformSetToServerValueTest))
+        //    .Child(FirebaseHelpers.TestInstanceId);
 
-        var ss = await testReference.Query()
-            .OrderByKey()
-            .EndAt("a")
-            .Run();
+        //await RealtimeDatabaseHelpers.Cleanup(testReference);
 
-        var asd = await ss.GetTransactionContentsAsString();
+        //var query = testReference.Query();
 
-        //await Task.Delay(1000000);
+        //var queryAuth = query.Authorization(user);
 
-        await RealtimeDatabaseHelpers.Cleanup(testReference);
+        //var queryFilter = queryAuth
+        //    .OrderByKey()
+        //    .EndAt("a");
+
+        //var queryRun = await queryFilter.Run();
+
+        //var asd = await queryRun.GetTransactionContentsAsString();
+
+        ////await Task.Delay(1000000);
+
+        //await RealtimeDatabaseHelpers.Cleanup(testReference);
+
+        //var userDeleteRequest = await user.DeleteUser();
+        //userDeleteRequest.ThrowIfError();
 
         Assert.True(true);
     }
