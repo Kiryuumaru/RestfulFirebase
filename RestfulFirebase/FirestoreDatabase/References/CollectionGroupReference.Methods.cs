@@ -79,14 +79,14 @@ public partial class CollectionGroupReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot"/>.
+    /// Creates a structured <see cref="Queries.Query"/>.
     /// </summary>
     /// <returns>
-    /// The created structured <see cref="QueryRoot"/>
+    /// The created structured <see cref="Queries.Query"/>
     /// </returns>
-    public QueryRoot Query()
+    public Query Query()
     {
-        QueryRoot query = new(App, null, Parent);
+        Query query = new(App, null, Parent);
 
         if (AllDescendants.Count != 0)
         {

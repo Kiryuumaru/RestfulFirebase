@@ -414,17 +414,17 @@ public partial class DocumentReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot"/>.
+    /// Creates a structured <see cref="Queries.Query"/>.
     /// </summary>
     /// <param name="collectionId">
     /// The collection ID to query.
     /// </param>
     /// <returns>
-    /// The created structured <see cref="QueryRoot"/>
+    /// The created structured <see cref="Queries.Query"/>
     /// </returns>
-    public QueryRoot Query(string collectionId)
+    public Query Query(string collectionId)
     {
-        QueryRoot query = new(App, null, this);
+        Query query = new(App, null, this);
 
         query = query.From(false, collectionId);
 
@@ -432,7 +432,7 @@ public partial class DocumentReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot"/>.
+    /// Creates a structured <see cref="Queries.Query"/>.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
@@ -441,7 +441,7 @@ public partial class DocumentReference : Reference
     /// The collection ID to query.
     /// </param>
     /// <returns>
-    /// The created structured <see cref="QueryRoot"/>
+    /// The created structured <see cref="Queries.Query"/>
     /// </returns>
     public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(string collectionId)
         where TModel : class

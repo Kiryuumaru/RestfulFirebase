@@ -126,7 +126,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     }
 
     /// <summary>
-    /// Sets the <see cref="Query.AuthorizationUsed"/> by the request.
+    /// Sets the <see cref="QueryRoot.AuthorizationUsed"/> by the request.
     /// </summary>
     /// <returns>
     /// The request with new added authorization.

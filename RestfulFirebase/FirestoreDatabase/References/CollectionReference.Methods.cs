@@ -382,25 +382,25 @@ public partial class CollectionReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot"/>.
+    /// Creates a structured <see cref="Queries.Query"/>.
     /// </summary>
     /// <param name="allDescendants">
     /// If specified <c>true</c>, the query will select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </param>
     /// <returns>
-    /// The created structured <see cref="QueryRoot"/>
+    /// The created structured <see cref="Queries.Query"/>
     /// </returns>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
-    public QueryRoot Query(bool allDescendants = false)
+    public Query Query(bool allDescendants = false)
     {
         if (allDescendants && Parent != null)
         {
             ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        QueryRoot query = new(App, null, Parent);
+        Query query = new(App, null, Parent);
 
         return query.From(allDescendants, Id);
     }

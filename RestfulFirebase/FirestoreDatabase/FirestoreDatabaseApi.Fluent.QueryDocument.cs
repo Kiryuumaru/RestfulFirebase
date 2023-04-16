@@ -8,11 +8,11 @@ public partial class FirestoreDatabaseApi
     /// Creates a new query.
     /// </summary>
     /// <returns>
-    /// The newly created <see cref="QueryRoot"/>.
+    /// The newly created <see cref="Queries.Query"/>.
     /// </returns>
-    public QueryRoot Query()
+    public Query Query()
     {
-        return new QueryRoot(App, null, null);
+        return new Query(App, null, null);
     }
 
     /// <summary>
@@ -22,11 +22,11 @@ public partial class FirestoreDatabaseApi
     /// The type of the document model.
     /// </typeparam>
     /// <returns>
-    /// The newly created <see cref="QueryRoot"/>.
+    /// The newly created <see cref="Queries.Query"/>.
     /// </returns>
-    public QueryRoot Query<TModel>()
+    public Query Query<TModel>()
         where TModel : class
     {
-        return new QueryRoot(App, typeof(TModel), null);
+        return new Query(App, typeof(TModel), null);
     }
 }

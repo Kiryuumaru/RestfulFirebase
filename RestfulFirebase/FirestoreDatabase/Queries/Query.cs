@@ -9,10 +9,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
+#region Root
+
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class Query : ICloneable<Query>
+public abstract partial class QueryRoot : ICloneable<QueryRoot>
 {
     /// <summary>
     /// Gets the collections to query.
@@ -103,7 +105,7 @@ public abstract partial class Query : ICloneable<Query>
     internal readonly List<CursorQuery> WritableEndCursorQuery;
     internal readonly List<Document> WritableCacheDocuments;
 
-    internal Query(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
+    internal QueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
     {
         App = app;
         ModelType = modelType;
@@ -126,7 +128,7 @@ public abstract partial class Query : ICloneable<Query>
         CacheDocuments = WritableCacheDocuments.AsReadOnly();
     }
 
-    internal Query(Query query, bool isClone)
+    internal QueryRoot(QueryRoot query, bool isClone)
     {
         App = query.App;
         ModelType = query.ModelType;
@@ -178,7 +180,7 @@ public abstract partial class Query : ICloneable<Query>
     }
 
     /// <inheritdoc/>
-    public Query Clone() => (Query)CoreClone();
+    public QueryRoot Clone() => (QueryRoot)CoreClone();
 
     /// <inheritdoc/>
     object ICloneable.Clone() => CoreClone();
@@ -190,7 +192,7 @@ public abstract partial class Query : ICloneable<Query>
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery> : Query, ICloneable<FluentQueryRoot<TQuery>>
+public abstract partial class FluentQueryRoot<TQuery> : QueryRoot, ICloneable<FluentQueryRoot<TQuery>>
     where TQuery : FluentQueryRoot<TQuery>
 {
     internal FluentQueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
@@ -199,7 +201,7 @@ public abstract partial class FluentQueryRoot<TQuery> : Query, ICloneable<Fluent
 
     }
 
-    internal FluentQueryRoot(Query query, bool isClone)
+    internal FluentQueryRoot(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
@@ -222,7 +224,7 @@ public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMember
 
     }
 
-    internal FluentQueryRoot(Query query, bool isClone)
+    internal FluentQueryRoot(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
@@ -232,30 +234,32 @@ public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMember
     public new FluentQueryRoot<TQuery, TModel> Clone() => (FluentQueryRoot<TQuery, TModel>)CoreClone();
 }
 
+#endregion
+
 #region Instantiable
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public class QueryRoot : FluentQueryRoot<QueryRoot>, ICloneable<QueryRoot>
+public class Query : FluentQueryRoot<Query>, ICloneable<Query>
 {
-    internal QueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
+    internal Query(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
         : base(app, modelType, documentReference)
     {
 
     }
 
-    internal QueryRoot(Query query, bool isClone)
+    internal Query(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
     }
 
     /// <inheritdoc/>
-    public new QueryRoot Clone() => (QueryRoot)CoreClone();
+    public new Query Clone() => (Query)CoreClone();
 
     /// <inheritdoc/>
-    protected override object CoreClone() => new QueryRoot(this, true);
+    protected override object CoreClone() => new Query(this, true);
 }
 
 /// <summary>
@@ -273,7 +277,7 @@ public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberType
 
     }
 
-    internal QueryRoot(Query query, bool isClone)
+    internal QueryRoot(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
@@ -288,7 +292,7 @@ public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberType
 
 internal class StructuredQuery
 {
-    public Query Query { get; }
+    public QueryRoot Query { get; }
 
     public List<StructuredFrom> From { get; }
 
@@ -323,7 +327,7 @@ internal class StructuredQuery
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public Type? ModelType { get; }
 
-    public StructuredQuery(Query query)
+    public StructuredQuery(QueryRoot query)
     {
         Query = query;
 

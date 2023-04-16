@@ -17,7 +17,7 @@ using RestfulFirebase.Common.Internals;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class Query
+public abstract partial class QueryRoot
 {
     [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "<Pending>")]
     internal void BuildStructuredQueryDocument(
