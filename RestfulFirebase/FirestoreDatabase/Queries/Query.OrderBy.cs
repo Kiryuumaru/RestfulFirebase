@@ -3,7 +3,7 @@ using RestfulFirebase.FirestoreDatabase.Utilities;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class FluentQueryRoot<TQuery>
+public abstract partial class FluentQuery<TQuery>
 {
     /// <summary>
     /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.
@@ -90,7 +90,7 @@ public abstract partial class FluentQueryRoot<TQuery>
     }
 }
 
-public partial class FluentQueryRoot<TQuery, TModel>
+public partial class FluentQuery<TQuery, TModel>
 {
     /// <summary>
     /// Adds new instance of <see cref="OrderByQuery"/> with <see cref="Direction.Ascending"/> order to the query.

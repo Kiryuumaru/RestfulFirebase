@@ -443,10 +443,10 @@ public partial class DocumentReference : Reference
     /// <returns>
     /// The created structured <see cref="Queries.Query"/>
     /// </returns>
-    public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(string collectionId)
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(string collectionId)
         where TModel : class
     {
-        QueryRoot<TModel> query = new(App, this);
+        Query<TModel> query = new(App, this);
 
         query = query.From(false, collectionId);
 

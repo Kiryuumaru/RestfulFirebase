@@ -101,18 +101,18 @@ public partial class CollectionGroupReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot{TModel}"/>.
+    /// Creates a structured <see cref="Queries.Query{TModel}"/>.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
     /// </typeparam>
     /// <returns>
-    /// The created structured <see cref="QueryRoot{TModel}"/>
+    /// The created structured <see cref="Queries.Query{TModel}"/>
     /// </returns>
-    public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>()
         where TModel : class
     {
-        QueryRoot<TModel> query = new(App, Parent);
+        Query<TModel> query = new(App, Parent);
 
         if (AllDescendants.Count != 0)
         {

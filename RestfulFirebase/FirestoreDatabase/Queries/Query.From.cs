@@ -2,7 +2,7 @@
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class FluentQueryRoot<TQuery>
+public abstract partial class FluentQuery<TQuery>
 {
     /// <summary>
     /// Adds an instance of <see cref="FromQuery"/> to the query.

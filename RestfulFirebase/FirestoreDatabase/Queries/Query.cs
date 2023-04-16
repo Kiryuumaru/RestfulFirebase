@@ -192,46 +192,46 @@ public abstract partial class QueryRoot : ICloneable<QueryRoot>
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery> : QueryRoot, ICloneable<FluentQueryRoot<TQuery>>
-    where TQuery : FluentQueryRoot<TQuery>
+public abstract partial class FluentQuery<TQuery> : QueryRoot, ICloneable<FluentQuery<TQuery>>
+    where TQuery : FluentQuery<TQuery>
 {
-    internal FluentQueryRoot(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
+    internal FluentQuery(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
         : base(app, modelType, documentReference)
     {
 
     }
 
-    internal FluentQueryRoot(QueryRoot query, bool isClone)
+    internal FluentQuery(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
     }
 
     /// <inheritdoc/>
-    public new FluentQueryRoot<TQuery> Clone() => (FluentQueryRoot<TQuery>)CoreClone();
+    public new FluentQuery<TQuery> Clone() => (FluentQuery<TQuery>)CoreClone();
 }
 
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<TQuery>, ICloneable<FluentQueryRoot<TQuery>>
-    where TQuery : FluentQueryRoot<TQuery, TModel>
+public abstract partial class FluentQuery<TQuery, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQuery<TQuery>, ICloneable<FluentQuery<TQuery>>
+    where TQuery : FluentQuery<TQuery, TModel>
     where TModel : class
 {
-    internal FluentQueryRoot(FirebaseApp app, DocumentReference? documentReference)
+    internal FluentQuery(FirebaseApp app, DocumentReference? documentReference)
         : base(app, typeof(TModel), documentReference)
     {
 
     }
 
-    internal FluentQueryRoot(QueryRoot query, bool isClone)
+    internal FluentQuery(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
     }
 
     /// <inheritdoc/>
-    public new FluentQueryRoot<TQuery, TModel> Clone() => (FluentQueryRoot<TQuery, TModel>)CoreClone();
+    public new FluentQuery<TQuery, TModel> Clone() => (FluentQuery<TQuery, TModel>)CoreClone();
 }
 
 #endregion
@@ -241,7 +241,7 @@ public abstract partial class FluentQueryRoot<TQuery, [DynamicallyAccessedMember
 /// <summary>
 /// Runs a structured query.
 /// </summary>
-public class Query : FluentQueryRoot<Query>, ICloneable<Query>
+public class Query : FluentQuery<Query>, ICloneable<Query>
 {
     internal Query(FirebaseApp app, Type? modelType, DocumentReference? documentReference)
         : base(app, modelType, documentReference)
@@ -268,26 +268,26 @@ public class Query : FluentQueryRoot<Query>, ICloneable<Query>
 /// <typeparam name="TModel">
 /// The type of the document model.
 /// </typeparam>
-public class QueryRoot<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQueryRoot<QueryRoot<TModel>, TModel>, ICloneable<QueryRoot<TModel>>
+public class Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel> : FluentQuery<Query<TModel>, TModel>, ICloneable<Query<TModel>>
     where TModel : class
 {
-    internal QueryRoot(FirebaseApp app, DocumentReference? documentReference)
+    internal Query(FirebaseApp app, DocumentReference? documentReference)
         : base(app, documentReference)
     {
 
     }
 
-    internal QueryRoot(QueryRoot query, bool isClone)
+    internal Query(QueryRoot query, bool isClone)
         : base(query, isClone)
     {
 
     }
 
     /// <inheritdoc/>
-    public new QueryRoot<TModel> Clone() => (QueryRoot<TModel>)CoreClone();
+    public new Query<TModel> Clone() => (Query<TModel>)CoreClone();
 
     /// <inheritdoc/>
-    protected override object CoreClone() => new QueryRoot<TModel>(this, true);
+    protected override object CoreClone() => new Query<TModel>(this, true);
 }
 
 internal class StructuredQuery

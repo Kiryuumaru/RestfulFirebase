@@ -406,7 +406,7 @@ public partial class CollectionReference : Reference
     }
 
     /// <summary>
-    /// Creates a structured <see cref="QueryRoot{TModel}"/>.
+    /// Creates a structured <see cref="Queries.Query{TModel}"/>.
     /// </summary>
     /// <typeparam name="TModel">
     /// The type of the document model.
@@ -415,12 +415,12 @@ public partial class CollectionReference : Reference
     /// If specified <c>true</c>, the query will select all descendant collections; otherwise, <c>false</c> to select only collections that are immediate children of the parent specified in the containing request. 
     /// </param>
     /// <returns>
-    /// The created structured <see cref="QueryRoot{TModel}"/>
+    /// The created structured <see cref="Queries.Query{TModel}"/>
     /// </returns>
     /// <exception cref="System.ArgumentException">
     /// <paramref name="allDescendants"/> is <c>true</c> and query is not in the root query.
     /// </exception>
-    public QueryRoot<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)
+    public Query<TModel> Query<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TModel>(bool allDescendants = false)
         where TModel : class
     {
         if (allDescendants && Parent != null)
@@ -428,7 +428,7 @@ public partial class CollectionReference : Reference
             ArgumentException.Throw($"\"{nameof(allDescendants)}\" is only applicable from root query.");
         }
 
-        QueryRoot<TModel> query = new(App, Parent);
+        Query<TModel> query = new(App, Parent);
 
         return query.From(allDescendants, Id);
     }
