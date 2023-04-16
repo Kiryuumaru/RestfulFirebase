@@ -1,2 +1,2 @@
-2.0.0-prerelease.28
-* Safer model parsing.
+2.0.0-prerelease.29
+* Cleanup query structure.
