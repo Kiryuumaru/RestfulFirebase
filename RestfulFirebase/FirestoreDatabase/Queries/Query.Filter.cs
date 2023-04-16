@@ -2,7 +2,7 @@
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class FluentQuery<TQuery>
+public partial class FluentQuery<TQuery>
 {
     #region Main
 

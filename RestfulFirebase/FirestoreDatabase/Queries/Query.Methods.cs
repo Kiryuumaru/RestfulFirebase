@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class FluentQuery<TQuery>
+public partial class FluentQuery<TQuery>
 {
     /// <summary>
     /// Sets the requested page size of pager async enumerator. Must be >= 1 if specified. Default is 20.
@@ -198,7 +198,7 @@ public abstract partial class FluentQuery<TQuery>
     }
 }
 
-public abstract partial class FluentQuery<TQuery, TModel>
+public partial class FluentQuery<TQuery, TModel>
 {
     /// <summary>
     /// Runs the structured query.

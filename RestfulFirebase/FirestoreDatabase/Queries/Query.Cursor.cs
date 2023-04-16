@@ -2,7 +2,7 @@
 
 namespace RestfulFirebase.FirestoreDatabase.Queries;
 
-public abstract partial class FluentQuery<TQuery>
+public partial class FluentQuery<TQuery>
 {
     /// <summary>
     /// Adds an instance of <see cref="CursorQuery"/> with the start at configuration to the query.
