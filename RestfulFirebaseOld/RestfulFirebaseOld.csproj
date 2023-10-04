@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DisposableHelpers" Version="1.1.15" />
+    <PackageReference Include="DisposableHelpers" Version="1.1.16" />
     <PackageReference Include="ObservableHelpers" Version="2.0.10" />
     <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
